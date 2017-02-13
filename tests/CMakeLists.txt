@@ -22,10 +22,13 @@ endif()
 #
 # Set sources here
 #
-set(TSC_TEST_SOURCES	../arch/x86/tsc.c
+set(TSC_TEST_SRC	../arch/x86/tsc.c
 			../tools/arch/x86/util/tsc.c
 			minunit.c
 			tsc_test.c)
+set(MATH_TEST_SRC	../tools/math/math.c
+			minunit.c
+			math_test.c)
 
 #
 # Look for libraries, packages, etc.
@@ -41,20 +44,21 @@ include_directories("../include/")
 #
 # Set target libraries here
 #
-#set(TARGET_LIBS "${wxWidgets_LIBRARIES}")
+set(TARGET_LIBS "")
 
 #
 # Check functions exist here
 #
-#if (NOT MSVC)
-#	CHECK_FUNCTION_EXISTS(fmax RESULT)
-#	if(NOT RESULT)
-#		unset(RESULT)
-#		list(APPEND TARGET_LIBS m)
-#		message(STATUS "Math library added to the TARGET_LIBS")
-#	endif()
-#endif()
+if (NOT MSVC)
+	CHECK_FUNCTION_EXISTS(fmax RESULT)
+	if(NOT RESULT)
+		unset(RESULT)
+		list(APPEND TARGET_LIBS m)
+		message(STATUS "Math library added to the TARGET_LIBS")
+	endif()
+endif()
 
-add_executable(tsc_test ${TSC_TEST_SOURCES})
+add_executable(tsc_test ${TSC_TEST_SRC})
+add_executable(math_test ${MATH_TEST_SRC})
 
-#target_link_libraries(tsc_test ${TARGET_LIBS})
+target_link_libraries(math_test ${TARGET_LIBS})
