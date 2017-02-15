@@ -8,6 +8,7 @@ include(CheckFunctionExists)
 #
 if (CMAKE_COMPILER_IS_GNUCC OR
     "${CMAKE_C_COMPILER_ID}" MATCHES "Clang")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDEBUG -g")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=iso9899:1999")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wshadow -Wpointer-arith -Wcast-qual")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wcast-align -Wstrict-prototypes")
@@ -24,6 +25,7 @@ endif()
 #
 set(TSC_TEST_SRC	../arch/x86/tsc.c
 			../tools/arch/x86/util/tsc.c
+			../tools/math/math.c
 			minunit.c
 			tsc_test.c)
 set(MATH_TEST_SRC	../tools/math/math.c

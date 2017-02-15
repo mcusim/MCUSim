@@ -7,9 +7,15 @@
 extern "C" {
 #endif
 
-double msim_median(const double *arr, const uint64_t size);
-
-float msim_medianf(const float *arr, const uint64_t size);
+/*
+ * Calculates median for the given array.
+ *
+ * arr		Array to calculate median.
+ * size		Size of array _arr_.
+ *
+ * Returns median or UINT64_MAX in case of error.
+ */
+uint64_t msim_median(uint64_t *arr, const uint64_t size);
 
 #ifdef __cplusplus
 }

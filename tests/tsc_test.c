@@ -2,6 +2,7 @@
 
 #include "minunit.h"
 #include "arch/x86/tsc.h"
+#include "tools/math/math.h"
 
 #define SUITE_NAME		"x86 TSC tests"
 
@@ -15,6 +16,7 @@ int calibrate_tsc(void)
 {
 	uint8_t i = 0;
 	uint64_t tsc_pit_khz = 0;
+	uint64_t tsc_vals[50];
 
 	_mu_assert(ioperm(0x61, 1, 1) == 0);
 	_mu_assert(ioperm(0x43, 1, 1) == 0);
@@ -23,9 +25,14 @@ int calibrate_tsc(void)
 	for (i = 0; i < 50; i++) {
 		tsc_pit_khz = pit_calibrate_tsc();
 
+		tsc_vals[i] = tsc_pit_khz;
 		printf("%lu.%03lu\n", tsc_pit_khz / 1000,
 				      tsc_pit_khz % 1000);
 	}
+
+	tsc_pit_khz = msim_median(tsc_vals, 50);
+	printf("Median: %lu.%03lu\n", tsc_pit_khz / 1000,
+				      tsc_pit_khz % 1000);
 
 	_mu_assert(ioperm(0x61, 1, 0) == 0);
 	_mu_assert(ioperm(0x43, 1, 0) == 0);
