@@ -17,9 +17,6 @@ extern "C" {
  */
 typedef unsigned long long cycles_t;
 
-extern unsigned int cpu_khz;
-extern unsigned int tsc_khz;
-
 static inline cycles_t get_cycles(void)
 {
 	return rdtsc();

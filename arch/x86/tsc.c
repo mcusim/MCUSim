@@ -8,9 +8,6 @@
 #define CAL_LATCH	(PIT_TICK_RATE / (1000 / CAL_MS))
 #define CAL_PIT_LOOPS	1000
 
-unsigned int cpu_khz;
-unsigned int tsc_khz;
-
 uint64_t native_calibrate_tsc(void)
 {
 	unsigned int ebx, ecx, edx, cpuid_level;
