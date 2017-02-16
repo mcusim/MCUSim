@@ -15,14 +15,13 @@ extern "C" {
 /*
  * Standard way to access the cycle counter.
  */
-typedef unsigned long long cycles_t;
+typedef uint64_t cycles_t;
 
 static inline cycles_t get_cycles(void)
 {
 	return rdtsc();
 }
 
-uint64_t native_calibrate_tsc(void);
 uint64_t pit_calibrate_tsc(void);
 
 #ifdef __cplusplus

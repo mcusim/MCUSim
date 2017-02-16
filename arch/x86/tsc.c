@@ -8,34 +8,6 @@
 #define CAL_LATCH	(PIT_TICK_RATE / (1000 / CAL_MS))
 #define CAL_PIT_LOOPS	1000
 
-uint64_t native_calibrate_tsc(void)
-{
-	unsigned int ebx, ecx, edx, cpuid_level;
-	unsigned int eax_denominator, ebx_numerator, ecx_hz;
-	unsigned int crystal_khz;
-
-	/* Check function levels of CPUID */
-	ebx = ecx = edx = 0;
-	__get_cpuid(0x80000000, &cpuid_level, &ebx, &ecx, &edx);
-
-	if (cpuid_level < 0x15)
-		return 0;
-
-	eax_denominator = ebx_numerator = ecx_hz = edx = 0;
-
-	/* CPUID 0x15 TSC/Crystal ratio, plus optionally Crystal Hz */
-	if (!__get_cpuid(0x15, &eax_denominator, &ebx_numerator,
-			 &ecx_hz, &edx))
-		fprintf(stderr, "CPUID request 0x15 unsupported!\n");
-
-	if (ebx_numerator == 0 || eax_denominator == 0)
-		return 0;
-
-	crystal_khz = ecx_hz / 1000;
-
-	return crystal_khz * ebx_numerator / eax_denominator;
-}
-
 uint64_t pit_calibrate_tsc(void)
 {
 	/* Preset PIT loop values */
@@ -53,7 +25,7 @@ uint64_t pit_calibrate_tsc(void)
 	 */
 	outb(0xb0, 0x43);
 	outb(latch & 0xff, 0x42);
-	outb(latch >> 8, 0x42);
+	outb((uint8_t) (latch >> 8), 0x42);
 
 	t1 = t2 = get_cycles();
 
