@@ -22,6 +22,8 @@
  */
 #define __AVR_ATmega8A__ 1
 
+#include <string.h>
+
 #include "avr/io.h"
 #include "avr/sim/sim.h"
 
@@ -30,9 +32,18 @@ enum init_state m8a_init(struct avr *mcu)
 	if (!mcu)
 		return NULL_MCU;
 
+	strcpy(mcu->name, "atmega8a");
+
+	mcu->spm_pagesize = SPM_PAGESIZE;
+	mcu->flashstart = FLASHSTART;
+	mcu->flashend = FLASHEND;
 	mcu->ramstart = RAMSTART;
 	mcu->ramend = RAMEND;
 	mcu->ramsize = RAMSIZE;
+	mcu->e2start = E2START;
+	mcu->e2end = E2END;
+	mcu->e2size = E2SIZE;
+	mcu->e2pagesize = E2PAGESIZE;
 
 	return INITIALIZED;
 }

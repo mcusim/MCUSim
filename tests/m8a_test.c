@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <string.h>
+
 #include "minunit.h"
 #include "avr/sim/sim.h"
 
@@ -24,6 +26,7 @@
 int tests_run = 0;
 
 static struct avr m8a;
+static char mcu_name[20];
 
 /* Test functions prototypes */
 int m8a_initialized(void);
@@ -32,12 +35,23 @@ int m8a_initialized(void)
 {
 	enum init_state s;
 
+	m8a.name = mcu_name;
+
 	s = m8a_init(&m8a);
 
 	_mu_test(s == INITIALIZED);
+
+	_mu_test(strcmp(m8a.name, "atmega8a") == 0);
+	_mu_test(m8a.spm_pagesize == 64);
+	_mu_test(m8a.flashstart == 0x0000);
+	_mu_test(m8a.flashend == 0x1FFF);
 	_mu_test(m8a.ramstart == 0x0060);
 	_mu_test(m8a.ramend == 0x045F);
 	_mu_test(m8a.ramsize == 1024);
+	_mu_test(m8a.e2start == 0);
+	_mu_test(m8a.e2end == 0x01FF);
+	_mu_test(m8a.e2size == 512);
+	_mu_test(m8a.e2pagesize == 4);
 
 	return 0;
 }

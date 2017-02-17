@@ -42,7 +42,7 @@ enum init_state {
  * Instance of the AVR microcontroller.
  */
 struct avr {
-	const char *mmcu;		/* Name of the MCU */
+	char *name;			/* Name of the MCU */
 
 	uint16_t spm_pagesize;		/* For devices with bootloader support,
 					   the flash pagesize (in bytes) to be
@@ -77,8 +77,8 @@ struct avr {
 	uint8_t *sreg;			/* Points directly to SREG placed
 					   in data section. */
 
-	uint8_t *flash;			/* Flash memory */
-	uint8_t *data;			/* General purpose registers,
+	uint8_t *prog_mem;		/* Flash memory */
+	uint8_t *data_mem;		/* General purpose registers,
 					   IO registers and SRAM */
 };
 
