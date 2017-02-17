@@ -1,3 +1,20 @@
+#
+# mcusim - Interactive simulator for microcontrollers.
+# Copyright (C) 2017 Dmitry Salychev <darkness.bsd@gmail.com>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 cmake_minimum_required(VERSION 3.2)
 project(MCUsim_Tests)
 
@@ -31,6 +48,9 @@ set(TSC_TEST_SRC	../arch/x86/tsc.c
 set(MATH_TEST_SRC	../tools/math/math.c
 			minunit.c
 			math_test.c)
+set(M8A_TEST_SRC	../avr/sim_m8a.c
+			minunit.c
+			m8a_test.c)
 
 #
 # Look for libraries, packages, etc.
@@ -62,5 +82,6 @@ endif()
 
 add_executable(tsc_test ${TSC_TEST_SRC})
 add_executable(math_test ${MATH_TEST_SRC})
+add_executable(m8a_test ${M8A_TEST_SRC})
 
 target_link_libraries(math_test ${TARGET_LIBS})
