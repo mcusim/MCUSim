@@ -12,7 +12,13 @@ typedef uint32_t avr_flashaddr_t;
 enum avr_state {
 	AVR_RUNNING = INT16_MIN,
 	AVR_STOPPED,
-	AVR_SLEEPING
+	AVR_SLEEPING,
+}
+
+enum init_state {
+	INITIALIZED = INT16_MIN,
+	NULL_MCU,
+	ERROR,
 }
 
 /*
@@ -24,17 +30,21 @@ struct avr {
 	uint16_t spm_pagesize;		/* For devices with bootloader support,
 					   the flash pagesize (in bytes) to be
 					   used for SPM instruction. */
+
 	uint16_t flashstart;		/* The first byte address in flash
 					   program space. */
 	uint16_t flashend;		/* The last byte address in flash
 					   program space. */
+
 	uint16_t ramstart;
 	uint16_t ramend;
 	uint32_t ramsize;
+
 	uint16_t e2start;		/* The first EEPROM address */
 	uint16_t e2end;			/* The last EEPROM address */
 	uint16_t e2size;
 	uint16_t e2pagesize;		/* The size of the EEPROM page */
+
 	uint8_t lockbits;
 	uint8_t fuse[6];
 
@@ -54,6 +64,12 @@ struct avr {
 	uint8_t *data;			/* General purpose registers,
 					   IO registers and SRAM */
 };
+
+/* Public prototypes */
+
+enum init_state m8a_init(struct avr *mcu);
+
+/* END Public prototypes */
 
 #ifdef __cplusplus
 }
