@@ -42,7 +42,7 @@ enum init_state {
  * Instance of the AVR microcontroller.
  */
 struct avr {
-	char *name;			/* Name of the MCU */
+	char name[20];			/* Name of the MCU */
 
 	uint16_t spm_pagesize;		/* For devices with bootloader support,
 					   the flash pagesize (in bytes) to be

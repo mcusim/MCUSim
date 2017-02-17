@@ -26,7 +26,6 @@
 int tests_run = 0;
 
 static struct avr m8a;
-static char mcu_name[20];
 
 /* Test functions prototypes */
 int m8a_initialized(void);
@@ -34,8 +33,6 @@ int m8a_initialized(void);
 int m8a_initialized(void)
 {
 	enum init_state s;
-
-	m8a.name = mcu_name;
 
 	s = m8a_init(&m8a);
 
