@@ -26,7 +26,8 @@
 
 #include "avr/io.h"
 #include "avr/sim/sim.h"
-#include "avr/sim/m8a.h"
+
+static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low);
 
 int m8a_init(struct avr *mcu)
 {
@@ -92,8 +93,7 @@ int m8a_init(struct avr *mcu)
 	 *	- ...
 	 *
 	 */
-	mcu->fuse[1] = 0xD9; /* high */
-	mcu->fuse[0] = 0xE1; /* low */
+	set_fuse_bytes(mcu, 0xD9, 0xE1);
 
 	return 0;
 }
@@ -106,4 +106,43 @@ int m8a_prog_mem(struct avr *mcu, uint16_t *mem, uint32_t size)
 int m8a_data_mem(struct avr *mcu, uint8_t *mem, uint32_t size)
 {
 	return -1;
+}
+
+static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low)
+{
+	uint8_t bl_flag;
+
+	mcu->fuse[1] = high;
+	mcu->fuse[0] = low;
+
+	/*
+	 * Check BOOTSZ1 and BOOTSZ0 flags and set bootloader
+	 * parameters accordingly.
+	 */
+	bl_flag = (high >> 1) & 0x03;
+	switch (bl_flag) {
+	case 0x01:
+		mcu->boot_loader->start = 0xE00;
+		mcu->boot_loader->end = 0xFFF;
+		mcu->boot_loader->size = 512;
+		break;
+	case 0x02:
+		mcu->boot_loader->start = 0xF00;
+		mcu->boot_loader->end = 0xFFF;
+		mcu->boot_loader->size = 256;
+		break;
+	case 0x03:
+		mcu->boot_loader->start = 0xF80;
+		mcu->boot_loader->end = 0xFFF;
+		mcu->boot_loader->size = 128;
+		break;
+	case 0x00:
+	default:
+		mcu->boot_loader->start = 0xC00;
+		mcu->boot_loader->end = 0xFFF;
+		mcu->boot_loader->size = 1024;
+		break;
+	}
+
+	return 0;
 }

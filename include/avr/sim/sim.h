@@ -20,6 +20,8 @@
 
 #include <stdint.h>
 
+#include "avr/sim/bootloader.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -46,6 +48,7 @@ struct avr {
 					   program space. */
 	uint16_t flashend;		/* The last byte address in flash
 					   program space. */
+	struct avr_bootloader *boot_loader;
 
 	uint16_t ramstart;
 	uint16_t ramend;
@@ -81,6 +84,8 @@ struct avr {
 	uint8_t *data_mem;		/* General purpose registers,
 					   IO registers and SRAM */
 };
+
+#include "avr/sim/m8a.h"
 
 #ifdef __cplusplus
 }

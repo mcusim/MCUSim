@@ -19,7 +19,7 @@
 
 #include "minunit.h"
 #include "avr/sim/sim.h"
-#include "avr/sim/m8a.h"
+#include "avr/sim/bootloader.h"
 
 #define SUITE_NAME		"Atmel ATMega8A tests"
 
@@ -27,12 +27,15 @@
 int tests_run = 0;
 
 static struct avr m8a;
+static struct avr_bootloader bldr;
 
 /* Test functions prototypes */
 int m8a_initialized(void);
 
 int m8a_initialized(void)
 {
+	m8a.boot_loader = &bldr;
+
 	_mu_assert(m8a_init(&m8a) == 0);
 
 	_mu_test(strcmp(m8a.name, "atmega8a") == 0);
@@ -46,6 +49,10 @@ int m8a_initialized(void)
 	_mu_test(m8a.e2end == 0x01FF);
 	_mu_test(m8a.e2size == 512);
 	_mu_test(m8a.e2pagesize == 4);
+
+	_mu_test(m8a.boot_loader->start == 0xC00);
+	_mu_test(m8a.boot_loader->end == 0xFFF);
+	_mu_test(m8a.boot_loader->size == 1024);
 
 	return 0;
 }
