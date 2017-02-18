@@ -29,13 +29,7 @@ typedef uint32_t avr_flashaddr_t;
 enum avr_state {
 	AVR_RUNNING = INT16_MIN,
 	AVR_STOPPED,
-	AVR_SLEEPING,
-};
-
-enum init_state {
-	INITIALIZED = INT16_MIN,
-	NULL_MCU,
-	ERROR,
+	AVR_SLEEPING
 };
 
 /*
@@ -77,16 +71,16 @@ struct avr {
 	uint8_t *sreg;			/* Points directly to SREG placed
 					   in data section. */
 
-	uint8_t *prog_mem;		/* Flash memory */
+	uint16_t *prog_mem;		/* Flash memory.
+					   It is organized as an array of
+					   16-bits words because of the fact
+					   that all AVR instructions are
+					   16- or 32-bits long. This memory
+					   section could contain
+					   a bootloader. */
 	uint8_t *data_mem;		/* General purpose registers,
 					   IO registers and SRAM */
 };
-
-/* Public prototypes */
-
-enum init_state m8a_init(struct avr *mcu);
-
-/* END Public prototypes */
 
 #ifdef __cplusplus
 }

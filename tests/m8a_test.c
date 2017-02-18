@@ -19,6 +19,7 @@
 
 #include "minunit.h"
 #include "avr/sim/sim.h"
+#include "avr/sim/m8a.h"
 
 #define SUITE_NAME		"Atmel ATMega8A tests"
 
@@ -32,11 +33,7 @@ int m8a_initialized(void);
 
 int m8a_initialized(void)
 {
-	enum init_state s;
-
-	s = m8a_init(&m8a);
-
-	_mu_test(s == INITIALIZED);
+	_mu_assert(m8a_init(&m8a) == 0);
 
 	_mu_test(strcmp(m8a.name, "atmega8a") == 0);
 	_mu_test(m8a.spm_pagesize == 64);
