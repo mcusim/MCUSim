@@ -16,6 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 cmake_minimum_required(VERSION 3.2)
-project(MCUsim)
+project(mcusim)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+add_custom_target(sources_tar
+			COMMAND tar -zcvf mcusim.tar.gz
+				arch/ avr/ include/ tests/ tools/
+				CMakeLists.txt COPYING
+			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
