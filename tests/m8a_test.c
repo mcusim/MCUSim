@@ -40,19 +40,30 @@ int m8a_initialized(void)
 
 	_mu_test(strcmp(m8a.name, "atmega8a") == 0);
 	_mu_test(m8a.spm_pagesize == 64);
+
+	/*
+	 * Program memory configuration.
+	 */
 	_mu_test(m8a.flashstart == 0x0000);
 	_mu_test(m8a.flashend == 0x1FFF);
+	_mu_test(m8a.boot_loader->start == 0xC00);
+	_mu_test(m8a.boot_loader->end == 0xFFF);
+	_mu_test(m8a.boot_loader->size == 1024);
+
+	/*
+	 * RAM configuration.
+	 */
 	_mu_test(m8a.ramstart == 0x0060);
 	_mu_test(m8a.ramend == 0x045F);
 	_mu_test(m8a.ramsize == 1024);
+
+	/*
+	 * EEPROM memory configuration.
+	 */
 	_mu_test(m8a.e2start == 0);
 	_mu_test(m8a.e2end == 0x01FF);
 	_mu_test(m8a.e2size == 512);
 	_mu_test(m8a.e2pagesize == 4);
-
-	_mu_test(m8a.boot_loader->start == 0xC00);
-	_mu_test(m8a.boot_loader->end == 0xFFF);
-	_mu_test(m8a.boot_loader->size == 1024);
 
 	return 0;
 }
