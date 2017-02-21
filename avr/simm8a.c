@@ -28,6 +28,7 @@
 #include "avr/sim/sim.h"
 
 static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low);
+static int is_ckopt_programmed(uint8_t ckopt_f);
 
 int m8a_init(struct avr *mcu)
 {
@@ -72,7 +73,7 @@ int m8a_init(struct avr *mcu)
 
 	/*
 	 * Set ATmega8A fuse bits to the default values. ATmega8A has
-	 * two fuse bytes, high and low.
+	 * only two of them, high and low.
 	 *
 	 * The high fuse byte is:
 	 * 7        6     5     4     3      2       1       0
@@ -93,7 +94,10 @@ int m8a_init(struct avr *mcu)
 	 *	- ...
 	 *
 	 */
-	set_fuse_bytes(mcu, 0xD9, 0xE1);
+	if (set_fuse_bytes(mcu, 0xD9, 0xE1)) {
+		fprintf(stderr, "Fuse bytes cannot be set correctly\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -110,17 +114,17 @@ int m8a_data_mem(struct avr *mcu, uint8_t *mem, uint32_t size)
 
 static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low)
 {
-	uint8_t bl_flag;
+	uint8_t bldr_f, cksel_f, ckopt_f;
 
 	mcu->fuse[1] = high;
 	mcu->fuse[0] = low;
 
 	/*
-	 * Check BOOTSZ1 and BOOTSZ0 flags and set bootloader
+	 * Check BOOTSZ1:0 flags and set bootloader
 	 * parameters accordingly.
 	 */
-	bl_flag = (high >> 1) & 0x03;
-	switch (bl_flag) {
+	bldr_f = (high >> 1) & 0x03;
+	switch (bldr_f) {
 	case 0x01:
 		mcu->boot_loader->start = 0xE00;
 		mcu->boot_loader->end = 0xFFF;
@@ -144,5 +148,68 @@ static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low)
 		break;
 	}
 
+	/*
+	 * Check CKOPT and CKSEL3:0 in order to understand where
+	 * clock signal comes from and expected frequency.
+	 *
+	 * The default option for ATmega8A is 1MHz internal RC oscillator.
+	 * CKOPT should always be unprogrammed (value is 1) when using
+	 * internal oscillator.
+	 */
+	ckopt_f = (high >> 4) & 0x01;
+	cksel_f = low & 0x0F;
+	switch(cksel_f) {
+	case 0x02:
+		/* Internal, 2 MHz */
+		if (is_ckopt_programmed(ckopt_f))
+			return -1;
+		mcu->clk_source = AVR_INT_CLK;
+		mcu->freq = 2000;
+		break;
+	case 0x03:
+		/* Internal, 4 MHz */
+		if (is_ckopt_programmed(ckopt_f))
+			return -1;
+		mcu->clk_source = AVR_INT_CLK;
+		mcu->freq = 4000;
+		break;
+	case 0x04:
+		/* Internal, 8 MHz */
+		if (is_ckopt_programmed(ckopt_f))
+			return -1;
+		mcu->clk_source = AVR_INT_CLK;
+		mcu->freq = 8000;
+		break;
+	case 0x01:
+	default:
+		/* Internal, 1 MHz */
+		if (is_ckopt_programmed(ckopt_f))
+			return -1;
+		mcu->clk_source = AVR_INT_CLK;
+		mcu->freq = 1000;
+		break;
+	case 0x00:
+		/*
+		 * External Clock
+		 *
+		 * It is not meant to be a crystal/ceramic resonator,
+		 * crystal oscillator or RC oscillator, so we cannot
+		 * expect any frequency.
+		 */
+		mcu->clk_source = AVR_EXT_CLK;
+		mcu->freq = UINT32_MAX;
+		break;
+	}
+
+	return 0;
+}
+
+static int is_ckopt_programmed(uint8_t ckopt_f)
+{
+	if (!ckopt_f) {
+		fprintf(stderr, "CKOPT fuse bit should be unprogrammed "
+				"(CKOPT == 1) using internal clock source\n");
+		return -1;
+	}
 	return 0;
 }

@@ -34,6 +34,11 @@ enum avr_state {
 	AVR_SLEEPING
 };
 
+enum avr_clk_source {
+	AVR_INT_CLK = INT16_MIN,
+	AVR_EXT_CLK
+};
+
 /*
  * Instance of the AVR microcontroller.
  */
@@ -64,7 +69,8 @@ struct avr {
 
 	enum avr_state state;
 	uint32_t freq;			/* Frequency we're currently
-					   working at. */
+					   working at, in kHz */
+	enum avr_clk_source clk_source;
 
 	avr_flashaddr_t pc;		/* Current program counter register */
 	avr_flashaddr_t reset_pc;	/* This is a value used to jump to
@@ -85,7 +91,7 @@ struct avr {
 					   IO registers and SRAM */
 };
 
-#include "avr/sim/m8a.h"
+#include "avr/sim/simm8a.h"
 
 #ifdef __cplusplus
 }

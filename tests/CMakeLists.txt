@@ -48,7 +48,7 @@ set(TSC_TEST_SRC	../arch/x86/tsc.c
 set(MATH_TEST_SRC	../tools/math/math.c
 			minunit.c
 			math_test.c)
-set(M8A_TEST_SRC	../avr/sim_m8a.c
+set(M8A_TEST_SRC	../avr/simm8a.c
 			minunit.c
 			m8a_test.c)
 

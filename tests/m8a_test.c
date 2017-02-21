@@ -42,6 +42,13 @@ int m8a_initialized(void)
 	_mu_test(m8a.spm_pagesize == 64);
 
 	/*
+	 * Expected clock source is an internal RC oscillator
+	 * which is working at 1 MHz.
+	 */
+	_mu_test(m8a.freq == 1000);
+	_mu_test(m8a.clk_source == AVR_INT_CLK);
+
+	/*
 	 * Program memory configuration.
 	 */
 	_mu_test(m8a.flashstart == 0x0000);
