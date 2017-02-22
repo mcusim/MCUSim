@@ -102,12 +102,17 @@ int m8a_init(struct avr *mcu)
 	return 0;
 }
 
-int m8a_prog_mem(struct avr *mcu, uint16_t *mem, uint32_t size)
+int m8a_set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size)
 {
 	return -1;
 }
 
-int m8a_data_mem(struct avr *mcu, uint8_t *mem, uint32_t size)
+int m8a_load_progmem(struct avr *mcu, FILE *fp)
+{
+	return -1;
+}
+
+int m8a_set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size)
 {
 	return -1;
 }
