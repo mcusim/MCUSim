@@ -91,7 +91,7 @@ int progmem_loaded(void)
 	_mu_assert(fp);
 
 	/*
-	 * Print hex file dedicated to be burned into a simulated
+	 * Print HEX file dedicated to be burned into a simulated
 	 * ATmega8A.
 	 */
 	while (Read_IHexRecord(&rec, fp) == IHEX_OK) {
@@ -100,7 +100,7 @@ int progmem_loaded(void)
 		Print_IHexRecord(&rec);
 		printf("\n");
 	}
-	fclose(fp);
+	rewind(fp);
 
 	/*
 	 * Assign program memory to the MCU.
@@ -108,6 +108,12 @@ int progmem_loaded(void)
 	_mu_assert(!m8a_set_progmem(&m8a, prog_mem, sizeof(prog_mem)/
 				  		    sizeof(prog_mem[0])));
 
+	/*
+	 * Load program memory from the HEX file.
+	 */
+	_mu_test(!m8a_load_progmem(&m8a, fp));
+
+	fclose(fp);
 	return 0;
 }
 
