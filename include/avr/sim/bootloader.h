@@ -28,9 +28,9 @@ extern "C" {
 
 struct avr_bootloader {
 	uint16_t start;		/* The first bootloader address in
-				   program memory. */
+				   program memory, in 16-bits words. */
 	uint16_t end;		/* The last bootloader address in
-				   program memory. */
+				   program memory, in 16-bits words. */
 	uint16_t size;		/* The bootloader size,
 				   in 16-bits words. */
 };

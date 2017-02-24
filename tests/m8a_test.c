@@ -95,8 +95,6 @@ int progmem_loaded(void)
 	 * ATmega8A.
 	 */
 	while (Read_IHexRecord(&rec, fp) == IHEX_OK) {
-		_mu_test(rec.type == IHEX_TYPE_00 ||
-			 rec.type == IHEX_TYPE_01);
 		Print_IHexRecord(&rec);
 		printf("\n");
 	}

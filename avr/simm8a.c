@@ -83,9 +83,11 @@ int m8a_init(struct avr *mcu)
 	mcu->spm_pagesize = SPM_PAGESIZE;
 	mcu->flashstart = FLASHSTART;
 	mcu->flashend = FLASHEND;
+
 	mcu->ramstart = RAMSTART;
 	mcu->ramend = RAMEND;
 	mcu->ramsize = RAMSIZE;
+
 	mcu->e2start = E2START;
 	mcu->e2end = E2END;
 	mcu->e2size = E2SIZE;
@@ -109,8 +111,9 @@ int m8a_set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size)
 	flash_size= (uint16_t) ((mcu->flashend - mcu->flashstart) + 1) / 2;
 	if (size != flash_size) {
 		fprintf(stderr, "Program memory is limited by %d KiB,"
-				" %d doesn't match", mcu->flashend + 1,
-				size * 2);
+				" %u.%03u KiB doesn't match",
+				(mcu->flashend + 1) / 1024,
+				(size * 2) / 1024, (size * 2) % 1024);
 		return -1;
 	}
 
