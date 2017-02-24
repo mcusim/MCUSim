@@ -124,18 +124,21 @@ int m8a_set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size)
 
 int m8a_load_progmem(struct avr *mcu, FILE *fp)
 {
-	IHexRecord rec;
+	IHexRecord rec, mem_rec;
 
 	if (!fp) {
 		fprintf(stderr, "Cannot read from the filestream");
 		return -1;
 	}
 
+	/*
+	 * Copy HEX data to program memory of the MCU.
+	 */
 	while (Read_IHexRecord(&rec, fp) == IHEX_OK) {
 		switch (rec.type) {
 		case IHEX_TYPE_00:	/* Data */
 			memcpy(mcu->prog_mem + (rec.address / 2),
-				rec.data, (uint16_t) rec.dataLen);
+			       rec.data, (uint16_t) rec.dataLen);
 			break;
 		case IHEX_TYPE_01:	/* End of File */
 		default:		/* Other types, unlikely occured */
@@ -143,6 +146,32 @@ int m8a_load_progmem(struct avr *mcu, FILE *fp)
 		}
 	}
 
+	/*
+	 * Verify checksum of the loaded data.
+	 */
+	rewind(fp);
+	while (Read_IHexRecord(&rec, fp) == IHEX_OK) {
+		if (rec.type != IHEX_TYPE_00)
+			continue;
+
+		memcpy(mem_rec.data, mcu->prog_mem + (rec.address / 2),
+		       (uint16_t) rec.dataLen);
+		mem_rec.address = rec.address;
+		mem_rec.dataLen = rec.dataLen;
+		mem_rec.type = rec.type;
+		mem_rec.checksum = 0;
+
+		mem_rec.checksum = Checksum_IHexRecord(&mem_rec);
+		if (mem_rec.checksum != rec.checksum) {
+			printf("Checksum is not correct:"
+			       " 0x%x (memory) != 0x%x (file)\n"
+			       "File record:\n", mem_rec.checksum, rec.checksum);
+			Print_IHexRecord(&rec);
+			printf("Memory record:\n");
+			Print_IHexRecord(&mem_rec);
+			return -1;
+		}
+	}
 	return 0;
 }
 
