@@ -16,21 +16,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string.h>
+#include <stdio.h>
+#include <stdint.h>
 
 #include "minunit.h"
 #include "avr/sim/sim.h"
 #include "avr/sim/bootloader.h"
+#include "tools/gis/ihex.h"
 
 #define SUITE_NAME		"Atmel ATMega8A tests"
+
+#define PROGMEM_FILE		"avr-progmem.hex"
 
 /* Tests counter */
 int tests_run = 0;
 
 static struct avr m8a;
 static struct avr_bootloader bldr;
+static uint16_t prog_mem[4096];
 
 /* Test functions prototypes */
 int m8a_initialized(void);
+int progmem_loaded(void);
 
 int m8a_initialized(void)
 {
@@ -75,9 +82,43 @@ int m8a_initialized(void)
 	return 0;
 }
 
+int progmem_loaded(void)
+{
+	FILE *fp;
+	IHexRecord rec;
+
+	fp = fopen(PROGMEM_FILE, "r");
+	_mu_assert(fp);
+
+	/*
+	 * Print HEX file dedicated to be burned into a simulated
+	 * ATmega8A.
+	 */
+	while (Read_IHexRecord(&rec, fp) == IHEX_OK) {
+		Print_IHexRecord(&rec);
+		printf("\n");
+	}
+	rewind(fp);
+
+	/*
+	 * Assign program memory to the MCU.
+	 */
+	_mu_assert(!m8a_set_progmem(&m8a, prog_mem, sizeof(prog_mem)/
+				  		    sizeof(prog_mem[0])));
+
+	/*
+	 * Load program memory from the HEX file.
+	 */
+	_mu_test(!m8a_load_progmem(&m8a, fp));
+
+	fclose(fp);
+	return 0;
+}
+
 int all_tests(void)
 {
 	_mu_verify(m8a_initialized);
+	_mu_verify(progmem_loaded);
 	return 0;
 }
 

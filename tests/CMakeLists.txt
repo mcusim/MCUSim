@@ -49,6 +49,7 @@ set(MATH_TEST_SRC	../tools/math/math.c
 			minunit.c
 			math_test.c)
 set(M8A_TEST_SRC	../avr/simm8a.c
+			../tools/gis/ihex.c
 			minunit.c
 			m8a_test.c)
 
@@ -85,3 +86,8 @@ add_executable(math_test ${MATH_TEST_SRC})
 add_executable(m8a_test ${M8A_TEST_SRC})
 
 target_link_libraries(math_test ${TARGET_LIBS})
+
+#
+# Prepare files required for tests
+#
+file(COPY "../samples/avr-progmem.hex" DESTINATION ${CMAKE_BINARY_DIR})

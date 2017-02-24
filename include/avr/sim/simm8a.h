@@ -18,6 +18,8 @@
 #ifndef MSIM_AVR_M8A_H_
 #define MSIM_AVR_M8A_H_ 1
 
+#include <stdio.h>
+
 #include "avr/sim/sim.h"
 
 #ifdef __cplusplus
@@ -28,9 +30,11 @@ extern "C" {
 
 int m8a_init(struct avr *mcu);
 
-int m8a_prog_mem(struct avr *mcu, uint16_t *mem, uint32_t size);
+int m8a_set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size);
 
-int m8a_data_mem(struct avr *mcu, uint8_t *mem, uint32_t size);
+int m8a_load_progmem(struct avr *mcu, FILE *fp);
+
+int m8a_set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size);
 
 /* END Public prototypes */
 

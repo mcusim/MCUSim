@@ -26,10 +26,47 @@
 
 #include "avr/io.h"
 #include "avr/sim/sim.h"
+#include "tools/gis/ihex.h"
 
 static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low);
 static int is_ckopt_programmed(uint8_t ckopt_f);
 
+/*
+ * Set ATmega8A lock bits to the default values
+ * according to the datasheet. ATmega8A has 6 lock bits only.
+ *
+ * They are:
+ * 5     4     3     2     1   0
+ * BLB12 BLB11 BLB02 BLB01 LB2 LB1
+ *
+ * Default value means:
+ *	- no memory lock features enabled;
+ *	- no restrictions for SPM or Load Program Memory (LPM)
+ *	  instruction accessing the Application section;
+ *	- no restrictions for SPM or LPM accessing
+ *	  the Boot Loader section.
+ *
+ * Set ATmega8A fuse bits to the default values. ATmega8A has
+ * only two of them, high and low.
+ *
+ * The high fuse byte is:
+ * 7        6     5     4     3      2       1       0
+ * RSTDISBL WDTON SPIEN CKOPT EESAVE BOOTSZ1 BOOTSZ0 BOOTRST
+ *
+ * The low fuse byte is:
+ * 7        6     5    4    3      2      1      0
+ * BODLEVEL BODEN SUT1 SUT0 CKSEL3 CKSEL2 CKSEL1 CKSEL0
+ *
+ * Default value for high byte means:
+ *	- boot sector in program memory is 1024 words,
+ *	  from 0xC00-0xFFF,
+ *	  application sector is 3072 words,
+ *	  from 0x000-0xBFF;
+ *	- ...
+ *
+ * Default value for low byte means:
+ *	- ...
+ */
 int m8a_init(struct avr *mcu)
 {
 	if (!mcu) {
@@ -46,54 +83,18 @@ int m8a_init(struct avr *mcu)
 	mcu->spm_pagesize = SPM_PAGESIZE;
 	mcu->flashstart = FLASHSTART;
 	mcu->flashend = FLASHEND;
+
 	mcu->ramstart = RAMSTART;
 	mcu->ramend = RAMEND;
 	mcu->ramsize = RAMSIZE;
+
 	mcu->e2start = E2START;
 	mcu->e2end = E2END;
 	mcu->e2size = E2SIZE;
 	mcu->e2pagesize = E2PAGESIZE;
 
-	/*
-	 * Set ATmega8A lock bits to the default values
-	 * according to the datasheet. ATmega8A has 6 lock bits only.
-	 *
-	 * They are:
-	 * 5     4     3     2     1   0
-	 * BLB12 BLB11 BLB02 BLB01 LB2 LB1
-	 *
-	 * Default value means:
-	 *	- no memory lock features enabled;
-	 *	- no restrictions for SPM or Load Program Memory (LPM)
-	 *	  instruction accessing the Application section;
-	 *	- no restrictions for SPM or LPM accessing
-	 *	  the Boot Loader section.
-	 */
 	mcu->lockbits = 0x3F;
 
-	/*
-	 * Set ATmega8A fuse bits to the default values. ATmega8A has
-	 * only two of them, high and low.
-	 *
-	 * The high fuse byte is:
-	 * 7        6     5     4     3      2       1       0
-	 * RSTDISBL WDTON SPIEN CKOPT EESAVE BOOTSZ1 BOOTSZ0 BOOTRST
-	 *
-	 * The low fuse byte is:
-	 * 7        6     5    4    3      2      1      0
-	 * BODLEVEL BODEN SUT1 SUT0 CKSEL3 CKSEL2 CKSEL1 CKSEL0
-	 *
-	 * Default value for high byte means:
-	 *	- boot sector in program memory is 1024 words,
-	 *	  from 0xC00-0xFFF,
-	 *	  application sector is 3072 words,
-	 *	  from 0x000-0xBFF;
-	 *	- ...
-	 *
-	 * Default value for low byte means:
-	 *	- ...
-	 *
-	 */
 	if (set_fuse_bytes(mcu, 0xD9, 0xE1)) {
 		fprintf(stderr, "Fuse bytes cannot be set correctly\n");
 		return -1;
@@ -102,12 +103,79 @@ int m8a_init(struct avr *mcu)
 	return 0;
 }
 
-int m8a_prog_mem(struct avr *mcu, uint16_t *mem, uint32_t size)
+int m8a_set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size)
 {
-	return -1;
+	uint16_t flash_size;
+
+	/* Size in 16-bits words */
+	flash_size= (uint16_t) ((mcu->flashend - mcu->flashstart) + 1) / 2;
+	if (size != flash_size) {
+		fprintf(stderr, "Program memory is limited by %d KiB,"
+				" %u.%03u KiB doesn't match",
+				(mcu->flashend + 1) / 1024,
+				(size * 2) / 1024, (size * 2) % 1024);
+		return -1;
+	}
+
+	mcu->prog_mem = mem;
+
+	return 0;
 }
 
-int m8a_data_mem(struct avr *mcu, uint8_t *mem, uint32_t size)
+int m8a_load_progmem(struct avr *mcu, FILE *fp)
+{
+	IHexRecord rec, mem_rec;
+
+	if (!fp) {
+		fprintf(stderr, "Cannot read from the filestream");
+		return -1;
+	}
+
+	/*
+	 * Copy HEX data to program memory of the MCU.
+	 */
+	while (Read_IHexRecord(&rec, fp) == IHEX_OK) {
+		switch (rec.type) {
+		case IHEX_TYPE_00:	/* Data */
+			memcpy(mcu->prog_mem + (rec.address / 2),
+			       rec.data, (uint16_t) rec.dataLen);
+			break;
+		case IHEX_TYPE_01:	/* End of File */
+		default:		/* Other types, unlikely occured */
+			continue;
+		}
+	}
+
+	/*
+	 * Verify checksum of the loaded data.
+	 */
+	rewind(fp);
+	while (Read_IHexRecord(&rec, fp) == IHEX_OK) {
+		if (rec.type != IHEX_TYPE_00)
+			continue;
+
+		memcpy(mem_rec.data, mcu->prog_mem + (rec.address / 2),
+		       (uint16_t) rec.dataLen);
+		mem_rec.address = rec.address;
+		mem_rec.dataLen = rec.dataLen;
+		mem_rec.type = rec.type;
+		mem_rec.checksum = 0;
+
+		mem_rec.checksum = Checksum_IHexRecord(&mem_rec);
+		if (mem_rec.checksum != rec.checksum) {
+			printf("Checksum is not correct:"
+			       " 0x%x (memory) != 0x%x (file)\n"
+			       "File record:\n", mem_rec.checksum, rec.checksum);
+			Print_IHexRecord(&rec);
+			printf("Memory record:\n");
+			Print_IHexRecord(&mem_rec);
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int m8a_set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size)
 {
 	return -1;
 }

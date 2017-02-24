@@ -47,12 +47,13 @@ struct avr {
 
 	uint16_t spm_pagesize;		/* For devices with bootloader support,
 					   the flash pagesize (in bytes) to be
-					   used for SPM instruction. */
+					   used for Self Programming Mode (SPM)
+					   instruction. */
 
 	uint16_t flashstart;		/* The first byte address in flash
-					   program space. */
+					   program space, in bytes. */
 	uint16_t flashend;		/* The last byte address in flash
-					   program space. */
+					   program space, in bytes. */
 	struct avr_bootloader *boot_loader;
 
 	uint16_t ramstart;
@@ -68,9 +69,9 @@ struct avr {
 	uint8_t fuse[6];
 
 	enum avr_state state;
+	enum avr_clk_source clk_source;
 	uint32_t freq;			/* Frequency we're currently
 					   working at, in kHz */
-	enum avr_clk_source clk_source;
 
 	avr_flashaddr_t pc;		/* Current program counter register */
 	avr_flashaddr_t reset_pc;	/* This is a value used to jump to
