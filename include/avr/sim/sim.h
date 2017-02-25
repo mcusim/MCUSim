@@ -75,8 +75,7 @@ struct avr {
 
 	avr_flashaddr_t pc;		/* Current program counter register */
 	avr_flashaddr_t reset_pc;	/* This is a value used to jump to
-					   at reset time. It allows support
-					   for bootloaders. */
+					   at reset time. */
 
 	uint8_t *sreg;			/* Points directly to SREG placed
 					   in data section. */

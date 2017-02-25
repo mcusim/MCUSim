@@ -28,8 +28,11 @@
 #include "avr/sim/sim.h"
 #include "tools/gis/ihex.h"
 
-static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low);
 static int is_ckopt_programmed(uint8_t ckopt_f);
+static int set_fuse_bytes(struct avr *mcu, uint8_t fuse_high, uint8_t fuse_low);
+static int set_bldr_size(struct avr *mcu, uint8_t fuse_high);
+static int set_frequency(struct avr *mcu, uint8_t fuse_high, uint8_t fuse_low);
+static int set_reset_vector(struct avr *mcu, uint8_t fuse_high);
 
 /*
  * Set ATmega8A lock bits to the default values
@@ -182,17 +185,32 @@ int m8a_set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size)
 
 static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low)
 {
-	uint8_t bldr_f, cksel_f, ckopt_f;
-
 	mcu->fuse[1] = high;
 	mcu->fuse[0] = low;
 
+	if (set_bldr_size(mcu, high)) {
+		fprintf(stderr, "Cannot set size of bootloader!\n");
+		return -1;
+	}
+
+	if (set_frequency(mcu, high, low)) {
+		fprintf(stderr, "Cannoe set frequency configuration!\n");
+		return -1;
+	}
+
+	if (set_reset_vector(mcu, high))
+		return -1;
+
+	return 0;
+}
+
+static int set_bldr_size(struct avr *mcu, uint8_t fuse_high)
+{
 	/*
 	 * Check BOOTSZ1:0 flags and set bootloader
 	 * parameters accordingly.
 	 */
-	bldr_f = (high >> 1) & 0x03;
-	switch (bldr_f) {
+	switch ((fuse_high >> 1) & 0x03) {
 	case 0x01:
 		mcu->boot_loader->start = 0xE00;
 		mcu->boot_loader->end = 0xFFF;
@@ -216,6 +234,13 @@ static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low)
 		break;
 	}
 
+	return 0;
+}
+
+static int set_frequency(struct avr *mcu, uint8_t fuse_high, uint8_t fuse_low)
+{
+	uint8_t cksel_f, ckopt_f;
+
 	/*
 	 * Check CKOPT and CKSEL3:0 in order to understand where
 	 * clock signal comes from and expected frequency.
@@ -224,33 +249,29 @@ static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low)
 	 * CKOPT should always be unprogrammed (value is 1) when using
 	 * internal oscillator.
 	 */
-	ckopt_f = (high >> 4) & 0x01;
-	cksel_f = low & 0x0F;
+	ckopt_f = (fuse_high >> 4) & 0x01;
+	cksel_f = fuse_low & 0x0F;
 	switch(cksel_f) {
-	case 0x02:
-		/* Internal, 2 MHz */
+	case 0x02:					/* Internal, 2 MHz */
 		if (is_ckopt_programmed(ckopt_f))
 			return -1;
 		mcu->clk_source = AVR_INT_CLK;
 		mcu->freq = 2000;
 		break;
-	case 0x03:
-		/* Internal, 4 MHz */
+	case 0x03:					/* Internal, 4 MHz */
 		if (is_ckopt_programmed(ckopt_f))
 			return -1;
 		mcu->clk_source = AVR_INT_CLK;
 		mcu->freq = 4000;
 		break;
-	case 0x04:
-		/* Internal, 8 MHz */
+	case 0x04:					/* Internal, 8 MHz */
 		if (is_ckopt_programmed(ckopt_f))
 			return -1;
 		mcu->clk_source = AVR_INT_CLK;
 		mcu->freq = 8000;
 		break;
 	case 0x01:
-	default:
-		/* Internal, 1 MHz */
+	default:					/* Internal, 1 MHz */
 		if (is_ckopt_programmed(ckopt_f))
 			return -1;
 		mcu->clk_source = AVR_INT_CLK;
@@ -279,5 +300,37 @@ static int is_ckopt_programmed(uint8_t ckopt_f)
 				"(CKOPT == 1) using internal clock source\n");
 		return -1;
 	}
+	return 0;
+}
+
+static int set_reset_vector(struct avr *mcu, uint8_t fuse_high)
+{
+	/*
+	 * BOOTRST and IVSEL bit in GICR register define
+	 * reset address and start address of the interrupt
+	 * vectors table (IVT).
+	 *
+	 * BOOTRST IVSEL Reset Address       IVT
+	 * 1       0     0x000               0x001
+	 * 1       1     0x000               Boot Reset Address + 0x001
+	 * 0       0     Boot Reset Address  0x001
+	 * 0       1     Boot Reset Address  Boot Reset Address + 0x001
+	 */
+	switch (fuse_high & 0x01) {
+	case 0x00:
+		/*
+		 * Boot reset address.
+		 */
+		mcu->reset_pc = mcu->boot_loader->start;
+		break;
+	case 0x01:
+	default:
+		/*
+		 * Lowest address of the program memory.
+		 */
+		mcu->reset_pc = 0x000;
+		break;
+	}
+
 	return 0;
 }

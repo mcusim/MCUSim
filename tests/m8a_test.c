@@ -79,6 +79,11 @@ int m8a_initialized(void)
 	_mu_test(m8a.e2size == 512);
 	_mu_test(m8a.e2pagesize == 4);
 
+	/*
+	 * Reset vector
+	 */
+	_mu_test(m8a.reset_pc == 0x000);
+
 	return 0;
 }
 
