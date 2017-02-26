@@ -76,7 +76,8 @@ struct avr {
 	avr_flashaddr_t pc;		/* Current program counter register */
 	avr_flashaddr_t reset_pc;	/* This is a value used to jump to
 					   at reset time. */
-	avr_flashaddr_t ivt;
+	avr_flashaddr_t ivt;		/* Address of Interrupt Vectors Table
+					   in program memory. */
 
 	uint8_t *sreg;			/* Points directly to SREG placed
 					   in data section. */
