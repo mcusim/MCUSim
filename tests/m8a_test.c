@@ -34,6 +34,7 @@ int tests_run = 0;
 static struct avr m8a;
 static struct avr_bootloader bldr;
 static uint16_t prog_mem[4096];
+static uint8_t data_mem[1120];
 
 /* Test functions prototypes */
 int m8a_initialized(void);
@@ -84,6 +85,9 @@ int m8a_initialized(void)
 	 */
 	_mu_test(m8a.reset_pc == 0x000);
 
+	_mu_test(!m8a_set_datamem(&m8a, data_mem, sizeof(data_mem)/
+						 sizeof(data_mem[0])));
+
 	return 0;
 }
 
@@ -100,8 +104,10 @@ int progmem_loaded(void)
 	 * ATmega8A.
 	 */
 	while (Read_IHexRecord(&rec, fp) == IHEX_OK) {
+		/*
 		Print_IHexRecord(&rec);
 		printf("\n");
+		*/
 	}
 	rewind(fp);
 

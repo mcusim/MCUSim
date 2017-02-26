@@ -114,7 +114,7 @@ int m8a_set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size)
 	flash_size= (uint16_t) ((mcu->flashend - mcu->flashstart) + 1) / 2;
 	if (size != flash_size) {
 		fprintf(stderr, "Program memory is limited by %d KiB,"
-				" %u.%03u KiB doesn't match",
+				" %u.%03u KiB doesn't match\n",
 				(mcu->flashend + 1) / 1024,
 				(size * 2) / 1024, (size * 2) % 1024);
 		return -1;
@@ -180,7 +180,19 @@ int m8a_load_progmem(struct avr *mcu, FILE *fp)
 
 int m8a_set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size)
 {
-	return -1;
+	if ((mcu->ramsize + 96) != size) {
+		fprintf(stderr, "Data memory is limited by %u.%03u KiB,"
+				" %u.%03u KiB doesn't match\n",
+				(mcu->ramsize + 96) / 1024,
+				(mcu->ramsize + 96) % 1024,
+				size / 1024,
+				size % 1024);
+		return -1;
+	}
+
+	mcu->data_mem = mem;
+
+	return 0;
 }
 
 static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low)
