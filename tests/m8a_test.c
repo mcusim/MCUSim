@@ -19,10 +19,18 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "minunit.h"
+/*
+ * We would like to include headers specific to the
+ * ATMega8A microcontroller.
+ */
+#define __AVR_ATmega8A__ 1
+
+#include "avr/io.h"
 #include "avr/sim/sim.h"
 #include "avr/sim/bootloader.h"
+
 #include "tools/gis/ihex.h"
+#include "minunit.h"
 
 #define SUITE_NAME		"Atmel ATMega8A tests"
 
@@ -44,8 +52,9 @@ int m8a_initialized(void)
 {
 	m8a.boot_loader = &bldr;
 
-	_mu_assert(m8a_init(&m8a) == 0);
-
+	_mu_assert(m8a_init(&m8a, prog_mem,
+			    sizeof(prog_mem) / sizeof(prog_mem[0]), data_mem,
+			    sizeof(data_mem) / sizeof(data_mem[0])) == 0);
 	_mu_test(strcmp(m8a.name, "atmega8a") == 0);
 	_mu_test(m8a.spm_pagesize == 64);
 
@@ -80,13 +89,7 @@ int m8a_initialized(void)
 	_mu_test(m8a.e2size == 512);
 	_mu_test(m8a.e2pagesize == 4);
 
-	/*
-	 * Reset vector
-	 */
 	_mu_test(m8a.reset_pc == 0x000);
-
-	_mu_test(!m8a_set_datamem(&m8a, data_mem, sizeof(data_mem)/
-						 sizeof(data_mem[0])));
 
 	return 0;
 }
@@ -110,12 +113,6 @@ int progmem_loaded(void)
 		*/
 	}
 	rewind(fp);
-
-	/*
-	 * Assign program memory to the MCU.
-	 */
-	_mu_assert(!m8a_set_progmem(&m8a, prog_mem, sizeof(prog_mem)/
-				  		    sizeof(prog_mem[0])));
 
 	/*
 	 * Load program memory from the HEX file.

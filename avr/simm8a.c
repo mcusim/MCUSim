@@ -33,6 +33,8 @@ static int set_fuse_bytes(struct avr *mcu, uint8_t fuse_high, uint8_t fuse_low);
 static int set_bldr_size(struct avr *mcu, uint8_t fuse_high);
 static int set_frequency(struct avr *mcu, uint8_t fuse_high, uint8_t fuse_low);
 static int set_reset_vector(struct avr *mcu, uint8_t fuse_high);
+static int set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size);
+static int set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size);
 
 /*
  * Set ATmega8A lock bits to the default values
@@ -70,7 +72,8 @@ static int set_reset_vector(struct avr *mcu, uint8_t fuse_high);
  * Default value for low byte means:
  *	- ...
  */
-int m8a_init(struct avr *mcu)
+int m8a_init(struct avr *mcu, uint16_t *pm, uint32_t pm_size,
+			      uint8_t *dm, uint32_t dm_size)
 {
 	if (!mcu) {
 		fprintf(stderr, "MCU should not be NULL\n");
@@ -86,11 +89,9 @@ int m8a_init(struct avr *mcu)
 	mcu->spm_pagesize = SPM_PAGESIZE;
 	mcu->flashstart = FLASHSTART;
 	mcu->flashend = FLASHEND;
-
 	mcu->ramstart = RAMSTART;
 	mcu->ramend = RAMEND;
 	mcu->ramsize = RAMSIZE;
-
 	mcu->e2start = E2START;
 	mcu->e2end = E2END;
 	mcu->e2size = E2SIZE;
@@ -103,24 +104,10 @@ int m8a_init(struct avr *mcu)
 		return -1;
 	}
 
-	return 0;
-}
-
-int m8a_set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size)
-{
-	uint16_t flash_size;
-
-	/* Size in 16-bits words */
-	flash_size= (uint16_t) ((mcu->flashend - mcu->flashstart) + 1) / 2;
-	if (size != flash_size) {
-		fprintf(stderr, "Program memory is limited by %d KiB,"
-				" %u.%03u KiB doesn't match\n",
-				(mcu->flashend + 1) / 1024,
-				(size * 2) / 1024, (size * 2) % 1024);
+	if (set_progmem(mcu, pm, pm_size))
 		return -1;
-	}
-
-	mcu->prog_mem = mem;
+	if (set_datamem(mcu, dm, dm_size))
+		return -1;
 
 	return 0;
 }
@@ -178,7 +165,26 @@ int m8a_load_progmem(struct avr *mcu, FILE *fp)
 	return 0;
 }
 
-int m8a_set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size)
+static int set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size)
+{
+	uint16_t flash_size;
+
+	/* Size in 16-bits words */
+	flash_size= (uint16_t) ((mcu->flashend - mcu->flashstart) + 1) / 2;
+	if (size != flash_size) {
+		fprintf(stderr, "Program memory is limited by %d KiB,"
+				" %u.%03u KiB doesn't match\n",
+				(mcu->flashend + 1) / 1024,
+				(size * 2) / 1024, (size * 2) % 1024);
+		return -1;
+	}
+
+	mcu->prog_mem = mem;
+
+	return 0;
+}
+
+static int set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size)
 {
 	if ((mcu->ramsize + 96) != size) {
 		fprintf(stderr, "Data memory is limited by %u.%03u KiB,"
@@ -191,6 +197,111 @@ int m8a_set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size)
 	}
 
 	mcu->data_mem = mem;
+
+	mcu->data_mem[SREG_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[SPH_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[SPL_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[GICR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[GIFR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TIMSK_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TIFR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[SPMCR_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TWCR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[MCUCR_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[MCUCSR_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TCCR0_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TCNT0_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[OSCCAL_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[SFIOR_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TCCR1A_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TCCR1B_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TCNT1H_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TCNT1L_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[OCR1AH_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[OCR1AL_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[OCR1BH_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[OCR1BL_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[ICR1H_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[ICR1L_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TCCR2_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TCNT2_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[OCR2_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[ASSR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[WDTCR_ADDR	+ __SFR_OFFSET] = 0x00;
+	/*
+	 * From datasheet:
+	 *
+	 * The UBRRH Register shares the same I/O location
+	 * as the UCSRC Register. When doing a write access of this
+	 * I/O location, the high bit of the value written, the
+	 * USART Register Select (URSEL) bit, controls which one of the two
+	 * registers that will be written.
+	 *
+	 * If URSEL is zero during a write operation, the UBRRH value
+	 * will be updated. If URSEL is one, the UCSRC setting will be updated.
+	 *
+	 *	// Set UBRRH to 2
+	 *	UBRRH = 0x02;
+	 *
+	 *	// Set the USBS and the UCSZ1 bit to one, and
+	 *	// the remaining bits to zero.
+	 *	UCSRC = (1<<URSEL) | (1<<USBS) | (1<<UCSZ1);
+	 *
+	 * Doing a read access to the UBRRH or the UCSRC Register is a
+	 * more complex operation. The read access is controlled by a
+	 * timed sequence. Reading the I/O location once returns the UBRRH
+	 * Register contents. If the register location was read in previous
+	 * system clock cycle, reading the register in the current clock
+	 * cycle will return the UCSRC contents. Note that the timed
+	 * sequence for reading the UCSRC is an atomic operation.
+	 * Interrupts must therefore be controlled (e.g., by disabling
+	 * interrupts globally) during the read operation.
+	 *
+	 *	unsigned char USART_ReadUCSRC(void)
+	 *	{
+	 *		unsigned char ucsrc;
+	 *		// Read UCSRC
+	 *		ucsrc = UBRRH;
+	 *		ucsrc = UCSRC;
+	 *		return ucsrc;
+	 *	}
+	 */
+	mcu->data_mem[UBRRH_ADDR	+ __SFR_OFFSET] = 0x00;
+	/* mcu->data_mem[UCSRC_ADDR	+ __SFR_OFFSET] = 0x82; */
+	mcu->data_mem[EEARH_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[EEARL_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[EECR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[EECR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[PORTB_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[DDRB_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[PINB_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[PORTC_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[DDRC_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[PINC_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[PORTD_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[DDRD_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[PIND_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[SPDR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[SPDR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[SPSR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[SPCR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[UDR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[UCSRA_ADDR	+ __SFR_OFFSET] = 0x20;
+	mcu->data_mem[UCSRB_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[UBRRL_ADDR	+ __SFR_OFFSET] = 0x00;
+	/*
+	 * ACSR:5(ACO) - The output of the Analog Comparator is synchronized
+	 * and then directly connected to ACO, i.e. it is an analog output.
+	 */
+	mcu->data_mem[ACSR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[ADMUX_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[ADCSRA_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[ADCH_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[ADCL_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[TWDR_ADDR		+ __SFR_OFFSET] = 0x01;
+	mcu->data_mem[TWAR_ADDR		+ __SFR_OFFSET] = 0x02;
+	mcu->data_mem[TWSR_ADDR		+ __SFR_OFFSET] = 0x08;
+	mcu->data_mem[TWBR_ADDR		+ __SFR_OFFSET] = 0x00;
 
 	return 0;
 }
