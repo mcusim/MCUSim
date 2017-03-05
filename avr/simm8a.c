@@ -81,6 +81,9 @@ int m8a_init(struct avr *mcu, uint16_t *pm, uint32_t pm_size,
 	}
 
 	strcpy(mcu->name, "atmega8a");
+	mcu->signature[0] = SIGNATURE_0;
+	mcu->signature[1] = SIGNATURE_1;
+	mcu->signature[2] = SIGNATURE_2;
 
 	/*
 	 * Set values according to the header file included
@@ -197,6 +200,7 @@ static int set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size)
 	}
 
 	mcu->data_mem = mem;
+	mcu->sreg = &mcu->data_mem[SREG_ADDR + __SFR_OFFSET];
 
 	mcu->data_mem[SREG_ADDR		+ __SFR_OFFSET] = 0x00;
 	mcu->data_mem[SPH_ADDR		+ __SFR_OFFSET] = 0x00;

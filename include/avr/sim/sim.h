@@ -39,11 +39,23 @@ enum avr_clk_source {
 	AVR_EXT_CLK
 };
 
+enum avr_sreg_flag {
+	AVR_SREG_CARRY = INT16_MIN,
+	AVR_SREG_ZERO,
+	AVR_SREG_NEGATIVE,
+	AVR_SREG_TWOSCOM_OF,
+	AVR_SREG_SIGN,
+	AVR_SREG_HALF_CARRY,
+	AVR_SREG_BITCOPY_ST,
+	AVR_SREG_GLOB_INT
+};
+
 /*
  * Instance of the AVR microcontroller.
  */
 struct avr {
 	char name[20];			/* Name of the MCU */
+	uint8_t signature[3];		/* Signature of the MCU */
 
 	uint16_t spm_pagesize;		/* For devices with bootloader support,
 					   the flash pagesize (in bytes) to be
@@ -93,6 +105,7 @@ struct avr {
 					   IO registers and SRAM */
 };
 
+#include "avr/sim/simcore.h"
 #include "avr/sim/simm8a.h"
 
 #ifdef __cplusplus

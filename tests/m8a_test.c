@@ -23,7 +23,9 @@
  * We would like to include headers specific to the
  * ATMega8A microcontroller.
  */
+#ifndef __AVR_ATmega8A__
 #define __AVR_ATmega8A__ 1
+#endif
 
 #include "avr/io.h"
 #include "avr/sim/sim.h"

@@ -52,6 +52,14 @@ set(M8A_TEST_SRC	../avr/simm8a.c
 			../tools/gis/ihex.c
 			minunit.c
 			m8a_test.c)
+set(AVR_CORE_TEST_SRC	../arch/x86/tsc.c
+			../tools/arch/x86/util/tsc.c
+			../tools/math/math.c
+			../tools/gis/ihex.c
+			../avr/simm8a.c
+			../avr/simcore.c
+			minunit.c
+			avr_core_test.c)
 
 #
 # Look for libraries, packages, etc.
@@ -84,8 +92,10 @@ endif()
 add_executable(tsc_test ${TSC_TEST_SRC})
 add_executable(math_test ${MATH_TEST_SRC})
 add_executable(m8a_test ${M8A_TEST_SRC})
+add_executable(avr_core_test ${AVR_CORE_TEST_SRC})
 
 target_link_libraries(math_test ${TARGET_LIBS})
+target_link_libraries(avr_core_test ${TARGET_LIBS})
 
 #
 # Prepare files required for tests
