@@ -36,6 +36,8 @@ static void exec_eor(struct avr *mcu, uint16_t inst);
 static void exec_load_immediate(struct avr *mcu, uint16_t inst);
 static void exec_rel_jump(struct avr *mcu, uint16_t inst);
 static void exec_brne(struct avr *mcu, uint16_t inst);
+static void exec_store_ind_x(struct avr *mcu, uint16_t inst);
+static void exec_rcall(struct avr *mcu, uint16_t inst);
 
 void simulate_avr(struct avr *mcu)
 {
@@ -146,27 +148,6 @@ uint8_t sreg_flag(struct avr *mcu, enum avr_sreg_flag flag)
 static int decode_inst(struct avr *mcu, uint16_t inst)
 {
 	switch (inst & 0xF000) {
-	case 0xC000:
-		exec_rel_jump(mcu, inst);
-		break;
-	case 0x2000:
-		switch (inst & 0xFC00) {
-		case 0x2400:
-			exec_eor(mcu, inst);
-			break;
-		}
-		break;
-	case 0xB000:
-		exec_in_out(mcu, inst,
-			    (inst & 0x01F0) >> 4,
-			    (inst & 0x0F) | ((inst & 0x0600) >> 5));
-		break;
-	case 0xE000:
-		exec_load_immediate(mcu, inst);
-		break;
-	case 0x3000:
-		exec_cmp_immediate(mcu, inst);
-		break;
 	case 0x0000:
 		switch (inst) {
 		case 0x0000:	/* NOP – No Operation */
@@ -180,6 +161,45 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 			}
 			break;
 		}
+		break;
+	case 0x2000:
+		switch (inst & 0xFC00) {
+		case 0x2400:
+			exec_eor(mcu, inst);
+			break;
+		}
+		break;
+	case 0x3000:
+		exec_cmp_immediate(mcu, inst);
+		break;
+	case 0x9000:
+		if ((inst & 0xFF0F) == 0x9408) {
+			/* ... */
+			break;
+		}
+
+		switch (inst) {
+		default:
+			switch (inst & 0xFE0F) {
+			case 0x920C:
+			case 0x920D:
+			case 0x920E:
+				exec_store_ind_x(mcu, inst);
+				break;
+			}
+			break;
+		}
+		break;
+	case 0xB000:
+		exec_in_out(mcu, inst,
+			    (inst & 0x01F0) >> 4,
+			    (inst & 0x0F) | ((inst & 0x0600) >> 5));
+		break;
+	case 0xC000:
+		exec_rel_jump(mcu, inst);
+		break;
+	case 0xE000:
+		exec_load_immediate(mcu, inst);
 		break;
 	case 0xF000:
 		switch (inst & 0xFC07) {
@@ -325,4 +345,46 @@ static void exec_brne(struct avr *mcu, uint16_t inst)
 		 */
 		mcu->pc++;
 	}
+}
+
+static void exec_store_ind_x(struct avr *mcu, uint16_t inst)
+{
+	/*
+	 * ST – Store Indirect From Register to Data Space using Index X
+	 */
+	uint16_t addr;
+	uint8_t rr, *x_low, *x_high;
+
+	x_low = &mcu->data_mem[26];
+	x_high = &mcu->data_mem[27];
+	addr = (uint16_t) *x_low | (uint16_t) (*x_high << 8);
+	rr = (inst & 0x01F0) >> 4;
+
+	switch (inst & 0x03) {
+	/*
+	 *	(X) ← Rr		X: Unchanged
+	 */
+	case 0x00:
+		mcu->data_mem[addr] = mcu->data_mem[rr];
+		break;
+	/*
+	 *	(X) ← Rr, X ← X+1	X: Post incremented
+	 */
+	case 0x01:
+		mcu->data_mem[addr] = mcu->data_mem[rr];
+		addr++;
+		*x_low = (uint8_t) addr & 0x00FF;
+		*x_high = (uint8_t) (addr & 0xFF00) >> 8;
+		break;
+	/*
+	 *	X ← X-1, (X) ← Rr	X: Pre decremented
+	 */
+	case 0x02:
+		addr--;
+		*x_low = (uint8_t) addr & 0x00FF;
+		*x_high = (uint8_t) (addr & 0xFF00) >> 8;
+		mcu->data_mem[addr] = mcu->data_mem[rr];
+		break;
+	}
+	mcu->pc++;
 }
