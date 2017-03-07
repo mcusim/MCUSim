@@ -29,8 +29,8 @@ extern "C" {
 
 void simulate_avr(struct avr *mcu);
 
-void sreg_set_flag(struct avr *mcu, enum avr_sreg_flag flag);
-void sreg_clear_flag(struct avr *mcu, enum avr_sreg_flag flag);
+void sreg_update_flag(struct avr *mcu, enum avr_sreg_flag flag, uint8_t set_f);
+uint8_t sreg_flag(struct avr *mcu, enum avr_sreg_flag flag);
 
 #ifdef __cplusplus
 }
