@@ -41,6 +41,8 @@ static void exec_rcall(struct avr *mcu, uint16_t inst);
 static void exec_sts(struct avr *mcu, uint16_t inst);
 static void exec_sts16(struct avr *mcu, uint16_t inst);
 static void exec_ret(struct avr *mcu);
+static void exec_ori(struct avr *mcu, uint16_t inst);
+static void exec_sbi_cbi(struct avr *mcu, uint16_t inst, uint8_t set_bit);
 
 void simulate_avr(struct avr *mcu)
 {
@@ -184,6 +186,8 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 			case 0x0400:
 				exec_cmp_carry(mcu, inst);
 				break;
+			default:
+				return -1;
 			}
 			break;
 		}
@@ -193,10 +197,15 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 		case 0x2400:
 			exec_eor(mcu, inst);
 			break;
+		default:
+			return -1;
 		}
 		break;
 	case 0x3000:
 		exec_cmp_immediate(mcu, inst);
+		break;
+	case 0x6000:
+		exec_ori(mcu, inst);
 		break;
 	case 0x9000:
 		if ((inst & 0xFF0F) == 0x9408) {
@@ -218,6 +227,17 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 			case 0x920E:
 				exec_store_ind_x(mcu, inst);
 				break;
+			default:
+				switch (inst & 0xFF00) {
+				case 0x9800:
+					exec_sbi_cbi(mcu, inst, 0);
+					break;
+				case 0x9A00:
+					exec_sbi_cbi(mcu, inst, 1);
+					break;
+				default:
+					return -1;
+				}
 			}
 			break;
 		}
@@ -241,8 +261,12 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 		case 0xF401:
 			exec_brne(mcu, inst);
 			break;
+		default:
+			return -1;
 		}
 		break;
+	default:
+		return -1;
 	}
 
 	return 0;
@@ -465,4 +489,43 @@ static void exec_ret(struct avr *mcu)
 	ah = stack_pop(mcu);
 	al = stack_pop(mcu);
 	mcu->pc = (ah << 8) | al;
+}
+
+static void exec_ori(struct avr *mcu, uint16_t inst)
+{
+	/*
+	 * ORI – Logical OR with Immediate
+	 */
+	uint8_t rd_off, c, v;
+
+	rd_off = (inst << 8) >> 12;
+	c = (inst & 0x0F) | ((inst & 0x0F00) >> 4);
+	mcu->data_mem[0x10 + rd_off] |= c;
+	v = mcu->data_mem[0x10 + rd_off];
+	mcu->pc++;
+
+	sreg_update_flag(mcu, AVR_SREG_ZERO, !v);
+	sreg_update_flag(mcu, AVR_SREG_NEGATIVE, v >> 7);
+	sreg_update_flag(mcu, AVR_SREG_TWOSCOM_OF, 0);
+	sreg_update_flag(mcu, AVR_SREG_SIGN,
+			 sreg_flag(mcu, AVR_SREG_NEGATIVE) ^
+			 sreg_flag(mcu, AVR_SREG_TWOSCOM_OF));
+}
+
+static void exec_sbi_cbi(struct avr *mcu, uint16_t inst, uint8_t set_bit)
+{
+	/*
+	 * SBI – Set Bit in I/O Register
+	 * CBI – Clear Bit in I/O Register
+	 */
+	uint8_t reg, b;
+
+	reg = (inst & 0x00F8) >> 3;
+	b = inst & 0x07;
+	if (set_bit)
+		mcu->data_mem[reg] |= (1 << b);
+	else
+		mcu->data_mem[reg] &= ~(1 << b);
+
+	mcu->pc++;
 }
