@@ -38,6 +38,9 @@ static void exec_rel_jump(struct avr *mcu, uint16_t inst);
 static void exec_brne(struct avr *mcu, uint16_t inst);
 static void exec_store_ind_x(struct avr *mcu, uint16_t inst);
 static void exec_rcall(struct avr *mcu, uint16_t inst);
+static void exec_sts(struct avr *mcu, uint16_t inst);
+static void exec_sts16(struct avr *mcu, uint16_t inst);
+static void exec_ret(struct avr *mcu);
 
 void simulate_avr(struct avr *mcu)
 {
@@ -145,6 +148,29 @@ uint8_t sreg_flag(struct avr *mcu, enum avr_sreg_flag flag)
 	return (*mcu->sreg & v) >> pos;
 }
 
+void stack_push(struct avr *mcu, uint8_t val)
+{
+	uint16_t sp;
+
+	sp = (uint16_t) ((*mcu->sp_low) | (*mcu->sp_high << 8));
+	mcu->data_mem[sp--] = val;
+	*mcu->sp_low = (uint8_t) (sp & 0xFF);
+	*mcu->sp_high = (uint8_t) (sp >> 8);
+}
+
+uint8_t stack_pop(struct avr *mcu)
+{
+	uint16_t sp;
+	uint8_t v;
+
+	sp = (uint16_t) ((*mcu->sp_low) | (*mcu->sp_high << 8));
+	v = mcu->data_mem[++sp];
+	*mcu->sp_low = (uint8_t) (sp & 0xFF);
+	*mcu->sp_high = (uint8_t) (sp >> 8);
+
+	return v;
+}
+
 static int decode_inst(struct avr *mcu, uint16_t inst)
 {
 	switch (inst & 0xF000) {
@@ -179,8 +205,14 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 		}
 
 		switch (inst) {
+		case 0x9508:
+			exec_ret(mcu);
+			break;
 		default:
 			switch (inst & 0xFE0F) {
+			case 0x9200:
+				exec_sts(mcu, inst);
+				break;
 			case 0x920C:
 			case 0x920D:
 			case 0x920E:
@@ -197,6 +229,9 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 		break;
 	case 0xC000:
 		exec_rel_jump(mcu, inst);
+		break;
+	case 0xD000:
+		exec_rcall(mcu, inst);
 		break;
 	case 0xE000:
 		exec_load_immediate(mcu, inst);
@@ -237,16 +272,16 @@ static void exec_in_out(struct avr *mcu, uint16_t inst,
 {
 	switch (inst & 0xF800) {
 	/*
-	 * OUT – Store Register to I/O Location
-	 */
-	case 0xB800:
-		mcu->data_mem[reg] = mcu->data_mem[io_loc];
-		break;
-	/*
 	 * IN - Load an I/O Location to Register
 	 */
 	case 0xB000:
-		mcu->data_mem[io_loc] = mcu->data_mem[reg];
+		mcu->data_mem[reg] = mcu->data_mem[io_loc + mcu->sfr_off];
+		break;
+	/*
+	 * OUT – Store Register to I/O Location
+	 */
+	case 0xB800:
+		mcu->data_mem[io_loc + mcu->sfr_off] = mcu->data_mem[reg];
 		break;
 	}
 	mcu->pc++;
@@ -373,18 +408,61 @@ static void exec_store_ind_x(struct avr *mcu, uint16_t inst)
 	case 0x01:
 		mcu->data_mem[addr] = mcu->data_mem[rr];
 		addr++;
-		*x_low = (uint8_t) addr & 0x00FF;
-		*x_high = (uint8_t) (addr & 0xFF00) >> 8;
+		*x_low = (uint8_t) (addr & 0xFF);
+		*x_high = (uint8_t) (addr >> 8);
 		break;
 	/*
 	 *	X ← X-1, (X) ← Rr	X: Pre decremented
 	 */
 	case 0x02:
 		addr--;
-		*x_low = (uint8_t) addr & 0x00FF;
-		*x_high = (uint8_t) (addr & 0xFF00) >> 8;
+		*x_low = (uint8_t) (addr & 0xFF);
+		*x_high = (uint8_t) (addr >> 8);
 		mcu->data_mem[addr] = mcu->data_mem[rr];
 		break;
 	}
 	mcu->pc++;
+}
+
+static void exec_rcall(struct avr *mcu, uint16_t inst)
+{
+	/*
+	 * RCALL – Relative Call to Subroutine
+	 */
+	int16_t c;
+	uint32_t pc;
+
+	pc = mcu->pc + 1;
+	c = inst & 0x0FFF;
+	if (c >= 2048)
+		c -= 4096;
+	stack_push(mcu, (uint8_t) (pc & 0xFF));
+	stack_push(mcu, (uint8_t) ((pc >> 8) & 0xFF));
+	mcu->pc += c + 1;
+}
+
+static void exec_sts(struct avr *mcu, uint16_t inst)
+{
+	/*
+	 * STS – Store Direct to Data Space
+	 */
+	uint16_t addr;
+	uint8_t rr;
+
+	addr = mcu->prog_mem[mcu->pc + 1];
+	rr = (inst & 0x01F0) >> 4;
+	mcu->data_mem[addr] = mcu->data_mem[rr];
+	mcu->pc += 2;
+}
+
+static void exec_ret(struct avr *mcu)
+{
+	/*
+	 * RET – Return from Subroutine
+	 */
+	uint8_t ah, al;
+
+	ah = stack_pop(mcu);
+	al = stack_pop(mcu);
+	mcu->pc = (ah << 8) | al;
 }

@@ -32,6 +32,9 @@ void simulate_avr(struct avr *mcu);
 void sreg_update_flag(struct avr *mcu, enum avr_sreg_flag flag, uint8_t set_f);
 uint8_t sreg_flag(struct avr *mcu, enum avr_sreg_flag flag);
 
+void stack_push(struct avr *mcu, uint8_t val);
+uint8_t stack_pop(struct avr *mcu);
+
 #ifdef __cplusplus
 }
 #endif

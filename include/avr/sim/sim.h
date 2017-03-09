@@ -84,12 +84,20 @@ struct avr {
 	enum avr_clk_source clk_source;
 	uint32_t freq;			/* Frequency we're currently
 					   working at, in kHz */
+	uint32_t sfr_off;		/* Offset to the AVR special function
+					   registers */
 
 	avr_flashaddr_t pc;		/* Current program counter register */
 	avr_flashaddr_t reset_pc;	/* This is a value used to jump to
 					   at reset time. */
 	avr_flashaddr_t ivt;		/* Address of Interrupt Vectors Table
 					   in program memory. */
+
+					/* These two fields point to the
+					   stack pointer registers (SPH and SPL)
+					   in the data memory. */
+	uint8_t *sp_high;
+	uint8_t *sp_low;
 
 	uint8_t *sreg;			/* Points directly to SREG placed
 					   in data section. */

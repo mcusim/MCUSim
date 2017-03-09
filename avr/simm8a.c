@@ -102,15 +102,16 @@ int m8a_init(struct avr *mcu, uint16_t *pm, uint32_t pm_size,
 
 	mcu->lockbits = 0x3F;
 
-	if (set_fuse_bytes(mcu, 0xD9, 0xE1)) {
-		fprintf(stderr, "Fuse bytes cannot be set correctly\n");
-		return -1;
-	}
+	mcu->sfr_off = __SFR_OFFSET;
 
 	if (set_progmem(mcu, pm, pm_size))
 		return -1;
 	if (set_datamem(mcu, dm, dm_size))
 		return -1;
+	if (set_fuse_bytes(mcu, 0xD9, 0xE1)) {
+		fprintf(stderr, "Fuse bytes cannot be set correctly\n");
+		return -1;
+	}
 
 	return 0;
 }
@@ -458,6 +459,9 @@ static int set_reset_vector(struct avr *mcu, uint8_t fuse_high)
 		mcu->reset_pc = 0x000;
 		break;
 	}
+	mcu->pc = mcu->reset_pc;
+	mcu->sp_high = &mcu->data_mem[SPH_ADDR + __SFR_OFFSET];
+	mcu->sp_low = &mcu->data_mem[SPL_ADDR + __SFR_OFFSET];
 
 	return 0;
 }
