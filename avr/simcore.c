@@ -24,6 +24,7 @@
 #include "avr/sim/simcore.h"
 
 static int decode_inst(struct avr *mcu, uint16_t inst);
+static int is_inst32(uint16_t inst);
 
 /*
  * AVR opcodes executors.
@@ -43,6 +44,7 @@ static void exec_sts16(struct avr *mcu, uint16_t inst);
 static void exec_ret(struct avr *mcu);
 static void exec_ori(struct avr *mcu, uint16_t inst);
 static void exec_sbi_cbi(struct avr *mcu, uint16_t inst, uint8_t set_bit);
+static void exec_sbis_sbic(struct avr *mcu, uint16_t inst, uint8_t set_bit);
 
 void simulate_avr(struct avr *mcu)
 {
@@ -232,8 +234,14 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 				case 0x9800:
 					exec_sbi_cbi(mcu, inst, 0);
 					break;
+				case 0x9900:
+					exec_sbis_sbic(mcu, inst, 0);
+					break;
 				case 0x9A00:
 					exec_sbi_cbi(mcu, inst, 1);
+					break;
+				case 0x9B00:
+					exec_sbis_sbic(mcu, inst, 1);
 					break;
 				default:
 					return -1;
@@ -382,7 +390,12 @@ static void exec_rel_jump(struct avr *mcu, uint16_t inst)
 	/*
 	 * RJMP - Relative Jump
 	 */
-	mcu->pc += (uint32_t) (inst & 0x0FFF) + 1;
+	int16_t c;
+
+	c = inst & 0x0FFF;
+	if (c >= 2048)
+		c -= 4096;
+	mcu->pc += c + 1;
 }
 
 static void exec_brne(struct avr *mcu, uint16_t inst)
@@ -528,4 +541,43 @@ static void exec_sbi_cbi(struct avr *mcu, uint16_t inst, uint8_t set_bit)
 		mcu->data_mem[reg] &= ~(1 << b);
 
 	mcu->pc++;
+}
+
+static void exec_sbis_sbic(struct avr *mcu, uint16_t inst, uint8_t set_bit)
+{
+	/*
+	 * SBIS – Skip if Bit in I/O Register is Set
+	 * SBIC – Skip if Bit in I/O Register is Cleared
+	 */
+	uint8_t reg, b, pc_delta;
+
+	reg = (inst & 0x00F8) >> 3;
+	b = inst & 0x07;
+	pc_delta = 1;
+	if (set_bit) {
+		if (mcu->data_mem[reg] & (1 << b)) {
+			if (is_inst32(mcu->prog_mem[mcu->pc + 1]))
+				pc_delta = 3;
+			else
+				pc_delta = 2;
+		}
+	} else {
+		if (mcu->data_mem[reg] ^ (1 << b))
+			if (is_inst32(mcu->prog_mem[mcu->pc + 1]))
+				pc_delta = 3;
+			else
+				pc_delta = 2;
+	}
+	mcu->pc += pc_delta;
+}
+
+static int is_inst32(uint16_t inst)
+{
+	uint16_t i = inst & 0xfc0f;
+	return	/* STS */ i == 0x9200 ||
+		/* LDS */ i == 0x9000 ||
+		/* JMP */ i == 0x940c ||
+		/* JMP */ i == 0x940d ||
+		/* CALL */i == 0x940e ||
+		/* CALL */i == 0x940f;
 }
