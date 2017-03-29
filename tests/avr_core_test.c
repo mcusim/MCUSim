@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <sys/io.h>
+//#include <sys/io.h>
 
 #include "avr/sim/sim.h"
 #include "avr/sim/simcore.h"
@@ -23,7 +23,7 @@
 
 #include "minunit.h"
 #include "tools/math/math.h"
-#include "arch/x86/tsc.h"
+//#include "arch/x86/tsc.h"
 
 #define SUITE_NAME		"AVR Simulation Core Test"
 

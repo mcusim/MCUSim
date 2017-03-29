@@ -45,6 +45,8 @@ static void exec_ret(struct avr *mcu);
 static void exec_ori(struct avr *mcu, uint16_t inst);
 static void exec_sbi_cbi(struct avr *mcu, uint16_t inst, uint8_t set_bit);
 static void exec_sbis_sbic(struct avr *mcu, uint16_t inst, uint8_t set_bit);
+static void exec_push_pop(struct avr *mcu, uint16_t inst, uint8_t push);
+static void exec_movw(struct avr *mcu, uint16_t inst);
 
 void simulate_avr(struct avr *mcu)
 {
@@ -54,9 +56,6 @@ void simulate_avr(struct avr *mcu)
 		inst = mcu->prog_mem[mcu->pc];
 
 		if (decode_inst(mcu, inst)) {
-			/*
-			 * Unknown instruction.
-			 */
 			fprintf(stderr, "Unknown instruction: 0x%X\n", inst);
 			abort();
 		}
@@ -187,6 +186,15 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 			switch (inst & 0xFC00) {
 			case 0x0400:
 				exec_cmp_carry(mcu, inst);
+				goto exit;
+			default:
+				/* Do nothing here, keep going */
+				break;
+			}
+
+			switch (inst & 0xFF00) {
+			case 0x0100:
+				exec_movw(mcu, inst);
 				break;
 			default:
 				return -1;
@@ -221,6 +229,9 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 			break;
 		default:
 			switch (inst & 0xFE0F) {
+			case 0x900F:
+				exec_push_pop(mcu, inst, 0);
+				break;
 			case 0x9200:
 				exec_sts(mcu, inst);
 				break;
@@ -228,6 +239,9 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 			case 0x920D:
 			case 0x920E:
 				exec_store_ind_x(mcu, inst);
+				break;
+			case 0x920F:
+				exec_push_pop(mcu, inst, 1);
 				break;
 			default:
 				switch (inst & 0xFF00) {
@@ -276,7 +290,7 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 	default:
 		return -1;
 	}
-
+exit:
 	return 0;
 }
 
@@ -562,11 +576,12 @@ static void exec_sbis_sbic(struct avr *mcu, uint16_t inst, uint8_t set_bit)
 				pc_delta = 2;
 		}
 	} else {
-		if (mcu->data_mem[reg] ^ (1 << b))
+		if (mcu->data_mem[reg] ^ (1 << b)) {
 			if (is_inst32(mcu->prog_mem[mcu->pc + 1]))
 				pc_delta = 3;
 			else
 				pc_delta = 2;
+		}
 	}
 	mcu->pc += pc_delta;
 }
@@ -580,4 +595,35 @@ static int is_inst32(uint16_t inst)
 		/* JMP */ i == 0x940d ||
 		/* CALL */i == 0x940e ||
 		/* CALL */i == 0x940f;
+}
+
+static void exec_push_pop(struct avr *mcu, uint16_t inst, uint8_t push)
+{
+	/*
+	 * PUSH – Push Register on Stack
+	 * POP – Pop Register from Stack
+	 */
+	uint8_t reg;
+
+	reg = (inst >> 4) & 0x1F;
+	if (push)
+		stack_push(mcu, mcu->data_mem[reg]);
+	else
+		mcu->data_mem[reg] = stack_pop(mcu);
+
+	mcu->pc++;
+}
+
+static void exec_movw(struct avr *mcu, uint16_t inst)
+{
+	/*
+	 * MOVW – Copy Register Word
+	 */
+	uint8_t regd, regr;
+
+	regr = inst & 0x0F;
+	regd = (inst >> 4) & 0x0F;
+	mcu->data_mem[regd+1] = mcu->data_mem[regr+1];
+	mcu->data_mem[regd] = mcu->data_mem[regr];
+	mcu->pc++;
 }
