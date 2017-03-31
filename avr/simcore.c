@@ -37,11 +37,15 @@ static void exec_eor(struct avr *mcu, uint16_t inst);
 static void exec_load_immediate(struct avr *mcu, uint16_t inst);
 static void exec_rel_jump(struct avr *mcu, uint16_t inst);
 static void exec_brne(struct avr *mcu, uint16_t inst);
+
 static void exec_st_x(struct avr *mcu, uint16_t inst);
 static void exec_st_y(struct avr *mcu, uint16_t inst);
+static void exec_st_ydisp(struct avr *mcu, uint16_t inst);
 static void exec_st_z(struct avr *mcu, uint16_t inst);
+static void exec_st_zdisp(struct avr *mcu, uint16_t inst);
 static void exec_st(struct avr *mcu, uint16_t inst,
 		    uint8_t *addr_low, uint8_t *addr_high, uint8_t regr);
+
 static void exec_rcall(struct avr *mcu, uint16_t inst);
 static void exec_sts(struct avr *mcu, uint16_t inst);
 static void exec_sts16(struct avr *mcu, uint16_t inst);
@@ -51,11 +55,17 @@ static void exec_sbi_cbi(struct avr *mcu, uint16_t inst, uint8_t set_bit);
 static void exec_sbis_sbic(struct avr *mcu, uint16_t inst, uint8_t set_bit);
 static void exec_push_pop(struct avr *mcu, uint16_t inst, uint8_t push);
 static void exec_movw(struct avr *mcu, uint16_t inst);
+
 static void exec_ld_x(struct avr *mcu, uint16_t inst);
 static void exec_ld_y(struct avr *mcu, uint16_t inst);
+static void exec_ld_ydisp(struct avr *mcu, uint16_t inst);
 static void exec_ld_z(struct avr *mcu, uint16_t inst);
+static void exec_ld_zdisp(struct avr *mcu, uint16_t inst);
 static void exec_ld(struct avr *mcu, uint16_t inst,
 		    uint8_t *addr_low, uint8_t *addr_high, uint8_t regd);
+/*
+ * END AVR opcodes executors.
+ */
 
 void simulate_avr(struct avr *mcu)
 {
@@ -227,6 +237,21 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 		exec_ori(mcu, inst);
 		break;
 	case 0x8000:
+		switch (inst & 0xD208) {
+		case 0x8000:
+			exec_ld_zdisp(mcu, inst);
+			goto exit;
+		case 0x8008:
+			exec_ld_ydisp(mcu, inst);
+			goto exit;
+		case 0x8200:
+			exec_st_zdisp(mcu, inst);
+			goto exit;
+		case 0x8208:
+			exec_st_ydisp(mcu, inst);
+			goto exit;
+		}
+
 		switch (inst & 0xFE0F) {
 		case 0x8000:
 			exec_ld_z(mcu, inst);
@@ -310,6 +335,24 @@ static int decode_inst(struct avr *mcu, uint16_t inst)
 				}
 			}
 			break;
+		}
+		break;
+	case 0xA000:
+		switch (inst & 0xD208) {
+		case 0x8000:
+			exec_ld_zdisp(mcu, inst);
+			break;
+		case 0x8008:
+			exec_ld_ydisp(mcu, inst);
+			break;
+		case 0x8200:
+			exec_st_zdisp(mcu, inst);
+			break;
+		case 0x8208:
+			exec_st_ydisp(mcu, inst);
+			break;
+		default:
+			return -1;
 		}
 		break;
 	case 0xB000:
@@ -548,6 +591,46 @@ static void exec_st(struct avr *mcu, uint16_t inst,
 	mcu->pc++;
 }
 
+static void exec_st_ydisp(struct avr *mcu, uint16_t inst)
+{
+	/*
+	 * ST (STD) – Store Indirect From Register to Data Space using Index Y
+	 */
+	uint16_t addr;
+	uint8_t regr, *y_low, *y_high, disp;
+
+	y_low = &mcu->data_mem[28];
+	y_high = &mcu->data_mem[29];
+	addr = (uint16_t) *y_low | (uint16_t) (*y_high << 8);
+	regr = (inst & 0x01F0) >> 4;
+	disp = (inst & 0x07) |
+	       ((inst & 0x0C00) >> 7) |
+	       ((inst & 0x2000) >> 8);
+
+	mcu->data_mem[addr + disp] = mcu->data_mem[regr];
+	mcu->pc++;
+}
+
+static void exec_st_zdisp(struct avr *mcu, uint16_t inst)
+{
+	/*
+	 * ST (STD) – Store Indirect From Register to Data Space using Index Z
+	 */
+	uint16_t addr;
+	uint8_t regr, *z_low, *z_high, disp;
+
+	z_low = &mcu->data_mem[30];
+	z_high = &mcu->data_mem[31];
+	addr = (uint16_t) *z_low | (uint16_t) (*z_high << 8);
+	regr = (inst & 0x01F0) >> 4;
+	disp = (inst & 0x07) |
+	       ((inst & 0x0C00) >> 7) |
+	       ((inst & 0x2000) >> 8);
+
+	mcu->data_mem[addr + disp] = mcu->data_mem[regr];
+	mcu->pc++;
+}
+
 static void exec_rcall(struct avr *mcu, uint16_t inst)
 {
 	/*
@@ -764,5 +847,45 @@ static void exec_ld(struct avr *mcu, uint16_t inst,
 		*addr_high = (uint8_t) (addr >> 8);
 		break;
 	}
+	mcu->pc++;
+}
+
+static void exec_ld_ydisp(struct avr *mcu, uint16_t inst)
+{
+	/*
+	 * LD – Load Indirect from Data Space to Register using Index Y
+	 */
+	uint16_t addr;
+	uint8_t regd, *y_low, *y_high, disp;
+
+	y_low = &mcu->data_mem[28];
+	y_high = &mcu->data_mem[29];
+	addr = (uint16_t) *y_low | (uint16_t) (*y_high << 8);
+	regd = (inst & 0x01F0) >> 4;
+	disp = (inst & 0x07) |
+	       ((inst & 0x0C00) >> 7) |
+	       ((inst & 0x2000) >> 8);
+
+	mcu->data_mem[regd] = mcu->data_mem[addr + disp];
+	mcu->pc++;
+}
+
+static void exec_ld_zdisp(struct avr *mcu, uint16_t inst)
+{
+	/*
+	 * LD – Load Indirect from Data Space to Register using Index Z
+	 */
+	uint16_t addr;
+	uint8_t regd, *z_low, *z_high, disp;
+
+	z_low = &mcu->data_mem[30];
+	z_high = &mcu->data_mem[31];
+	addr = (uint16_t) *z_low | (uint16_t) (*z_high << 8);
+	regd = (inst & 0x01F0) >> 4;
+	disp = (inst & 0x07) |
+	       ((inst & 0x0C00) >> 7) |
+	       ((inst & 0x2000) >> 8);
+
+	mcu->data_mem[regd] = mcu->data_mem[addr + disp];
 	mcu->pc++;
 }
