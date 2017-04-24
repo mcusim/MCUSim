@@ -1,5 +1,5 @@
 #
-# mcusim - Interactive simulator for microcontrollers.
+# MCUSim - Interactive simulator for microcontrollers.
 # Copyright (C) 2017 Dmitry Salychev <darkness.bsd@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 cmake_minimum_required(VERSION 3.2)
-project(MCUsim_Tests)
+project(MCUSim_Tests)
 
 include(CheckFunctionExists)
 
@@ -40,25 +40,13 @@ endif()
 #
 # Set sources here
 #
-set(TSC_TEST_SRC	../arch/x86/tsc.c
-			../tools/arch/x86/util/tsc.c
-			../tools/math/math.c
-			minunit.c
+set(TSC_TEST_SRC	minunit.c
 			tsc_test.c)
-set(MATH_TEST_SRC	../tools/math/math.c
-			minunit.c
+set(MATH_TEST_SRC	minunit.c
 			math_test.c)
-set(M8A_TEST_SRC	../avr/simm8a.c
-			../tools/gis/ihex.c
-			minunit.c
+set(M8A_TEST_SRC	minunit.c
 			m8a_test.c)
-set(AVR_CORE_TEST_SRC	#../arch/x86/tsc.c
-			#../tools/arch/x86/util/tsc.c
-			../tools/math/math.c
-			../tools/gis/ihex.c
-			../avr/simm8a.c
-			../avr/simcore.c
-			minunit.c
+set(AVR_CORE_TEST_SRC	minunit.c
 			avr_core_test.c)
 
 #
@@ -69,7 +57,8 @@ set(AVR_CORE_TEST_SRC	#../arch/x86/tsc.c
 #
 # Define includes here
 #
-include_directories("../include/")
+include_directories("./include/")
+include_directories("../lib/include/")
 #include(${wxWidgets_USE_FILE})
 
 #
@@ -94,8 +83,9 @@ add_executable(math_test ${MATH_TEST_SRC})
 add_executable(m8a_test ${M8A_TEST_SRC})
 add_executable(avr_core_test ${AVR_CORE_TEST_SRC})
 
-target_link_libraries(math_test ${TARGET_LIBS})
-target_link_libraries(avr_core_test ${TARGET_LIBS})
+target_link_libraries(math_test ${CMAKE_BINARY_DIR}/libmcusim.a ${TARGET_LIBS})
+target_link_libraries(m8a_test ${CMAKE_BINARY_DIR}/libmcusim.a ${TARGET_LIBS})
+target_link_libraries(avr_core_test ${CMAKE_BINARY_DIR}/libmcusim.a ${TARGET_LIBS})
 
 #
 # Prepare files required for tests

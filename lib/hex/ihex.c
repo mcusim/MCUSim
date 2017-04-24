@@ -26,7 +26,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include "tools/gis/ihex.h"
+#include "mcusim/hex/ihex.h"
 
 /*
  * Initializes a new IHexRecord structure that the paramater

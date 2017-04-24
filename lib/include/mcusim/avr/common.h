@@ -34,7 +34,7 @@
 #ifndef _AVR_COMMON_H
 #define _AVR_COMMON_H
 
-#include <avr/sfr_defs.h>
+#include "mcusim/avr/sfr_defs.h"
 
 /* 
 This purpose of this header is to define registers that have not been 

@@ -20,7 +20,7 @@
 
 #include <stdio.h>
 
-#include "avr/sim/sim.h"
+#include "mcusim/avr/sim/sim.h"
 
 #ifdef __cplusplus
 extern "C" {

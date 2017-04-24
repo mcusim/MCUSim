@@ -15,28 +15,34 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef MSIM_AVR_SIMCORE_H_
-#define MSIM_AVR_SIMCORE_H_ 1
-
-#include <stdint.h>
-
-#include "avr/sim/sim.h"
-#include "avr/sim/bootloader.h"
+#ifndef MSIM_X86_TSC_H_
+#define MSIM_X86_TSC_H_ 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-void simulate_avr(struct avr *mcu);
+#include <stdint.h>
+#include <stdio.h>
+#include <cpuid.h>
+#include <sys/io.h>
 
-void sreg_update_flag(struct avr *mcu, enum avr_sreg_flag flag, uint8_t set_f);
-uint8_t sreg_flag(struct avr *mcu, enum avr_sreg_flag flag);
+#include "mcusim/clock/tsc.h"
 
-void stack_push(struct avr *mcu, uint8_t val);
-uint8_t stack_pop(struct avr *mcu);
+/*
+ * Standard way to access the cycle counter.
+ */
+typedef uint64_t cycles_t;
+
+static inline cycles_t get_cycles(void)
+{
+	return rdtsc();
+}
+
+uint64_t pit_calibrate_tsc(void);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* MSIM_AVR_SIMCORE_H_ */
+#endif /* MSIM_X86_TSC_H_ */

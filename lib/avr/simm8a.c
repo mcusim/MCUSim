@@ -24,9 +24,9 @@
  */
 #define __AVR_ATmega8A__ 1
 
-#include "avr/io.h"
-#include "avr/sim/sim.h"
-#include "tools/gis/ihex.h"
+#include "mcusim/avr/io.h"
+#include "mcusim/avr/sim/sim.h"
+#include "mcusim/hex/ihex.h"
 
 static int is_ckopt_programmed(uint8_t ckopt_f);
 static int set_fuse_bytes(struct avr *mcu, uint8_t fuse_high, uint8_t fuse_low);

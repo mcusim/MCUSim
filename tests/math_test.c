@@ -19,7 +19,7 @@
 #include <inttypes.h>
 
 #include "minunit.h"
-#include "tools/math/math.h"
+#include "mcusim/math/math.h"
 
 #define SUITE_NAME		"Math tests"
 

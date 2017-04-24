@@ -27,11 +27,11 @@
 #define __AVR_ATmega8A__ 1
 #endif
 
-#include "avr/io.h"
-#include "avr/sim/sim.h"
-#include "avr/sim/bootloader.h"
+#include "mcusim/avr/io.h"
+#include "mcusim/avr/sim/sim.h"
+#include "mcusim/avr/sim/bootloader.h"
+#include "mcusim/hex/ihex.h"
 
-#include "tools/gis/ihex.h"
 #include "minunit.h"
 
 #define SUITE_NAME		"Atmel ATMega8A tests"

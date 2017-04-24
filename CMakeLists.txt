@@ -1,5 +1,5 @@
 #
-# mcusim - Interactive simulator for microcontrollers.
+# MCUSim - Interactive simulator for microcontrollers.
 # Copyright (C) 2017 Dmitry Salychev <darkness.bsd@gmail.com>
 #
 # This program is free software: you can redistribute it and/or modify
@@ -16,10 +16,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 cmake_minimum_required(VERSION 3.2)
-project(mcusim)
+project(MCUSim)
 
-add_custom_target(sources_tar
-			COMMAND tar -zcvf mcusim.tar.gz
-				arch/ avr/ include/ tests/ tools/
-				CMakeLists.txt COPYING
-			WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
+add_subdirectory(lib)
+add_subdirectory(tests)

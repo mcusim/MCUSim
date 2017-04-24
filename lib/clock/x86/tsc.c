@@ -17,7 +17,7 @@
  */
 #include <stdio.h>
 
-#include "arch/x86/tsc.h"
+#include "mcusim/clock/tsc.h"
 
 #define PIT_TICK_RATE	1193182ul
 

@@ -15,28 +15,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef MSIM_AVR_BLDR_H_
-#define MSIM_AVR_BLDR_H_ 1
+#ifndef MSIM_AVR_SIMCORE_H_
+#define MSIM_AVR_SIMCORE_H_ 1
 
 #include <stdint.h>
 
-#include "avr/sim/sim.h"
+#include "mcusim/avr/sim/sim.h"
+#include "mcusim/avr/sim/bootloader.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct avr_bootloader {
-	uint16_t start;		/* The first bootloader address in
-				   program memory, in 16-bits words. */
-	uint16_t end;		/* The last bootloader address in
-				   program memory, in 16-bits words. */
-	uint16_t size;		/* The bootloader size,
-				   in 16-bits words. */
-};
+void simulate_avr(struct avr *mcu);
+
+void sreg_update_flag(struct avr *mcu, enum avr_sreg_flag flag, uint8_t set_f);
+uint8_t sreg_flag(struct avr *mcu, enum avr_sreg_flag flag);
+
+void stack_push(struct avr *mcu, uint8_t val);
+uint8_t stack_pop(struct avr *mcu);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* MSIM_AVR_BLDR_H_ */
+#endif /* MSIM_AVR_SIMCORE_H_ */

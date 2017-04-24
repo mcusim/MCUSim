@@ -21,7 +21,7 @@
 #include <limits.h>
 #include <inttypes.h>
 
-#include "tools/math/math.h"
+#include "mcusim/math/math.h"
 
 #define ARR_SIZE		4096
 

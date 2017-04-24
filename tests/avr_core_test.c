@@ -17,13 +17,12 @@
  */
 //#include <sys/io.h>
 
-#include "avr/sim/sim.h"
-#include "avr/sim/simcore.h"
-#include "avr/sim/bootloader.h"
+#include "mcusim/avr/sim/sim.h"
+#include "mcusim/avr/sim/simcore.h"
+#include "mcusim/avr/sim/bootloader.h"
+#include "mcusim/math/math.h"
 
 #include "minunit.h"
-#include "tools/math/math.h"
-//#include "arch/x86/tsc.h"
 
 #define SUITE_NAME		"AVR Simulation Core Test"
 

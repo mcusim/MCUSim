@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include "avr/sim/bootloader.h"
+#include "mcusim/avr/sim/bootloader.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -113,8 +113,8 @@ struct avr {
 					   IO registers and SRAM */
 };
 
-#include "avr/sim/simcore.h"
-#include "avr/sim/simm8a.h"
+#include "mcusim/avr/sim/simcore.h"
+#include "mcusim/avr/sim/simm8a.h"
 
 #ifdef __cplusplus
 }

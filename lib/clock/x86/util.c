@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "tools/util/tsc.h"
+#include "mcusim/clock/util.h"
 
 uint64_t rdtsc(void)
 {

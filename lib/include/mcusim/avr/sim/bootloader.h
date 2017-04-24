@@ -15,34 +15,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef MSIM_X86_TSC_H_
-#define MSIM_X86_TSC_H_ 1
+#ifndef MSIM_AVR_BLDR_H_
+#define MSIM_AVR_BLDR_H_ 1
+
+#include <stdint.h>
+
+#include "mcusim/avr/sim/sim.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include <stdio.h>
-#include <cpuid.h>
-#include <sys/io.h>
-
-#include "tools/util/tsc.h"
-
-/*
- * Standard way to access the cycle counter.
- */
-typedef uint64_t cycles_t;
-
-static inline cycles_t get_cycles(void)
-{
-	return rdtsc();
-}
-
-uint64_t pit_calibrate_tsc(void);
+struct avr_bootloader {
+	uint16_t start;		/* The first bootloader address in
+				   program memory, in 16-bits words. */
+	uint16_t end;		/* The last bootloader address in
+				   program memory, in 16-bits words. */
+	uint16_t size;		/* The bootloader size,
+				   in 16-bits words. */
+};
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* MSIM_X86_TSC_H_ */
+#endif /* MSIM_AVR_BLDR_H_ */
