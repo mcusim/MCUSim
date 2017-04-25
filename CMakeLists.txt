@@ -23,3 +23,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_subdirectory(lib)
 add_subdirectory(tests)
+add_subdirectory(ui)
+
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/resources)
+file(COPY "./resources/" DESTINATION ${CMAKE_BINARY_DIR}/resources)

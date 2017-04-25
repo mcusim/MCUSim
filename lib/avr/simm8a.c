@@ -1,5 +1,5 @@
 /*
- * mcusim - Interactive simulator for microcontrollers.
+ * MCUSim - Interactive simulator for microcontrollers.
  * Copyright (C) 2017 Dmitry Salychev <darkness.bsd@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
