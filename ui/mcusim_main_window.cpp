@@ -15,9 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdint.h>
+
 #include <wx/wx.h>
 #include <wx/menu.h>
 #include <wx/image.h>
+#include <wx/sizer.h>
+#include <wx/dcbuffer.h>
 
 #include "mcusim/ui/mcusim_main_window.h"
 
@@ -41,7 +45,6 @@ MCUSimMainWindow::MCUSimMainWindow(const wxString &title, const wxSize &size)
 	menubar->Append(pref_menu, wxT("&Preferences"));
 	menubar->Append(tools_menu, wxT("&Tools"));
 	menubar->Append(help_menu, wxT("&Help"));
-
 	SetMenuBar(menubar);
 
 	wxImage::AddHandler(new wxPNGHandler());
@@ -54,22 +57,81 @@ MCUSimMainWindow::MCUSimMainWindow(const wxString &title, const wxSize &size)
 	wxBitmap help_icon(wxT("resources/help.png"),
 			wxBITMAP_TYPE_PNG);
 
-	wxToolBar *toolbar = CreateToolBar();
-	toolbar->AddTool(wxID_EXIT, zoomin_icon, wxT("Zoom in"));
-	toolbar->AddTool(wxID_EXIT, zoomout_icon, wxT("Zoom out"));
-	toolbar->AddTool(wxID_EXIT, zoomorig_icon, wxT("Zoom original"));
-	toolbar->AddSeparator();
-	toolbar->AddTool(wxID_EXIT, help_icon, wxT("Open help"));
-	toolbar->Realize();
+	/* Create window layout built on sizers */
+	vbox = new wxBoxSizer(wxVERTICAL);
+	top_hbox = new wxBoxSizer(wxHORIZONTAL);
+	mid_hbox = new wxBoxSizer(wxHORIZONTAL);
+	bot_hbox = new wxBoxSizer(wxHORIZONTAL);
+	vbox->Add(top_hbox, wxSizerFlags().Proportion(0).Expand());
+	vbox->Add(mid_hbox, wxSizerFlags().Proportion(1).Expand());
+	vbox->Add(bot_hbox, wxSizerFlags().Proportion(0).Expand());
+	SetSizer(vbox);
 
-	Connect(wxID_EXIT, wxEVT_COMMAND_MENU_SELECTED,
-		wxCommandEventHandler(MCUSimMainWindow::OnQuit));
-	Connect(wxID_EXIT, wxEVT_COMMAND_TOOL_CLICKED,
-		wxCommandEventHandler(MCUSimMainWindow::OnQuit));
+	/* Top toolbar */
+	top_toolbar = new wxToolBar(this, wxID_ANY);
+	top_toolbar->AddTool(wxID_ANY, zoomin_icon, wxT("Zoom in"));
+	top_toolbar->AddTool(wxID_ANY, zoomout_icon, wxT("Zoom out"));
+	top_toolbar->AddTool(wxID_ANY, zoomorig_icon, wxT("Original size"));
+	top_toolbar->AddTool(wxID_ANY, help_icon, wxT("Open manual"));
+	top_toolbar->Realize();
+	top_hbox->Add(top_toolbar, wxSizerFlags().Proportion(0).Expand());
+
+	/* Left toolbar */
+	left_toolbar = new wxToolBar(this, wxID_ANY, wxDefaultPosition,
+			wxDefaultSize, wxTB_VERTICAL | wxTB_FLAT);
+	left_toolbar->AddTool(wxID_ANY, zoomin_icon, wxT("Zoom in"));
+	left_toolbar->AddTool(wxID_ANY, zoomout_icon, wxT("Zoom out"));
+	left_toolbar->AddTool(wxID_ANY, zoomorig_icon, wxT("Original size"));
+	left_toolbar->AddTool(wxID_ANY, help_icon, wxT("Open manual"));
+	left_toolbar->Realize();
+	mid_hbox->Add(left_toolbar, wxSizerFlags().Proportion(0).Expand());
+
+	/* Panel to draw on */
+	draw_panel = new wxPanel(this, wxID_ANY);
+	draw_panel->SetBackgroundStyle(wxBG_STYLE_PAINT);
+	mid_hbox->Add(draw_panel, wxSizerFlags().Proportion(1).Expand());
+
+	/* Right toolbar */
+	right_toolbar = new wxToolBar(this, wxID_ANY, wxDefaultPosition,
+			wxDefaultSize, wxTB_VERTICAL | wxTB_FLAT);
+	right_toolbar->AddTool(wxID_ANY, zoomin_icon, wxT("Zoom in"));
+	right_toolbar->AddTool(wxID_ANY, zoomout_icon, wxT("Zoom out"));
+	right_toolbar->AddTool(wxID_ANY, zoomorig_icon, wxT("Original size"));
+	right_toolbar->AddTool(wxID_ANY, help_icon, wxT("Open manual"));
+	right_toolbar->Realize();
+	mid_hbox->Add(right_toolbar, wxSizerFlags().Proportion(0).Expand());
+
+	/* Status bar */
+	status_bar = new wxStatusBar(this, wxID_ANY);
+	status_bar->SetStatusText("Ready to simulate!", 0);
+	bot_hbox->Add(status_bar, wxSizerFlags().Proportion(0).Expand());
+
+	draw_panel->Connect(wxEVT_PAINT,
+			wxPaintEventHandler(MCUSimMainWindow::OnPaint));
+	Connect(wxID_ANY, wxEVT_COMMAND_MENU_SELECTED,
+			wxCommandEventHandler(MCUSimMainWindow::OnQuit));
+
 	Centre();
 };
 
 void MCUSimMainWindow::OnQuit(wxCommandEvent &event)
 {
 	Close(true);
+};
+
+void MCUSimMainWindow::OnPaint(wxPaintEvent &event)
+{
+	wxAutoBufferedPaintDC dc(draw_panel);
+	wxColour white, gray;
+	int dp_width, dp_height;
+
+	draw_panel->GetSize(&dp_width, &dp_height);
+
+	white.Set(wxT("#FFFFFF"));
+	gray.Set(wxT("#D4D4D4"));
+
+	dc.SetPen(wxPen(gray));
+	dc.SetBrush(wxBrush(white));
+
+	dc.DrawRectangle(0, 0, dp_width, dp_height);
 };

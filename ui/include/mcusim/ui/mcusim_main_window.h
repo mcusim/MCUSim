@@ -28,6 +28,8 @@ public:
 
 	void OnQuit(wxCommandEvent &event);
 
+	void OnPaint(wxPaintEvent &event);
+
 	wxMenuBar *menubar;
 	wxMenu *file_menu;
 	wxMenu *edit_menu;
@@ -36,6 +38,19 @@ public:
 	wxMenu *pref_menu;
 	wxMenu *tools_menu;
 	wxMenu *help_menu;
+
+	wxBoxSizer *vbox;
+	wxBoxSizer *top_hbox;
+	wxBoxSizer *mid_hbox;
+	wxBoxSizer *bot_hbox;
+
+	wxToolBar *top_toolbar;
+	wxToolBar *left_toolbar;
+	wxToolBar *right_toolbar;
+
+	wxPanel *draw_panel;
+
+	wxStatusBar *status_bar;
 };
 
 #endif /* MSIM_MAIN_WINDOW_H_ */
