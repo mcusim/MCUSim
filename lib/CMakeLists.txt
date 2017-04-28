@@ -70,7 +70,9 @@ set(LIB_SRCS		./avr/simcore.c
 			./clock/x86/tsc.c
 			./clock/x86/util.c
 			./hex/ihex.c
-			./math/math.c)
+			./math/math.c
+			./datastruct/queue.c
+			./thread/pool.c)
 
 #
 # Set target libraries here

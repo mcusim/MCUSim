@@ -40,19 +40,22 @@ endif()
 #
 # Set sources here
 #
-set(TSC_TEST_SRC	minunit.c
-			tsc_test.c)
-set(MATH_TEST_SRC	minunit.c
-			math_test.c)
-set(M8A_TEST_SRC	minunit.c
-			m8a_test.c)
-set(AVR_CORE_TEST_SRC	minunit.c
-			avr_core_test.c)
+set(TSC_TEST_SRC		minunit.c
+				tsc_test.c)
+set(MATH_TEST_SRC		minunit.c
+				math_test.c)
+set(M8A_TEST_SRC		minunit.c
+				m8a_test.c)
+set(AVR_CORE_TEST_SRC		minunit.c
+				avr_core_test.c)
+set(THREADPOOL_TEST_SRC		minunit.c
+				threadpool_test.c)
 
 #
 # Look for libraries, packages, etc.
 #
 #find_package(wxWidgets ${WXWIDGETS_MIN_VERSION} REQUIRED core base)
+find_package(Threads REQUIRED)
 
 #
 # Define includes here
@@ -64,7 +67,7 @@ include_directories("../lib/include/")
 #
 # Set target libraries here
 #
-set(TARGET_LIBS "")
+set(TARGET_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
 #
 # Check functions exist here
@@ -82,10 +85,12 @@ endif()
 add_executable(math_test ${MATH_TEST_SRC})
 add_executable(m8a_test ${M8A_TEST_SRC})
 add_executable(avr_core_test ${AVR_CORE_TEST_SRC})
+add_executable(threadpool_test ${THREADPOOL_TEST_SRC})
 
 target_link_libraries(math_test ${CMAKE_BINARY_DIR}/libmcusim.a ${TARGET_LIBS})
 target_link_libraries(m8a_test ${CMAKE_BINARY_DIR}/libmcusim.a ${TARGET_LIBS})
 target_link_libraries(avr_core_test ${CMAKE_BINARY_DIR}/libmcusim.a ${TARGET_LIBS})
+target_link_libraries(threadpool_test ${CMAKE_BINARY_DIR}/libmcusim.a ${TARGET_LIBS})
 
 #
 # Prepare files required for tests
