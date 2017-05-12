@@ -1,0 +1,32 @@
+Determining if the function fmax exists failed with the following output:
+Change Dir: /home/dsalychev/git/mcusim/avrsim/build/CMakeFiles/CMakeTmp
+
+Run Build Command:"/usr/bin/make" "cmTC_d0212/fast"
+/usr/bin/make -f CMakeFiles/cmTC_d0212.dir/build.make CMakeFiles/cmTC_d0212.dir/build
+make[1]: Entering directory '/home/dsalychev/git/mcusim/avrsim/build/CMakeFiles/CMakeTmp'
+Building C object CMakeFiles/cmTC_d0212.dir/CheckFunctionExists.c.o
+/usr/bin/clang    -DDEBUG -g -Wall -pedantic -std=iso9899:1999 -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wstrict-prototypes -Wmissing-prototypes -Wconversion -DCHECK_FUNCTION_EXISTS=fmax   -o CMakeFiles/cmTC_d0212.dir/CheckFunctionExists.c.o   -c /usr/share/cmake-3.5/Modules/CheckFunctionExists.c
+/usr/share/cmake-3.5/Modules/CheckFunctionExists.c:6:6: warning: incompatible redeclaration of library function 'fmax' [-Wincompatible-library-redeclaration]
+char CHECK_FUNCTION_EXISTS();
+     ^
+<command line>:2:31: note: expanded from here
+#define CHECK_FUNCTION_EXISTS fmax
+                              ^
+/usr/share/cmake-3.5/Modules/CheckFunctionExists.c:6:6: note: 'fmax' is a builtin with type 'double (double, double)'
+<command line>:2:31: note: expanded from here
+#define CHECK_FUNCTION_EXISTS fmax
+                              ^
+1 warning generated.
+Linking C executable cmTC_d0212
+/usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d0212.dir/link.txt --verbose=1
+/usr/bin/clang   -DDEBUG -g -Wall -pedantic -std=iso9899:1999 -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wstrict-prototypes -Wmissing-prototypes -Wconversion -DCHECK_FUNCTION_EXISTS=fmax    CMakeFiles/cmTC_d0212.dir/CheckFunctionExists.c.o  -o cmTC_d0212 -rdynamic 
+CMakeFiles/cmTC_d0212.dir/CheckFunctionExists.c.o: In function `main':
+/usr/share/cmake-3.5/Modules/CheckFunctionExists.c:14: undefined reference to `fmax'
+clang: error: linker command failed with exit code 1 (use -v to see invocation)
+CMakeFiles/cmTC_d0212.dir/build.make:97: recipe for target 'cmTC_d0212' failed
+make[1]: *** [cmTC_d0212] Error 1
+make[1]: Leaving directory '/home/dsalychev/git/mcusim/avrsim/build/CMakeFiles/CMakeTmp'
+Makefile:126: recipe for target 'cmTC_d0212/fast' failed
+make: *** [cmTC_d0212/fast] Error 2
+
+

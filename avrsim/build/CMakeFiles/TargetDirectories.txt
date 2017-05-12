@@ -1,0 +1,3 @@
+/home/dsalychev/git/mcusim/avrsim/build/CMakeFiles/rebuild_cache.dir
+/home/dsalychev/git/mcusim/avrsim/build/CMakeFiles/edit_cache.dir
+/home/dsalychev/git/mcusim/avrsim/build/CMakeFiles/avrsim.dir
