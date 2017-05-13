@@ -35,27 +35,26 @@ int main(int argc, char *argv[])
 	int c;
 	char *mcu_model;
 	char *prog_path;
-	uint8_t errflag = 0;
+	uint8_t errflag = 1;
 
 	while ((c = getopt(argc, argv, CLI_OPTIONS)) != -1) {
 		switch (c) {
 		case 'm':
 			mcu_model = optarg;
+			errflag = 0;
 			break;
 		case 'p':
 			prog_path = optarg;
+			errflag = 0;
 			break;
 		case 'h':
-			errflag++;
 			break;
 		case ':':		/* missing operand */
 			fprintf(stderr, "Option -%c required an operand\n",
 					optopt);
-			errflag++;
 			break;
 		case '?':		/* unrecognised option */
 			fprintf(stderr, "Unrecognized option: -%c\n", optopt);
-			errflag++;
 			break;
 		}
 	}

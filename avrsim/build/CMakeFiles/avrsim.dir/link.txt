@@ -1,1 +1,0 @@
-/usr/bin/clang   -DDEBUG -g -Wall -pedantic -std=iso9899:1999 -Wshadow -Wpointer-arith -Wcast-qual -Wcast-align -Wstrict-prototypes -Wmissing-prototypes -Wconversion   CMakeFiles/avrsim.dir/simcore.c.o CMakeFiles/avrsim.dir/simm8a.c.o CMakeFiles/avrsim.dir/ihex.c.o CMakeFiles/avrsim.dir/avrsim.c.o  -o avrsim -rdynamic -lm 
