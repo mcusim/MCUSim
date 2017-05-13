@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-struct avr_bootloader {
+struct MSIM_AVRBootloader {
 	uint16_t start;		/* The first bootloader address in
 				   program memory, in 16-bits words. */
 	uint16_t end;		/* The last bootloader address in

@@ -27,13 +27,18 @@
 extern "C" {
 #endif
 
-void simulate_avr(struct avr *mcu);
+void MSIM_SimulateAVR(struct MSIM_AVR *mcu);
 
-void sreg_update_flag(struct avr *mcu, enum avr_sreg_flag flag, uint8_t set_f);
-uint8_t sreg_flag(struct avr *mcu, enum avr_sreg_flag flag);
+void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu,
+			 enum MSIM_AVRSREGFlag flag,
+			 uint8_t set_f);
 
-void stack_push(struct avr *mcu, uint8_t val);
-uint8_t stack_pop(struct avr *mcu);
+uint8_t MSIM_ReadSREGFlag(struct MSIM_AVR *mcu,
+			  enum MSIM_AVRSREGFlag flag);
+
+void MSIM_StackPush(struct MSIM_AVR *mcu, uint8_t val);
+
+uint8_t MSIM_StackPop(struct MSIM_AVR *mcu);
 
 #ifdef __cplusplus
 }

@@ -31,12 +31,12 @@
 #include "mcusim/hex/ihex.h"
 
 static int is_ckopt_programmed(uint8_t ckopt_f);
-static int set_fuse_bytes(struct avr *mcu, uint8_t fuse_high, uint8_t fuse_low);
-static int set_bldr_size(struct avr *mcu, uint8_t fuse_high);
-static int set_frequency(struct avr *mcu, uint8_t fuse_high, uint8_t fuse_low);
-static int set_reset_vector(struct avr *mcu, uint8_t fuse_high);
-static int set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size);
-static int set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size);
+static int set_fuse_bytes(struct MSIM_AVR *mcu, uint8_t fuse_high, uint8_t fuse_low);
+static int set_bldr_size(struct MSIM_AVR *mcu, uint8_t fuse_high);
+static int set_frequency(struct MSIM_AVR *mcu, uint8_t fuse_high, uint8_t fuse_low);
+static int set_reset_vector(struct MSIM_AVR *mcu, uint8_t fuse_high);
+static int set_progmem(struct MSIM_AVR *mcu, uint16_t *mem, uint32_t size);
+static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
 
 /*
  * Set ATmega8A lock bits to the default values
@@ -74,8 +74,9 @@ static int set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size);
  * Default value for low byte means:
  *	- ...
  */
-int m8a_init(struct avr *mcu, uint16_t *pm, uint32_t pm_size,
-			      uint8_t *dm, uint32_t dm_size)
+int MSIM_M8AInit(struct MSIM_AVR *mcu,
+		 uint16_t *pm, uint32_t pm_size,
+		 uint8_t *dm, uint32_t dm_size)
 {
 	if (!mcu) {
 		fprintf(stderr, "MCU should not be NULL\n");
@@ -118,7 +119,7 @@ int m8a_init(struct avr *mcu, uint16_t *pm, uint32_t pm_size,
 	return 0;
 }
 
-int m8a_load_progmem(struct avr *mcu, FILE *fp)
+int MSIM_M8ALoadProgmem(struct MSIM_AVR *mcu, FILE *fp)
 {
 	IHexRecord rec, mem_rec;
 
@@ -171,7 +172,7 @@ int m8a_load_progmem(struct avr *mcu, FILE *fp)
 	return 0;
 }
 
-static int set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size)
+static int set_progmem(struct MSIM_AVR *mcu, uint16_t *mem, uint32_t size)
 {
 	uint16_t flash_size;
 
@@ -190,7 +191,7 @@ static int set_progmem(struct avr *mcu, uint16_t *mem, uint32_t size)
 	return 0;
 }
 
-static int set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size)
+static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
 {
 	if ((mcu->ramsize + 96) != size) {
 		fprintf(stderr, "Data memory is limited by %u.%03u KiB,"
@@ -313,7 +314,7 @@ static int set_datamem(struct avr *mcu, uint8_t *mem, uint32_t size)
 	return 0;
 }
 
-static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low)
+static int set_fuse_bytes(struct MSIM_AVR *mcu, uint8_t high, uint8_t low)
 {
 	mcu->fuse[1] = high;
 	mcu->fuse[0] = low;
@@ -334,7 +335,7 @@ static int set_fuse_bytes(struct avr *mcu, uint8_t high, uint8_t low)
 	return 0;
 }
 
-static int set_bldr_size(struct avr *mcu, uint8_t fuse_high)
+static int set_bldr_size(struct MSIM_AVR *mcu, uint8_t fuse_high)
 {
 	/*
 	 * Check BOOTSZ1:0 flags and set bootloader
@@ -367,7 +368,7 @@ static int set_bldr_size(struct avr *mcu, uint8_t fuse_high)
 	return 0;
 }
 
-static int set_frequency(struct avr *mcu, uint8_t fuse_high, uint8_t fuse_low)
+static int set_frequency(struct MSIM_AVR *mcu, uint8_t fuse_high, uint8_t fuse_low)
 {
 	uint8_t cksel_f, ckopt_f;
 
@@ -433,7 +434,7 @@ static int is_ckopt_programmed(uint8_t ckopt_f)
 	return 0;
 }
 
-static int set_reset_vector(struct avr *mcu, uint8_t fuse_high)
+static int set_reset_vector(struct MSIM_AVR *mcu, uint8_t fuse_high)
 {
 	/*
 	 * BOOTRST and IVSEL bit in GICR register define

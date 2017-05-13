@@ -107,14 +107,11 @@ extern "C" {
 #define TWBR_ADDR		0x00	/* Two-wire Serial Interface Bit
 					   Rate Register */
 
-/* Public prototypes */
+int MSIM_M8AInit(struct MSIM_AVR *mcu,
+		 uint16_t *pm, uint32_t pm_size,
+		 uint8_t *dm, uint32_t dm_size);
 
-int m8a_init(struct avr *mcu, uint16_t *pm, uint32_t pm_size,
-			      uint8_t *dm, uint32_t dm_size);
-
-int m8a_load_progmem(struct avr *mcu, FILE *fp);
-
-/* END Public prototypes */
+int MSIM_M8ALoadProgmem(struct MSIM_AVR *mcu, FILE *fp);
 
 #ifdef __cplusplus
 }

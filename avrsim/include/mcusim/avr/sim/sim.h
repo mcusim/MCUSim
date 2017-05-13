@@ -26,20 +26,20 @@
 extern "C" {
 #endif
 
-typedef uint32_t avr_flashaddr_t;
+typedef uint32_t MSIM_AVRFlashAddr_t;
 
-enum avr_state {
+enum MSIM_AVRState {
 	AVR_RUNNING = INT16_MIN,
 	AVR_STOPPED,
 	AVR_SLEEPING
 };
 
-enum avr_clk_source {
+enum MSIM_AVRClkSource {
 	AVR_INT_CLK = INT16_MIN,
 	AVR_EXT_CLK
 };
 
-enum avr_sreg_flag {
+enum MSIM_AVRSREGFlag {
 	AVR_SREG_CARRY = INT16_MIN,
 	AVR_SREG_ZERO,
 	AVR_SREG_NEGATIVE,
@@ -53,7 +53,7 @@ enum avr_sreg_flag {
 /*
  * Instance of the AVR microcontroller.
  */
-struct avr {
+struct MSIM_AVR {
 	char name[20];			/* Name of the MCU */
 	uint8_t signature[3];		/* Signature of the MCU */
 
@@ -66,7 +66,7 @@ struct avr {
 					   program space, in bytes. */
 	uint16_t flashend;		/* The last byte address in flash
 					   program space, in bytes. */
-	struct avr_bootloader *boot_loader;
+	struct MSIM_AVRBootloader *boot_loader;
 
 	uint16_t ramstart;
 	uint16_t ramend;
@@ -80,17 +80,17 @@ struct avr {
 	uint8_t lockbits;
 	uint8_t fuse[6];
 
-	enum avr_state state;
-	enum avr_clk_source clk_source;
+	enum MSIM_AVRState state;
+	enum MSIM_AVRClkSource clk_source;
 	uint32_t freq;			/* Frequency we're currently
 					   working at, in kHz */
 	uint32_t sfr_off;		/* Offset to the AVR special function
 					   registers */
 
-	avr_flashaddr_t pc;		/* Current program counter register */
-	avr_flashaddr_t reset_pc;	/* This is a value used to jump to
+	MSIM_AVRFlashAddr_t pc;		/* Current program counter register */
+	MSIM_AVRFlashAddr_t reset_pc;	/* This is a value used to jump to
 					   at reset time. */
-	avr_flashaddr_t ivt;		/* Address of Interrupt Vectors Table
+	MSIM_AVRFlashAddr_t ivt;	/* Address of Interrupt Vectors Table
 					   in program memory. */
 
 					/* These two fields point to the
