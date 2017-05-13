@@ -28,6 +28,17 @@
 
 #define CLI_OPTIONS		":hm:p:"
 
+#define PROGRAM_MEMORY		4096
+#define DATA_MEMORY		1120
+
+static struct MSIM_AVRBootloader bootloader;
+static struct MSIM_AVR mcu = {
+	.boot_loader = &bootloader,
+};
+
+static uint16_t prog_mem[PROGRAM_MEMORY];
+static uint8_t data_mem[DATA_MEMORY];
+
 int main(int argc, char *argv[])
 {
 	extern char *optarg;
@@ -36,6 +47,7 @@ int main(int argc, char *argv[])
 	char *mcu_model;
 	char *prog_path;
 	uint8_t errflag = 1;
+	FILE *fp;
 
 	while ((c = getopt(argc, argv, CLI_OPTIONS)) != -1) {
 		switch (c) {
@@ -59,8 +71,27 @@ int main(int argc, char *argv[])
 		}
 	}
 	if (errflag) {
-		fprintf(stderr, "Usage: -m <AVR_MODEL> -p <PATH_TO_HEX>\n");
+		fprintf(stderr, "Usage: avrsim -m <AVR_MODEL> -p <PATH_TO_HEX>\n");
 		return -2;
 	}
+
+	if (MSIM_InitAVR(&mcu, mcu_model,
+			 prog_mem, sizeof prog_mem / sizeof prog_mem[0],
+			 data_mem, sizeof data_mem / sizeof data_mem[0])) {
+		fprintf(stderr, "AVR %s wasn't initialized successfully!\n",
+				mcu_model);
+		return -1;
+	}
+
+	fp = fopen(prog_path, "r");
+	if (MSIM_LoadProgmem(&mcu, fp)) {
+		fprintf(stderr, "Program memory cannot be loaded from "
+				"file: %s!\n", prog_path);
+		return -1;
+	}
+	fclose(fp);
+
+	MSIM_SimulateAVR(&mcu);
+
 	return 0;
 }

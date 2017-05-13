@@ -90,3 +90,5 @@ include_directories("include/")
 
 add_executable(${APP_NAME} ${APP_SRCS})
 target_link_libraries(${APP_NAME} ${TARGET_LIBS})
+
+file(COPY "../samples/avr-progmem.hex" DESTINATION ${CMAKE_BINARY_DIR})

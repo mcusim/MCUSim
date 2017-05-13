@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/bootloader.h"
@@ -85,6 +86,28 @@ void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
 			abort();
 		}
 	}
+}
+
+int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
+		  uint16_t *pm, uint32_t pm_size,
+		  uint8_t *dm, uint32_t dm_size)
+{
+	if (!strcmp("atmega8a", mcu_name)) {
+		return MSIM_M8AInit(mcu, pm, pm_size, dm, dm_size);
+	} else {
+		fprintf(stderr, "Microcontroller AVR %s is unsupported!\n");
+	}
+	return -1;
+}
+
+int MSIM_LoadProgmem(struct MSIM_AVR *mcu, FILE *fp)
+{
+	if (!strcmp("atmega8a", mcu->name)) {
+		return MSIM_M8ALoadProgmem(mcu, fp);
+	} else {
+		fprintf(stderr, "Microcontroller AVR %s is unsupported!\n");
+	}
+	return -1;
 }
 
 void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu,
