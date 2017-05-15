@@ -501,6 +501,37 @@ static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 	 */
 	case 0xB800:
 		mcu->data_mem[io_loc + mcu->sfr_off] = mcu->data_mem[reg];
+
+		/* Send status message if status queue is available */
+		if (status_qid < 0)
+			break;
+		struct MSIM_IOPortMsg pmsg;
+		pmsg.type = AVR_IO_PORT_MSGTYP;
+		pmsg.mcuid = mcu->id;
+
+		if (io_loc == PORTB_ADDR) {
+			pmsg.port_data = mcu->data_mem[io_loc + mcu->sfr_off];
+			pmsg.data_dir = mcu->data_mem[DDRB_ADDR + mcu->sfr_off];
+			pmsg.input_pins =
+				mcu->data_mem[PINB_ADDR + mcu->sfr_off];
+		} else if (io_loc == PORTC_ADDR) {
+			pmsg.port_data = mcu->data_mem[io_loc + mcu->sfr_off];
+			pmsg.data_dir = mcu->data_mem[DDRC_ADDR + mcu->sfr_off];
+			pmsg.input_pins =
+				mcu->data_mem[PINC_ADDR + mcu->sfr_off];
+		} else if (io_loc == PORTD_ADDR) {
+			pmsg.port_data = mcu->data_mem[io_loc + mcu->sfr_off];
+			pmsg.data_dir = mcu->data_mem[DDRD_ADDR + mcu->sfr_off];
+			pmsg.input_pins =
+				mcu->data_mem[PIND_ADDR + mcu->sfr_off];
+		}
+		msgsnd(status_qid, (void *) &pmsg,
+		       sizeof pmsg.mcuid +
+		       sizeof pmsg.port_data +
+		       sizeof pmsg.data_dir +
+		       sizeof pmsg.input_pins,
+		       IPC_NOWAIT);
+
 		break;
 	}
 	mcu->pc++;

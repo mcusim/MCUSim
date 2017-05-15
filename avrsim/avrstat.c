@@ -42,16 +42,16 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
+		sim_msg = (struct MSIM_SimMsg *) &raw_msg;
 		if (raw_msg.type == AVR_START_SIM_MSGTYP) {
-			sim_msg = (struct MSIM_SimMsg *) &raw_msg;
 			printf("Start of AVR simulation, mcuid: %" PRIu32 "\n",
 			       sim_msg->mcuid);
 		} else if (raw_msg.type == AVR_END_SIM_MSGTYP) {
-			sim_msg = (struct MSIM_SimMsg *) &raw_msg;
 			printf("End of AVR simulation, mcuid: %" PRIu32 "\n",
 			       sim_msg->mcuid);
 		} else {
-			printf("Unknown message type: %ld!\n", raw_msg.type);
+			printf("Unknown message, mcuid: %" PRIu32 ", type: %ld\n",
+			       sim_msg->mcuid, sim_msg->type);
 		}
 	}
 	return 0;
