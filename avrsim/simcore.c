@@ -1,5 +1,7 @@
 /*
- * MCUSim - Interactive simulator for microcontrollers.
+ * AVRSim - Simulator for AVR microcontrollers.
+ * This software is a part of MCUSim, interactive simulator for
+ * microcontrollers.
  * Copyright (C) 2017 Dmitry Salychev <darkness.bsd@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,17 +21,24 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/msg.h>
 
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/bootloader.h"
 #include "mcusim/avr/sim/simcore.h"
+#include "mcusim/avr/ipc/message.h"
+
+int status_qid = -1;
+int ctrl_qid = -1;
 
 static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst);
 static int is_inst32(uint16_t inst);
 
-/*
- * AVR opcodes executors.
- */
+/* Create/open message queues to let clients to interact with simulated MCU. */
+static int open_mqueues(void);
+static void close_mqueues(void);
+
+/* AVR opcodes executors. */
 static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 			uint8_t reg, uint8_t io_loc);
 static void exec_cp(struct MSIM_AVR *mcu, uint16_t inst);
@@ -70,22 +79,35 @@ static void exec_ld_z(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_ld_zdisp(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_ld(struct MSIM_AVR *mcu, uint16_t inst,
 		    uint8_t *addr_low, uint8_t *addr_high, uint8_t regd);
-/*
- * END AVR opcodes executors.
- */
 
 void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
 {
 	uint16_t inst;
+	struct MSIM_SimMsg sim_msg;
+
+	if (open_mqueues()) {
+		close_mqueues();
+		return;
+	}
+	sim_msg.type = AVR_START_SIM_MSGTYP;
+	sim_msg.mcuid = mcu->id;
+	msgsnd(status_qid, (void *) &sim_msg, sizeof sim_msg.mcuid,
+	       IPC_NOWAIT);
 
 	while (1) {
 		inst = mcu->prog_mem[mcu->pc];
 
 		if (decode_inst(mcu, inst)) {
 			fprintf(stderr, "Unknown instruction: 0x%X\n", inst);
-			abort();
+			exit(1);
 		}
 	}
+
+	sim_msg.type = AVR_END_SIM_MSGTYP;
+	sim_msg.mcuid = mcu->id;
+	msgsnd(status_qid, (void *) &sim_msg, sizeof sim_msg.mcuid,
+	       IPC_NOWAIT);
+	close_mqueues();
 }
 
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
@@ -95,7 +117,8 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 	if (!strcmp("atmega8a", mcu_name)) {
 		return MSIM_M8AInit(mcu, pm, pm_size, dm, dm_size);
 	} else {
-		fprintf(stderr, "Microcontroller AVR %s is unsupported!\n");
+		fprintf(stderr, "Microcontroller AVR %s is unsupported!\n",
+				mcu_name);
 	}
 	return -1;
 }
@@ -105,7 +128,8 @@ int MSIM_LoadProgmem(struct MSIM_AVR *mcu, FILE *fp)
 	if (!strcmp("atmega8a", mcu->name)) {
 		return MSIM_M8ALoadProgmem(mcu, fp);
 	} else {
-		fprintf(stderr, "Microcontroller AVR %s is unsupported!\n");
+		fprintf(stderr, "Microcontroller AVR %s is unsupported!\n",
+				mcu->name);
 	}
 	return -1;
 }
@@ -1126,4 +1150,32 @@ static void exec_sbiw(struct MSIM_AVR *mcu, uint16_t inst)
 	mcu->data_mem[rdh] = v >> 8;
 	mcu->data_mem[rdl] = v & 0x0F;
 	mcu->pc++;
+}
+
+static int open_mqueues(void)
+{
+	if ((status_qid = msgget(AVR_SQ_KEY, AVR_SQ_FLAGS)) < 0) {
+		fprintf(stderr, "AVR status queue cannot be opened!\n");
+		return -1;
+	}
+	if ((ctrl_qid = msgget(AVR_CQ_KEY, AVR_CQ_FLAGS)) < 0) {
+		fprintf(stderr, "AVR control queue cannot be opened!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static void close_mqueues(void)
+{
+	struct msqid_ds desc;
+
+	if (status_qid >= 0) {
+		msgctl(status_qid, IPC_RMID, &desc);
+		status_qid = -1;
+	}
+	if (ctrl_qid >= 0) {
+		msgctl(ctrl_qid, IPC_RMID, &desc);
+		ctrl_qid = -1;
+	}
 }

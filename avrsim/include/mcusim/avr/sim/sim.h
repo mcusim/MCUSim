@@ -54,29 +54,26 @@ enum MSIM_AVRSREGFlag {
  * Instance of the AVR microcontroller.
  */
 struct MSIM_AVR {
+	uint32_t id;			/* ID of a simulated AVR MCU */
+
 	char name[20];			/* Name of the MCU */
 	uint8_t signature[3];		/* Signature of the MCU */
-
 	uint16_t spm_pagesize;		/* For devices with bootloader support,
 					   the flash pagesize (in bytes) to be
 					   used for Self Programming Mode (SPM)
 					   instruction. */
-
 	uint16_t flashstart;		/* The first byte address in flash
 					   program space, in bytes. */
 	uint16_t flashend;		/* The last byte address in flash
 					   program space, in bytes. */
 	struct MSIM_AVRBootloader *boot_loader;
-
 	uint16_t ramstart;
 	uint16_t ramend;
 	uint32_t ramsize;
-
 	uint16_t e2start;		/* The first EEPROM address */
 	uint16_t e2end;			/* The last EEPROM address */
 	uint16_t e2size;
 	uint16_t e2pagesize;		/* The size of the EEPROM page */
-
 	uint8_t lockbits;
 	uint8_t fuse[6];
 
@@ -86,7 +83,6 @@ struct MSIM_AVR {
 					   working at, in kHz */
 	uint32_t sfr_off;		/* Offset to the AVR special function
 					   registers */
-
 	MSIM_AVRFlashAddr_t pc;		/* Current program counter register */
 	MSIM_AVRFlashAddr_t reset_pc;	/* This is a value used to jump to
 					   at reset time. */

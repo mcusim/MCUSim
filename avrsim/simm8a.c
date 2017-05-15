@@ -18,7 +18,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 /*
  * We would like to include headers specific to the
@@ -83,6 +85,8 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu,
 		return -1;
 	}
 
+	srand(time(NULL));
+	mcu->id = (uint32_t) rand();
 	strcpy(mcu->name, "atmega8a");
 	mcu->signature[0] = SIGNATURE_0;
 	mcu->signature[1] = SIGNATURE_1;

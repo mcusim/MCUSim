@@ -89,6 +89,9 @@ endif()
 include_directories("include/")
 
 add_executable(${APP_NAME} ${APP_SRCS})
+add_executable("avrstat" avrstat.c)
+
 target_link_libraries(${APP_NAME} ${TARGET_LIBS})
+target_link_libraries("avrstat" ${TARGET_LIBS})
 
 file(COPY "../samples/avr-progmem.hex" DESTINATION ${CMAKE_BINARY_DIR})
