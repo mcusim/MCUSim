@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <sys/msg.h>
 
+#include "mcusim/avr/sim/sim.h"
+
 #define QKEY_BASE			755700
 #define MSGSZ				64
 
@@ -34,6 +36,7 @@
 #define AVR_START_SIM_MSGTYP		1
 #define AVR_END_SIM_MSGTYP		2
 #define AVR_IO_PORT_MSGTYP		3
+#define AVR_INST_MSGTYP			4
 
 /* The raw message to cast into specific one based on a type. */
 struct MSIM_RawMsg {
@@ -57,4 +60,14 @@ struct MSIM_IOPortMsg {
 	uint8_t port_data;		/* PORTx MCU register */
 	uint8_t data_dir;		/* DDRx MCU register */
 	uint8_t input_pins;		/* PINx MCU register */
+};
+
+/* The status message tells what instruction will be executed next. */
+struct MSIM_InstMsg {
+	long type;
+	uint32_t mcuid;
+	MSIM_AVRFlashAddr_t pc;		/* Program counter */
+	uint8_t inst[4];		/* Most of the AVR instructions are
+					   16-bits wide, but there
+					   are 32-bits wide, too. */
 };
