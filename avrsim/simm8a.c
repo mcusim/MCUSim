@@ -37,7 +37,7 @@ static int set_fuse_bytes(struct MSIM_AVR *mcu, uint8_t fuse_high, uint8_t fuse_
 static int set_bldr_size(struct MSIM_AVR *mcu, uint8_t fuse_high);
 static int set_frequency(struct MSIM_AVR *mcu, uint8_t fuse_high, uint8_t fuse_low);
 static int set_reset_vector(struct MSIM_AVR *mcu, uint8_t fuse_high);
-static int set_progmem(struct MSIM_AVR *mcu, uint16_t *mem, uint32_t size);
+static int set_progmem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
 static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
 
 /*
@@ -77,7 +77,7 @@ static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
  *	- ...
  */
 int MSIM_M8AInit(struct MSIM_AVR *mcu,
-		 uint16_t *pm, uint32_t pm_size,
+		 uint8_t *pm, uint32_t pm_size,
 		 uint8_t *dm, uint32_t dm_size)
 {
 	if (!mcu) {
@@ -85,7 +85,7 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu,
 		return -1;
 	}
 
-	srand(time(NULL));
+	srand((unsigned int) time(NULL));
 	mcu->id = (uint32_t) rand();
 	strcpy(mcu->name, "atmega8a");
 	mcu->signature[0] = SIGNATURE_0;
@@ -138,7 +138,7 @@ int MSIM_M8ALoadProgmem(struct MSIM_AVR *mcu, FILE *fp)
 	while (Read_IHexRecord(&rec, fp) == IHEX_OK) {
 		switch (rec.type) {
 		case IHEX_TYPE_00:	/* Data */
-			memcpy(mcu->prog_mem + (rec.address / 2),
+			memcpy(mcu->prog_mem + rec.address,
 			       rec.data, (uint16_t) rec.dataLen);
 			break;
 		case IHEX_TYPE_01:	/* End of File */
@@ -155,7 +155,7 @@ int MSIM_M8ALoadProgmem(struct MSIM_AVR *mcu, FILE *fp)
 		if (rec.type != IHEX_TYPE_00)
 			continue;
 
-		memcpy(mem_rec.data, mcu->prog_mem + (rec.address / 2),
+		memcpy(mem_rec.data, mcu->prog_mem + rec.address,
 		       (uint16_t) rec.dataLen);
 		mem_rec.address = rec.address;
 		mem_rec.dataLen = rec.dataLen;
@@ -165,7 +165,7 @@ int MSIM_M8ALoadProgmem(struct MSIM_AVR *mcu, FILE *fp)
 		mem_rec.checksum = Checksum_IHexRecord(&mem_rec);
 		if (mem_rec.checksum != rec.checksum) {
 			printf("Checksum is not correct:"
-			       " 0x%x (memory) != 0x%x (file)\n"
+			       " 0x%X (memory) != 0x%X (file)\n"
 			       "File record:\n", mem_rec.checksum, rec.checksum);
 			Print_IHexRecord(&rec);
 			printf("Memory record:\n");
@@ -176,22 +176,20 @@ int MSIM_M8ALoadProgmem(struct MSIM_AVR *mcu, FILE *fp)
 	return 0;
 }
 
-static int set_progmem(struct MSIM_AVR *mcu, uint16_t *mem, uint32_t size)
+static int set_progmem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
 {
-	uint16_t flash_size;
+	uint32_t flash_size;
 
-	/* Size in 16-bits words */
-	flash_size= (uint16_t) ((mcu->flashend - mcu->flashstart) + 1) / 2;
+	/* Size in bytes */
+	flash_size= (mcu->flashend - mcu->flashstart) + 1;
 	if (size != flash_size) {
 		fprintf(stderr, "Program memory is limited by %d KiB,"
 				" %u.%03u KiB doesn't match\n",
-				(mcu->flashend + 1) / 1024,
-				(size * 2) / 1024, (size * 2) % 1024);
+				flash_size/1024, size/1024, size%1024);
 		return -1;
 	}
 
 	mcu->prog_mem = mem;
-
 	return 0;
 }
 

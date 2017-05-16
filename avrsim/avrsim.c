@@ -28,7 +28,7 @@
 
 #define CLI_OPTIONS		":hm:p:"
 
-#define PROGRAM_MEMORY		4096
+#define PROGRAM_MEMORY		8192
 #define DATA_MEMORY		1120
 
 static struct MSIM_AVRBootloader bootloader;
@@ -36,7 +36,7 @@ static struct MSIM_AVR mcu = {
 	.boot_loader = &bootloader,
 };
 
-static uint16_t prog_mem[PROGRAM_MEMORY];
+static uint8_t prog_mem[PROGRAM_MEMORY];
 static uint8_t data_mem[DATA_MEMORY];
 
 int main(int argc, char *argv[])

@@ -82,6 +82,7 @@ static void exec_ld(struct MSIM_AVR *mcu, uint16_t inst,
 
 void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
 {
+	uint8_t msb, lsb;
 	uint16_t inst;
 	struct MSIM_SimMsg sim_msg;
 
@@ -95,8 +96,9 @@ void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
 	       IPC_NOWAIT);
 
 	while (1) {
-		inst = mcu->prog_mem[mcu->pc];
-
+		lsb = mcu->prog_mem[mcu->pc];
+		msb = mcu->prog_mem[mcu->pc+1];
+		inst = (uint16_t) (lsb | (msb << 8));
 		if (decode_inst(mcu, inst)) {
 			fprintf(stderr, "Unknown instruction: 0x%X\n", inst);
 			exit(1);
@@ -111,8 +113,8 @@ void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
 }
 
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
-		  uint16_t *pm, uint32_t pm_size,
-		  uint8_t *dm, uint32_t dm_size)
+		 uint8_t *pm, uint32_t pm_size,
+		 uint8_t *dm, uint32_t dm_size)
 {
 	if (!strcmp("atmega8a", mcu_name)) {
 		return MSIM_M8AInit(mcu, pm, pm_size, dm, dm_size);
@@ -255,7 +257,7 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 	case 0x0000:
 		switch (inst) {
 		case 0x0000:			/* NOP – No Operation */
-			mcu->pc++;
+			mcu->pc += 2;
 			break;
 		default:
 			switch (inst & 0xFC00) {
@@ -478,7 +480,7 @@ static void exec_eor(struct MSIM_AVR *mcu, uint16_t inst)
 	rr = (inst & 0x0F) | ((inst & 0x0200) >> 5);
 
 	mcu->data_mem[rd] = mcu->data_mem[rd] ^ mcu->data_mem[rr];
-	mcu->pc++;
+	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !mcu->data_mem[rd]);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, mcu->data_mem[rd] & 0x80);
@@ -534,7 +536,7 @@ static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 
 		break;
 	}
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static void exec_cmp_immediate(struct MSIM_AVR *mcu, uint16_t inst)
@@ -547,7 +549,7 @@ static void exec_cmp_immediate(struct MSIM_AVR *mcu, uint16_t inst)
 	rd = ((inst & 0xF0) >> 4) + 0x10;
 	c = (inst & 0x0F) | ((inst & 0x0F00) >> 4);
 	v = mcu->data_mem[rd] - c;
-	mcu->pc++;
+	mcu->pc += 2;
 
 	buf = (~rd & c) | (c & v) | (v & ~rd);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (buf >> 7) & 0x01);
@@ -573,7 +575,7 @@ static void exec_cmp_carry(struct MSIM_AVR *mcu, uint16_t inst)
 	v = mcu->data_mem[rd] -
 	    mcu->data_mem[rr] -
 	    MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY);
-	mcu->pc++;
+	mcu->pc += 2;
 
 	buf = (~rd & rr) | (rr & v) | (v & ~rd);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (buf >> 7) & 0x01);
@@ -599,7 +601,7 @@ static void exec_cp(struct MSIM_AVR *mcu, uint16_t inst)
 	rd = (inst & 0x01F0) >> 4;
 	rr = (inst & 0x0F) | ((inst & 0x0200) >> 5);
 	v = mcu->data_mem[rd] - mcu->data_mem[rr];
-	mcu->pc++;
+	mcu->pc += 2;
 
 	buf = (~rd & rr) | (rr & v) | (v & ~rd);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (buf >> 7) & 0x01);
@@ -629,7 +631,7 @@ static void exec_load_immediate(struct MSIM_AVR *mcu, uint16_t inst)
 	c = (inst & 0x0F) | ((inst & 0x0F00) >> 4);
 
 	mcu->data_mem[0x10 + rd_off] = c;
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static void exec_rel_jump(struct MSIM_AVR *mcu, uint16_t inst)
@@ -642,7 +644,7 @@ static void exec_rel_jump(struct MSIM_AVR *mcu, uint16_t inst)
 	c = inst & 0x0FFF;
 	if (c >= 2048)
 		c -= 4096;
-	mcu->pc += c + 1;
+	mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
 }
 
 static void exec_brne(struct MSIM_AVR *mcu, uint16_t inst)
@@ -653,16 +655,12 @@ static void exec_brne(struct MSIM_AVR *mcu, uint16_t inst)
 	int16_t c;
 
 	if (!MSIM_ReadSREGFlag(mcu, AVR_SREG_ZERO)) {
-		/*
-		 * Z == 0, i.e. Rd != Rr
-		 */
+		/* Z == 0, i.e. Rd != Rr */
 		c = (int16_t) ((int16_t) (inst << 6)) >> 9;
-		mcu->pc += c + 1;
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
 	} else {
-		/*
-		 * Z == 1, i.e. Rd == Rr
-		 */
-		mcu->pc++;
+		/* Z == 1, i.e. Rd == Rr */
+		mcu->pc += 2;
 	}
 }
 
@@ -730,7 +728,7 @@ static void exec_st(struct MSIM_AVR *mcu, uint16_t inst,
 		*addr_high = (uint8_t) (addr >> 8);
 		break;
 	}
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static void exec_st_ydisp(struct MSIM_AVR *mcu, uint16_t inst)
@@ -750,7 +748,7 @@ static void exec_st_ydisp(struct MSIM_AVR *mcu, uint16_t inst)
 	       ((inst & 0x2000) >> 8);
 
 	mcu->data_mem[addr + disp] = mcu->data_mem[regr];
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static void exec_st_zdisp(struct MSIM_AVR *mcu, uint16_t inst)
@@ -770,7 +768,7 @@ static void exec_st_zdisp(struct MSIM_AVR *mcu, uint16_t inst)
 	       ((inst & 0x2000) >> 8);
 
 	mcu->data_mem[addr + disp] = mcu->data_mem[regr];
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static void exec_rcall(struct MSIM_AVR *mcu, uint16_t inst)
@@ -781,13 +779,13 @@ static void exec_rcall(struct MSIM_AVR *mcu, uint16_t inst)
 	int16_t c;
 	uint32_t pc;
 
-	pc = mcu->pc + 1;
+	pc = mcu->pc + 2;
 	c = inst & 0x0FFF;
 	if (c >= 2048)
 		c -= 4096;
 	MSIM_StackPush(mcu, (uint8_t) (pc & 0xFF));
 	MSIM_StackPush(mcu, (uint8_t) ((pc >> 8) & 0xFF));
-	mcu->pc += c + 1;
+	mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
 }
 
 static void exec_sts(struct MSIM_AVR *mcu, uint16_t inst)
@@ -796,12 +794,15 @@ static void exec_sts(struct MSIM_AVR *mcu, uint16_t inst)
 	 * STS – Store Direct to Data Space
 	 */
 	uint16_t addr;
-	uint8_t rr;
+	uint8_t rr, addr_msb, addr_lsb;
 
-	addr = mcu->prog_mem[mcu->pc + 1];
+	addr_lsb = mcu->prog_mem[mcu->pc + 2];
+	addr_msb = mcu->prog_mem[mcu->pc + 3];
+	addr = (uint16_t) (addr_lsb | (addr_msb << 8));
+
 	rr = (inst & 0x01F0) >> 4;
 	mcu->data_mem[addr] = mcu->data_mem[rr];
-	mcu->pc += 2;
+	mcu->pc += 4;
 }
 
 static void exec_ret(struct MSIM_AVR *mcu)
@@ -813,7 +814,7 @@ static void exec_ret(struct MSIM_AVR *mcu)
 
 	ah = MSIM_StackPop(mcu);
 	al = MSIM_StackPop(mcu);
-	mcu->pc = (ah << 8) | al;
+	mcu->pc = (uint16_t) ((ah << 8) | al);
 }
 
 static void exec_ori(struct MSIM_AVR *mcu, uint16_t inst)
@@ -823,11 +824,11 @@ static void exec_ori(struct MSIM_AVR *mcu, uint16_t inst)
 	 */
 	uint8_t rd_off, c, v;
 
-	rd_off = (inst << 8) >> 12;
+	rd_off = (uint8_t) ((inst & 0xF0) >> 4);
 	c = (inst & 0x0F) | ((inst & 0x0F00) >> 4);
 	mcu->data_mem[0x10 + rd_off] |= c;
 	v = mcu->data_mem[0x10 + rd_off];
-	mcu->pc++;
+	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !v);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, v >> 7);
@@ -852,7 +853,7 @@ static void exec_sbi_cbi(struct MSIM_AVR *mcu, uint16_t inst, uint8_t set_bit)
 	else
 		mcu->data_mem[reg] &= ~(1 << b);
 
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static void exec_sbis_sbic(struct MSIM_AVR *mcu, uint16_t inst, uint8_t set_bit)
@@ -862,23 +863,31 @@ static void exec_sbis_sbic(struct MSIM_AVR *mcu, uint16_t inst, uint8_t set_bit)
 	 * SBIC – Skip if Bit in I/O Register is Cleared
 	 */
 	uint8_t reg, b, pc_delta;
+	uint8_t msb, lsb;
+	uint16_t ni;
 
 	reg = (inst & 0x00F8) >> 3;
 	b = inst & 0x07;
 	pc_delta = 1;
 	if (set_bit) {
 		if (mcu->data_mem[reg] & (1 << b)) {
-			if (is_inst32(mcu->prog_mem[mcu->pc + 1]))
-				pc_delta = 3;
+			lsb = mcu->prog_mem[mcu->pc+2];
+			msb = mcu->prog_mem[mcu->pc+3];
+			ni = (uint16_t) (lsb | (msb << 8));
+			if (is_inst32(ni))
+				pc_delta = 6;
 			else
-				pc_delta = 2;
+				pc_delta = 4;
 		}
 	} else {
 		if (mcu->data_mem[reg] ^ (1 << b)) {
-			if (is_inst32(mcu->prog_mem[mcu->pc + 1]))
-				pc_delta = 3;
+			lsb = mcu->prog_mem[mcu->pc+2];
+			msb = mcu->prog_mem[mcu->pc+3];
+			ni = (uint16_t) (lsb | (msb << 8));
+			if (is_inst32(ni))
+				pc_delta = 6;
 			else
-				pc_delta = 2;
+				pc_delta = 4;
 		}
 	}
 	mcu->pc += pc_delta;
@@ -909,7 +918,7 @@ static void exec_push_pop(struct MSIM_AVR *mcu, uint16_t inst, uint8_t push)
 	else
 		mcu->data_mem[reg] = MSIM_StackPop(mcu);
 
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static void exec_movw(struct MSIM_AVR *mcu, uint16_t inst)
@@ -923,7 +932,7 @@ static void exec_movw(struct MSIM_AVR *mcu, uint16_t inst)
 	regd = (inst >> 4) & 0x0F;
 	mcu->data_mem[regd+1] = mcu->data_mem[regr+1];
 	mcu->data_mem[regd] = mcu->data_mem[regr];
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static void exec_ld_x(struct MSIM_AVR *mcu, uint16_t inst)
@@ -989,7 +998,7 @@ static void exec_ld(struct MSIM_AVR *mcu, uint16_t inst,
 		*addr_high = (uint8_t) (addr >> 8);
 		break;
 	}
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static void exec_ld_ydisp(struct MSIM_AVR *mcu, uint16_t inst)
@@ -1009,7 +1018,7 @@ static void exec_ld_ydisp(struct MSIM_AVR *mcu, uint16_t inst)
 	       ((inst & 0x2000) >> 8);
 
 	mcu->data_mem[regd] = mcu->data_mem[addr + disp];
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static void exec_ld_zdisp(struct MSIM_AVR *mcu, uint16_t inst)
@@ -1029,7 +1038,7 @@ static void exec_ld_zdisp(struct MSIM_AVR *mcu, uint16_t inst)
 	       ((inst & 0x2000) >> 8);
 
 	mcu->data_mem[regd] = mcu->data_mem[addr + disp];
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static void exec_sbci(struct MSIM_AVR *mcu, uint16_t inst)
@@ -1043,7 +1052,7 @@ static void exec_sbci(struct MSIM_AVR *mcu, uint16_t inst)
 	c = ((inst & 0xF00) >> 4) | (inst & 0x0F);
 	mcu->data_mem[rd] = v =
 		mcu->data_mem[rd] - c - MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY);
-	mcu->pc++;
+	mcu->pc += 2;
 
 	buf = (~rd & c) | (c & v) | (v & ~rd);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (buf >> 7) & 0x01);
@@ -1077,9 +1086,9 @@ static void exec_brlt(struct MSIM_AVR *mcu, uint16_t inst)
 		c -= 128;
 
 	if (!cond)
-		mcu->pc++;
+		mcu->pc += 2;
 	else
-		mcu->pc += c + 1;
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
 }
 
 static void exec_brge(struct MSIM_AVR *mcu, uint16_t inst)
@@ -1097,9 +1106,9 @@ static void exec_brge(struct MSIM_AVR *mcu, uint16_t inst)
 		c -= 128;
 
 	if (!cond)
-		mcu->pc += c + 1;
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
 	else
-		mcu->pc++;
+		mcu->pc += 2;
 }
 
 static void exec_andi(struct MSIM_AVR *mcu, uint16_t inst)
@@ -1113,7 +1122,7 @@ static void exec_andi(struct MSIM_AVR *mcu, uint16_t inst)
 	rd += (inst >> 4) & 0x0F;
 	c = ((inst >> 4) & 0xF0) | (inst & 0x0F);
 	mcu->data_mem[rd] = v = mcu->data_mem[rd] & c;
-	mcu->pc++;
+	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, v & 0x80);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, 0);
@@ -1134,8 +1143,10 @@ static void exec_and(struct MSIM_AVR *mcu, uint16_t inst)
 	 */
 	uint8_t rd, rr, v;
 
+	rd = (inst & 0x1F0) >> 4;
+	rr = ((inst & 0x200) >> 5) | (inst & 0x0F);
 	mcu->data_mem[rd] = v = mcu->data_mem[rd] & mcu->data_mem[rr];
-	mcu->pc++;
+	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, v & 0x80);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, 0);
@@ -1162,12 +1173,13 @@ static void exec_sbiw(struct MSIM_AVR *mcu, uint16_t inst)
 	rdh = rdl + 1;
 	c = ((inst >> 2) & 0x30) | (inst & 0x0F);
 
-	buf = v = (mcu->data_mem[rdh] << 8) | mcu->data_mem[rdl];
+	buf = v = (uint16_t) ((mcu->data_mem[rdh] << 8) | mcu->data_mem[rdl]);
 	v -= c;
 	buf = buf & ~v;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, buf >> 15);
-	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, v & 0x8000);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE,
+			    (uint8_t) ((v & 0x8000) >> 15));
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, buf >> 15);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
@@ -1180,7 +1192,7 @@ static void exec_sbiw(struct MSIM_AVR *mcu, uint16_t inst)
 
 	mcu->data_mem[rdh] = v >> 8;
 	mcu->data_mem[rdl] = v & 0x0F;
-	mcu->pc++;
+	mcu->pc += 2;
 }
 
 static int open_mqueues(void)

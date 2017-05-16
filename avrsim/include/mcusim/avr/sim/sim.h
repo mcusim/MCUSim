@@ -62,13 +62,13 @@ struct MSIM_AVR {
 					   the flash pagesize (in bytes) to be
 					   used for Self Programming Mode (SPM)
 					   instruction. */
-	uint16_t flashstart;		/* The first byte address in flash
+	uint32_t flashstart;		/* The first byte address in flash
 					   program space, in bytes. */
-	uint16_t flashend;		/* The last byte address in flash
+	uint32_t flashend;		/* The last byte address in flash
 					   program space, in bytes. */
 	struct MSIM_AVRBootloader *boot_loader;
-	uint16_t ramstart;
-	uint16_t ramend;
+	uint32_t ramstart;
+	uint32_t ramend;
 	uint32_t ramsize;
 	uint16_t e2start;		/* The first EEPROM address */
 	uint16_t e2end;			/* The last EEPROM address */
@@ -98,11 +98,7 @@ struct MSIM_AVR {
 	uint8_t *sreg;			/* Points directly to SREG placed
 					   in data section. */
 
-	uint16_t *prog_mem;		/* Flash memory.
-					   It is organized as an array of
-					   16-bits words because of the fact
-					   that all AVR instructions are
-					   16- or 32-bits long. This memory
+	uint8_t *prog_mem;		/* Flash memory. This memory
 					   section could contain
 					   a bootloader. */
 	uint8_t *data_mem;		/* General purpose registers,
