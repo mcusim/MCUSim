@@ -69,5 +69,20 @@ struct MSIM_InstMsg {
 	MSIM_AVRFlashAddr_t pc;		/* Program counter */
 	uint8_t inst[4];		/* Most of the AVR instructions are
 					   16-bits wide, but there
-					   are 32-bits wide, too. */
+					   are 32-bits wide, too.
+					       MSB  1   LSB  0
+					   |--------|--------| 1st word
+					   |--------|--------| 2nd word */
 };
+
+void MSIM_SendSimMsg(const int sqid,
+		     struct MSIM_AVR *mcu,
+		     long sim_type);
+void MSIM_SendIOPortMsg(const int sqid,
+			struct MSIM_AVR *mcu,
+			uint8_t port_data,
+			uint8_t data_dir,
+			uint8_t input_pins);
+void MSIM_SendInstMsg(const int sqid,
+		      struct MSIM_AVR *mcu,
+		      uint8_t inst[4]);

@@ -18,6 +18,7 @@
 #ifndef MSIM_AVR_SIMCORE_H_
 #define MSIM_AVR_SIMCORE_H_ 1
 
+#include <stdio.h>
 #include <stdint.h>
 
 #include "mcusim/avr/sim/sim.h"

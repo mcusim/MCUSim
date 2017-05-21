@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
 	int status_qid;
 	struct MSIM_RawMsg raw_msg;
 	struct MSIM_SimMsg *sim_msg;
+	struct MSIM_InstMsg *inst_msg;
 
 	/* Get AVR status queue */
 	if ((status_qid = msgget(AVR_SQ_KEY, 0644)) < 0) {
@@ -49,6 +50,11 @@ int main(int argc, char *argv[])
 		} else if (raw_msg.type == AVR_END_SIM_MSGTYP) {
 			printf("End of AVR simulation, mcuid: %" PRIu32 "\n",
 			       sim_msg->mcuid);
+		} else if (raw_msg.type == AVR_INST_MSGTYP) {
+			inst_msg = (struct MSIM_InstMsg *) sim_msg;
+			printf("mcuid=%" PRIu32 ":\t%x: %x %x\n",
+			       inst_msg->mcuid, inst_msg->pc,
+			       inst_msg->inst[0], inst_msg->inst[1]);
 		} else {
 			printf("Unknown message, mcuid: %" PRIu32 ", type: %ld\n",
 			       sim_msg->mcuid, sim_msg->type);

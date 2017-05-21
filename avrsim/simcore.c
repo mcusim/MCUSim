@@ -17,26 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#define __STDC_FORMAT_MACROS 1
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/msg.h>
+#include <inttypes.h>
 
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/bootloader.h"
 #include "mcusim/avr/sim/simcore.h"
 #include "mcusim/avr/ipc/message.h"
 
-int status_qid = -1;
-int ctrl_qid = -1;
+#ifdef MSIM_IPC_MODE_QUEUE
+static int status_qid = -1;		/* Status queue ID */
+static int ctrl_qid = -1;		/* Control queue ID */
+
+/*
+ * Open/close IPC queues to let external programs to interact with
+ * the simulator.
+ */
+static int open_queues(void);
+static void close_queues(void);
+#endif
 
 static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst);
 static int is_inst32(uint16_t inst);
-
-/* Create/open message queues to let clients to interact with simulated MCU. */
-static int open_mqueues(void);
-static void close_mqueues(void);
 
 /* AVR opcodes executors. */
 static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
@@ -52,7 +59,7 @@ static void exec_brlt(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brge(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_rcall(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sts(struct MSIM_AVR *mcu, uint16_t inst);
-static void exec_sts16(struct MSIM_AVR *mcu, uint16_t inst);
+//static void exec_sts16(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_ret(struct MSIM_AVR *mcu);
 static void exec_ori(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sbi_cbi(struct MSIM_AVR *mcu, uint16_t inst, uint8_t set_bit);
@@ -82,34 +89,49 @@ static void exec_ld(struct MSIM_AVR *mcu, uint16_t inst,
 
 void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
 {
-	uint8_t msb, lsb;
 	uint16_t inst;
-	struct MSIM_SimMsg sim_msg;
+	uint8_t msb, lsb;
 
-	if (open_mqueues()) {
-		close_mqueues();
+	#ifdef MSIM_TEXT_MODE
+	printf("%" PRIu32 ":\tStart of AVR simulation\n", mcu->id);
+	#endif
+	#ifdef MSIM_IPC_MODE_QUEUE
+	if (open_queues()) {
+		close_queues();
 		return;
 	}
-	sim_msg.type = AVR_START_SIM_MSGTYP;
-	sim_msg.mcuid = mcu->id;
-	msgsnd(status_qid, (void *) &sim_msg, sizeof sim_msg.mcuid,
-	       IPC_NOWAIT);
+	MSIM_SendSimMsg(status_qid, mcu, AVR_START_SIM_MSGTYP);
+	#endif
 
 	while (1) {
 		lsb = mcu->prog_mem[mcu->pc];
 		msb = mcu->prog_mem[mcu->pc+1];
 		inst = (uint16_t) (lsb | (msb << 8));
+
+		#if defined MSIM_TEXT_MODE && defined MSIM_PRINT_INST
+		printf("%" PRIu32 ":\t%x: %x %x\n",
+		    	mcu->id, mcu->pc, lsb, msb);
+		#endif
+		#if defined MSIM_IPC_MODE_QUEUE && defined MSIM_PRINT_INST
+		uint8_t i[4];
+		i[0] = lsb;
+		i[1] = msb;
+		i[2] = i[3] = 0;
+		MSIM_SendInstMsg(status_qid, mcu, i);
+		#endif
 		if (decode_inst(mcu, inst)) {
 			fprintf(stderr, "Unknown instruction: 0x%X\n", inst);
 			exit(1);
 		}
 	}
 
-	sim_msg.type = AVR_END_SIM_MSGTYP;
-	sim_msg.mcuid = mcu->id;
-	msgsnd(status_qid, (void *) &sim_msg, sizeof sim_msg.mcuid,
-	       IPC_NOWAIT);
-	close_mqueues();
+	#ifdef MSIM_TEXT_MODE
+	printf("%" PRIu32 ":\tEnd of AVR simulation\n", mcu->id);
+	#endif
+	#ifdef MSIM_IPC_MODE_QUEUE
+	MSIM_SendSimMsg(status_qid, mcu, AVR_END_SIM_MSGTYP);
+	close_queues();
+	#endif
 }
 
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
@@ -504,36 +526,46 @@ static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 	case 0xB800:
 		mcu->data_mem[io_loc + mcu->sfr_off] = mcu->data_mem[reg];
 
-		/* Send status message if status queue is available */
-		if (status_qid < 0)
-			break;
-		struct MSIM_IOPortMsg pmsg;
-		pmsg.type = AVR_IO_PORT_MSGTYP;
-		pmsg.mcuid = mcu->id;
-
+		uint8_t port_data;
+		uint8_t data_dir;
+		uint8_t input_pins;
 		if (io_loc == PORTB_ADDR) {
-			pmsg.port_data = mcu->data_mem[io_loc + mcu->sfr_off];
-			pmsg.data_dir = mcu->data_mem[DDRB_ADDR + mcu->sfr_off];
-			pmsg.input_pins =
-				mcu->data_mem[PINB_ADDR + mcu->sfr_off];
+			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
+			data_dir = mcu->data_mem[DDRB_ADDR + mcu->sfr_off];
+			input_pins = mcu->data_mem[PINB_ADDR + mcu->sfr_off];
+			#ifdef MSIM_TEXT_MODE
+			printf("%" PRIu32 ":\tPORTB=0x%x, DDRB=0x%x, PINB=0x%x\n",
+				mcu->id, port_data, data_dir, input_pins);
+			#endif
+			#ifdef MSIM_IPC_MODE_QUEUE
+			MSIM_SendIOPortMsg(status_qid, mcu, port_data, data_dir,
+					   input_pins);
+			#endif
 		} else if (io_loc == PORTC_ADDR) {
-			pmsg.port_data = mcu->data_mem[io_loc + mcu->sfr_off];
-			pmsg.data_dir = mcu->data_mem[DDRC_ADDR + mcu->sfr_off];
-			pmsg.input_pins =
-				mcu->data_mem[PINC_ADDR + mcu->sfr_off];
+			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
+			data_dir = mcu->data_mem[DDRC_ADDR + mcu->sfr_off];
+			input_pins = mcu->data_mem[PINC_ADDR + mcu->sfr_off];
+			#ifdef MSIM_TEXT_MODE
+			printf("%" PRIu32 ":\tPORTC=0x%x, DDRC=0x%x, PINC=0x%x\n",
+				mcu->id, port_data, data_dir, input_pins);
+			#endif
+			#ifdef MSIM_IPC_MODE_QUEUE
+			MSIM_SendIOPortMsg(status_qid, mcu, port_data, data_dir,
+					   input_pins);
+			#endif
 		} else if (io_loc == PORTD_ADDR) {
-			pmsg.port_data = mcu->data_mem[io_loc + mcu->sfr_off];
-			pmsg.data_dir = mcu->data_mem[DDRD_ADDR + mcu->sfr_off];
-			pmsg.input_pins =
-				mcu->data_mem[PIND_ADDR + mcu->sfr_off];
+			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
+			data_dir = mcu->data_mem[DDRD_ADDR + mcu->sfr_off];
+			input_pins = mcu->data_mem[PIND_ADDR + mcu->sfr_off];
+			#ifdef MSIM_TEXT_MODE
+			printf("%" PRIu32 ":\tPORTD=0x%x, DDRD=0x%x, PIND=0x%x\n",
+				mcu->id, port_data, data_dir, input_pins);
+			#endif
+			#ifdef MSIM_IPC_MODE_QUEUE
+			MSIM_SendIOPortMsg(status_qid, mcu, port_data, data_dir,
+					   input_pins);
+			#endif
 		}
-		msgsnd(status_qid, (void *) &pmsg,
-		       sizeof pmsg.mcuid +
-		       sizeof pmsg.port_data +
-		       sizeof pmsg.data_dir +
-		       sizeof pmsg.input_pins,
-		       IPC_NOWAIT);
-
 		break;
 	}
 	mcu->pc += 2;
@@ -1195,7 +1227,8 @@ static void exec_sbiw(struct MSIM_AVR *mcu, uint16_t inst)
 	mcu->pc += 2;
 }
 
-static int open_mqueues(void)
+#ifdef MSIM_IPC_MODE_QUEUE
+static int open_queues(void)
 {
 	if ((status_qid = msgget(AVR_SQ_KEY, AVR_SQ_FLAGS)) < 0) {
 		fprintf(stderr, "AVR status queue cannot be opened!\n");
@@ -1209,7 +1242,7 @@ static int open_mqueues(void)
 	return 0;
 }
 
-static void close_mqueues(void)
+static void close_queues(void)
 {
 	struct msqid_ds desc;
 
@@ -1222,3 +1255,4 @@ static void close_mqueues(void)
 		ctrl_qid = -1;
 	}
 }
+#endif
