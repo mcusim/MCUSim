@@ -38,7 +38,8 @@ void MSIM_SendIOPortMsg(const int sqid,
 			struct MSIM_AVR *mcu,
 			uint8_t port_data,
 			uint8_t data_dir,
-			uint8_t input_pins)
+			uint8_t input_pins,
+			long io_type)
 {
 	if (sqid < 0) {
 		fprintf(stderr, "Illegal queue ID: %d\n", sqid);
@@ -46,7 +47,7 @@ void MSIM_SendIOPortMsg(const int sqid,
 	}
 	struct MSIM_IOPortMsg msg;
 
-	msg.type = AVR_IO_PORT_MSGTYP;
+	msg.type = io_type;
 	msg.mcuid = mcu->id;
 	msg.port_data = port_data;
 	msg.data_dir = data_dir;

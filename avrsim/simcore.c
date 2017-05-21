@@ -539,7 +539,7 @@ static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 			#endif
 			#ifdef MSIM_IPC_MODE_QUEUE
 			MSIM_SendIOPortMsg(status_qid, mcu, port_data, data_dir,
-					   input_pins);
+					   input_pins, AVR_IO_PORTB_MSGTYP);
 			#endif
 		} else if (io_loc == PORTC_ADDR) {
 			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
@@ -551,7 +551,7 @@ static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 			#endif
 			#ifdef MSIM_IPC_MODE_QUEUE
 			MSIM_SendIOPortMsg(status_qid, mcu, port_data, data_dir,
-					   input_pins);
+					   input_pins, AVR_IO_PORTC_MSGTYP);
 			#endif
 		} else if (io_loc == PORTD_ADDR) {
 			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
@@ -563,7 +563,16 @@ static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 			#endif
 			#ifdef MSIM_IPC_MODE_QUEUE
 			MSIM_SendIOPortMsg(status_qid, mcu, port_data, data_dir,
-					   input_pins);
+					   input_pins, AVR_IO_PORTD_MSGTYP);
+			#endif
+		} else if (io_loc == SREG_ADDR) {
+			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
+			#ifdef MSIM_TEXT_MODE
+			printf("%" PRIu32 ":\tSREG=0x%x\n", mcu->id, port_data);
+			#endif
+			#ifdef MSIM_IPC_MODE_QUEUE
+			MSIM_SendIOPortMsg(status_qid, mcu, port_data, 0, 0,
+					   AVR_IO_SREG_MSGTYP);
 			#endif
 		}
 		break;

@@ -35,8 +35,13 @@
 
 #define AVR_START_SIM_MSGTYP		1
 #define AVR_END_SIM_MSGTYP		2
-#define AVR_IO_PORT_MSGTYP		3
-#define AVR_INST_MSGTYP			4
+
+#define AVR_IO_PORTB_MSGTYP		3
+#define AVR_IO_PORTC_MSGTYP		4
+#define AVR_IO_PORTD_MSGTYP		5
+#define AVR_IO_SREG_MSGTYP		6
+
+#define AVR_INST_MSGTYP			7
 
 /* The raw message to cast into specific one based on a type. */
 struct MSIM_RawMsg {
@@ -82,7 +87,8 @@ void MSIM_SendIOPortMsg(const int sqid,
 			struct MSIM_AVR *mcu,
 			uint8_t port_data,
 			uint8_t data_dir,
-			uint8_t input_pins);
+			uint8_t input_pins,
+			long io_type);
 void MSIM_SendInstMsg(const int sqid,
 		      struct MSIM_AVR *mcu,
 		      uint8_t inst[4]);
