@@ -23,11 +23,12 @@ void MSIM_SendSimMsg(const int sqid,
 		     struct MSIM_AVR *mcu,
 		     long sim_type)
 {
+	struct MSIM_SimMsg sim_msg;
+
 	if (sqid < 0) {
 		fprintf(stderr, "Illegal queue ID: %d\n", sqid);
 		return;
 	}
-	struct MSIM_SimMsg sim_msg;
 
 	sim_msg.type = sim_type;
 	sim_msg.mcuid = mcu->id;
@@ -41,11 +42,12 @@ void MSIM_SendIOPortMsg(const int sqid,
 			uint8_t input_pins,
 			long io_type)
 {
+	struct MSIM_IOPortMsg msg;
+
 	if (sqid < 0) {
 		fprintf(stderr, "Illegal queue ID: %d\n", sqid);
 		return;
 	}
-	struct MSIM_IOPortMsg msg;
 
 	msg.type = io_type;
 	msg.mcuid = mcu->id;
@@ -62,12 +64,13 @@ void MSIM_SendInstMsg(const int sqid,
 		      struct MSIM_AVR *mcu,
 		      uint8_t inst[4])
 {
+	struct MSIM_InstMsg inst_msg;
+	uint8_t i;
+
 	if (sqid < 0) {
 		fprintf(stderr, "Illegal queue ID: %d\n", sqid);
 		return;
 	}
-	struct MSIM_InstMsg inst_msg;
-	uint8_t i;
 
 	inst_msg.type = AVR_INST_MSGTYP;
 	inst_msg.mcuid = mcu->id;

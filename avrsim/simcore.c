@@ -59,11 +59,12 @@ static void exec_brlt(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brge(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_rcall(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sts(struct MSIM_AVR *mcu, uint16_t inst);
-//static void exec_sts16(struct MSIM_AVR *mcu, uint16_t inst);
+/* static void exec_sts16(struct MSIM_AVR *mcu, uint16_t inst); */
 static void exec_ret(struct MSIM_AVR *mcu);
 static void exec_ori(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sbi_cbi(struct MSIM_AVR *mcu, uint16_t inst, uint8_t set_bit);
-static void exec_sbis_sbic(struct MSIM_AVR *mcu, uint16_t inst, uint8_t set_bit);
+static void exec_sbis_sbic(struct MSIM_AVR *mcu, uint16_t inst,
+			   uint8_t set_bit);
 static void exec_push_pop(struct MSIM_AVR *mcu, uint16_t inst, uint8_t push);
 static void exec_movw(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sbci(struct MSIM_AVR *mcu, uint16_t inst);
@@ -119,6 +120,7 @@ void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
 		i[2] = i[3] = 0;
 		MSIM_SendInstMsg(status_qid, mcu, i);
 		#endif
+
 		if (decode_inst(mcu, inst)) {
 			fprintf(stderr, "Unknown instruction: 0x%X\n", inst);
 			exit(1);
@@ -513,6 +515,10 @@ static void exec_eor(struct MSIM_AVR *mcu, uint16_t inst)
 static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 			uint8_t reg, uint8_t io_loc)
 {
+	uint8_t port_data;
+	uint8_t data_dir;
+	uint8_t input_pins;
+
 	switch (inst & 0xF800) {
 	/*
 	 * IN - Load an I/O Location to Register
@@ -526,16 +532,14 @@ static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 	case 0xB800:
 		mcu->data_mem[io_loc + mcu->sfr_off] = mcu->data_mem[reg];
 
-		uint8_t port_data;
-		uint8_t data_dir;
-		uint8_t input_pins;
 		if (io_loc == PORTB_ADDR) {
 			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
 			data_dir = mcu->data_mem[DDRB_ADDR + mcu->sfr_off];
 			input_pins = mcu->data_mem[PINB_ADDR + mcu->sfr_off];
 			#ifdef MSIM_TEXT_MODE
-			printf("%" PRIu32 ":\tPORTB=0x%x, DDRB=0x%x, PINB=0x%x\n",
-				mcu->id, port_data, data_dir, input_pins);
+			printf("%" PRIu32 ":\tPORTB=0x%x, DDRB=0x%x, "
+			       "PINB=0x%x\n",
+			       mcu->id, port_data, data_dir, input_pins);
 			#endif
 			#ifdef MSIM_IPC_MODE_QUEUE
 			MSIM_SendIOPortMsg(status_qid, mcu, port_data, data_dir,
@@ -546,8 +550,9 @@ static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 			data_dir = mcu->data_mem[DDRC_ADDR + mcu->sfr_off];
 			input_pins = mcu->data_mem[PINC_ADDR + mcu->sfr_off];
 			#ifdef MSIM_TEXT_MODE
-			printf("%" PRIu32 ":\tPORTC=0x%x, DDRC=0x%x, PINC=0x%x\n",
-				mcu->id, port_data, data_dir, input_pins);
+			printf("%" PRIu32 ":\tPORTC=0x%x, DDRC=0x%x, "
+			       "PINC=0x%x\n",
+			       mcu->id, port_data, data_dir, input_pins);
 			#endif
 			#ifdef MSIM_IPC_MODE_QUEUE
 			MSIM_SendIOPortMsg(status_qid, mcu, port_data, data_dir,
@@ -558,12 +563,14 @@ static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 			data_dir = mcu->data_mem[DDRD_ADDR + mcu->sfr_off];
 			input_pins = mcu->data_mem[PIND_ADDR + mcu->sfr_off];
 			#ifdef MSIM_TEXT_MODE
-			printf("%" PRIu32 ":\tPORTD=0x%x, DDRD=0x%x, PIND=0x%x\n",
-				mcu->id, port_data, data_dir, input_pins);
+			printf("%" PRIu32 ":\tPORTD=0x%x, DDRD=0x%x, "
+			       "PIND=0x%x\n",
+			       mcu->id, port_data, data_dir, input_pins);
 			#endif
 			#ifdef MSIM_IPC_MODE_QUEUE
-			MSIM_SendIOPortMsg(status_qid, mcu, port_data, data_dir,
-					   input_pins, AVR_IO_PORTD_MSGTYP);
+			MSIM_SendIOPortMsg(status_qid, mcu, port_data,
+					   data_dir, input_pins,
+					   AVR_IO_PORTD_MSGTYP);
 			#endif
 		} else if (io_loc == SREG_ADDR) {
 			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
@@ -897,7 +904,8 @@ static void exec_sbi_cbi(struct MSIM_AVR *mcu, uint16_t inst, uint8_t set_bit)
 	mcu->pc += 2;
 }
 
-static void exec_sbis_sbic(struct MSIM_AVR *mcu, uint16_t inst, uint8_t set_bit)
+static void exec_sbis_sbic(struct MSIM_AVR *mcu, uint16_t inst,
+			   uint8_t set_bit)
 {
 	/*
 	 * SBIS – Skip if Bit in I/O Register is Set

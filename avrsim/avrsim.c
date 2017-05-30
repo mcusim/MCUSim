@@ -32,9 +32,7 @@
 #define DATA_MEMORY		1120
 
 static struct MSIM_AVRBootloader bootloader;
-static struct MSIM_AVR mcu = {
-	.boot_loader = &bootloader,
-};
+static struct MSIM_AVR mcu;
 
 static uint8_t prog_mem[PROGRAM_MEMORY];
 static uint8_t data_mem[DATA_MEMORY];
@@ -71,10 +69,12 @@ int main(int argc, char *argv[])
 		}
 	}
 	if (errflag) {
-		fprintf(stderr, "Usage: avrsim -m <AVR_MODEL> -p <PATH_TO_HEX>\n");
+		fprintf(stderr, "Usage: avrsim -m <AVR_MODEL> "
+				"-p <PATH_TO_HEX>\n");
 		return -2;
 	}
 
+	mcu.boot_loader = &bootloader;
 	if (MSIM_InitAVR(&mcu, mcu_model,
 			 prog_mem, sizeof prog_mem / sizeof prog_mem[0],
 			 data_mem, sizeof data_mem / sizeof data_mem[0])) {

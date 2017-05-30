@@ -33,9 +33,11 @@
 #include "mcusim/hex/ihex.h"
 
 static int is_ckopt_programmed(uint8_t ckopt_f);
-static int set_fuse_bytes(struct MSIM_AVR *mcu, uint8_t fuse_high, uint8_t fuse_low);
+static int set_fuse_bytes(struct MSIM_AVR *mcu, uint8_t fuse_high,
+			  uint8_t fuse_low);
 static int set_bldr_size(struct MSIM_AVR *mcu, uint8_t fuse_high);
-static int set_frequency(struct MSIM_AVR *mcu, uint8_t fuse_high, uint8_t fuse_low);
+static int set_frequency(struct MSIM_AVR *mcu, uint8_t fuse_high,
+			 uint8_t fuse_low);
 static int set_reset_vector(struct MSIM_AVR *mcu, uint8_t fuse_high);
 static int set_progmem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
 static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
@@ -164,9 +166,9 @@ int MSIM_M8ALoadProgmem(struct MSIM_AVR *mcu, FILE *fp)
 
 		mem_rec.checksum = Checksum_IHexRecord(&mem_rec);
 		if (mem_rec.checksum != rec.checksum) {
-			printf("Checksum is not correct:"
-			       " 0x%X (memory) != 0x%X (file)\n"
-			       "File record:\n", mem_rec.checksum, rec.checksum);
+			printf("Checksum is not correct: 0x%X (memory) != "
+			       "0x%X (file)\nFile record:\n",
+			       mem_rec.checksum, rec.checksum);
 			Print_IHexRecord(&rec);
 			printf("Memory record:\n");
 			Print_IHexRecord(&mem_rec);
@@ -190,6 +192,7 @@ static int set_progmem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
 	}
 
 	mcu->prog_mem = mem;
+	mcu->pm_size = size;
 	return 0;
 }
 
@@ -206,6 +209,7 @@ static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
 	}
 
 	mcu->data_mem = mem;
+	mcu->dm_size = size;
 	mcu->sreg = &mcu->data_mem[SREG_ADDR + __SFR_OFFSET];
 
 	mcu->data_mem[SREG_ADDR		+ __SFR_OFFSET] = 0x00;
@@ -370,7 +374,8 @@ static int set_bldr_size(struct MSIM_AVR *mcu, uint8_t fuse_high)
 	return 0;
 }
 
-static int set_frequency(struct MSIM_AVR *mcu, uint8_t fuse_high, uint8_t fuse_low)
+static int set_frequency(struct MSIM_AVR *mcu, uint8_t fuse_high,
+			 uint8_t fuse_low)
 {
 	uint8_t cksel_f, ckopt_f;
 

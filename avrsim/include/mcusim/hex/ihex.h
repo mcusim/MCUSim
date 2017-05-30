@@ -66,7 +66,7 @@ enum _IHexDefinitions {
 	 * Start code offset and value
 	 */
 	IHEX_START_CODE_OFFSET = 0,
-	IHEX_START_CODE = ':',
+	IHEX_START_CODE = ':'
 };
 
 /*
@@ -99,7 +99,7 @@ enum IHexErrors {
 	 * Error code for encountering a newline with no record when
 	 * reading from a file.
 	 */
-	IHEX_ERROR_NEWLINE = -5,
+	IHEX_ERROR_NEWLINE = -5
 };
 
 /*
@@ -111,7 +111,7 @@ enum IHexRecordTypes {
 	IHEX_TYPE_02, /**< Extended Segment Address Record */
 	IHEX_TYPE_03, /**< Start Segment Address Record */
 	IHEX_TYPE_04, /**< Extended Linear Address Record */
-	IHEX_TYPE_05, /**< Start Linear Address Record */
+	IHEX_TYPE_05  /**< Start Linear Address Record */
 };
 
 /*

@@ -1,5 +1,7 @@
 /*
- * mcusim - Interactive simulator for microcontrollers.
+ * AVRSim - Simulator for AVR microcontrollers.
+ * This software is a part of MCUSim, interactive simulator for
+ * microcontrollers.
  * Copyright (C) 2017 Dmitry Salychev <darkness.bsd@gmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -103,6 +105,8 @@ struct MSIM_AVR {
 					   a bootloader. */
 	uint8_t *data_mem;		/* General purpose registers,
 					   IO registers and SRAM */
+	uint32_t pm_size;		/* Actual size of the program memory. */
+	uint32_t dm_size;		/* Actual size of the data memory. */
 };
 
 #include "mcusim/avr/sim/simcore.h"
