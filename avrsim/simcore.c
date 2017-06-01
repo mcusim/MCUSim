@@ -45,8 +45,8 @@ static void close_queues(void);
 #define DATA_MEMORY		1120
 
 /*
- * To temporarily store data memory and test changes of a data memory after
- * execution of an instruction.
+ * To temporarily store data memory and test changes after execution of
+ * an instruction.
  */
 static uint8_t data_mem[DATA_MEMORY];
 
@@ -67,6 +67,7 @@ static void exec_rel_jump(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brne(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brlt(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brge(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brcs(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_rcall(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sts(struct MSIM_AVR *mcu, uint16_t inst);
 /* static void exec_sts16(struct MSIM_AVR *mcu, uint16_t inst); */
@@ -77,6 +78,7 @@ static void exec_sbis_sbic(struct MSIM_AVR *mcu, uint16_t inst,
 			   uint8_t set_bit);
 static void exec_push_pop(struct MSIM_AVR *mcu, uint16_t inst, uint8_t push);
 static void exec_movw(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_mov(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sbci(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sbiw(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_andi(struct MSIM_AVR *mcu, uint16_t inst);
@@ -361,6 +363,9 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 		case 0x2400:
 			exec_eor(mcu, inst);
 			break;
+		case 0x2C00:
+			exec_mov(mcu, inst);
+			break;
 		default:
 			return -1;
 		}
@@ -515,6 +520,9 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 		break;
 	case 0xF000:
 		switch (inst & 0xFC07) {
+		case 0xF000:
+			exec_brcs(mcu, inst);
+			break;
 		case 0xF004:
 			exec_brlt(mcu, inst);
 			break;
@@ -959,15 +967,24 @@ static void exec_push_pop(struct MSIM_AVR *mcu, uint16_t inst, uint8_t push)
 
 static void exec_movw(struct MSIM_AVR *mcu, uint16_t inst)
 {
-	/*
-	 * MOVW – Copy Register Word
-	 */
+	/* MOVW – Copy Register Word */
 	uint8_t regd, regr;
 
 	regr = inst & 0x0F;
 	regd = (inst >> 4) & 0x0F;
 	mcu->data_mem[regd+1] = mcu->data_mem[regr+1];
 	mcu->data_mem[regd] = mcu->data_mem[regr];
+	mcu->pc += 2;
+}
+
+static void exec_mov(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* MOV - Copy register */
+	uint8_t rd, rr;
+
+	rr = ((inst & 0x200) >> 5) | (inst & 0x0F);
+	rd = (inst & 0x1F0) >> 4;
+	mcu->data_mem[rd] = mcu->data_mem[rr];
 	mcu->pc += 2;
 }
 
@@ -1229,6 +1246,24 @@ static void exec_sbiw(struct MSIM_AVR *mcu, uint16_t inst)
 	mcu->data_mem[rdh] = v >> 8;
 	mcu->data_mem[rdl] = v & 0x0F;
 	mcu->pc += 2;
+}
+
+static void exec_brcs(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BRCS - Branch if Carry Set */
+	uint8_t cond;
+	int8_t c;
+
+	cond = MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY);
+	c = (inst >> 3) & 0x7F;
+	if (c > 63)
+		c -= 128;
+
+	if (cond)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+
 }
 
 #ifdef MSIM_IPC_MODE_QUEUE
