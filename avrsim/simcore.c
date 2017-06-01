@@ -42,8 +42,18 @@ static int open_queues(void);
 static void close_queues(void);
 #endif
 
+#define DATA_MEMORY		1120
+
+/*
+ * To temporarily store data memory and test changes of a data memory after
+ * execution of an instruction.
+ */
+static uint8_t data_mem[DATA_MEMORY];
+
 static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst);
 static int is_inst32(uint16_t inst);
+static void before_inst(struct MSIM_AVR *mcu);
+static void after_inst(struct MSIM_AVR *mcu);
 
 /* AVR opcodes executors. */
 static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
@@ -121,10 +131,12 @@ void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
 		MSIM_SendInstMsg(status_qid, mcu, i);
 		#endif
 
+		before_inst(mcu);
 		if (decode_inst(mcu, inst)) {
 			fprintf(stderr, "Unknown instruction: 0x%X\n", inst);
 			exit(1);
 		}
+		after_inst(mcu);
 	}
 
 	#ifdef MSIM_TEXT_MODE
@@ -273,6 +285,36 @@ uint8_t MSIM_StackPop(struct MSIM_AVR *mcu)
 	*mcu->sp_high = (uint8_t) (sp >> 8);
 
 	return v;
+}
+
+static void before_inst(struct MSIM_AVR *mcu)
+{
+	memcpy(data_mem, mcu->data_mem, mcu->dm_size);
+}
+
+static void after_inst(struct MSIM_AVR *mcu)
+{
+	int16_t r;
+	uint16_t i;
+
+	for (i = 0; i < sizeof(mcu->io_addr)/sizeof(mcu->io_addr[0]); i++) {
+		if ((r = mcu->io_addr[i]) < 0)
+			continue;
+		r += mcu->sfr_off;
+
+		/* Has I/O register value been changed? */
+		if (mcu->data_mem[r] == data_mem[r])
+			continue;
+
+		#ifdef MSIM_TEXT_MODE
+		printf("%" PRIu32 ":\tIOREG=0x%x, VALUE=0x%x\n",
+			mcu->id,
+			mcu->io_addr[i],
+			mcu->data_mem[r]);
+		#endif
+		#ifdef MSIM_IPC_MODE_QUEUE
+		#endif
+	}
 }
 
 static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
@@ -515,10 +557,6 @@ static void exec_eor(struct MSIM_AVR *mcu, uint16_t inst)
 static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 			uint8_t reg, uint8_t io_loc)
 {
-	uint8_t port_data;
-	uint8_t data_dir;
-	uint8_t input_pins;
-
 	switch (inst & 0xF800) {
 	/*
 	 * IN - Load an I/O Location to Register
@@ -531,57 +569,6 @@ static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 	 */
 	case 0xB800:
 		mcu->data_mem[io_loc + mcu->sfr_off] = mcu->data_mem[reg];
-
-		if (io_loc == PORTB_ADDR) {
-			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
-			data_dir = mcu->data_mem[DDRB_ADDR + mcu->sfr_off];
-			input_pins = mcu->data_mem[PINB_ADDR + mcu->sfr_off];
-			#ifdef MSIM_TEXT_MODE
-			printf("%" PRIu32 ":\tPORTB=0x%x, DDRB=0x%x, "
-			       "PINB=0x%x\n",
-			       mcu->id, port_data, data_dir, input_pins);
-			#endif
-			#ifdef MSIM_IPC_MODE_QUEUE
-			MSIM_SendIOPortMsg(status_qid, mcu, port_data, data_dir,
-					   input_pins, AVR_IO_PORTB_MSGTYP);
-			#endif
-		} else if (io_loc == PORTC_ADDR) {
-			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
-			data_dir = mcu->data_mem[DDRC_ADDR + mcu->sfr_off];
-			input_pins = mcu->data_mem[PINC_ADDR + mcu->sfr_off];
-			#ifdef MSIM_TEXT_MODE
-			printf("%" PRIu32 ":\tPORTC=0x%x, DDRC=0x%x, "
-			       "PINC=0x%x\n",
-			       mcu->id, port_data, data_dir, input_pins);
-			#endif
-			#ifdef MSIM_IPC_MODE_QUEUE
-			MSIM_SendIOPortMsg(status_qid, mcu, port_data, data_dir,
-					   input_pins, AVR_IO_PORTC_MSGTYP);
-			#endif
-		} else if (io_loc == PORTD_ADDR) {
-			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
-			data_dir = mcu->data_mem[DDRD_ADDR + mcu->sfr_off];
-			input_pins = mcu->data_mem[PIND_ADDR + mcu->sfr_off];
-			#ifdef MSIM_TEXT_MODE
-			printf("%" PRIu32 ":\tPORTD=0x%x, DDRD=0x%x, "
-			       "PIND=0x%x\n",
-			       mcu->id, port_data, data_dir, input_pins);
-			#endif
-			#ifdef MSIM_IPC_MODE_QUEUE
-			MSIM_SendIOPortMsg(status_qid, mcu, port_data,
-					   data_dir, input_pins,
-					   AVR_IO_PORTD_MSGTYP);
-			#endif
-		} else if (io_loc == SREG_ADDR) {
-			port_data = mcu->data_mem[io_loc + mcu->sfr_off];
-			#ifdef MSIM_TEXT_MODE
-			printf("%" PRIu32 ":\tSREG=0x%x\n", mcu->id, port_data);
-			#endif
-			#ifdef MSIM_IPC_MODE_QUEUE
-			MSIM_SendIOPortMsg(status_qid, mcu, port_data, 0, 0,
-					   AVR_IO_SREG_MSGTYP);
-			#endif
-		}
 		break;
 	}
 	mcu->pc += 2;

@@ -22,12 +22,8 @@
 #include <string.h>
 #include <time.h>
 
-/*
- * We would like to include headers specific to the
- * ATMega8A microcontroller.
- */
+/* We would like to include headers specific to the ATMega8A microcontroller */
 #define __AVR_ATmega8A__ 1
-
 #include "mcusim/avr/io.h"
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/hex/ihex.h"
@@ -82,6 +78,8 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu,
 		 uint8_t *pm, uint32_t pm_size,
 		 uint8_t *dm, uint32_t dm_size)
 {
+	uint32_t i;
+
 	if (!mcu) {
 		fprintf(stderr, "MCU should not be NULL\n");
 		return -1;
@@ -113,6 +111,71 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu,
 
 	mcu->sfr_off = __SFR_OFFSET;
 
+	/* Invalidate I/O ports addresses before initialization */
+	for (i = 0; i < sizeof(mcu->io_addr)/sizeof(mcu->io_addr[0]); i++)
+		mcu->io_addr[i] = -1;
+	mcu->io_addr[SREG_ADDRI] = 0x3F;
+	mcu->io_addr[SPH_ADDRI] = 0x3E;
+	mcu->io_addr[SPL_ADDRI] = 0x3D;
+	mcu->io_addr[GICR_ADDRI] = 0x3B;
+	mcu->io_addr[GIFR_ADDRI] = 0x3A;
+	mcu->io_addr[TIMSK_ADDRI] = 0x39;
+	mcu->io_addr[TIFR_ADDRI] = 0x38;
+	mcu->io_addr[SPMCR_ADDRI] = 0x37;
+	mcu->io_addr[TWCR_ADDRI] = 0x36;
+	mcu->io_addr[MCUCR_ADDRI] = 0x35;
+	mcu->io_addr[MCUCSR_ADDRI] = 0x34;
+	mcu->io_addr[TCCR0_ADDRI] = 0x33;
+	mcu->io_addr[TCNT0_ADDRI] = 0x32;
+	mcu->io_addr[OSCCAL_ADDRI] = 0x31;
+	mcu->io_addr[SFIOR_ADDRI] = 0x30;
+	mcu->io_addr[TCCR1A_ADDRI] = 0x2F;
+	mcu->io_addr[TCCR1B_ADDRI] = 0x2E;
+	mcu->io_addr[TCNT1H_ADDRI] = 0x2D;
+	mcu->io_addr[TCNT1L_ADDRI] = 0x2C;
+	mcu->io_addr[OCR1AH_ADDRI] = 0x2B;
+	mcu->io_addr[OCR1AL_ADDRI] = 0x2A;
+	mcu->io_addr[OCR1BH_ADDRI] = 0x29;
+	mcu->io_addr[OCR1BL_ADDRI] = 0x28;
+	mcu->io_addr[ICR1H_ADDRI] = 0x27;
+	mcu->io_addr[ICR1L_ADDRI] = 0x26;
+	mcu->io_addr[TCCR2_ADDRI] = 0x25;
+	mcu->io_addr[TCNT2_ADDRI] = 0x24;
+	mcu->io_addr[OCR2_ADDRI] = 0x23;
+	mcu->io_addr[ASSR_ADDRI] = 0x22;
+	mcu->io_addr[WDTCR_ADDRI] = 0x21;
+	mcu->io_addr[UBRRH_ADDRI] = 0x20;
+	mcu->io_addr[UCSRC_ADDRI] = 0x20;
+	mcu->io_addr[EEARH_ADDRI] = 0x1F;
+	mcu->io_addr[EEARL_ADDRI] = 0x1E;
+	mcu->io_addr[EEDR_ADDRI] = 0x1D;
+	mcu->io_addr[EECR_ADDRI] = 0x1C;
+	mcu->io_addr[PORTB_ADDRI] = 0x18;
+	mcu->io_addr[DDRB_ADDRI] = 0x17;
+	mcu->io_addr[PINB_ADDRI] = 0x16;
+	mcu->io_addr[PORTC_ADDRI] = 0x15;
+	mcu->io_addr[DDRC_ADDRI] = 0x14;
+	mcu->io_addr[PINC_ADDRI] = 0x13;
+	mcu->io_addr[PORTD_ADDRI] = 0x12;
+	mcu->io_addr[DDRD_ADDRI] = 0x11;
+	mcu->io_addr[PIND_ADDRI] = 0x10;
+	mcu->io_addr[SPDR_ADDRI] = 0x0F;
+	mcu->io_addr[SPSR_ADDRI] = 0x0E;
+	mcu->io_addr[SPCR_ADDRI] = 0x0D;
+	mcu->io_addr[UDR_ADDRI] = 0x0C;
+	mcu->io_addr[UCSRA_ADDRI] = 0x0B;
+	mcu->io_addr[UCSRB_ADDRI] = 0x0A;
+	mcu->io_addr[UBRRL_ADDRI] = 0x09;
+	mcu->io_addr[ACSR_ADDRI] = 0x08;
+	mcu->io_addr[ADMUX_ADDRI] = 0x07;
+	mcu->io_addr[ADCSRA_ADDRI] = 0x06;
+	mcu->io_addr[ADCH_ADDRI] = 0x05;
+	mcu->io_addr[ADCL_ADDRI] = 0x04;
+	mcu->io_addr[TWDR_ADDRI] = 0x03;
+	mcu->io_addr[TWAR_ADDRI] = 0x02;
+	mcu->io_addr[TWSR_ADDRI] = 0x01;
+	mcu->io_addr[TWBR_ADDRI] = 0x00;
+
 	if (set_progmem(mcu, pm, pm_size))
 		return -1;
 	if (set_datamem(mcu, dm, dm_size))
@@ -121,7 +184,6 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu,
 		fprintf(stderr, "Fuse bytes cannot be set correctly\n");
 		return -1;
 	}
-
 	return 0;
 }
 
@@ -198,6 +260,8 @@ static int set_progmem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
 
 static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
 {
+	uint32_t sfr;
+
 	if ((mcu->ramsize + 96) != size) {
 		fprintf(stderr, "Data memory is limited by %u.%03u KiB,"
 				" %u.%03u KiB doesn't match\n",
@@ -208,40 +272,41 @@ static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
 		return -1;
 	}
 
+	sfr = mcu->sfr_off;
 	mcu->data_mem = mem;
 	mcu->dm_size = size;
-	mcu->sreg = &mcu->data_mem[SREG_ADDR + __SFR_OFFSET];
+	mcu->sreg = &mcu->data_mem[(uint32_t)mcu->io_addr[SREG_ADDRI] + sfr];
 
-	mcu->data_mem[SREG_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[SPH_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[SPL_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[GICR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[GIFR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TIMSK_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TIFR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[SPMCR_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TWCR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[MCUCR_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[MCUCSR_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TCCR0_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TCNT0_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[OSCCAL_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[SFIOR_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TCCR1A_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TCCR1B_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TCNT1H_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TCNT1L_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[OCR1AH_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[OCR1AL_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[OCR1BH_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[OCR1BL_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[ICR1H_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[ICR1L_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TCCR2_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TCNT2_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[OCR2_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[ASSR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[WDTCR_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[SREG_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[SPH_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[SPL_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[GICR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[GIFR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TIMSK_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TIFR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[SPMCR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TWCR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[MCUCR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[MCUCSR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TCCR0_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TCNT0_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[OSCCAL_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[SFIOR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TCCR1A_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TCCR1B_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TCNT1H_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TCNT1L_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[OCR1AH_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[OCR1AL_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[OCR1BH_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[OCR1BL_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[ICR1H_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[ICR1L_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TCCR2_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TCNT2_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[OCR2_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[ASSR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[WDTCR_ADDRI]+sfr] = 0x00;
 	/*
 	 * From datasheet:
 	 *
@@ -280,42 +345,42 @@ static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
 	 *		return ucsrc;
 	 *	}
 	 */
-	mcu->data_mem[UBRRH_ADDR	+ __SFR_OFFSET] = 0x00;
-	/* mcu->data_mem[UCSRC_ADDR	+ __SFR_OFFSET] = 0x82; */
-	mcu->data_mem[EEARH_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[EEARL_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[EECR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[EECR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[PORTB_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[DDRB_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[PINB_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[PORTC_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[DDRC_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[PINC_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[PORTD_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[DDRD_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[PIND_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[SPDR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[SPDR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[SPSR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[SPCR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[UDR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[UCSRA_ADDR	+ __SFR_OFFSET] = 0x20;
-	mcu->data_mem[UCSRB_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[UBRRL_ADDR	+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[UBRRH_ADDRI]+sfr] = 0x00;
+	/* mcu->data_mem[(uint32_t)mcu->io_addr[UCSRC_ADDRI]+sfr] = 0x82; */
+	mcu->data_mem[(uint32_t)mcu->io_addr[EEARH_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[EEARL_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[EECR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[EECR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[PORTB_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[DDRB_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[PINB_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[PORTC_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[DDRC_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[PINC_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[PORTD_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[DDRD_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[PIND_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[SPDR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[SPDR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[SPSR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[SPCR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[UDR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[UCSRA_ADDRI]+sfr] = 0x20;
+	mcu->data_mem[(uint32_t)mcu->io_addr[UCSRB_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[UBRRL_ADDRI]+sfr] = 0x00;
 	/*
 	 * ACSR:5(ACO) - The output of the Analog Comparator is synchronized
 	 * and then directly connected to ACO, i.e. it is an analog output.
 	 */
-	mcu->data_mem[ACSR_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[ADMUX_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[ADCSRA_ADDR	+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[ADCH_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[ADCL_ADDR		+ __SFR_OFFSET] = 0x00;
-	mcu->data_mem[TWDR_ADDR		+ __SFR_OFFSET] = 0x01;
-	mcu->data_mem[TWAR_ADDR		+ __SFR_OFFSET] = 0x02;
-	mcu->data_mem[TWSR_ADDR		+ __SFR_OFFSET] = 0x08;
-	mcu->data_mem[TWBR_ADDR		+ __SFR_OFFSET] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[ACSR_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[ADMUX_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[ADCSRA_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[ADCH_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[ADCL_ADDRI]+sfr] = 0x00;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TWDR_ADDRI]+sfr] = 0x01;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TWAR_ADDRI]+sfr] = 0x02;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TWSR_ADDRI]+sfr] = 0x08;
+	mcu->data_mem[(uint32_t)mcu->io_addr[TWBR_ADDRI]+sfr] = 0x00;
 
 	return 0;
 }
@@ -470,8 +535,10 @@ static int set_reset_vector(struct MSIM_AVR *mcu, uint8_t fuse_high)
 		break;
 	}
 	mcu->pc = mcu->reset_pc;
-	mcu->sp_high = &mcu->data_mem[SPH_ADDR + __SFR_OFFSET];
-	mcu->sp_low = &mcu->data_mem[SPL_ADDR + __SFR_OFFSET];
+	mcu->sp_high = &mcu->data_mem[(uint32_t)mcu->io_addr[SPH_ADDRI] +
+				      mcu->sfr_off];
+	mcu->sp_low = &mcu->data_mem[(uint32_t)mcu->io_addr[SPL_ADDRI] +
+				     mcu->sfr_off];
 
 	return 0;
 }
