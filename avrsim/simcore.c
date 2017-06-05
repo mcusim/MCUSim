@@ -63,7 +63,7 @@ static void exec_cmp_immediate(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_cmp_carry(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_eor(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_load_immediate(struct MSIM_AVR *mcu, uint16_t inst);
-static void exec_rel_jump(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_rjmp(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brne(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brlt(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brge(struct MSIM_AVR *mcu, uint16_t inst);
@@ -83,6 +83,8 @@ static void exec_sbci(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sbiw(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_andi(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_and(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_subi(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_cli(struct MSIM_AVR *mcu, uint16_t inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_st_y(struct MSIM_AVR *mcu, uint16_t inst);
@@ -289,6 +291,36 @@ uint8_t MSIM_StackPop(struct MSIM_AVR *mcu)
 	return v;
 }
 
+#ifdef MSIM_IPC_MODE_QUEUE
+static int open_queues(void)
+{
+	if ((status_qid = msgget(AVR_SQ_KEY, AVR_SQ_FLAGS)) < 0) {
+		fprintf(stderr, "AVR status queue cannot be opened!\n");
+		return -1;
+	}
+	if ((ctrl_qid = msgget(AVR_CQ_KEY, AVR_CQ_FLAGS)) < 0) {
+		fprintf(stderr, "AVR control queue cannot be opened!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+static void close_queues(void)
+{
+	struct msqid_ds desc;
+
+	if (status_qid >= 0) {
+		msgctl(status_qid, IPC_RMID, &desc);
+		status_qid = -1;
+	}
+	if (ctrl_qid >= 0) {
+		msgctl(ctrl_qid, IPC_RMID, &desc);
+		ctrl_qid = -1;
+	}
+}
+#endif
+
 static void before_inst(struct MSIM_AVR *mcu)
 {
 	memcpy(data_mem, mcu->data_mem, mcu->dm_size);
@@ -376,6 +408,9 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 	case 0x4000:
 		exec_sbci(mcu, inst);
 		break;
+	case 0x5000:
+		exec_subi(mcu, inst);
+		break;
 	case 0x6000:
 		exec_ori(mcu, inst);
 		break;
@@ -416,12 +451,10 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 		}
 		break;
 	case 0x9000:
-		if ((inst & 0xFF0F) == 0x9408) {
-			/* ... */
-			break;
-		}
-
 		switch (inst) {
+		case 0x94F8:
+			exec_cli(mcu, inst);
+			break;
 		case 0x9508:
 			exec_ret(mcu);
 			break;
@@ -510,7 +543,7 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 			    (inst & 0x0F) | ((inst & 0x0600) >> 5));
 		break;
 	case 0xC000:
-		exec_rel_jump(mcu, inst);
+		exec_rjmp(mcu, inst);
 		break;
 	case 0xD000:
 		exec_rcall(mcu, inst);
@@ -677,7 +710,7 @@ static void exec_load_immediate(struct MSIM_AVR *mcu, uint16_t inst)
 	mcu->pc += 2;
 }
 
-static void exec_rel_jump(struct MSIM_AVR *mcu, uint16_t inst)
+static void exec_rjmp(struct MSIM_AVR *mcu, uint16_t inst)
 {
 	/*
 	 * RJMP - Relative Jump
@@ -1266,32 +1299,39 @@ static void exec_brcs(struct MSIM_AVR *mcu, uint16_t inst)
 
 }
 
-#ifdef MSIM_IPC_MODE_QUEUE
-static int open_queues(void)
+static void exec_subi(struct MSIM_AVR *mcu, uint16_t inst)
 {
-	if ((status_qid = msgget(AVR_SQ_KEY, AVR_SQ_FLAGS)) < 0) {
-		fprintf(stderr, "AVR status queue cannot be opened!\n");
-		return -1;
-	}
-	if ((ctrl_qid = msgget(AVR_CQ_KEY, AVR_CQ_FLAGS)) < 0) {
-		fprintf(stderr, "AVR control queue cannot be opened!\n");
-		return -1;
-	}
+	/* SUBI - Subtract Immediate */
+	uint8_t rd, c, r, buf;
+	uint8_t rd_addr;
 
-	return 0;
+	rd_addr = (inst & 0xF0) >> 4;
+	c = ((inst & 0xF00) >> 4) | (inst & 0xF);
+
+	rd = mcu->data_mem[rd_addr+16];
+	r = mcu->data_mem[rd_addr+16] -= c;
+	mcu->pc += 2;
+
+	buf = (~rd & c) | (c & r) | (r & ~rd);
+
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, buf >> 7);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_HALF_CARRY, (buf >> 3) & 0x01);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, r >> 7);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF,
+			    ((rd & ~c & ~r) | (~rd & c & r)) >> 7);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
+	if (!r) {
+		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 1);
+	} else {
+		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
+	}
 }
 
-static void close_queues(void)
+static void exec_cli(struct MSIM_AVR *mcu, uint16_t inst)
 {
-	struct msqid_ds desc;
-
-	if (status_qid >= 0) {
-		msgctl(status_qid, IPC_RMID, &desc);
-		status_qid = -1;
-	}
-	if (ctrl_qid >= 0) {
-		msgctl(ctrl_qid, IPC_RMID, &desc);
-		ctrl_qid = -1;
-	}
+	/* CLI - Clear Global Interrupt Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
+	mcu->pc += 2;
 }
-#endif
