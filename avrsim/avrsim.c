@@ -26,7 +26,7 @@
 #include "mcusim/avr/sim/simcore.h"
 #include "mcusim/avr/sim/bootloader.h"
 
-#define CLI_OPTIONS		":hm:p:"
+#define CLI_OPTIONS		":hm:p:v"
 
 #define PROGRAM_MEMORY		8192
 #define DATA_MEMORY		1120
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 	int c;
 	char *mcu_model;
 	char *prog_path;
-	uint8_t errflag = 1;
+	uint8_t errflag = 1, ver = 0;
 	FILE *fp;
 
 	while ((c = getopt(argc, argv, CLI_OPTIONS)) != -1) {
@@ -59,19 +59,41 @@ int main(int argc, char *argv[])
 			break;
 		case 'h':
 			break;
+		case 'v':
+			errflag = 0;
+			ver = 1;
+			break;
+/*		case 'o':
+			break; */
 		case ':':		/* missing operand */
 			fprintf(stderr, "Option -%c required an operand\n",
 					optopt);
 			break;
 		case '?':		/* unrecognised option */
-			fprintf(stderr, "Unrecognized option: -%c\n", optopt);
+			fprintf(stderr, "Unknown option: -%c\n", optopt);
 			break;
 		}
 	}
 	if (errflag) {
-		fprintf(stderr, "Usage: avrsim -m <AVR_MODEL> "
-				"-p <PATH_TO_HEX>\n");
+		fprintf(stderr,
+			"usage: avrsim [-v] [-h] [-o <option>] "
+			"-m <model> -p <hexfile>\n\nThese options are used "
+			"to configure the simulator:\n\n"
+			"    use-stdout       Print all status messages to "
+			"stdout (default)\n"
+			"    use-ipc-queues   Use IPC message queues to "
+			"report about status of the simulator and accept "
+			"control messages\n"
+			"    print-io-regs    Print I/O registers which "
+			"values have been changed\n"
+			"    print-opcodes    Print next AVR instruction "
+			"which will be executed\n\n");
 		return -2;
+	} else if (ver) {
+		printf("avrsim version %d.%d.%d%s\n",
+			MSIM_VERSION_MAJOR, MSIM_VERSION_MINOR,
+			MSIM_VERSION_PATCH, MSIM_VERSION_META);
+		return 0;
 	}
 
 	mcu.boot_loader = &bootloader;

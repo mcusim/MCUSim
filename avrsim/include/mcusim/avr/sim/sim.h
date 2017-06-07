@@ -20,93 +20,19 @@
 #ifndef MSIM_AVR_SIM_H_
 #define MSIM_AVR_SIM_H_ 1
 
-#include <stdint.h>
-
-#include "mcusim/avr/sim/bootloader.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Indexes of the AVR I/O registers addresses in the MSIM_AVR structure */
-#define SREG_ADDRI		0x3F
-#define SPH_ADDRI		0x3E
-#define SPL_ADDRI		0x3D
-/*	Reserved		0x3C */
-#define GICR_ADDRI		0x3B
-#define GIFR_ADDRI		0x3A
-#define TIMSK_ADDRI		0x39
-#define TIFR_ADDRI		0x38
-#define SPMCR_ADDRI		0x37
-#define TWCR_ADDRI		0x36
-#define MCUCR_ADDRI		0x35
-#define MCUCSR_ADDRI		0x34
-#define TCCR0_ADDRI		0x33
-#define TCNT0_ADDRI		0x32	/* Timer/Counter0 (8 Bits) */
-#define OSCCAL_ADDRI		0x31	/* Oscillator Calibration Register */
-#define SFIOR_ADDRI		0x30
-#define TCCR1A_ADDRI		0x2F
-#define TCCR1B_ADDRI		0x2E
-#define TCNT1H_ADDRI		0x2D	/* Timer/Counter1 – Counter Register
-					   High byte */
-#define TCNT1L_ADDRI		0x2C	/* Timer/Counter1 – Counter Register
-					   Low byte */
-#define OCR1AH_ADDRI		0x2B	/* Timer/Counter1 – Output Compare
-					   Register A High byte */
-#define OCR1AL_ADDRI		0x2A	/* Timer/Counter1 – Output Compare
-					   Register A Low byte */
-#define OCR1BH_ADDRI		0x29	/* Timer/Counter1 – Output Compare
-					   Register B High byte */
-#define OCR1BL_ADDRI		0x28	/* Timer/Counter1 – Output Compare
-					   Register B Low byte */
-#define ICR1H_ADDRI		0x27	/* Timer/Counter1 – Input Capture
-					   Register High byte */
-#define ICR1L_ADDRI		0x26	/* Timer/Counter1 – Input Capture
-					   Register Low byte */
-#define TCCR2_ADDRI		0x25
-#define TCNT2_ADDRI		0x24	/* Timer/Counter2 (8 Bits) */
-#define OCR2_ADDRI		0x23	/* Timer/Counter2 Output Compare
-					   Register */
-#define ASSR_ADDRI		0x22
-#define WDTCR_ADDRI		0x21
-#define UBRRH_ADDRI		0x20	/* Refer to the USART description
-					   for details on how to access
-					   UBRRH and UCSRC. */
-#define UCSRC_ADDRI		0x20
-#define EEARH_ADDRI		0x1F
-#define EEARL_ADDRI		0x1E
-#define EEDR_ADDRI		0x1D	/* EEPROM Data Register */
-#define EECR_ADDRI		0x1C
-/*	Reserved		0x1B */
-/*	Reserved		0x1A */
-/*	Reserved		0x19 */
-#define PORTB_ADDRI		0x18
-#define DDRB_ADDRI		0x17
-#define PINB_ADDRI		0x16
-#define PORTC_ADDRI		0x15
-#define DDRC_ADDRI		0x14
-#define PINC_ADDRI		0x13
-#define PORTD_ADDRI		0x12
-#define DDRD_ADDRI		0x11
-#define PIND_ADDRI		0x10
-#define SPDR_ADDRI		0x0F	/* SPI Data Register */
-#define SPSR_ADDRI		0x0E
-#define SPCR_ADDRI		0x0D
-#define UDR_ADDRI		0x0C	/* USART I/O Data Register */
-#define UCSRA_ADDRI		0x0B
-#define UCSRB_ADDRI		0x0A
-#define UBRRL_ADDRI		0x09	/* USART Baud Rate Register Low byte */
-#define ACSR_ADDRI		0x08
-#define ADMUX_ADDRI		0x07
-#define ADCSRA_ADDRI		0x06
-#define ADCH_ADDRI		0x05	/* ADC Data Register High byte */
-#define ADCL_ADDRI		0x04	/* ADC Data Register Low byte */
-#define TWDR_ADDRI		0x03	/* Two-wire Serial Interface Data
-					   Register */
-#define TWAR_ADDRI		0x02
-#define TWSR_ADDRI		0x01
-#define TWBR_ADDRI		0x00	/* Two-wire Serial Interface Bit
-					   Rate Register */
+#include <stdint.h>
+
+#include "mcusim/avr/sim/io.h"
+#include "mcusim/avr/sim/bootloader.h"
+
+#define MSIM_VERSION_MAJOR	1
+#define MSIM_VERSION_MINOR	0
+#define MSIM_VERSION_PATCH	0
+#define MSIM_VERSION_META	"a"
 
 typedef uint32_t MSIM_AVRFlashAddr_t;
 
@@ -183,12 +109,12 @@ struct MSIM_AVR {
 
 	uint32_t sfr_off;		/* Offset to the AVR special function
 					   registers. */
-	int16_t io_addr[64];		/* Addresses of the I/O ports of
-					   the MCU. */
+	int16_t io_addr[IO_REGS];	/* I/O registers addresses */
 };
 
 #include "mcusim/avr/sim/simcore.h"
 #include "mcusim/avr/sim/simm8a.h"
+#include "mcusim/avr/sim/simm328p.h"
 
 #ifdef __cplusplus
 }

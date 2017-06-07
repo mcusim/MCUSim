@@ -85,6 +85,7 @@ static void exec_andi(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_and(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_subi(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_cli(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_adiw(struct MSIM_AVR *mcu, uint16_t inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_st_y(struct MSIM_AVR *mcu, uint16_t inst);
@@ -451,6 +452,11 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 		}
 		break;
 	case 0x9000:
+		if ((inst & 0xFF00) == 0x9600) {
+			exec_adiw(mcu, inst);
+			break;
+		}
+
 		switch (inst) {
 		case 0x94F8:
 			exec_cli(mcu, inst);
@@ -1261,9 +1267,7 @@ static void exec_and(struct MSIM_AVR *mcu, uint16_t inst)
 
 static void exec_sbiw(struct MSIM_AVR *mcu, uint16_t inst)
 {
-	/*
-	 * SBIW – Subtract Immediate from Word
-	 */
+	/* SBIW – Subtract Immediate from Word */
 	const uint8_t regs[] = { 24, 26, 28, 30 };
 	uint8_t rdh_addr, rdl_addr;
 	uint16_t c, r, buf;
@@ -1346,5 +1350,37 @@ static void exec_cli(struct MSIM_AVR *mcu, uint16_t inst)
 {
 	/* CLI - Clear Global Interrupt Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
+	mcu->pc += 2;
+}
+
+static void exec_adiw(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* ADIW – Add Immediate to Word */
+	const uint8_t regs[] = { 24, 26, 28, 30 };
+	uint8_t rdh_addr, rdl_addr;
+	uint16_t c, r, rd;
+
+	rdl_addr = regs[(inst >> 4) & 3];
+	rdh_addr = rdl_addr + 1;
+	c = ((inst >> 2) & 0x30) | (inst & 0x0F);
+
+	rd = (uint16_t) ((mcu->data_mem[rdh_addr] << 8) |
+			 mcu->data_mem[rdl_addr]);
+	r = rd + c;
+
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, ((~r & rd) >> 15) & 1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (uint8_t) ((r >> 15) & 1));
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, ((r & ~rd) >> 15) & 1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
+	if (!r) {
+		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 1);
+	} else {
+		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
+	}
+
+	mcu->data_mem[rdh_addr] = (r >> 8) & 0x0F;
+	mcu->data_mem[rdl_addr] = r & 0x0F;
 	mcu->pc += 2;
 }
