@@ -28,11 +28,7 @@
 extern "C" {
 #endif
 
-int MSIM_M8AInit(struct MSIM_AVR *mcu,
-		 uint8_t *pm, uint32_t pm_size,
-		 uint8_t *dm, uint32_t dm_size);
-
-int MSIM_M8ALoadProgmem(struct MSIM_AVR *mcu, FILE *fp);
+int MSIM_M8AInit(struct MSIM_AVR *mcu);
 
 #ifdef __cplusplus
 }

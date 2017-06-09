@@ -93,10 +93,12 @@ struct MSIM_AVR {
 	MSIM_AVRFlashAddr_t ivt;	/* Address of Interrupt Vectors Table
 					   in program memory. */
 
-	uint8_t *sp_high;		/* SPH in the data memory */
-	uint8_t *sp_low;		/* SPL in the data memory */
 	uint8_t *sreg;			/* Points directly to SREG placed
 					   in data section. */
+	uint8_t *sph;			/* Stack pointer (high) in the
+					   data memory */
+	uint8_t *spl;			/* Stack pointer (low) in the
+					   data memory */
 
 	uint8_t *prog_mem;		/* Flash memory. This memory
 					   section could contain
@@ -109,7 +111,7 @@ struct MSIM_AVR {
 
 	uint32_t sfr_off;		/* Offset to the AVR special function
 					   registers. */
-	int16_t io_addr[IO_REGS];	/* I/O registers addresses */
+	int16_t io_addr[IO_REGS];	/* Addresses of the I/O registers */
 };
 
 #include "mcusim/avr/sim/simcore.h"

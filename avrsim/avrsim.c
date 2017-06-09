@@ -96,19 +96,14 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+	fp = fopen(prog_path, "r");
 	mcu.boot_loader = &bootloader;
 	if (MSIM_InitAVR(&mcu, mcu_model,
 			 prog_mem, sizeof prog_mem / sizeof prog_mem[0],
-			 data_mem, sizeof data_mem / sizeof data_mem[0])) {
+			 data_mem, sizeof data_mem / sizeof data_mem[0],
+			 fp)) {
 		fprintf(stderr, "AVR %s wasn't initialized successfully!\n",
 				mcu_model);
-		return -1;
-	}
-
-	fp = fopen(prog_path, "r");
-	if (MSIM_LoadProgmem(&mcu, fp)) {
-		fprintf(stderr, "Program memory cannot be loaded from "
-				"file: %s!\n", prog_path);
 		return -1;
 	}
 	fclose(fp);

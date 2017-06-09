@@ -34,9 +34,8 @@ void MSIM_SimulateAVR(struct MSIM_AVR *mcu);
 
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		 uint8_t *pm, uint32_t pm_size,
-		 uint8_t *dm, uint32_t dm_size);
-
-int MSIM_LoadProgmem(struct MSIM_AVR *mcu, FILE *fp);
+		 uint8_t *dm, uint32_t dm_size,
+		 FILE *fp);
 
 void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu,
 			 enum MSIM_AVRSREGFlag flag,

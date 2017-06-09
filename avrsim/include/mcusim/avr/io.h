@@ -45,7 +45,7 @@
     but most of the details come from the respective include file.
 
     Note that this file always includes the following files:
-    \code 
+    \code
     #include <avr/sfr_defs.h>
     #include <avr/portpins.h>
     #include <avr/common.h>
@@ -71,8 +71,8 @@
     <br>
     - \b XRAMEND
     <br>
-    The last possible RAM location that is addressable. This is equal to 
-    RAMEND for devices that do not allow for external RAM. For devices 
+    The last possible RAM location that is addressable. This is equal to
+    RAMEND for devices that do not allow for external RAM. For devices
     that allow external RAM, this will be larger than RAMEND.
     <br>
     - \b E2END
@@ -86,11 +86,11 @@
     - \b SPM_PAGESIZE
     <br>
     For devices with bootloader support, the flash pagesize
-    (in bytes) to be used for the \c SPM instruction. 
+    (in bytes) to be used for the \c SPM instruction.
     - \b E2PAGESIZE
     <br>
     The size of the EEPROM page.
-    
+
 */
 
 #ifndef _AVR_IO_H_
@@ -202,7 +202,7 @@
 #  include <avr/iom64a.h>
 #elif defined (__AVR_ATmega640__)
 #  include <avr/iom640.h>
-#elif defined (__AVR_ATmega644__) 
+#elif defined (__AVR_ATmega644__)
 #  include <avr/iom644.h>
 #elif (defined __AVR_ATmega644A__)
 #include <avr/iom644a.h>
@@ -259,24 +259,24 @@
 #elif defined (__AVR_ATmega325P__)
 #  include <avr/iom325p.h>
 #elif defined (__AVR_ATmega325PA__)
-#  include <avr/iom325pa.h>  
-#elif defined (__AVR_ATmega3250__) 
+#  include <avr/iom325pa.h>
+#elif defined (__AVR_ATmega3250__)
 #  include <avr/iom3250.h>
 #elif (defined __AVR_ATmega3250A__)
 #include <avr/iom3250a.h>
 #elif defined (__AVR_ATmega3250P__)
 #  include <avr/iom3250p.h>
 #elif defined (__AVR_ATmega3250PA__)
-#  include <avr/iom3250pa.h>  
+#  include <avr/iom3250pa.h>
 #elif defined (__AVR_ATmega328P__)
-#  include <avr/iom328p.h>
+#  include <mcusim/avr/iom328p.h>
 #elif (defined __AVR_ATmega328__)
-#include <avr/iom328.h>
+#  include <mcusim/avr/iom328.h>
 #elif defined (__AVR_ATmega329__)
 #  include <avr/iom329.h>
 #elif (defined __AVR_ATmega329A__)
 #include <avr/iom329a.h>
-#elif defined (__AVR_ATmega329P__) 
+#elif defined (__AVR_ATmega329P__)
 #  include <avr/iom329p.h>
 #elif (defined __AVR_ATmega329PA__)
 #include <avr/iom329pa.h>
@@ -439,7 +439,7 @@
 #elif defined (__AVR_ATtiny84__)
 #  include <avr/iotn84.h>
 #elif defined (__AVR_ATtiny84A__)
-#  include <avr/iotn84a.h>  
+#  include <avr/iotn84a.h>
 #elif defined (__AVR_ATtiny841__)
 #  include <avr/iotn841.h>
 #elif defined (__AVR_ATtiny261__)

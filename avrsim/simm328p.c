@@ -29,16 +29,16 @@
 #define __AVR_ATmega328P__ 1
 #include "mcusim/avr/io.h"
 #include "mcusim/avr/sim/sim.h"
-#include "mcusim/hex/ihex.h"
 
 #define FLASHSTART		0x0000
 #define RAMSIZE			2048
 #define E2START			0x0000
 #define E2SIZE			1024
 
-int MSIM_M328PInit(struct MSIM_AVR *mcu,
-		 uint8_t *pm, uint32_t pm_size,
-		 uint8_t *dm, uint32_t dm_size)
+static int set_fuse_bytes(struct MSIM_AVR *mcu, uint8_t fuse_ext,
+			  uint8_t fuse_high, uint8_t fuse_low);
+
+int MSIM_M328PInit(struct MSIM_AVR *mcu)
 {
 	uint32_t i;
 
@@ -119,22 +119,15 @@ int MSIM_M328PInit(struct MSIM_AVR *mcu,
 	/* extended I/O registers */
 	/* mcu->io_addr[... */
 
-	mcu->io_addr[SREG_ADDRI] = 0x3F;
-	mcu->io_addr[SPH_ADDRI] = 0x3E;
-	mcu->io_addr[SPL_ADDRI] = 0x3D;
-
-	if (set_progmem(mcu, pm, pm_size))
-		return -1;
-	if (set_datamem(mcu, dm, dm_size))
-		return -1;
-	if (set_fuse_bytes(mcu, 0xD9, 0xE1)) {
+	if (set_fuse_bytes(mcu, 0x00, 0xD9, 0xE1)) {
 		fprintf(stderr, "Fuse bytes cannot be set correctly\n");
 		return -1;
 	}
 	return 0;
 }
 
-int MSIM_M328PLoadProgmem(struct MSIM_AVR *mcu, FILE *fp)
+static int set_fuse_bytes(struct MSIM_AVR *mcu, uint8_t fuse_ext,
+			  uint8_t fuse_high, uint8_t fuse_low)
 {
-	return 0;
+	return -1;
 }
