@@ -31,10 +31,11 @@
 #include "mcusim/avr/ipc/message.h"
 #include "mcusim/hex/ihex.h"
 
+#define DATA_MEMORY		1120
+
 #ifdef MSIM_IPC_MODE_QUEUE
 static int status_qid = -1;		/* Status queue ID */
 static int ctrl_qid = -1;		/* Control queue ID */
-
 /*
  * Open/close IPC queues to let external programs to interact with
  * the simulator.
@@ -42,8 +43,6 @@ static int ctrl_qid = -1;		/* Control queue ID */
 static int open_queues(void);
 static void close_queues(void);
 #endif
-
-#define DATA_MEMORY		1120
 
 /*
  * To temporarily store data memory and test changes after execution of
@@ -258,6 +257,12 @@ static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
 {
 	uint32_t sfr;
 
+	/*
+	 *
+	 * This 96 (register file and I/O registers) is ATmega8A specific!
+	 * Make it generic.
+	 *
+	 */
 	if ((mcu->ramsize + 96) != size) {
 		fprintf(stderr, "Data memory is limited by %u.%03u KiB,"
 				" %u.%03u KiB doesn't match\n",
