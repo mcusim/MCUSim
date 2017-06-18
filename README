@@ -1,0 +1,44 @@
+MCUSim
+======
+
+An interactive simulator for microcontrollers (MCUSim) is a set of programs
+used to run ROM file which is intended to be burned into an integrated
+circuit, and analyse electronic schematic built by utilizing the curcuit.
+Main goal of the project is to save time debugging code for an embedded system
+and provide a detailed information of the processes in the circuit under
+analysis on the spot, interactively.
+
+Getting started with the simulator
+----------------------------------
+
+  - Make sure you have installed CMake build system version 3.2 or above.
+    It is used to prepare makefiles (or other build files) for many platforms
+    and environments. Installed version can be checked by a command running
+    in your terminal:
+
+      cmake --version
+
+  - Any C compiler which follows ISO/IEC 9899:1990 standard (widely known
+    as C89, C90 or ANSI C)
+
+  - If you have all of these programs above installed, build a required part
+    of the simulator (let me use avrsim as an example):
+
+      cd avrsim
+      mkdir build
+      cd build
+      cmake ..
+
+  - Each part of the simulator can be configured before building.
+    You are perfectly able to consult with the README files placed in the
+    specific directories.
+
+If something goes wrong
+-----------------------
+
+  - If you need any help regarding the project, please write to
+    Dmitry Salychev darkness.bsd<at>gmail.com or open an issue at
+    https://github.com/dsalychev/mcusim/issues.
+
+  - Help in any form (reporting a bug, code donation, etc.) is appriciated
+    a lot.
