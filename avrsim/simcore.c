@@ -71,7 +71,7 @@ static void exec_rjmp(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brne(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brlt(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brge(struct MSIM_AVR *mcu, uint16_t inst);
-static void exec_brcs(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brcs_brlo(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_rcall(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sts(struct MSIM_AVR *mcu, uint16_t inst);
 /* static void exec_sts16(struct MSIM_AVR *mcu, uint16_t inst); */
@@ -98,6 +98,12 @@ static void exec_bld(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brbc(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brbs(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brcc(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_break(struct MSIM_AVR *mcu);
+static void exec_breq(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brhc(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brhs(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brid(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brie(struct MSIM_AVR *mcu, uint16_t inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_st_y(struct MSIM_AVR *mcu, uint16_t inst);
@@ -692,6 +698,9 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 		case 0x9508:
 			exec_ret(mcu);
 			break;
+		case 0x9598:
+			exec_break(mcu);
+			break;
 		default:
 			switch (inst & 0xFE0F) {
 			case 0x9001:
@@ -802,10 +811,19 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 
 		switch (inst & 0xFC07) {
 		case 0xF000:
-			exec_brcs(mcu, inst);
+			exec_brcs_brlo(mcu, inst);
+			break;
+		case 0xF001:
+			exec_breq(mcu, inst);
 			break;
 		case 0xF004:
 			exec_brlt(mcu, inst);
+			break;
+		case 0xF005:
+			exec_brhs(mcu, inst);
+			break;
+		case 0xF007:
+			exec_brie(mcu, inst);
 			break;
 		case 0xF400:
 			exec_brcc(mcu, inst);
@@ -815,6 +833,12 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 			break;
 		case 0xF404:
 			exec_brge(mcu, inst);
+			break;
+		case 0xF405:
+			exec_brhc(mcu, inst);
+			break;
+		case 0xF407:
+			exec_brid(mcu, inst);
 			break;
 		default:
 			return -1;
@@ -1560,7 +1584,7 @@ static void exec_brcc(struct MSIM_AVR *mcu, uint16_t inst)
 		mcu->pc += 2;
 }
 
-static void exec_brcs(struct MSIM_AVR *mcu, uint16_t inst)
+static void exec_brcs_brlo(struct MSIM_AVR *mcu, uint16_t inst)
 {
 	/* BRCS - Branch if Carry Set */
 	uint8_t cond;
@@ -1783,6 +1807,93 @@ static void exec_brbs(struct MSIM_AVR *mcu, uint16_t inst)
 		c -= 128;
 
 	if (cond)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+}
+
+static void exec_break(struct MSIM_AVR *mcu)
+{
+	/* BREAK – Break (the AVR CPU is set in the Stopped Mode). */
+	/* Treat it as NOP before actual support is implemented. */
+	mcu->pc += 2;
+}
+
+static void exec_breq(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BREQ – Branch if Equal */
+	uint8_t f;
+	int8_t c;
+
+	f = MSIM_ReadSREGFlag(mcu, AVR_SREG_ZERO);
+	c = (inst >> 3) & 0x7F;
+	c = c > 63 ? c-128 : c;
+
+	if (f)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+}
+
+static void exec_brhc(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BRHC – Branch if Half Carry Flag is Cleared */
+	uint8_t f;
+	int8_t c;
+
+	f = MSIM_ReadSREGFlag(mcu, AVR_SREG_HALF_CARRY);
+	c = (inst >> 3) & 0x7F;
+	c = c > 63 ? c-128 : c;
+
+	if (!f)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+}
+
+static void exec_brhs(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BRHS – Branch if Half Carry Flag is Set */
+	uint8_t f;
+	int8_t c;
+
+	f = MSIM_ReadSREGFlag(mcu, AVR_SREG_HALF_CARRY);
+	c = (inst >> 3) & 0x7F;
+	c = c > 63 ? c-128 : c;
+
+	if (f)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+}
+
+static void exec_brid(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BRID – Branch if Global Interrupt is Disabled */
+	uint8_t f;
+	int8_t c;
+
+	f = MSIM_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT);
+	c = (inst >> 3) & 0x7F;
+	c = c > 63 ? c-128 : c;
+
+	if (!f)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+}
+
+static void exec_brie(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BRIE – Branch if Global Interrupt is Enabled */
+	uint8_t f;
+	int8_t c;
+
+	f = MSIM_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT);
+	c = (inst >> 3) & 0x7F;
+	c = c > 63 ? c-128 : c;
+
+	if (f)
 		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
 	else
 		mcu->pc += 2;
