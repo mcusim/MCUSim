@@ -97,13 +97,21 @@ static void exec_bclr(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_bld(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brbc(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brbs(struct MSIM_AVR *mcu, uint16_t inst);
-static void exec_brcc(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brcc_brsh(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_break(struct MSIM_AVR *mcu);
 static void exec_breq(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brhc(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brhs(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brid(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brie(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brmi(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brpl(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brtc(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brts(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brvc(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_brvs(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_bset(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_bst(struct MSIM_AVR *mcu, uint16_t inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_st_y(struct MSIM_AVR *mcu, uint16_t inst);
@@ -689,6 +697,9 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 		} else if ((inst & 0xFF8F) == 0x9488) {
 			exec_bclr(mcu, inst);
 			break;
+		} else if ((inst & 0xFF8F) == 0x9408) {
+			exec_bset(mcu, inst);
+			break;
 		}
 
 		switch (inst) {
@@ -801,6 +812,9 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 		if ((inst & 0xFE08) == 0xF800) {
 			exec_bld(mcu, inst);
 			break;
+		} else if ((inst & 0xFE08) == 0xFA00) {
+			exec_bst(mcu, inst);
+			break;
 		} else if ((inst & 0xFC00) == 0xF400) {
 			exec_brbc(mcu, inst);
 			break;
@@ -816,26 +830,44 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 		case 0xF001:
 			exec_breq(mcu, inst);
 			break;
+		case 0xF002:
+			exec_brmi(mcu, inst);
+			break;
+		case 0xF003:
+			exec_brvs(mcu, inst);
+			break;
 		case 0xF004:
 			exec_brlt(mcu, inst);
 			break;
 		case 0xF005:
 			exec_brhs(mcu, inst);
 			break;
+		case 0xF006:
+			exec_brts(mcu, inst);
+			break;
 		case 0xF007:
 			exec_brie(mcu, inst);
 			break;
 		case 0xF400:
-			exec_brcc(mcu, inst);
+			exec_brcc_brsh(mcu, inst);
 			break;
 		case 0xF401:
 			exec_brne(mcu, inst);
+			break;
+		case 0xF402:
+			exec_brpl(mcu, inst);
+			break;
+		case 0xF403:
+			exec_brvc(mcu, inst);
 			break;
 		case 0xF404:
 			exec_brge(mcu, inst);
 			break;
 		case 0xF405:
 			exec_brhc(mcu, inst);
+			break;
+		case 0xF406:
+			exec_brtc(mcu, inst);
 			break;
 		case 0xF407:
 			exec_brid(mcu, inst);
@@ -1567,7 +1599,7 @@ static void exec_sbiw(struct MSIM_AVR *mcu, uint16_t inst)
 	mcu->pc += 2;
 }
 
-static void exec_brcc(struct MSIM_AVR *mcu, uint16_t inst)
+static void exec_brcc_brsh(struct MSIM_AVR *mcu, uint16_t inst)
 {
 	/* BRCC – Branch if Carry Cleared */
 	uint8_t cond;
@@ -1897,4 +1929,123 @@ static void exec_brie(struct MSIM_AVR *mcu, uint16_t inst)
 		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
 	else
 		mcu->pc += 2;
+}
+
+static void exec_brmi(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BRMI – Branch if Minus */
+	uint8_t f;
+	int8_t c;
+
+	f = MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE);
+	c = (inst >> 3) & 0x7F;
+	c = c > 63 ? c-128 : c;
+
+	if (f)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+
+}
+
+static void exec_brpl(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BRPL – Branch if Plus */
+	uint8_t f;
+	int8_t c;
+
+	f = MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE);
+	c = (inst >> 3) & 0x7F;
+	c = c > 63 ? c-128 : c;
+
+	if (!f)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+}
+
+static void exec_brtc(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BRTC – Branch if the T Flag is Cleared */
+	uint8_t f;
+	int8_t c;
+
+	f = MSIM_ReadSREGFlag(mcu, AVR_SREG_T_BIT);
+	c = (inst >> 3) & 0x7F;
+	c = c > 63 ? c-128 : c;
+
+	if (!f)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+}
+
+static void exec_brts(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BRTS – Branch if the T Flag is Set */
+	uint8_t f;
+	int8_t c;
+
+	f = MSIM_ReadSREGFlag(mcu, AVR_SREG_T_BIT);
+	c = (inst >> 3) & 0x7F;
+	c = c > 63 ? c-128 : c;
+
+	if (f)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+}
+
+static void exec_brvc(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BRVC – Branch if Overflow Cleared */
+	uint8_t f;
+	int8_t c;
+
+	f = MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF);
+	c = (inst >> 3) & 0x7F;
+	c = c > 63 ? c-128 : c;
+
+	if (!f)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+}
+
+static void exec_brvs(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BRVS – Branch if Overflow Set */
+	uint8_t f;
+	int8_t c;
+
+	f = MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF);
+	c = (inst >> 3) & 0x7F;
+	c = c > 63 ? c-128 : c;
+
+	if (f)
+		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	else
+		mcu->pc += 2;
+}
+
+static void exec_bset(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BSET – Bit Set in SREG */
+	uint8_t bit;
+
+	bit = (inst & 0x70) >> 4;
+	*mcu->sreg |= 1 << bit;
+	mcu->pc += 2;
+}
+
+static void exec_bst(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* BST – Bit Store from Bit in Register to T Flag in SREG */
+	uint8_t b, rd_addr;
+
+	b = inst & 0x07;
+	rd_addr = (inst >> 4) & 0x1F;
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_T_BIT,
+			    (mcu->data_mem[rd_addr] >> b) & 1);
+	mcu->pc += 2;
 }
