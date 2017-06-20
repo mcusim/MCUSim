@@ -8,6 +8,30 @@ Main goal of the project is to save time debugging code for an embedded system
 and provide a detailed information of the processes in the circuit under
 analysis on the spot, interactively.
 
+What to expect
+--------------
+
+MCUSim is in the active development stage and not ready to be used by the
+end-users (embedded systems engineers or programmers). It means that there is
+a perfect opportunity to help the simulator grows.
+
+These options are in development:
+
+  - AVR Simulation Core (avrsim/simcore.c)
+  - ATmega8A (avrsim/simm8a.c)
+  - ATmega328P (avrsim/simm328p.c)
+
+Near future plan:
+
+  - ATmega48A/PA/88A/PA/168A/PA/328
+  - ATmega128/L
+  - IPC for avrsim
+
+Far future plan:
+  - Simulation of the AVR-based schematic (using SPICE, possibly)
+  - Support for other popular MCUs (PIC by Microchip, 16-bit and 32-bit MCUs
+    by Texas Instruments)
+
 Getting started with the simulator
 ----------------------------------
 
