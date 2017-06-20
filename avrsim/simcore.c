@@ -65,7 +65,7 @@ static void exec_in_out(struct MSIM_AVR *mcu, uint16_t inst,
 static void exec_cp(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_cpi(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_cpc(struct MSIM_AVR *mcu, uint16_t inst);
-static void exec_eor(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_eor_clr(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_load_immediate(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_rjmp(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brne(struct MSIM_AVR *mcu, uint16_t inst);
@@ -85,7 +85,7 @@ static void exec_movw(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_mov(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sbci(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sbiw(struct MSIM_AVR *mcu, uint16_t inst);
-static void exec_andi(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_andi_cbr(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_and(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_subi(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_cli(struct MSIM_AVR *mcu, uint16_t inst);
@@ -112,6 +112,16 @@ static void exec_brvc(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brvs(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_bset(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_bst(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_call(struct MSIM_AVR *mcu, uint16_t inst_lsb);
+static void exec_clc(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_clh(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_cln(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_cls(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_clt(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_clv(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_clz(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_com(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_cpse(struct MSIM_AVR *mcu, uint16_t inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_st_y(struct MSIM_AVR *mcu, uint16_t inst);
@@ -617,6 +627,9 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 		break;
 	case 0x1000:
 		switch (inst & 0xFC00) {
+		case 0x1000:
+			exec_cpse(mcu, inst);
+			break;
 		case 0x1400:
 			exec_cp(mcu, inst);
 			break;
@@ -633,7 +646,7 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 			exec_and(mcu, inst);
 			break;
 		case 0x2400:
-			exec_eor(mcu, inst);
+			exec_eor_clr(mcu, inst);
 			break;
 		case 0x2C00:
 			exec_mov(mcu, inst);
@@ -655,7 +668,7 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 		exec_ori(mcu, inst);
 		break;
 	case 0x7000:
-		exec_andi(mcu, inst);
+		exec_andi_cbr(mcu, inst);
 		break;
 	case 0x8000:
 		switch (inst & 0xD208) {
@@ -700,9 +713,33 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 		} else if ((inst & 0xFF8F) == 0x9408) {
 			exec_bset(mcu, inst);
 			break;
+		} else if ((inst & 0xFE0E) == 0x940E) {
+			exec_call(mcu, inst);
+			break;
 		}
 
 		switch (inst) {
+		case 0x9488:
+			exec_clc(mcu, inst);
+			break;
+		case 0x9498:
+			exec_clz(mcu, inst);
+			break;
+		case 0x94A8:
+			exec_cln(mcu, inst);
+			break;
+		case 0x94B8:
+			exec_clv(mcu, inst);
+			break;
+		case 0x94C8:
+			exec_cls(mcu, inst);
+			break;
+		case 0x94D8:
+			exec_clh(mcu, inst);
+			break;
+		case 0x94E8:
+			exec_clt(mcu, inst);
+			break;
 		case 0x94F8:
 			exec_cli(mcu, inst);
 			break;
@@ -748,6 +785,9 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst)
 				break;
 			case 0x920F:
 				exec_push_pop(mcu, inst, 1);
+				break;
+			case 0x9400:
+				exec_com(mcu, inst);
 				break;
 			case 0x9405:
 				exec_asr(mcu, inst);
@@ -883,7 +923,7 @@ exit:
 	return 0;
 }
 
-static void exec_eor(struct MSIM_AVR *mcu, uint16_t inst)
+static void exec_eor_clr(struct MSIM_AVR *mcu, uint16_t inst)
 {
 	/*
 	 * EOR - Exclusive OR
@@ -1513,7 +1553,7 @@ static void exec_brge(struct MSIM_AVR *mcu, uint16_t inst)
 		mcu->pc += 2;
 }
 
-static void exec_andi(struct MSIM_AVR *mcu, uint16_t inst)
+static void exec_andi_cbr(struct MSIM_AVR *mcu, uint16_t inst)
 {
 	/* ANDI – Logical AND with Immediate */
 	uint8_t rd, rd_addr;
@@ -1661,13 +1701,6 @@ static void exec_subi(struct MSIM_AVR *mcu, uint16_t inst)
 	} else {
 		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
 	}
-}
-
-static void exec_cli(struct MSIM_AVR *mcu, uint16_t inst)
-{
-	/* CLI - Clear Global Interrupt Flag */
-	MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
-	mcu->pc += 2;
 }
 
 static void exec_adiw(struct MSIM_AVR *mcu, uint16_t inst)
@@ -2048,4 +2081,115 @@ static void exec_bst(struct MSIM_AVR *mcu, uint16_t inst)
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_T_BIT,
 			    (mcu->data_mem[rd_addr] >> b) & 1);
 	mcu->pc += 2;
+}
+
+static void exec_call(struct MSIM_AVR *mcu, uint16_t inst_lsb)
+{
+	/* CALL – Long Call to a Subroutine */
+	uint8_t lsb, msb;
+	uint16_t inst_msb;
+	uint32_t inst;
+	MSIM_AVRFlashAddr_t pc, c;
+
+	/* prepare the whole 32-bit instruction */
+	lsb = mcu->prog_mem[mcu->pc+2];
+	msb = mcu->prog_mem[mcu->pc+3];
+	inst_msb = (uint16_t) (lsb | (msb << 8));
+	inst = (uint32_t) (inst_lsb | (inst_msb << 16));
+
+	c = (MSIM_AVRFlashAddr_t) ((inst_msb<<6) |
+				   ((inst_lsb>>3)&0x3E) |
+				   (inst_lsb&1));
+	pc = mcu->pc + 4;
+
+	MSIM_StackPush(mcu, (uint8_t) (pc & 0xFF));
+	MSIM_StackPush(mcu, (uint8_t) ((pc >> 8) & 0xFF));
+	mcu->pc = c;
+}
+
+static void exec_clc(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* CLC – Clear Carry Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, 0);
+	mcu->pc += 2;
+}
+
+static void exec_clh(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* CLH – Clear Half Carry Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_HALF_CARRY, 0);
+	mcu->pc += 2;
+}
+
+static void exec_cli(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* CLI - Clear Global Interrupt Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
+	mcu->pc += 2;
+}
+
+static void exec_cln(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* CLN – Clear Negative Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, 0);
+	mcu->pc += 2;
+}
+
+static void exec_cls(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* CLS – Clear Signed Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN, 0);
+	mcu->pc += 2;
+}
+
+static void exec_clt(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* CLT – Clear T Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_T_BIT, 0);
+	mcu->pc += 2;
+}
+
+static void exec_clv(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* CLV – Clear Overflow Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, 0);
+	mcu->pc += 2;
+}
+
+static void exec_clz(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* CLZ – Clear Zero Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
+	mcu->pc += 2;
+}
+
+static void exec_com(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* COM – One’s Complement */
+	uint8_t rd_addr, r;
+
+	rd_addr = (inst >> 4) & 0x1F;
+	r = mcu->data_mem[rd_addr] = ~mcu->data_mem[rd_addr];
+	mcu->pc += 2;
+
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, 1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (r >> 7) & 1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
+}
+
+static void exec_cpse(struct MSIM_AVR *mcu, uint16_t inst)
+{
+	/* CPSE – Compare Skip if Equal */
+	uint8_t rd_addr, rr_addr;
+
+	rd_addr = (inst >> 4) & 0x1F;
+	rr_addr = ((inst >> 5) & 0x10) | (inst & 0x0F);
+	if (mcu->data_mem[rd_addr] == mcu->data_mem[rr_addr])
+		mcu->pc += is_inst32(mcu->prog_mem[mcu->pc+2]) ? 6 : 4;
+	else
+		mcu->pc += 2;
 }
