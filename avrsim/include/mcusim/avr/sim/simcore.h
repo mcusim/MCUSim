@@ -30,23 +30,46 @@
 extern "C" {
 #endif
 
+/* Main simulation routine. It starts a loop over initialized MCU. */
 void MSIM_SimulateAVR(struct MSIM_AVR *mcu);
 
+/* Initializes an MCU into specific model determined by the given name.
+ * It is, generally, a good idea to prepare specific MCU model using this
+ * function instead of MSIM_XXXInit() ones. */
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		 uint8_t *pm, uint32_t pm_size,
 		 uint8_t *dm, uint32_t dm_size,
 		 FILE *fp);
 
-void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu,
-			 enum MSIM_AVRSREGFlag flag,
-			 uint8_t set_f);
+/* Initialize MCU as ATmega8A */
+int MSIM_M8AInit(struct MSIM_AVR *mcu,
+		 uint8_t *pm, uint32_t pm_size,
+		 uint8_t *dm, uint32_t dm_size);
+/* Initialize MCU as ATmega328 */
+int MSIM_M328Init(struct MSIM_AVR *mcu,
+		  uint8_t *pm, uint32_t pm_size,
+		  uint8_t *dm, uint32_t dm_size);
+/* Initialize MCU as ATmega328P */
+int MSIM_M328PInit(struct MSIM_AVR *mcu,
+		   uint8_t *pm, uint32_t pm_size,
+		   uint8_t *dm, uint32_t dm_size);
 
-uint8_t MSIM_ReadSREGFlag(struct MSIM_AVR *mcu,
-			  enum MSIM_AVRSREGFlag flag);
-
+/* Functions to work with a stack inside MCU */
 void MSIM_StackPush(struct MSIM_AVR *mcu, uint8_t val);
-
 uint8_t MSIM_StackPop(struct MSIM_AVR *mcu);
+
+/* Functions to update/read SREG bits */
+void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVRSREGFlag flag,
+			 uint8_t set_f);
+uint8_t MSIM_ReadSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVRSREGFlag flag);
+
+/* Sets program memory of the MCU, performs size check. Program memory should
+ * statically be allocated somewhere. */
+int MSIM_SetProgmem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
+
+/* Sets data memory of the MCU, performs size check. Data memory should
+ * statically be allocated somewhere.*/
+int MSIM_SetDatamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
 
 #ifdef __cplusplus
 }

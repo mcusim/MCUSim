@@ -28,8 +28,8 @@
 
 #define CLI_OPTIONS		":hm:p:v"
 
-#define PROGRAM_MEMORY		8192
-#define DATA_MEMORY		1120
+#define PROGRAM_MEMORY		131072 /* 128 KiB */
+#define DATA_MEMORY		65536 /* 64 KiB */
 
 static struct MSIM_AVRBootloader bootloader;
 static struct MSIM_AVR mcu;
@@ -98,10 +98,8 @@ int main(int argc, char *argv[])
 
 	fp = fopen(prog_path, "r");
 	mcu.boot_loader = &bootloader;
-	if (MSIM_InitAVR(&mcu, mcu_model,
-			 prog_mem, sizeof prog_mem / sizeof prog_mem[0],
-			 data_mem, sizeof data_mem / sizeof data_mem[0],
-			 fp)) {
+	if (MSIM_InitAVR(&mcu, mcu_model, prog_mem, PROGRAM_MEMORY,
+					  data_mem, DATA_MEMORY, fp)) {
 		fprintf(stderr, "AVR %s wasn't initialized successfully!\n",
 				mcu_model);
 		return -1;

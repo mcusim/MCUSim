@@ -109,14 +109,12 @@ struct MSIM_AVR {
 	uint32_t dm_size;		/* Actual size of the data memory. */
 
 
-	uint32_t sfr_off;		/* Offset to the AVR special function
+	uint16_t sfr_off;		/* Offset to the AVR special function
 					   registers. */
-	int16_t io_addr[IO_REGS];	/* Addresses of the I/O registers */
+	uint16_t regs;			/* Number of general purpose
+					   registers. */
+	uint16_t io_regs;		/* Number of all I/O registers. */
 };
-
-#include "mcusim/avr/sim/simcore.h"
-#include "mcusim/avr/sim/simm8a.h"
-#include "mcusim/avr/sim/simm328p.h"
 
 #ifdef __cplusplus
 }

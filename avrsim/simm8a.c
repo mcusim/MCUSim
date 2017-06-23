@@ -23,9 +23,11 @@
 #include <time.h>
 
 /* We would like to include headers specific to the ATMega8A microcontroller */
+#define _SFR_ASM_COMPAT 1
 #define __AVR_ATmega8A__ 1
 #include "mcusim/avr/io.h"
 #include "mcusim/avr/sim/sim.h"
+#include "mcusim/avr/sim/simcore.h"
 
 static int is_ckopt_programmed(uint8_t ckopt_f);
 static int set_fuse_bytes(struct MSIM_AVR *mcu, uint8_t fuse_high,
@@ -35,22 +37,19 @@ static int set_frequency(struct MSIM_AVR *mcu, uint8_t fuse_high,
 			 uint8_t fuse_low);
 static int set_reset_vector(struct MSIM_AVR *mcu, uint8_t fuse_high);
 
-int MSIM_M8AInit(struct MSIM_AVR *mcu)
+int MSIM_M8AInit(struct MSIM_AVR *mcu,
+		 uint8_t *pm, uint32_t pm_size,
+		 uint8_t *dm, uint32_t dm_size)
 {
-	uint32_t i;
-
 	if (!mcu) {
 		fprintf(stderr, "MCU should not be NULL\n");
 		return -1;
 	}
 
-	srand((unsigned int) time(NULL));
-	mcu->id = (uint32_t) rand();
 	strcpy(mcu->name, "atmega8a");
 	mcu->signature[0] = SIGNATURE_0;
 	mcu->signature[1] = SIGNATURE_1;
 	mcu->signature[2] = SIGNATURE_2;
-
 	mcu->spm_pagesize = SPM_PAGESIZE;
 	mcu->flashstart = FLASHSTART;
 	mcu->flashend = FLASHEND;
@@ -62,75 +61,20 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu)
 	mcu->e2size = E2SIZE;
 	mcu->e2pagesize = E2PAGESIZE;
 
+	srand((unsigned int) time(NULL));
+
+	mcu->id = (uint32_t) rand();
 	mcu->lockbits = 0x3F;
-
 	mcu->sfr_off = __SFR_OFFSET;
+	mcu->regs = 32;
+	mcu->io_regs = 64;
 
-	/* Invalidate I/O ports addresses before initialization */
-	for (i = 0; i < sizeof(mcu->io_addr)/sizeof(mcu->io_addr[0]); i++)
-		mcu->io_addr[i] = -1;
+	MSIM_SetProgmem(mcu, pm, pm_size);
+	MSIM_SetDatamem(mcu, dm, dm_size);
 
-	mcu->io_addr[SREG_ADDRI] = 0x3F;
-	mcu->io_addr[SPH_ADDRI] = 0x3E;
-	mcu->io_addr[SPL_ADDRI] = 0x3D;
-	mcu->io_addr[GICR_ADDRI] = 0x3B;
-	mcu->io_addr[GIFR_ADDRI] = 0x3A;
-	mcu->io_addr[TIMSK_ADDRI] = 0x39;
-	mcu->io_addr[TIFR_ADDRI] = 0x38;
-	mcu->io_addr[SPMCR_ADDRI] = 0x37;
-	mcu->io_addr[TWCR_ADDRI] = 0x36;
-	mcu->io_addr[MCUCR_ADDRI] = 0x35;
-	mcu->io_addr[MCUCSR_ADDRI] = 0x34;
-	mcu->io_addr[TCCR0_ADDRI] = 0x33;
-	mcu->io_addr[TCNT0_ADDRI] = 0x32;
-	mcu->io_addr[OSCCAL_ADDRI] = 0x31;
-	mcu->io_addr[SFIOR_ADDRI] = 0x30;
-	mcu->io_addr[TCCR1A_ADDRI] = 0x2F;
-	mcu->io_addr[TCCR1B_ADDRI] = 0x2E;
-	mcu->io_addr[TCNT1H_ADDRI] = 0x2D;
-	mcu->io_addr[TCNT1L_ADDRI] = 0x2C;
-	mcu->io_addr[OCR1AH_ADDRI] = 0x2B;
-	mcu->io_addr[OCR1AL_ADDRI] = 0x2A;
-	mcu->io_addr[OCR1BH_ADDRI] = 0x29;
-	mcu->io_addr[OCR1BL_ADDRI] = 0x28;
-	mcu->io_addr[ICR1H_ADDRI] = 0x27;
-	mcu->io_addr[ICR1L_ADDRI] = 0x26;
-	mcu->io_addr[TCCR2_ADDRI] = 0x25;
-	mcu->io_addr[TCNT2_ADDRI] = 0x24;
-	mcu->io_addr[OCR2_ADDRI] = 0x23;
-	mcu->io_addr[ASSR_ADDRI] = 0x22;
-	mcu->io_addr[WDTCR_ADDRI] = 0x21;
-	mcu->io_addr[UBRRH_ADDRI] = 0x20;
-	mcu->io_addr[UCSRC_ADDRI] = 0x20;
-	mcu->io_addr[EEARH_ADDRI] = 0x1F;
-	mcu->io_addr[EEARL_ADDRI] = 0x1E;
-	mcu->io_addr[EEDR_ADDRI] = 0x1D;
-	mcu->io_addr[EECR_ADDRI] = 0x1C;
-	mcu->io_addr[PORTB_ADDRI] = 0x18;
-	mcu->io_addr[DDRB_ADDRI] = 0x17;
-	mcu->io_addr[PINB_ADDRI] = 0x16;
-	mcu->io_addr[PORTC_ADDRI] = 0x15;
-	mcu->io_addr[DDRC_ADDRI] = 0x14;
-	mcu->io_addr[PINC_ADDRI] = 0x13;
-	mcu->io_addr[PORTD_ADDRI] = 0x12;
-	mcu->io_addr[DDRD_ADDRI] = 0x11;
-	mcu->io_addr[PIND_ADDRI] = 0x10;
-	mcu->io_addr[SPDR_ADDRI] = 0x0F;
-	mcu->io_addr[SPSR_ADDRI] = 0x0E;
-	mcu->io_addr[SPCR_ADDRI] = 0x0D;
-	mcu->io_addr[UDR_ADDRI] = 0x0C;
-	mcu->io_addr[UCSRA_ADDRI] = 0x0B;
-	mcu->io_addr[UCSRB_ADDRI] = 0x0A;
-	mcu->io_addr[UBRRL_ADDRI] = 0x09;
-	mcu->io_addr[ACSR_ADDRI] = 0x08;
-	mcu->io_addr[ADMUX_ADDRI] = 0x07;
-	mcu->io_addr[ADCSRA_ADDRI] = 0x06;
-	mcu->io_addr[ADCH_ADDRI] = 0x05;
-	mcu->io_addr[ADCL_ADDRI] = 0x04;
-	mcu->io_addr[TWDR_ADDRI] = 0x03;
-	mcu->io_addr[TWAR_ADDRI] = 0x02;
-	mcu->io_addr[TWSR_ADDRI] = 0x01;
-	mcu->io_addr[TWBR_ADDRI] = 0x00;
+	mcu->sreg = &mcu->data_mem[_SFR_IO8(0x3F)];
+	mcu->sph = &mcu->data_mem[_SFR_IO8(0x3E)];
+	mcu->spl = &mcu->data_mem[_SFR_IO8(0x3D)];
 
 	if (set_fuse_bytes(mcu, 0xD9, 0xE1)) {
 		fprintf(stderr, "Fuse bytes cannot be set correctly\n");

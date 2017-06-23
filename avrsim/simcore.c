@@ -31,7 +31,7 @@
 #include "mcusim/avr/ipc/message.h"
 #include "mcusim/hex/ihex.h"
 
-#define DATA_MEMORY		1120
+#define DATA_MEMORY		65536
 
 #ifdef MSIM_IPC_MODE_QUEUE
 static int status_qid = -1;		/* Status queue ID */
@@ -54,9 +54,6 @@ static int decode_inst(struct MSIM_AVR *mcu, uint16_t inst);
 static int is_inst32(uint16_t inst);
 static void before_inst(struct MSIM_AVR *mcu);
 static void after_inst(struct MSIM_AVR *mcu);
-
-static int set_progmem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
-static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
 static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 
 /* AVR opcodes executors. */
@@ -74,7 +71,7 @@ static void exec_brge(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_brcs_brlo(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_rcall(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sts(struct MSIM_AVR *mcu, uint16_t inst);
-/* static void exec_sts16(struct MSIM_AVR *mcu, uint16_t inst); */
+static void exec_sts16(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_ret(struct MSIM_AVR *mcu);
 static void exec_ori(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_sbi_cbi(struct MSIM_AVR *mcu, uint16_t inst, uint8_t set_bit);
@@ -122,6 +119,16 @@ static void exec_clv(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_clz(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_com(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_cpse(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_dec(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_des(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_eicall(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_eijmp(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_elpm(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_fmul(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_fmuls(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_fmulsu(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_icall(struct MSIM_AVR *mcu, uint16_t inst);
+static void exec_ijmp(struct MSIM_AVR *mcu, uint16_t inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_st_y(struct MSIM_AVR *mcu, uint16_t inst);
@@ -195,10 +202,10 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		 FILE *fp)
 {
 	if (!strcmp("atmega8a", mcu_name)) {
-		if (MSIM_M8AInit(mcu))
+		if (MSIM_M8AInit(mcu, pm, pm_size, dm, dm_size))
 			return -1;
 	} else if (!strcmp("atmega328p", mcu_name)) {
-		if (MSIM_M328PInit(mcu))
+		if (MSIM_M328PInit(mcu, pm, pm_size, dm, dm_size))
 			return -1;
 	} else {
 		fprintf(stderr, "Microcontroller AVR %s is unsupported!\n",
@@ -206,15 +213,45 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		return -1;
 	}
 
-	if (set_progmem(mcu, pm, pm_size))
-		return -1;
-	if (set_datamem(mcu, dm, dm_size))
-		return -1;
 	if (load_progmem(mcu, fp)) {
 		fprintf(stderr, "Program memory cannot be loaded from a "
 				"file!\n");
 		return -1;
 	}
+	return 0;
+}
+
+int MSIM_SetProgmem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
+{
+	uint32_t flash_size;
+
+	/* Size in bytes */
+	flash_size= (mcu->flashend - mcu->flashstart) + 1;
+	if (size < flash_size) {
+		fprintf(stderr, "Program memory is limited by %u bytes,"
+				" %u bytes isn't enough\n",
+				flash_size, size);
+		return -1;
+	}
+	mcu->prog_mem = mem;
+	mcu->pm_size = size;
+	return 0;
+}
+
+int MSIM_SetDatamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
+{
+	uint32_t dm_size;
+
+	/* Size in bytes */
+	dm_size = mcu->regs + mcu->io_regs + mcu->ramsize;
+	if (size < dm_size) {
+		fprintf(stderr, "Data memory is limited by %u bytes,"
+				" %u bytes isn't enough\n",
+				dm_size, size);
+		return -1;
+	}
+	mcu->data_mem = mem;
+	mcu->dm_size = size;
 	return 0;
 }
 
@@ -264,159 +301,6 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 			return -1;
 		}
 	}
-	return 0;
-}
-
-static int set_progmem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
-{
-	uint32_t flash_size;
-
-	/* Size in bytes */
-	flash_size= (mcu->flashend - mcu->flashstart) + 1;
-	if (size != flash_size) {
-		fprintf(stderr, "Program memory is limited by %d KiB,"
-				" %u.%03u KiB doesn't match\n",
-				flash_size/1024, size/1024, size%1024);
-		return -1;
-	}
-
-	mcu->prog_mem = mem;
-	mcu->pm_size = size;
-	return 0;
-}
-
-static int set_datamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size)
-{
-	uint32_t sfr;
-
-	/*
-	 *
-	 * This 96 (register file and I/O registers) is ATmega8A specific!
-	 * Make it generic.
-	 *
-	 */
-	if ((mcu->ramsize + 96) != size) {
-		fprintf(stderr, "Data memory is limited by %u.%03u KiB,"
-				" %u.%03u KiB doesn't match\n",
-				(mcu->ramsize + 96) / 1024,
-				(mcu->ramsize + 96) % 1024,
-				size / 1024,
-				size % 1024);
-		return -1;
-	}
-
-	sfr = mcu->sfr_off;
-	mcu->data_mem = mem;
-	mcu->dm_size = size;
-	mcu->sreg = &mcu->data_mem[(uint32_t)mcu->io_addr[SREG_ADDRI] + sfr];
-	mcu->sph = &mcu->data_mem[(uint32_t)mcu->io_addr[SPH_ADDRI] + sfr];
-	mcu->spl = &mcu->data_mem[(uint32_t)mcu->io_addr[SPL_ADDRI] + sfr];
-
-	mcu->data_mem[(uint32_t)mcu->io_addr[SREG_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[SPH_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[SPL_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[GICR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[GIFR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TIMSK_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TIFR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[SPMCR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TWCR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[MCUCR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[MCUCSR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TCCR0_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TCNT0_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[OSCCAL_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[SFIOR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TCCR1A_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TCCR1B_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TCNT1H_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TCNT1L_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[OCR1AH_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[OCR1AL_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[OCR1BH_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[OCR1BL_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[ICR1H_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[ICR1L_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TCCR2_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TCNT2_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[OCR2_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[ASSR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[WDTCR_ADDRI]+sfr] = 0x00;
-	/*
-	 * From datasheet:
-	 *
-	 * The UBRRH Register shares the same I/O location
-	 * as the UCSRC Register. When doing a write access of this
-	 * I/O location, the high bit of the value written, the
-	 * USART Register Select (URSEL) bit, controls which one of the two
-	 * registers that will be written.
-	 *
-	 * If URSEL is zero during a write operation, the UBRRH value
-	 * will be updated. If URSEL is one, the UCSRC setting will be updated.
-	 *
-	 *	// Set UBRRH to 2
-	 *	UBRRH = 0x02;
-	 *
-	 *	// Set the USBS and the UCSZ1 bit to one, and
-	 *	// the remaining bits to zero.
-	 *	UCSRC = (1<<URSEL) | (1<<USBS) | (1<<UCSZ1);
-	 *
-	 * Doing a read access to the UBRRH or the UCSRC Register is a
-	 * more complex operation. The read access is controlled by a
-	 * timed sequence. Reading the I/O location once returns the UBRRH
-	 * Register contents. If the register location was read in previous
-	 * system clock cycle, reading the register in the current clock
-	 * cycle will return the UCSRC contents. Note that the timed
-	 * sequence for reading the UCSRC is an atomic operation.
-	 * Interrupts must therefore be controlled (e.g., by disabling
-	 * interrupts globally) during the read operation.
-	 *
-	 *	unsigned char USART_ReadUCSRC(void)
-	 *	{
-	 *		unsigned char ucsrc;
-	 *		// Read UCSRC
-	 *		ucsrc = UBRRH;
-	 *		ucsrc = UCSRC;
-	 *		return ucsrc;
-	 *	}
-	 */
-	mcu->data_mem[(uint32_t)mcu->io_addr[UBRRH_ADDRI]+sfr] = 0x00;
-	/* mcu->data_mem[(uint32_t)mcu->io_addr[UCSRC_ADDRI]+sfr] = 0x82; */
-	mcu->data_mem[(uint32_t)mcu->io_addr[EEARH_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[EEARL_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[EECR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[EECR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[PORTB_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[DDRB_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[PINB_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[PORTC_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[DDRC_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[PINC_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[PORTD_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[DDRD_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[PIND_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[SPDR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[SPDR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[SPSR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[SPCR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[UDR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[UCSRA_ADDRI]+sfr] = 0x20;
-	mcu->data_mem[(uint32_t)mcu->io_addr[UCSRB_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[UBRRL_ADDRI]+sfr] = 0x00;
-	/*
-	 * ACSR:5(ACO) - The output of the Analog Comparator is synchronized
-	 * and then directly connected to ACO, i.e. it is an analog output.
-	 */
-	mcu->data_mem[(uint32_t)mcu->io_addr[ACSR_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[ADMUX_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[ADCSRA_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[ADCH_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[ADCL_ADDRI]+sfr] = 0x00;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TWDR_ADDRI]+sfr] = 0x01;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TWAR_ADDRI]+sfr] = 0x02;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TWSR_ADDRI]+sfr] = 0x08;
-	mcu->data_mem[(uint32_t)mcu->io_addr[TWBR_ADDRI]+sfr] = 0x00;
-
 	return 0;
 }
 
@@ -572,23 +456,16 @@ static void before_inst(struct MSIM_AVR *mcu)
 
 static void after_inst(struct MSIM_AVR *mcu)
 {
-	int16_t r;
 	uint16_t i;
 
-	for (i = 0; i < sizeof(mcu->io_addr)/sizeof(mcu->io_addr[0]); i++) {
-		if ((r = mcu->io_addr[i]) < 0)
-			continue;
-		r += mcu->sfr_off;
-
+	for (i = 0; i < mcu->io_regs; i++) {
 		/* Has I/O register value been changed? */
-		if (mcu->data_mem[r] == data_mem[r])
+		if (mcu->data_mem[i+mcu->sfr_off] == data_mem[i+mcu->sfr_off])
 			continue;
 
 		#ifdef MSIM_TEXT_MODE
 		printf("%" PRIu32 ":\tIOREG=0x%x, VALUE=0x%x\n",
-			mcu->id,
-			mcu->io_addr[i],
-			mcu->data_mem[r]);
+		       mcu->id, i, mcu->data_mem[i+mcu->sfr_off]);
 		#endif
 		#ifdef MSIM_IPC_MODE_QUEUE
 		#endif
@@ -1234,6 +1111,10 @@ static void exec_sts(struct MSIM_AVR *mcu, uint16_t inst)
 	rr = (inst & 0x01F0) >> 4;
 	mcu->data_mem[addr] = mcu->data_mem[rr];
 	mcu->pc += 4;
+}
+
+static void exec_sts16(struct MSIM_AVR *mcu, uint16_t inst)
+{
 }
 
 static void exec_ret(struct MSIM_AVR *mcu)
@@ -2192,4 +2073,44 @@ static void exec_cpse(struct MSIM_AVR *mcu, uint16_t inst)
 		mcu->pc += is_inst32(mcu->prog_mem[mcu->pc+2]) ? 6 : 4;
 	else
 		mcu->pc += 2;
+}
+
+static void exec_dec(struct MSIM_AVR *mcu, uint16_t inst)
+{
+}
+
+static void exec_des(struct MSIM_AVR *mcu, uint16_t inst)
+{
+}
+
+static void exec_eicall(struct MSIM_AVR *mcu, uint16_t inst)
+{
+}
+
+static void exec_eijmp(struct MSIM_AVR *mcu, uint16_t inst)
+{
+}
+
+static void exec_elpm(struct MSIM_AVR *mcu, uint16_t inst)
+{
+}
+
+static void exec_fmul(struct MSIM_AVR *mcu, uint16_t inst)
+{
+}
+
+static void exec_fmuls(struct MSIM_AVR *mcu, uint16_t inst)
+{
+}
+
+static void exec_fmulsu(struct MSIM_AVR *mcu, uint16_t inst)
+{
+}
+
+static void exec_icall(struct MSIM_AVR *mcu, uint16_t inst)
+{
+}
+
+static void exec_ijmp(struct MSIM_AVR *mcu, uint16_t inst)
+{
 }
