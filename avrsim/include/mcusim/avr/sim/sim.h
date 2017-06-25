@@ -44,7 +44,10 @@ enum MSIM_AVRState {
 
 enum MSIM_AVRClkSource {
 	AVR_INT_CLK = INT16_MIN,
-	AVR_EXT_CLK
+	AVR_EXT_CLK,
+	AVR_LOWP_CRYSTAL_CLK,		/* Low Power Crystal Oscillator */
+	AVR_FULLSWING_CRYSTAL_CLK,	/* Full Swing Crystal Oscillator */
+	AVR_LOWFREQ_CRYSTAL_CLK		/* Low Frequency Crystal Oscillator */
 };
 
 enum MSIM_AVRSREGFlag {
