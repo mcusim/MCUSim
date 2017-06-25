@@ -20,10 +20,11 @@ These options are in development:
   - AVR Simulation Core (avrsim/simcore.c)
   - ATmega8A (avrsim/simm8a.c)
   - ATmega328P (avrsim/simm328p.c)
+  - ATmega328 (avrsim/simm328.c)
 
 Near future plan:
 
-  - ATmega48A/PA/88A/PA/168A/PA/328
+  - ATmega48A/PA/88A/PA/168A/PA
   - ATmega128/L
   - IPC for avrsim
 
