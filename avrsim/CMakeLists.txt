@@ -72,6 +72,7 @@ endif()
 set(SIM_SRCS		simcore.c
 			simm8a.c
 			simm328p.c
+			simm328.c
 			ihex.c
 			ipc.c
 			avrsim.c)

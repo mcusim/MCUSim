@@ -207,6 +207,9 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 	} else if (!strcmp("atmega328p", mcu_name)) {
 		if (MSIM_M328PInit(mcu, pm, pm_size, dm, dm_size))
 			return -1;
+	} else if (!strcmp("atmega328", mcu_name)) {
+		if (MSIM_M328Init(mcu, pm, pm_size, dm, dm_size))
+			return -1;
 	} else {
 		fprintf(stderr, "Microcontroller AVR %s is unsupported!\n",
 				mcu_name);
