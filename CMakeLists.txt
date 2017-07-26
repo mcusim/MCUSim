@@ -18,12 +18,8 @@
 cmake_minimum_required(VERSION 3.2)
 project(MCUSim)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+#set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+#set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-add_subdirectory(lib)
-add_subdirectory(tests)
-add_subdirectory(ui)
-
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/resources)
-file(COPY "./resources/" DESTINATION ${CMAKE_BINARY_DIR}/resources)
+add_subdirectory(avrsim)
+#add_subdirectory(tests)
