@@ -75,6 +75,7 @@ set(SIM_SRCS		simcore.c
 			simm328.c
 			ihex.c
 			ipc.c
+			cli.c
 			avrsim.c)
 
 #
