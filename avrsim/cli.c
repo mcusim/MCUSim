@@ -27,60 +27,82 @@
 #define MAX_LINESZ		4096
 #define MAX_CMDSZ		128
 
+typedef int (*cli_func)(struct MSIM_AVR *mcu, const char *cmd,
+			unsigned short cmdl);
+
 /* Supported commands */
-static void clif_next_inst(struct MSIM_AVR *mcu);
+static int clif_quit(struct MSIM_AVR *mcu, const char *cmd,
+		      unsigned short cmdl);
+static int clif_kill_simulation(struct MSIM_AVR *mcu, const char *cmd,
+				 unsigned short cmdl);
+static int clif_run_simulation(struct MSIM_AVR *mcu, const char *cmd,
+				unsigned short cmdl);
+
+static int clif_next_inst(struct MSIM_AVR *mcu, const char *cmd,
+			   unsigned short cmdl);
+static int clif_execute_until(struct MSIM_AVR *mcu, const char *cmd,
+			       unsigned short cmdl);
+static int clif_where(struct MSIM_AVR *mcu, const char *cmd,
+		       unsigned short cmdl);
+
+static int clif_list_insts(struct MSIM_AVR *mcu, const char *cmd,
+			    unsigned short cmdl);
+static int clif_set_listsize(struct MSIM_AVR *mcu, const char *cmd,
+			      unsigned short cmdl);
+static int clif_show_listsize(struct MSIM_AVR *mcu, const char *cmd,
+			       unsigned short cmdl);
 /* END Supported commands */
 
-static int is_prefix(const char *str, const char *pre);
+static cli_func commands[] = {
+	/* Start and stop commands */
+	clif_quit,
+	clif_kill_simulation,
+	clif_run_simulation,
+	/* END Start and stop commands */
 
-typedef void (*cmd_func)(struct MSIM_AVR *mcu);
+	/* Line execution commands */
+	clif_next_inst,
+	clif_execute_until,
+	clif_where,
+	/* END Line execution commands */
 
-struct cli_command {
-	char cmd[MAX_CMDSZ];
-	cmd_func func;
-};
-
-static struct cli_command commands[] = {
-	{ "quit", NULL }, /* can be executed directly */
-	{ "next instruction", clif_next_inst },
-	{ "ni", clif_next_inst }
+	/* Disassembled code commands */
+	clif_list_insts,
+	clif_set_listsize,
+	clif_show_listsize
+	/* END Disassembled code commands */
 };
 
 int MSIM_InterpretCommands(struct MSIM_AVR *mcu)
 {
-	char lbuf[MAX_LINESZ];
-	uint32_t i;
+	char lbuf[MAX_LINESZ], quit_f;
+	unsigned short i, cmd_len;
 
+	quit_f = 0;
 	printf("(" SIM_NAME ") ");
-
 	while (fgets(lbuf, sizeof(lbuf), stdin) != NULL) {
 		for (i = 0; i < sizeof(lbuf); i++)
-			if (lbuf[i] == '\n')
+			if (lbuf[i] == '\n') {
 				lbuf[i] = 0;
+				cmd_len = i > 0 ? i-1 : 0;
+				break;
+			}
 
-		for (i = 0; i < sizeof(commands); i++) {
-			if (commands[i].func != NULL &&
-			    is_prefix(lbuf, commands[i].cmd)) {
-				commands[i].func(mcu);
-			} else if (strcmp(lbuf, "quit") == 0) {
-				goto end_cmd_loop;
+		for (i = 0; i < sizeof(commands)/sizeof(commands[0]); i++) {
+			if (commands[i](mcu, lbuf, cmd_len)) {
+				break;
+			} else if (!strcmp(lbuf, "quit") ||
+				   !strcmp(lbuf, "q")) {
+				quit_f++;
+				break;
 			}
 		}
+		if (quit_f)
+			break;
 		printf("(" SIM_NAME ") ");
 	}
 
-end_cmd_loop:
 	if (feof(stdin))
 		printf("End of stdin reached\n");
 	return 0;
-}
-
-static void clif_next_inst(struct MSIM_AVR *mcu)
-{
-	printf("Command: next instruction\n");
-}
-
-static int is_prefix(const char *str, const char *pre)
-{
-	return strncmp(pre, str, strlen(pre)) == 0 ? 1 : 0;
 }
