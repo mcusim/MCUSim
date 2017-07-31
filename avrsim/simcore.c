@@ -177,7 +177,7 @@ int MSIM_PrintInstructions(struct MSIM_AVR *mcu, unsigned long start_addr,
 			   unsigned long end_addr, unsigned long steps)
 {
 	unsigned short inst, msb, lsb;
-	unsigned long i, loc_pc;
+	unsigned int loc_pc;
 
 	loc_pc = mcu->pc;
 	if (start_addr > mcu->flashend || start_addr < mcu->flashstart)
