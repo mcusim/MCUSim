@@ -25,6 +25,7 @@
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simcore.h"
 #include "mcusim/avr/sim/bootloader.h"
+#include "mcusim/cli.h"
 
 #define CLI_OPTIONS		":hm:p:v"
 
@@ -33,7 +34,6 @@
 
 static struct MSIM_AVRBootloader bootloader;
 static struct MSIM_AVR mcu;
-
 static uint8_t prog_mem[PROGRAM_MEMORY];
 static uint8_t data_mem[DATA_MEMORY];
 
@@ -63,8 +63,6 @@ int main(int argc, char *argv[])
 			errflag = 0;
 			ver = 1;
 			break;
-/*		case 'o':
-			break; */
 		case ':':		/* missing operand */
 			fprintf(stderr, "Option -%c required an operand\n",
 					optopt);
@@ -106,7 +104,8 @@ int main(int argc, char *argv[])
 	}
 	fclose(fp);
 
-	MSIM_SimulateAVR(&mcu);
+	/* MSIM_SimulateAVR(&mcu); */
+	MSIM_InterpretCommands(&mcu);
 
 	return 0;
 }

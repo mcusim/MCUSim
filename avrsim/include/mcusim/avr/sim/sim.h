@@ -34,6 +34,8 @@ extern "C" {
 #define MSIM_VERSION_PATCH	0
 #define MSIM_VERSION_META	"a"
 
+#define SIM_NAME		"avrsim"
+
 typedef uint32_t MSIM_AVRFlashAddr_t;
 
 enum MSIM_AVRState {

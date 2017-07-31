@@ -24,12 +24,6 @@ include(CheckFunctionExists)
 
 # Set application name
 set(SIM_NAME "avrsim")
-set(STAT_NAME "avrstat")
-
-# Set build options here
-option(MSIM_TEXT_MODE "Print simulator messages to stdout" ON)
-option(MSIM_IPC_MODE_QUEUE "Use queues to communicate with the simulator" OFF)
-option(MSIM_PRINT_INST "Print next AVR instruction to be decoded (It generates a lot of status messages!)" OFF)
 
 #
 # Set flags here
@@ -56,15 +50,6 @@ else()
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes -Wconversion")
 	endif()
 endif()
-if (MSIM_TEXT_MODE)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMSIM_TEXT_MODE")
-endif()
-if (MSIM_IPC_MODE_QUEUE)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMSIM_IPC_MODE_QUEUE")
-endif()
-if (MSIM_PRINT_INST)
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DMSIM_PRINT_INST")
-endif()
 
 #
 # Set sources here
@@ -75,6 +60,7 @@ set(SIM_SRCS		simcore.c
 			simm328.c
 			ihex.c
 			ipc.c
+			cli.c
 			avrsim.c)
 
 #
@@ -100,9 +86,7 @@ endif()
 include_directories("include/")
 
 add_executable(${SIM_NAME} ${SIM_SRCS})
-add_executable(${STAT_NAME} avrstat.c)
 
 target_link_libraries(${SIM_NAME} ${TARGET_LIBS})
-target_link_libraries(${STAT_NAME} ${TARGET_LIBS})
 
 file(COPY "../samples/avr-progmem.hex" DESTINATION ${CMAKE_BINARY_DIR})
