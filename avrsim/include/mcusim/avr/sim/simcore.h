@@ -25,13 +25,22 @@
 
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/bootloader.h"
+#include "mcusim/avr/sim/init.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Main simulation routine. It starts a loop over initialized MCU. */
-void MSIM_SimulateAVR(struct MSIM_AVR *mcu);
+/* Main simulation routine. It performs a required number of
+ * steps (instructions).
+ *
+ * Zero number of steps could be used to run an infinite simulation
+ * (until the end of the program or first breakpoint appeared).
+ * The infinite simulation could be interrupted by the execution process
+ * reached the given address. Addresses within the program space are taken
+ * into account, only.*/
+int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
+		     unsigned long addr);
 
 /* Initializes an MCU into specific model determined by the given name.
  * It is, generally, a good idea to prepare specific MCU model using this
@@ -41,21 +50,9 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		 uint8_t *dm, uint32_t dm_size,
 		 FILE *fp);
 
-/* Initialize MCU as ATmega8A */
-int MSIM_M8AInit(struct MSIM_AVR *mcu,
-		 uint8_t *pm, uint32_t pm_size,
-		 uint8_t *dm, uint32_t dm_size);
-/* Initialize MCU as ATmega328 */
-int MSIM_M328Init(struct MSIM_AVR *mcu,
-		  uint8_t *pm, uint32_t pm_size,
-		  uint8_t *dm, uint32_t dm_size);
-/* Initialize MCU as ATmega328P */
-int MSIM_M328PInit(struct MSIM_AVR *mcu,
-		   uint8_t *pm, uint32_t pm_size,
-		   uint8_t *dm, uint32_t dm_size);
-
 /* Functions to work with a stack inside MCU */
 void MSIM_StackPush(struct MSIM_AVR *mcu, uint8_t val);
+
 uint8_t MSIM_StackPop(struct MSIM_AVR *mcu);
 
 /* Functions to update/read SREG bits */
@@ -70,6 +67,14 @@ int MSIM_SetProgmem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
 /* Sets data memory of the MCU, performs size check. Data memory should
  * statically be allocated somewhere.*/
 int MSIM_SetDatamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
+
+/* Prints instructions from the program memory of the MCU.
+ *
+ * Required interval of instructions can be specified via
+ * [start_addr, end_addr] (steps = 0) or as a number of instructions
+ * from the current program counter (steps != 0). */
+int MSIM_PrintInstructions(struct MSIM_AVR *mcu, unsigned long start_addr,
+			   unsigned long end_addr, unsigned long steps);
 
 #ifdef __cplusplus
 }

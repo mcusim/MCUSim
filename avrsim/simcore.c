@@ -135,35 +135,69 @@ static void exec_ld_zdisp(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_ld(struct MSIM_AVR *mcu, uint16_t inst,
 		    uint8_t *addr_low, uint8_t *addr_high, uint8_t regd);
 
-void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
+int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
+		     unsigned long addr)
 {
-	uint16_t inst;
-	uint8_t msb, lsb;
+	unsigned short inst, msb, lsb;
+	char inf_loop, stop;
 
-	#ifdef MSIM_TEXT_MODE
-	printf("%" PRIu32 ":\tStart of AVR simulation\n", mcu->id);
-	#endif
-	while (1) {
-		lsb = mcu->prog_mem[mcu->pc];
-		msb = mcu->prog_mem[mcu->pc+1];
-		inst = (uint16_t) (lsb | (msb << 8));
+	stop = 0;
+	if (!steps)
+		inf_loop = steps = 1;
+	else
+		inf_loop = 0;
 
-		#if defined MSIM_TEXT_MODE && defined MSIM_PRINT_INST
+	while (steps > 0) {
+		lsb = (unsigned short) mcu->prog_mem[mcu->pc];
+		msb = (unsigned short) mcu->prog_mem[mcu->pc+1];
+		inst = (unsigned short) (lsb | (msb << 8));
+
 		printf("%" PRIu32 ":\t%x: %x %x\n",
 		    	mcu->id, mcu->pc, lsb, msb);
-		#endif
+		if (addr >= mcu->flashstart && addr <= mcu->flashend &&
+		    addr == mcu->pc)
+			stop = 1;
 
 		before_inst(mcu);
 		if (decode_inst(mcu, inst)) {
 			fprintf(stderr, "Unknown instruction: 0x%X\n", inst);
-			exit(1);
+			return 1;
 		}
 		after_inst(mcu);
-	}
 
-	#ifdef MSIM_TEXT_MODE
-	printf("%" PRIu32 ":\tEnd of AVR simulation\n", mcu->id);
-	#endif
+		if (stop)
+			break;
+		if (!inf_loop)
+			steps--;
+	}
+	return 0;
+}
+
+int MSIM_PrintInstructions(struct MSIM_AVR *mcu, unsigned long start_addr,
+			   unsigned long end_addr, unsigned long steps)
+{
+	unsigned short inst, msb, lsb;
+	unsigned long i, loc_pc;
+
+	loc_pc = mcu->pc;
+	if (start_addr > mcu->flashend || start_addr < mcu->flashstart)
+		return 0;
+	if (end_addr > mcu->flashend || end_addr < mcu->flashstart)
+		end_addr = start_addr + steps;
+	if (end_addr < start_addr)
+		return 0;
+
+	while (loc_pc <= end_addr) {
+		lsb = (unsigned short) mcu->prog_mem[loc_pc];
+		msb = (unsigned short) mcu->prog_mem[loc_pc+1];
+		inst = (unsigned short) (lsb | (msb << 8));
+
+		printf("%" PRIu32 ":\t%x: %x %x\n",
+		    	mcu->id, loc_pc, lsb, msb);
+
+		loc_pc += is_inst32(inst) ? 4 : 2;
+	}
+	return 0;
 }
 
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,

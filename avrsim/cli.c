@@ -23,16 +23,19 @@
 
 #include "mcusim/cli.h"
 #include "mcusim/avr/sim/sim.h"
+#include "mcusim/avr/sim/simcore.h"
 
 #define MAX_LINESZ		4096
 #define MAX_CMDSZ		128
+
+#define INSTRUCTIONS_LISTSZ	10
+
+static unsigned long inst_listsz = INSTRUCTIONS_LISTSZ;
 
 typedef int (*cli_func)(struct MSIM_AVR *mcu, const char *cmd,
 			unsigned short cmdl);
 
 /* Supported commands */
-static int clif_kill_simulation(struct MSIM_AVR *mcu, const char *cmd,
-				unsigned short cmdl);
 static int clif_run_simulation(struct MSIM_AVR *mcu, const char *cmd,
 			       unsigned short cmdl);
 
@@ -49,12 +52,10 @@ static int clif_set_listsize(struct MSIM_AVR *mcu, const char *cmd,
 			     unsigned short cmdl);
 static int clif_show_listsize(struct MSIM_AVR *mcu, const char *cmd,
 			      unsigned short cmdl);
-/* END Supported commands */
 
 static cli_func commands[] = {
 	/* Start and stop commands */
 	/* do not forget about 'quit' command */
-	clif_kill_simulation,
 	clif_run_simulation,
 	/* END Start and stop commands */
 
@@ -70,6 +71,7 @@ static cli_func commands[] = {
 	clif_show_listsize
 	/* END Disassembled code commands */
 };
+/* END Supported commands */
 
 int MSIM_InterpretCommands(struct MSIM_AVR *mcu)
 {
@@ -107,18 +109,6 @@ int MSIM_InterpretCommands(struct MSIM_AVR *mcu)
 	return 0;
 }
 
-static int clif_kill_simulation(struct MSIM_AVR *mcu, const char *cmd,
-				unsigned short cmdl)
-{
-	if (cmdl == 0)
-		return 0;
-	if (strncmp("kill", cmd, cmdl))
-		return 0;
-
-	printf("Command: %s\n", cmd);
-	return 1;
-}
-
 static int clif_run_simulation(struct MSIM_AVR *mcu, const char *cmd,
 			       unsigned short cmdl)
 {
@@ -127,8 +117,8 @@ static int clif_run_simulation(struct MSIM_AVR *mcu, const char *cmd,
 	if (strncmp("run", cmd, cmdl) && strncmp("r", cmd, cmdl))
 		return 0;
 
-	printf("Command: %s\n", cmd);
-	return 1;
+	/* Run infinite simulation which can be stoped by breakpoint, only. */
+	return !MSIM_SimulateAVR(mcu, 0, mcu->flashend+1);
 }
 
 static int clif_next_inst(struct MSIM_AVR *mcu, const char *cmd,
@@ -153,8 +143,9 @@ static int clif_next_inst(struct MSIM_AVR *mcu, const char *cmd,
 		    strncmp("ni", cmd, cmdl))
 			return 0;
 
-	printf("Command: %s\n", cmd);
-	return 1;
+	/* Run fixed steps simulation with the stop address right behind the
+	 * end of the program memory address space. */
+	return !MSIM_SimulateAVR(mcu, steps == 0 ? 1 : steps, mcu->flashend+1);
 }
 
 static int clif_execute_until(struct MSIM_AVR *mcu, const char *cmd,
@@ -171,8 +162,7 @@ static int clif_execute_until(struct MSIM_AVR *mcu, const char *cmd,
 		return 0;
 	}
 
-	printf("Command: %s\n", cmd);
-	return 1;
+	return !MSIM_SimulateAVR(mcu, 0, iaddr);
 }
 
 static int clif_where(struct MSIM_AVR *mcu, const char *cmd,
@@ -183,8 +173,7 @@ static int clif_where(struct MSIM_AVR *mcu, const char *cmd,
 	if (strncmp("where", cmd, cmdl))
 		return 0;
 
-	printf("Command: %s\n", cmd);
-	return 1;
+	return !MSIM_PrintInstructions(mcu, mcu->pc, mcu->pc, 0);
 }
 
 static int clif_list_insts(struct MSIM_AVR *mcu, const char *cmd,
@@ -203,13 +192,20 @@ static int clif_list_insts(struct MSIM_AVR *mcu, const char *cmd,
 		args = 1;
 	}
 
-	if (r == EOF || r != args)
+	if (r == EOF || r != args) {
+		args = 0;
 		if (strncmp("list", cmd, cmdl) &&
 		    strncmp("l", cmd, cmdl))
 			return 0;
+	}
 
-	printf("Command: %s\n", cmd);
-	return 1;
+	if (args > 0)
+		return !MSIM_PrintInstructions(mcu, istart_addr,
+				args == 2 ? iend_addr : mcu->flashend+1,
+				args == 2 ? 0 : inst_listsz);
+	else
+		return !MSIM_PrintInstructions(mcu, mcu->pc, mcu->flashend+1,
+				inst_listsz);
 }
 
 static int clif_set_listsize(struct MSIM_AVR *mcu, const char *cmd,
@@ -226,7 +222,7 @@ static int clif_set_listsize(struct MSIM_AVR *mcu, const char *cmd,
 		return 0;
 	}
 
-	printf("Command: %s\n", cmd);
+	inst_listsz = lines;
 	return 1;
 }
 
@@ -238,6 +234,6 @@ static int clif_show_listsize(struct MSIM_AVR *mcu, const char *cmd,
 	if (strncmp("show listsize", cmd, cmdl))
 		return 0;
 
-	printf("Command: %s\n", cmd);
+	printf("Instructions list size: %ld\n", inst_listsz);
 	return 1;
 }
