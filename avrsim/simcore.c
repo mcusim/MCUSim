@@ -33,17 +33,6 @@
 
 #define DATA_MEMORY		65536
 
-#ifdef MSIM_IPC_MODE_QUEUE
-static int status_qid = -1;		/* Status queue ID */
-static int ctrl_qid = -1;		/* Control queue ID */
-/*
- * Open/close IPC queues to let external programs to interact with
- * the simulator.
- */
-static int open_queues(void);
-static void close_queues(void);
-#endif
-
 /*
  * To temporarily store data memory and test changes after execution of
  * an instruction.
@@ -154,14 +143,6 @@ void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
 	#ifdef MSIM_TEXT_MODE
 	printf("%" PRIu32 ":\tStart of AVR simulation\n", mcu->id);
 	#endif
-	#ifdef MSIM_IPC_MODE_QUEUE
-	if (open_queues()) {
-		close_queues();
-		return;
-	}
-	MSIM_SendSimMsg(status_qid, mcu, AVR_START_SIM_MSGTYP);
-	#endif
-
 	while (1) {
 		lsb = mcu->prog_mem[mcu->pc];
 		msb = mcu->prog_mem[mcu->pc+1];
@@ -170,13 +151,6 @@ void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
 		#if defined MSIM_TEXT_MODE && defined MSIM_PRINT_INST
 		printf("%" PRIu32 ":\t%x: %x %x\n",
 		    	mcu->id, mcu->pc, lsb, msb);
-		#endif
-		#if defined MSIM_IPC_MODE_QUEUE && defined MSIM_PRINT_INST
-		uint8_t i[4];
-		i[0] = lsb;
-		i[1] = msb;
-		i[2] = i[3] = 0;
-		MSIM_SendInstMsg(status_qid, mcu, i);
 		#endif
 
 		before_inst(mcu);
@@ -189,10 +163,6 @@ void MSIM_SimulateAVR(struct MSIM_AVR *mcu)
 
 	#ifdef MSIM_TEXT_MODE
 	printf("%" PRIu32 ":\tEnd of AVR simulation\n", mcu->id);
-	#endif
-	#ifdef MSIM_IPC_MODE_QUEUE
-	MSIM_SendSimMsg(status_qid, mcu, AVR_END_SIM_MSGTYP);
-	close_queues();
 	#endif
 }
 
@@ -422,36 +392,6 @@ uint8_t MSIM_StackPop(struct MSIM_AVR *mcu)
 	return v;
 }
 
-#ifdef MSIM_IPC_MODE_QUEUE
-static int open_queues(void)
-{
-	if ((status_qid = msgget(AVR_SQ_KEY, AVR_SQ_FLAGS)) < 0) {
-		fprintf(stderr, "AVR status queue cannot be opened!\n");
-		return -1;
-	}
-	if ((ctrl_qid = msgget(AVR_CQ_KEY, AVR_CQ_FLAGS)) < 0) {
-		fprintf(stderr, "AVR control queue cannot be opened!\n");
-		return -1;
-	}
-
-	return 0;
-}
-
-static void close_queues(void)
-{
-	struct msqid_ds desc;
-
-	if (status_qid >= 0) {
-		msgctl(status_qid, IPC_RMID, &desc);
-		status_qid = -1;
-	}
-	if (ctrl_qid >= 0) {
-		msgctl(ctrl_qid, IPC_RMID, &desc);
-		ctrl_qid = -1;
-	}
-}
-#endif
-
 static void before_inst(struct MSIM_AVR *mcu)
 {
 	memcpy(data_mem, mcu->data_mem, mcu->dm_size);
@@ -469,8 +409,6 @@ static void after_inst(struct MSIM_AVR *mcu)
 		#ifdef MSIM_TEXT_MODE
 		printf("%" PRIu32 ":\tIOREG=0x%x, VALUE=0x%x\n",
 		       mcu->id, i, mcu->data_mem[i+mcu->sfr_off]);
-		#endif
-		#ifdef MSIM_IPC_MODE_QUEUE
 		#endif
 	}
 }

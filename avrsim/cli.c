@@ -31,31 +31,29 @@ typedef int (*cli_func)(struct MSIM_AVR *mcu, const char *cmd,
 			unsigned short cmdl);
 
 /* Supported commands */
-static int clif_quit(struct MSIM_AVR *mcu, const char *cmd,
-		      unsigned short cmdl);
 static int clif_kill_simulation(struct MSIM_AVR *mcu, const char *cmd,
-				 unsigned short cmdl);
-static int clif_run_simulation(struct MSIM_AVR *mcu, const char *cmd,
 				unsigned short cmdl);
+static int clif_run_simulation(struct MSIM_AVR *mcu, const char *cmd,
+			       unsigned short cmdl);
 
 static int clif_next_inst(struct MSIM_AVR *mcu, const char *cmd,
-			   unsigned short cmdl);
+			  unsigned short cmdl);
 static int clif_execute_until(struct MSIM_AVR *mcu, const char *cmd,
-			       unsigned short cmdl);
+			      unsigned short cmdl);
 static int clif_where(struct MSIM_AVR *mcu, const char *cmd,
-		       unsigned short cmdl);
+		      unsigned short cmdl);
 
 static int clif_list_insts(struct MSIM_AVR *mcu, const char *cmd,
-			    unsigned short cmdl);
+			   unsigned short cmdl);
 static int clif_set_listsize(struct MSIM_AVR *mcu, const char *cmd,
-			      unsigned short cmdl);
+			     unsigned short cmdl);
 static int clif_show_listsize(struct MSIM_AVR *mcu, const char *cmd,
-			       unsigned short cmdl);
+			      unsigned short cmdl);
 /* END Supported commands */
 
 static cli_func commands[] = {
 	/* Start and stop commands */
-	clif_quit,
+	/* do not forget about 'quit' command */
 	clif_kill_simulation,
 	clif_run_simulation,
 	/* END Start and stop commands */
@@ -75,34 +73,171 @@ static cli_func commands[] = {
 
 int MSIM_InterpretCommands(struct MSIM_AVR *mcu)
 {
-	char lbuf[MAX_LINESZ], quit_f;
+	char lbuf[MAX_LINESZ], un_cmd;
 	unsigned short i, cmd_len;
 
-	quit_f = 0;
+	un_cmd = 1;
 	printf("(" SIM_NAME ") ");
 	while (fgets(lbuf, sizeof(lbuf), stdin) != NULL) {
 		for (i = 0; i < sizeof(lbuf); i++)
 			if (lbuf[i] == '\n') {
 				lbuf[i] = 0;
-				cmd_len = i > 0 ? i-1 : 0;
+				cmd_len = i > 0 ? i : 0;
 				break;
 			}
 
+		if (!strncmp("quit", lbuf, cmd_len) ||
+		    !strncmp("q", lbuf, cmd_len))
+			break;
+
 		for (i = 0; i < sizeof(commands)/sizeof(commands[0]); i++) {
 			if (commands[i](mcu, lbuf, cmd_len)) {
-				break;
-			} else if (!strcmp(lbuf, "quit") ||
-				   !strcmp(lbuf, "q")) {
-				quit_f++;
+				un_cmd = 0;
 				break;
 			}
 		}
-		if (quit_f)
-			break;
+		if (un_cmd)
+			/* Unknown command */
+			printf("Unknown command\n");
 		printf("(" SIM_NAME ") ");
 	}
 
 	if (feof(stdin))
 		printf("End of stdin reached\n");
 	return 0;
+}
+
+static int clif_kill_simulation(struct MSIM_AVR *mcu, const char *cmd,
+				unsigned short cmdl)
+{
+	if (cmdl == 0)
+		return 0;
+	if (strncmp("kill", cmd, cmdl))
+		return 0;
+
+	printf("Command: %s\n", cmd);
+	return 1;
+}
+
+static int clif_run_simulation(struct MSIM_AVR *mcu, const char *cmd,
+			       unsigned short cmdl)
+{
+	if (cmdl == 0)
+		return 0;
+	if (strncmp("run", cmd, cmdl) && strncmp("r", cmd, cmdl))
+		return 0;
+
+	printf("Command: %s\n", cmd);
+	return 1;
+}
+
+static int clif_next_inst(struct MSIM_AVR *mcu, const char *cmd,
+			  unsigned short cmdl)
+{
+	unsigned long steps;
+	int r;
+
+	if (cmdl == 0)
+		return 0;
+
+	steps = 1;
+	r = sscanf(cmd, "step %ld", &steps);
+	if (r == EOF || r != 1)
+		if (strncmp("step", cmd, cmdl) &&
+		    strncmp("stepi", cmd, cmdl) &&
+		    strncmp("next", cmd, cmdl) &&
+		    strncmp("nexti", cmd, cmdl) &&
+		    strncmp("s", cmd, cmdl) &&
+		    strncmp("si", cmd, cmdl) &&
+		    strncmp("n", cmd, cmdl) &&
+		    strncmp("ni", cmd, cmdl))
+			return 0;
+
+	printf("Command: %s\n", cmd);
+	return 1;
+}
+
+static int clif_execute_until(struct MSIM_AVR *mcu, const char *cmd,
+			      unsigned short cmdl)
+{
+	unsigned long iaddr;
+	int r;
+
+	if (cmdl == 0)
+		return 0;
+
+	r = sscanf(cmd, "until 0x%lx", &iaddr);
+	if (r == EOF || r != 1) {
+		return 0;
+	}
+
+	printf("Command: %s\n", cmd);
+	return 1;
+}
+
+static int clif_where(struct MSIM_AVR *mcu, const char *cmd,
+		      unsigned short cmdl)
+{
+	if (cmdl == 0)
+		return 0;
+	if (strncmp("where", cmd, cmdl))
+		return 0;
+
+	printf("Command: %s\n", cmd);
+	return 1;
+}
+
+static int clif_list_insts(struct MSIM_AVR *mcu, const char *cmd,
+			   unsigned short cmdl)
+{
+	unsigned long istart_addr, iend_addr;
+	int r, args;
+
+	if (cmdl == 0)
+		return 0;
+
+	args = 2;
+	r = sscanf(cmd, "list 0x%lx,0x%lx", &istart_addr, &iend_addr);
+	if (r == EOF || r != args) {
+		r = sscanf(cmd, "list 0x%lx", &istart_addr);
+		args = 1;
+	}
+
+	if (r == EOF || r != args)
+		if (strncmp("list", cmd, cmdl) &&
+		    strncmp("l", cmd, cmdl))
+			return 0;
+
+	printf("Command: %s\n", cmd);
+	return 1;
+}
+
+static int clif_set_listsize(struct MSIM_AVR *mcu, const char *cmd,
+			     unsigned short cmdl)
+{
+	unsigned long lines;
+	int r;
+
+	if (cmdl == 0)
+		return 0;
+
+	r = sscanf(cmd, "set listsize %ld", &lines);
+	if (r == EOF || r != 1) {
+		return 0;
+	}
+
+	printf("Command: %s\n", cmd);
+	return 1;
+}
+
+static int clif_show_listsize(struct MSIM_AVR *mcu, const char *cmd,
+			      unsigned short cmdl)
+{
+	if (cmdl == 0)
+		return 0;
+	if (strncmp("show listsize", cmd, cmdl))
+		return 0;
+
+	printf("Command: %s\n", cmd);
+	return 1;
 }
