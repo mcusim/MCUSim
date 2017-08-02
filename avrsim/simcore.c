@@ -109,10 +109,6 @@ static void exec_clz(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_com(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_cpse(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_dec(struct MSIM_AVR *mcu, uint16_t inst);
-static void exec_des(struct MSIM_AVR *mcu, uint16_t inst);
-static void exec_eicall(struct MSIM_AVR *mcu, uint16_t inst);
-static void exec_eijmp(struct MSIM_AVR *mcu, uint16_t inst);
-static void exec_elpm(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_fmul(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_fmuls(struct MSIM_AVR *mcu, uint16_t inst);
 static void exec_fmulsu(struct MSIM_AVR *mcu, uint16_t inst);
@@ -2052,26 +2048,37 @@ static void exec_cpse(struct MSIM_AVR *mcu, uint16_t inst)
 
 static void exec_dec(struct MSIM_AVR *mcu, uint16_t inst)
 {
-}
+	/* DEC - Decrement */
+	unsigned short rd_addr, r, rd;
 
-static void exec_des(struct MSIM_AVR *mcu, uint16_t inst)
-{
-}
+	rd_addr = (inst >> 4) & 0x1F;
+	rd = mcu->data_mem[rd_addr];
+	r = mcu->data_mem[rd_addr] -= 1;
+	mcu->pc += 2;
 
-static void exec_eicall(struct MSIM_AVR *mcu, uint16_t inst)
-{
-}
-
-static void exec_eijmp(struct MSIM_AVR *mcu, uint16_t inst)
-{
-}
-
-static void exec_elpm(struct MSIM_AVR *mcu, uint16_t inst)
-{
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (r >> 7) & 1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, rd == 0x80 ? 1 : 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
 }
 
 static void exec_fmul(struct MSIM_AVR *mcu, uint16_t inst)
 {
+	/* FMUL – Fractional Multiply Unsigned */
+	unsigned short rd_addr, rr_addr;
+	unsigned short r;
+
+	rd_addr = 0x10 + ((inst >> 4) & 7);
+	rr_addr = 0x10 + (inst & 7);
+	r = mcu->data_mem[rd_addr] * mcu->data_mem[rr_addr];
+	mcu->data_mem[0] = r & 0x0F;
+	mcu->data_mem[1] = (r >> 8) & 0x0F;
+	mcu->pc += 2;
+
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (r >> 16) & 1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
 }
 
 static void exec_fmuls(struct MSIM_AVR *mcu, uint16_t inst)

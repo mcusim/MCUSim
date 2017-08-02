@@ -26,7 +26,6 @@ extern "C" {
 
 #include <stdint.h>
 
-#include "mcusim/avr/sim/io.h"
 #include "mcusim/avr/sim/bootloader.h"
 
 #define MSIM_VERSION_MAJOR	1
