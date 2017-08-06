@@ -35,7 +35,7 @@ extern "C" {
 
 #define SIM_NAME		"avrsim"
 
-typedef uint32_t MSIM_AVRFlashAddr_t;
+typedef unsigned long MSIM_AVRFlashAddr_t;
 
 enum MSIM_AVRState {
 	AVR_RUNNING = INT16_MIN,

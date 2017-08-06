@@ -37,7 +37,7 @@ int New_IHexRecord(unsigned int type, unsigned int address,
 		   const unsigned char *data, unsigned int dataLen,
 		   IHexRecord *ihexRecord) {
 	/* Data length size check, assertion of ihexRecord pointer */
-	if (dataLen < 0 || dataLen > IHEX_MAX_DATA_LEN/2 || ihexRecord == NULL)
+	if (dataLen > IHEX_MAX_DATA_LEN/2 || ihexRecord == NULL)
 		return IHEX_ERROR_INVALID_ARGUMENTS;
 
 	ihexRecord->type = type;
