@@ -64,60 +64,52 @@ enum MSIM_AVRSREGFlag {
 
 /* Instance of the AVR microcontroller. */
 struct MSIM_AVR {
-	uint32_t id;			/* ID of a simulated AVR MCU */
+	unsigned long id;		/* ID of a simulated AVR MCU */
 
 	char name[20];			/* Name of the MCU */
-	uint8_t signature[3];		/* Signature of the MCU */
-	uint16_t spm_pagesize;		/* For devices with bootloader support,
+	unsigned char signature[3];	/* Signature of the MCU */
+	unsigned int spm_pagesize;	/* For devices with bootloader support,
 					   the flash pagesize (in bytes) to be
 					   used for Self Programming Mode (SPM)
 					   instruction. */
-	uint32_t flashstart;		/* The first byte address in flash
+	unsigned long flashstart;	/* The first byte address in flash
 					   program space, in bytes. */
-	uint32_t flashend;		/* The last byte address in flash
+	unsigned long flashend;		/* The last byte address in flash
 					   program space, in bytes. */
-	struct MSIM_AVRBootloader *boot_loader;
-	uint32_t ramstart;
-	uint32_t ramend;
-	uint32_t ramsize;
-	uint16_t e2start;		/* The first EEPROM address */
-	uint16_t e2end;			/* The last EEPROM address */
-	uint16_t e2size;
-	uint16_t e2pagesize;		/* The size of the EEPROM page */
-	uint8_t lockbits;
-	uint8_t fuse[6];
+	unsigned long ramstart;
+	unsigned long ramend;
+	unsigned long ramsize;
+	unsigned int e2start;		/* The first EEPROM address */
+	unsigned int e2end;		/* The last EEPROM address */
+	unsigned int e2size;
+	unsigned int e2pagesize;	/* The size of the EEPROM page */
+	unsigned char lockbits;
+	unsigned char fuse[6];
 
+	struct MSIM_AVRBootloader *boot_loader;
 	enum MSIM_AVRState state;
 	enum MSIM_AVRClkSource clk_source;
-	uint32_t freq;			/* Frequency we're currently
-					   working at, in kHz */
-	MSIM_AVRFlashAddr_t pc;		/* Current program counter register */
-	MSIM_AVRFlashAddr_t reset_pc;	/* This is a value used to jump to
-					   at reset time. */
+
+	unsigned long freq;		/* Current MCU frequency. */
+	MSIM_AVRFlashAddr_t pc;		/* Current program counter. */
+	MSIM_AVRFlashAddr_t reset_pc;	/* Reset program counter. */
 	MSIM_AVRFlashAddr_t ivt;	/* Address of Interrupt Vectors Table
 					   in program memory. */
 
-	uint8_t *sreg;			/* Points directly to SREG placed
-					   in data section. */
-	uint8_t *sph;			/* Stack pointer (high) in the
-					   data memory */
-	uint8_t *spl;			/* Stack pointer (low) in the
-					   data memory */
+	unsigned char *sreg;		/* SREG in the data memory. */
+	unsigned char *sph;		/* SP(high) in the data memory. */
+	unsigned char *spl;		/* SP(low) in the data memory. */
 
-	uint8_t *prog_mem;		/* Flash memory. This memory
-					   section could contain
-					   a bootloader. */
-	uint8_t *data_mem;		/* General purpose registers,
-					   IO registers and SRAM */
-	uint32_t pm_size;		/* Actual size of the program memory. */
-	uint32_t dm_size;		/* Actual size of the data memory. */
+	unsigned char *prog_mem;	/* Flash memory (+bootloader). */
+	unsigned char *data_mem;	/* GP and I/O registers, SRAM. */
+	unsigned long pm_size;		/* Actual size of the program memory. */
+	unsigned long dm_size;		/* Actual size of the data memory. */
 
 
-	uint16_t sfr_off;		/* Offset to the AVR special function
+	unsigned int sfr_off;		/* Offset to the AVR special function
 					   registers. */
-	uint16_t regs;			/* Number of general purpose
-					   registers. */
-	uint16_t io_regs;		/* Number of all I/O registers. */
+	unsigned int regs;		/* Number of GP registers. */
+	unsigned int io_regs;		/* Number of all I/O registers. */
 };
 
 #ifdef __cplusplus

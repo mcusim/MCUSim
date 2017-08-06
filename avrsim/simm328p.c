@@ -147,10 +147,10 @@ static int set_frequency(struct MSIM_AVR *mcu, uint8_t fuse_ext,
 	ckdiv8 = (fuse_low >> 7) & 1;
 
 	if (!ckdiv8) {
-		mcu->data_mem[CLKPR] &= ~((uint8_t) 0x0C);
+		mcu->data_mem[CLKPR] &= (unsigned char) ~0x0C;
 		mcu->data_mem[CLKPR] |= 0x03;
 	} else
-		mcu->data_mem[CLKPR] &= ~((uint8_t) 0x0F);
+		mcu->data_mem[CLKPR] &= (unsigned char) ~0x0F;
 
 	switch(cksel) {
 	case 0x03:					/* Internal, 128 kHz */

@@ -46,8 +46,8 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
  * It is, generally, a good idea to prepare specific MCU model using this
  * function instead of MSIM_XXXInit() ones. */
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
-		 uint8_t *pm, uint32_t pm_size,
-		 uint8_t *dm, uint32_t dm_size,
+		 unsigned char *pm, unsigned long pm_size,
+		 unsigned char *dm, unsigned long dm_size,
 		 FILE *fp);
 
 /* Functions to work with a stack inside MCU */
@@ -57,16 +57,19 @@ uint8_t MSIM_StackPop(struct MSIM_AVR *mcu);
 
 /* Functions to update/read SREG bits */
 void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVRSREGFlag flag,
-			 uint8_t set_f);
-uint8_t MSIM_ReadSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVRSREGFlag flag);
+			 unsigned char set_f);
+unsigned char MSIM_ReadSREGFlag(struct MSIM_AVR *mcu,
+				enum MSIM_AVRSREGFlag flag);
 
 /* Sets program memory of the MCU, performs size check. Program memory should
  * statically be allocated somewhere. */
-int MSIM_SetProgmem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
+int MSIM_SetProgmem(struct MSIM_AVR *mcu, unsigned char *mem,
+		    unsigned long memsz);
 
 /* Sets data memory of the MCU, performs size check. Data memory should
  * statically be allocated somewhere.*/
-int MSIM_SetDatamem(struct MSIM_AVR *mcu, uint8_t *mem, uint32_t size);
+int MSIM_SetDatamem(struct MSIM_AVR *mcu, unsigned char *mem,
+		    unsigned long memsz);
 
 /* Prints instructions from the program memory of the MCU.
  *

@@ -131,7 +131,7 @@ static int clif_next_inst(struct MSIM_AVR *mcu, const char *cmd,
 		return 0;
 
 	steps = 1;
-	r = sscanf(cmd, "step %ld", &steps);
+	r = sscanf(cmd, "step %lu", &steps);
 	if (r == EOF || r != 1)
 		if (strncmp("step", cmd, cmdl) &&
 		    strncmp("stepi", cmd, cmdl) &&
@@ -217,7 +217,7 @@ static int clif_set_listsize(struct MSIM_AVR *mcu, const char *cmd,
 	if (cmdl == 0)
 		return 0;
 
-	r = sscanf(cmd, "set listsize %ld", &lines);
+	r = sscanf(cmd, "set listsize %lu", &lines);
 	if (r == EOF || r != 1) {
 		return 0;
 	}

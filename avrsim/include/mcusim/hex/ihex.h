@@ -118,26 +118,16 @@ enum IHexRecordTypes {
  * Structure to hold the fields of an Intel HEX8 record.
  */
 typedef struct {
-	/*
-	 * The 16-bit address field.
-	 */
-	uint16_t address;
-	/*
-	 * The 8-bit array data field, which has a maximum size of 256 bytes.
-	 */
-	uint8_t data[IHEX_MAX_DATA_LEN/2];
-	/*
-	 * The number of bytes of data stored in this record.
-	 */
-	int dataLen;
-	/*
-	 * The Intel HEX8 record type of this record.
-	 */
-	int type;
-	/*
-	 * The checksum of this record.
-	 */
-	uint8_t checksum;
+	/* The 16-bit address field. */
+	unsigned int address;
+	/* The 8-bit array data field, which has a maximum size of 256 bytes. */
+	unsigned char data[IHEX_MAX_DATA_LEN/2];
+	/* The number of bytes of data stored in this record. */
+	unsigned int dataLen;
+	/* The Intel HEX8 record type of this record. */
+	unsigned int type;
+	/* The checksum of this record. */
+	unsigned char checksum;
 } IHexRecord;
 
 /**
@@ -156,8 +146,8 @@ typedef struct {
  *	   (less than zero or greater than the maximum data length allowed
  *	   by record specifications, see IHexRecord.data).
 */
-int New_IHexRecord(int type, uint16_t address,
-		   const uint8_t *data, int dataLen,
+int New_IHexRecord(unsigned int type, unsigned int address,
+		   const unsigned char *data, unsigned int dataLen,
 		   IHexRecord *ihexRecord);
 
 /**
@@ -213,7 +203,7 @@ void Print_IHexRecord(const IHexRecord *ihexRecord);
  * \param ihexRecord A pointer to the Intel HEX8 record structure.
  * \return The 8-bit checksum.
 */
-uint8_t Checksum_IHexRecord(const IHexRecord *ihexRecord);
+unsigned char Checksum_IHexRecord(const IHexRecord *ihexRecord);
 
 #ifdef __cplusplus
 }
