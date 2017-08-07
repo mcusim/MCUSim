@@ -258,7 +258,7 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 	IHexRecord rec, mem_rec;
 
 	if (!fp) {
-		fprintf(stderr, "Cannot read from the filestream");
+		fprintf(stderr, "Cannot read from the filestream\n");
 		return -1;
 	}
 
@@ -684,7 +684,8 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		break;
 	case 0xB000:
 		exec_in_out(mcu, inst, (inst & 0x01F0) >> 4,
-			    (inst & 0x0F) | ((inst & 0x0600) >> 5));
+			    (unsigned char)((inst & 0x0F) |
+				    	    ((inst & 0x0600) >> 5)));
 		break;
 	case 0xC000:
 		exec_rjmp(mcu, inst);
@@ -773,10 +774,10 @@ exit:
 static void exec_eor_clr(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* EOR - Exclusive OR */
-	uint8_t rd, rr;
+	unsigned char rd, rr;
 
 	rd = (inst & 0x01F0) >> 4;
-	rr = (inst & 0x0F) | ((inst & 0x0200) >> 5);
+	rr = (unsigned char)((inst & 0x0F) | ((inst & 0x0200) >> 5));
 
 	mcu->data_mem[rd] = mcu->data_mem[rd] ^ mcu->data_mem[rr];
 	mcu->pc += 2;
@@ -806,10 +807,11 @@ static void exec_in_out(struct MSIM_AVR *mcu, unsigned int inst,
 static void exec_cpi(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* CPI – Compare with Immediate */
-	uint8_t rd, rd_addr, c, r, buf;
+	uint8_t rd, rd_addr, c;
+	int r, buf;
 
-	rd_addr = ((inst & 0xF0) >> 4) + 16;
-	c = (inst & 0x0F) | ((inst & 0x0F00) >> 4);
+	rd_addr = (unsigned char)(((inst & 0xF0) >> 4) + 16);
+	c = (unsigned char)((inst & 0x0F) | ((inst & 0x0F00) >> 4));
 
 	rd = mcu->data_mem[rd_addr];
 	r = mcu->data_mem[rd_addr] - c;
@@ -824,21 +826,18 @@ static void exec_cpi(struct MSIM_AVR *mcu, unsigned int inst)
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_HALF_CARRY, (buf >> 3) & 1);
-	if (!r)
-		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 1);
-	else
-		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
 }
 
 static void exec_cpc(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* CPC – Compare with Carry */
-	uint8_t rd, rd_addr;
-	uint8_t rr, rr_addr;
-	uint8_t r, buf;
+	unsigned char rd, rd_addr;
+	unsigned char rr, rr_addr;
+	int r, buf;
 
 	rd_addr = (inst & 0x01F0) >> 4;
-	rr_addr = (inst & 0x0F) | ((inst & 0x0200) >> 5);
+	rr_addr = (unsigned char)((inst & 0x0F) | ((inst & 0x0200) >> 5));
 
 	rd = mcu->data_mem[rd_addr];
 	rr = mcu->data_mem[rr_addr];
@@ -848,9 +847,9 @@ static void exec_cpc(struct MSIM_AVR *mcu, unsigned int inst)
 	mcu->pc += 2;
 
 	buf = (~rd & rr) | (rr & r) | (r & ~rd);
+
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (buf >> 7) & 1);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_HALF_CARRY, (buf >> 3) & 1);
-
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (r >> 7) & 1);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF,
 			 (((rd & ~rr & ~r) | (~rd & rr & r)) >> 7) & 1);
@@ -864,12 +863,12 @@ static void exec_cpc(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_cp(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* CP - Compare */
-	uint8_t rd, rd_addr;
-	uint8_t rr, rr_addr;
-	uint8_t r, buf;
+	unsigned char rd, rd_addr;
+	unsigned char rr, rr_addr;
+	int buf, r;
 
 	rd_addr = (inst & 0x01F0) >> 4;
-	rr_addr = (inst & 0x0F) | ((inst & 0x0200) >> 5);
+	rr_addr = (unsigned char)((inst & 0x0F) | ((inst & 0x0200) >> 5));
 
 	rd = mcu->data_mem[rd_addr];
 	rr = mcu->data_mem[rr_addr];
@@ -877,6 +876,7 @@ static void exec_cp(struct MSIM_AVR *mcu, unsigned int inst)
 	mcu->pc += 2;
 
 	buf = (~rd & rr) | (rr & r) | (r & ~rd);
+
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (buf >> 7) & 1);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_HALF_CARRY, (buf >> 3) & 1);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (r >> 7) & 1);
@@ -885,22 +885,16 @@ static void exec_cp(struct MSIM_AVR *mcu, unsigned int inst)
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
-	if (!r) {
-		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 1);
-	} else {
-		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
-	}
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
 }
 
 static void exec_load_immediate(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * LDI – Load Immediate
-	 */
-	uint8_t rd_off, c;
+	/* LDI – Load Immediate */
+	unsigned char rd_off, c;
 
 	rd_off = (inst & 0xF0) >> 4;
-	c = (inst & 0x0F) | ((inst & 0x0F00) >> 4);
+	c = (unsigned char)((inst & 0x0F) | ((inst & 0x0F00) >> 4));
 
 	mcu->data_mem[0x10 + rd_off] = c;
 	mcu->pc += 2;
@@ -908,28 +902,24 @@ static void exec_load_immediate(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_rjmp(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * RJMP - Relative Jump
-	 */
-	int16_t c;
+	/* RJMP - Relative Jump */
+	int c;
 
 	c = inst & 0x0FFF;
 	if (c >= 2048)
 		c -= 4096;
-	mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
 }
 
 static void exec_brne(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * BRNE – Branch if Not Equal
-	 */
-	int16_t c;
+	/* BRNE – Branch if Not Equal */
+	int c;
 
 	if (!MSIM_ReadSREGFlag(mcu, AVR_SREG_ZERO)) {
 		/* Z == 0, i.e. Rd != Rr */
-		c = (int16_t) ((int16_t) (inst << 6)) >> 9;
-		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+		c = (int) ((int) (inst << 6)) >> 9;
+		mcu->pc = (unsigned long) (((long) mcu->pc) + (c + 1) * 2);
 	} else {
 		/* Z == 1, i.e. Rd == Rr */
 		mcu->pc += 2;
@@ -938,9 +928,7 @@ static void exec_brne(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * ST – Store Indirect From Register to Data Space using Index X
-	 */
+	/* ST – Store Indirect From Register to Data Space using Index X */
 	uint8_t regr, *x_low, *x_high;
 
 	x_low = &mcu->data_mem[26];
@@ -951,10 +939,8 @@ static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * ST – Store Indirect From Register to Data Space using Index Y
-	 */
-	uint8_t regr, *y_low, *y_high;
+	/* ST – Store Indirect From Register to Data Space using Index Y */
+	unsigned char regr, *y_low, *y_high;
 
 	y_low = &mcu->data_mem[28];
 	y_high = &mcu->data_mem[29];
@@ -964,10 +950,8 @@ static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_st_z(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * ST – Store Indirect From Register to Data Space using Index Z
-	 */
-	uint8_t regr, *z_low, *z_high;
+	/* ST – Store Indirect From Register to Data Space using Index Z */
+	unsigned char regr, *z_low, *z_high;
 
 	z_low = &mcu->data_mem[30];
 	z_high = &mcu->data_mem[31];
@@ -979,26 +963,24 @@ static void exec_st(struct MSIM_AVR *mcu, unsigned int inst,
 		    unsigned char *addr_low, unsigned char *addr_high,
 		    unsigned char regr)
 {
-	/*
-	 * ST – Store Indirect From Register to Data Space
-	 *	using Index X, Y or Z
-	 */
-	uint16_t addr = (uint16_t) *addr_low | (uint16_t) (*addr_high << 8);
+	/* ST – Store Indirect From Register to Data Space
+	 *	using Index X, Y or Z */
+	unsigned int addr = (unsigned int)(*addr_low | (*addr_high << 8));
 	regr = (inst & 0x01F0) >> 4;
 
 	switch (inst & 0x03) {
 	case 0x02:	/*	X ← X-1, (X) ← Rr	X: Pre decremented */
 		addr--;
-		*addr_low = (uint8_t) (addr & 0xFF);
-		*addr_high = (uint8_t) (addr >> 8);
+		*addr_low = (unsigned char) (addr & 0xFF);
+		*addr_high = (unsigned char) (addr >> 8);
 	case 0x00:	/*	(X) ← Rr		X: Unchanged */
 		mcu->data_mem[addr] = mcu->data_mem[regr];
 		break;
 	case 0x01:	/*	(X) ← Rr, X ← X+1	X: Post incremented */
 		mcu->data_mem[addr] = mcu->data_mem[regr];
 		addr++;
-		*addr_low = (uint8_t) (addr & 0xFF);
-		*addr_high = (uint8_t) (addr >> 8);
+		*addr_low = (unsigned char) (addr & 0xFF);
+		*addr_high = (unsigned char) (addr >> 8);
 		break;
 	}
 	mcu->pc += 2;
@@ -1006,19 +988,17 @@ static void exec_st(struct MSIM_AVR *mcu, unsigned int inst,
 
 static void exec_st_ydisp(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * ST (STD) – Store Indirect From Register to Data Space using Index Y
-	 */
-	uint16_t addr;
-	uint8_t regr, *y_low, *y_high, disp;
+	/* ST (STD) – Store Indirect using Index Y */
+	unsigned int addr;
+	unsigned char regr, *y_low, *y_high, disp;
 
 	y_low = &mcu->data_mem[28];
 	y_high = &mcu->data_mem[29];
-	addr = (uint16_t) *y_low | (uint16_t) (*y_high << 8);
+	addr = (unsigned int) *y_low | (unsigned int) (*y_high << 8);
 	regr = (inst & 0x01F0) >> 4;
-	disp = (inst & 0x07) |
-	       ((inst & 0x0C00) >> 7) |
-	       ((inst & 0x2000) >> 8);
+	disp = (unsigned char)((inst & 0x07) |
+			       ((inst & 0x0C00) >> 7) |
+			       ((inst & 0x2000) >> 8));
 
 	mcu->data_mem[addr + disp] = mcu->data_mem[regr];
 	mcu->pc += 2;
@@ -1026,19 +1006,17 @@ static void exec_st_ydisp(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_st_zdisp(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * ST (STD) – Store Indirect From Register to Data Space using Index Z
-	 */
-	uint16_t addr;
-	uint8_t regr, *z_low, *z_high, disp;
+	/* ST (STD) – Store Indirect using Index Z*/
+	unsigned int addr;
+	unsigned char regr, *z_low, *z_high, disp;
 
 	z_low = &mcu->data_mem[30];
 	z_high = &mcu->data_mem[31];
-	addr = (uint16_t) *z_low | (uint16_t) (*z_high << 8);
+	addr = (unsigned int) *z_low | (unsigned int) (*z_high << 8);
 	regr = (inst & 0x01F0) >> 4;
-	disp = (inst & 0x07) |
-	       ((inst & 0x0C00) >> 7) |
-	       ((inst & 0x2000) >> 8);
+	disp = (unsigned char)((inst & 0x07) |
+			       ((inst & 0x0C00) >> 7) |
+			       ((inst & 0x2000) >> 8));
 
 	mcu->data_mem[addr + disp] = mcu->data_mem[regr];
 	mcu->pc += 2;
@@ -1046,9 +1024,7 @@ static void exec_st_zdisp(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_rcall(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * RCALL – Relative Call to Subroutine
-	 */
+	/* RCALL – Relative Call to Subroutine */
 	int c;
 	unsigned long pc;
 
@@ -1056,22 +1032,20 @@ static void exec_rcall(struct MSIM_AVR *mcu, unsigned int inst)
 	c = inst & 0x0FFF;
 	if (c >= 2048)
 		c -= 4096;
-	MSIM_StackPush(mcu, (uint8_t) (pc & 0xFF));
-	MSIM_StackPush(mcu, (uint8_t) ((pc >> 8) & 0xFF));
-	mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+	MSIM_StackPush(mcu, (unsigned char) (pc & 0xFF));
+	MSIM_StackPush(mcu, (unsigned char) ((pc >> 8) & 0xFF));
+	mcu->pc = (unsigned long) (((long) mcu->pc) + (c + 1) * 2);
 }
 
 static void exec_sts(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * STS – Store Direct to Data Space
-	 */
-	uint16_t addr;
-	uint8_t rr, addr_msb, addr_lsb;
+	/* STS – Store Direct to Data Space */
+	unsigned int addr;
+	unsigned char rr, addr_msb, addr_lsb;
 
 	addr_lsb = mcu->prog_mem[mcu->pc + 2];
 	addr_msb = mcu->prog_mem[mcu->pc + 3];
-	addr = (uint16_t) (addr_lsb | (addr_msb << 8));
+	addr = (unsigned int) (addr_lsb | (addr_msb << 8));
 
 	rr = (inst & 0x01F0) >> 4;
 	mcu->data_mem[addr] = mcu->data_mem[rr];
@@ -1080,9 +1054,7 @@ static void exec_sts(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_ret(struct MSIM_AVR *mcu)
 {
-	/*
-	 * RET – Return from Subroutine
-	 */
+	/* RET – Return from Subroutine */
 	uint8_t ah, al;
 
 	ah = MSIM_StackPop(mcu);
@@ -1093,12 +1065,10 @@ static void exec_ret(struct MSIM_AVR *mcu)
 static void exec_ori(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* ORI – Logical OR with Immediate */
-	uint8_t rd, rd_addr, c, r;
+	unsigned char rd_addr, c, r;
 
-	rd_addr = ((uint8_t) ((inst & 0xF0) >> 4)) + 16;
-	c = (inst & 0x0F) | ((inst & 0x0F00) >> 4);
-
-	rd = mcu->data_mem[rd_addr];
+	rd_addr = (unsigned char)(((inst & 0xF0) >> 4) + 16);
+	c = (unsigned char)((inst & 0x0F) | ((inst & 0x0F00) >> 4));
 	r = mcu->data_mem[rd_addr] |= c;
 	mcu->pc += 2;
 
@@ -1107,27 +1077,22 @@ static void exec_ori(struct MSIM_AVR *mcu, unsigned int inst)
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
-	if (!r)
-		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 1);
-	else
-		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
 }
 
 static void exec_sbi_cbi(struct MSIM_AVR *mcu, unsigned int inst,
 			 unsigned char set_bit)
 {
-	/*
-	 * SBI – Set Bit in I/O Register
-	 * CBI – Clear Bit in I/O Register
-	 */
-	uint8_t reg, b;
+	/* SBI – Set Bit in I/O Register
+	 * CBI – Clear Bit in I/O Register */
+	unsigned char reg, b;
 
 	reg = (inst & 0x00F8) >> 3;
 	b = inst & 0x07;
 	if (set_bit)
-		mcu->data_mem[reg] |= (1 << b);
+		mcu->data_mem[reg] |= (unsigned char)(1 << b);
 	else
-		mcu->data_mem[reg] &= ~(1 << b);
+		mcu->data_mem[reg] &= (unsigned char)(~(1 << b));
 
 	mcu->pc += 2;
 }
@@ -1135,10 +1100,8 @@ static void exec_sbi_cbi(struct MSIM_AVR *mcu, unsigned int inst,
 static void exec_sbis_sbic(struct MSIM_AVR *mcu, unsigned int inst,
 			   unsigned char set_bit)
 {
-	/*
-	 * SBIS – Skip if Bit in I/O Register is Set
-	 * SBIC – Skip if Bit in I/O Register is Cleared
-	 */
+	/* SBIS – Skip if Bit in I/O Register is Set
+	 * SBIC – Skip if Bit in I/O Register is Cleared */
 	uint8_t reg, b, pc_delta;
 	uint8_t msb, lsb;
 	uint16_t ni;
@@ -1214,9 +1177,9 @@ static void exec_movw(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_mov(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* MOV - Copy register */
-	uint8_t rd, rr;
+	unsigned char rd, rr;
 
-	rr = ((inst & 0x200) >> 5) | (inst & 0x0F);
+	rr = (unsigned char)(((inst & 0x200) >> 5) | (inst & 0x0F));
 	rd = (inst & 0x1F0) >> 4;
 	mcu->data_mem[rd] = mcu->data_mem[rr];
 	mcu->pc += 2;
@@ -1265,25 +1228,23 @@ static void exec_ld(struct MSIM_AVR *mcu, unsigned int inst,
 		    unsigned char *addr_low, unsigned char *addr_high,
 		    unsigned char regd)
 {
-	/*
-	 * LD – Load Indirect from Data Space to Register
-	 *	using Index X, Y or Z
-	 */
-	uint16_t addr = (uint16_t) *addr_low | (uint16_t) (*addr_high << 8);
+	/* LD – Load Indirect from Data Space to Register
+	 *	using Index X, Y or Z */
+	unsigned int addr = (unsigned int) (*addr_low | (*addr_high << 8));
 
 	switch (inst & 0x03) {
 	case 0x02:	/*	X ← X-1, Rd ← (X)	X: Pre decremented */
 		addr--;
-		*addr_low = (uint8_t) (addr & 0xFF);
-		*addr_high = (uint8_t) (addr >> 8);
+		*addr_low = (unsigned char) (addr & 0xFF);
+		*addr_high = (unsigned char) (addr >> 8);
 	case 0x00:	/*	Rd ← (X)		X: Unchanged */
 		mcu->data_mem[regd] = mcu->data_mem[addr];
 		break;
 	case 0x01:	/*	Rd ← (X), X ← X+1	X: Post incremented */
 		mcu->data_mem[regd] = mcu->data_mem[addr];
 		addr++;
-		*addr_low = (uint8_t) (addr & 0xFF);
-		*addr_high = (uint8_t) (addr >> 8);
+		*addr_low = (unsigned char) (addr & 0xFF);
+		*addr_high = (unsigned char) (addr >> 8);
 		break;
 	}
 	mcu->pc += 2;
@@ -1291,19 +1252,17 @@ static void exec_ld(struct MSIM_AVR *mcu, unsigned int inst,
 
 static void exec_ld_ydisp(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * LD – Load Indirect from Data Space to Register using Index Y
-	 */
-	uint16_t addr;
-	uint8_t regd, *y_low, *y_high, disp;
+	/* LD – Load Indirect from Data Space to Register using Index Y */
+	unsigned int addr;
+	unsigned char regd, *y_low, *y_high, disp;
 
 	y_low = &mcu->data_mem[28];
 	y_high = &mcu->data_mem[29];
-	addr = (uint16_t) *y_low | (uint16_t) (*y_high << 8);
+	addr = (unsigned int) *y_low | (unsigned int) (*y_high << 8);
 	regd = (inst & 0x01F0) >> 4;
-	disp = (inst & 0x07) |
-	       ((inst & 0x0C00) >> 7) |
-	       ((inst & 0x2000) >> 8);
+	disp = (unsigned char)((inst & 0x07) |
+			       ((inst & 0x0C00) >> 7) |
+			       ((inst & 0x2000) >> 8));
 
 	mcu->data_mem[regd] = mcu->data_mem[addr + disp];
 	mcu->pc += 2;
@@ -1311,19 +1270,17 @@ static void exec_ld_ydisp(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_ld_zdisp(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * LD – Load Indirect from Data Space to Register using Index Z
-	 */
-	uint16_t addr;
-	uint8_t regd, *z_low, *z_high, disp;
+	/* LD – Load Indirect from Data Space to Register using Index Z */
+	unsigned int addr;
+	unsigned char regd, *z_low, *z_high, disp;
 
 	z_low = &mcu->data_mem[30];
 	z_high = &mcu->data_mem[31];
-	addr = (uint16_t) *z_low | (uint16_t) (*z_high << 8);
+	addr = (unsigned int) *z_low | (unsigned int) (*z_high << 8);
 	regd = (inst & 0x01F0) >> 4;
-	disp = (inst & 0x07) |
-	       ((inst & 0x0C00) >> 7) |
-	       ((inst & 0x2000) >> 8);
+	disp = (unsigned char)((inst & 0x07) |
+			       ((inst & 0x0C00) >> 7) |
+			       ((inst & 0x2000) >> 8));
 
 	mcu->data_mem[regd] = mcu->data_mem[addr + disp];
 	mcu->pc += 2;
@@ -1332,14 +1289,15 @@ static void exec_ld_zdisp(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_sbci(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* SBCI – Subtract Immediate with Carry */
-	uint8_t rd, rd_addr, c, r, buf;
+	unsigned char rd, rd_addr, c, r;
+	int buf;
 
-	rd_addr = ((inst & 0xF0) >> 4) + 16;
-	c = ((inst & 0xF00) >> 4) | (inst & 0x0F);
+	rd_addr = (unsigned char)(((inst & 0xF0) >> 4) + 16);
+	c = (unsigned char)(((inst & 0xF00) >> 4) | (inst & 0x0F));
 
 	rd = mcu->data_mem[rd_addr];
-	r = mcu->data_mem[rd_addr] = mcu->data_mem[rd_addr] - c -
-		MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY);
+	r = mcu->data_mem[rd_addr] = (unsigned char)(mcu->data_mem[rd_addr] -
+			c - MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY));
 	mcu->pc += 2;
 
 	buf = (~rd & c) | (c & r) | (r & ~rd);
@@ -1351,20 +1309,14 @@ static void exec_sbci(struct MSIM_AVR *mcu, unsigned int inst)
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
-	if (!r) {
-		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 1);
-	} else {
-		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
-	}
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
 }
 
 static void exec_brlt(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * BRLT – Branch if Less Than (Signed)
-	 */
-	uint8_t cond;
-	int8_t c;
+	/* BRLT – Branch if Less Than (Signed) */
+	unsigned char cond;
+	int c;
 
 	cond = MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 	       MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF);
@@ -1375,7 +1327,7 @@ static void exec_brlt(struct MSIM_AVR *mcu, unsigned int inst)
 	if (!cond)
 		mcu->pc += 2;
 	else
-		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
 }
 
 static void exec_brge(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1383,8 +1335,8 @@ static void exec_brge(struct MSIM_AVR *mcu, unsigned int inst)
 	/*
 	 * BRGE – Branch if Greater or Equal (Signed)
 	 */
-	uint8_t cond;
-	int8_t c;
+	unsigned char cond;
+	int c;
 
 	cond = MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 	       MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF);
@@ -1393,7 +1345,7 @@ static void exec_brge(struct MSIM_AVR *mcu, unsigned int inst)
 		c -= 128;
 
 	if (!cond)
-		mcu->pc = (uint32_t) (((int32_t) mcu->pc) + (c + 1) * 2);
+		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
 	else
 		mcu->pc += 2;
 }
@@ -1401,13 +1353,11 @@ static void exec_brge(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_andi_cbr(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* ANDI – Logical AND with Immediate */
-	uint8_t rd, rd_addr;
-	uint8_t c, r;
+	unsigned char rd_addr;
+	unsigned char c, r;
 
-	rd_addr = ((inst >> 4) & 0x0F) + 16;
-	c = ((inst >> 4) & 0xF0) | (inst & 0x0F);
-
-	rd = mcu->data_mem[rd_addr];
+	rd_addr = (unsigned char)(((inst >> 4) & 0x0F) + 16);
+	c = (unsigned char)(((inst >> 4) & 0xF0) | (inst & 0x0F));
 	r = mcu->data_mem[rd_addr] = mcu->data_mem[rd_addr] & c;
 	mcu->pc += 2;
 
@@ -1416,11 +1366,7 @@ static void exec_andi_cbr(struct MSIM_AVR *mcu, unsigned int inst)
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
-	if (!r) {
-		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 1);
-	} else {
-		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
-	}
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
 }
 
 static void exec_and(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1429,7 +1375,7 @@ static void exec_and(struct MSIM_AVR *mcu, unsigned int inst)
 	unsigned char rd_addr, rr_addr, r;
 
 	rd_addr = (inst & 0x1F0) >> 4;
-	rr_addr = ((inst & 0x200) >> 5) | (inst & 0x0F);
+	rr_addr = (unsigned char)(((inst & 0x200) >> 5) | (inst & 0x0F));
 	r = mcu->data_mem[rd_addr] = mcu->data_mem[rd_addr] &
 				     mcu->data_mem[rr_addr];
 	mcu->pc += 2;
@@ -1513,10 +1459,11 @@ static void exec_subi(struct MSIM_AVR *mcu, unsigned int inst)
 	int buf;
 
 	rd_addr = (inst & 0xF0) >> 4;
-	c = ((inst & 0xF00) >> 4) | (inst & 0xF);
+	c = (unsigned char)(((inst & 0xF00) >> 4) | (inst & 0xF));
 
-	rd = mcu->data_mem[rd_addr+16];
-	r = mcu->data_mem[rd_addr+16] -= c;
+	buf = rd = mcu->data_mem[rd_addr+16];
+	buf -= c;
+	r = mcu->data_mem[rd_addr+16] = (unsigned char) buf;
 	mcu->pc += 2;
 
 	buf = (~rd & c) | (c & r) | (r & ~rd);

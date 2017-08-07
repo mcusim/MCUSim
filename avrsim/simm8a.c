@@ -38,8 +38,8 @@ static int set_frequency(struct MSIM_AVR *mcu, uint8_t fuse_high,
 static int set_reset_vector(struct MSIM_AVR *mcu, uint8_t fuse_high);
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu,
-		 uint8_t *pm, uint32_t pm_size,
-		 uint8_t *dm, uint32_t dm_size)
+		 unsigned char *pm, unsigned long pm_size,
+		 unsigned char *dm, unsigned long dm_size)
 {
 	if (!mcu) {
 		fprintf(stderr, "MCU should not be NULL\n");

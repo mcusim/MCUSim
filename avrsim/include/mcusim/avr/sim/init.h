@@ -30,16 +30,16 @@ extern "C" {
 
 /* Initialize MCU as ATmega8A */
 int MSIM_M8AInit(struct MSIM_AVR *mcu,
-		 uint8_t *pm, uint32_t pm_size,
-		 uint8_t *dm, uint32_t dm_size);
+		 unsigned char *pm, unsigned long pm_size,
+		 unsigned char *dm, unsigned long dm_size);
 /* Initialize MCU as ATmega328 */
 int MSIM_M328Init(struct MSIM_AVR *mcu,
-		  uint8_t *pm, uint32_t pm_size,
-		  uint8_t *dm, uint32_t dm_size);
+		  unsigned char *pm, unsigned long pm_size,
+		  unsigned char *dm, unsigned long dm_size);
 /* Initialize MCU as ATmega328P */
 int MSIM_M328PInit(struct MSIM_AVR *mcu,
-		   uint8_t *pm, uint32_t pm_size,
-		   uint8_t *dm, uint32_t dm_size);
+		   unsigned char *pm, unsigned long pm_size,
+		   unsigned char *dm, unsigned long dm_size);
 
 #ifdef __cplusplus
 }

@@ -33,8 +33,8 @@
 #define E2SIZE			1024
 
 int MSIM_M328Init(struct MSIM_AVR *mcu,
-		  uint8_t *pm, uint32_t pm_size,
-		  uint8_t *dm, uint32_t dm_size)
+		  unsigned char *pm, unsigned long pm_size,
+		  unsigned char *dm, unsigned long dm_size)
 {
 	int r;
 
