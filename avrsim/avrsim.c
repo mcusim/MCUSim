@@ -19,12 +19,12 @@
  */
 #include <stdio.h>
 #include <stdint.h>
-#include <getopt.h>
 
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simcore.h"
 #include "mcusim/avr/sim/bootloader.h"
 #include "mcusim/cli.h"
+#include "mcusim/getopt.h"
 
 #define CLI_OPTIONS		":hm:p:v"
 
