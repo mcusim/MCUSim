@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#define _POSIX_C_SOURCE 2
 #include <stdio.h>
 #include <stdint.h>
-#include <unistd.h>
+#include <getopt.h>
 
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simcore.h"

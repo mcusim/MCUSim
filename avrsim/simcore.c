@@ -17,13 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#define __STDC_FORMAT_MACROS 1
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/msg.h>
-#include <inttypes.h>
 
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/bootloader.h"

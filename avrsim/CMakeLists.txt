@@ -60,6 +60,7 @@ set(SIM_SRCS		simcore.c
 			simm328.c
 			ihex.c
 			cli.c
+			getopt_long.c
 			avrsim.c)
 
 #
