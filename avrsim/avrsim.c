@@ -39,7 +39,7 @@ static uint8_t data_mem[DATA_MEMORY];
 int main(int argc, char *argv[])
 {
 	extern char *optarg;
-	extern int optind, optopt;
+	extern int optopt;
 	int c;
 	char *mcu_model;
 	char *prog_path;

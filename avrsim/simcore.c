@@ -27,6 +27,9 @@
 #include "mcusim/avr/sim/simcore.h"
 #include "mcusim/hex/ihex.h"
 
+#define REG_ZH			0x1F
+#define REG_ZL			0x1E
+
 #define DATA_MEMORY		65536
 
 /* To temporarily store data memory and test changes after execution of
@@ -105,6 +108,8 @@ static void exec_dec(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_fmul(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_fmuls(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_fmulsu(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_icall(struct MSIM_AVR *mcu);
+static void exec_ijmp(struct MSIM_AVR *mcu);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -561,6 +566,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		}
 
 		switch (inst) {
+		case 0x9409:
+			exec_ijmp(mcu);
+			break;
 		case 0x9488:
 			exec_clc(mcu, inst);
 			break;
@@ -587,6 +595,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			break;
 		case 0x9508:
 			exec_ret(mcu);
+			break;
+		case 0x9509:
+			exec_icall(mcu);
 			break;
 		case 0x9598:
 			exec_break(mcu);
@@ -2040,4 +2051,29 @@ static void exec_fmulsu(struct MSIM_AVR *mcu, unsigned int inst)
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (r >> 15) & 1);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
+}
+
+static void exec_icall(struct MSIM_AVR *mcu)
+{
+	/* ICALL – Indirect Call to Subroutine */
+	unsigned long pc;
+	unsigned char zh, zl;
+
+	pc = mcu->pc + 2;
+	zh = mcu->data_mem[REG_ZH];
+	zl = mcu->data_mem[REG_ZL];
+
+	MSIM_StackPush(mcu, (unsigned char) (pc & 0xFF));
+	MSIM_StackPush(mcu, (unsigned char) ((pc >> 8) & 0xFF));
+	mcu->pc = (unsigned long)(((zh<<8)&0xFF00) | (zl&0xFF));
+}
+
+static void exec_ijmp(struct MSIM_AVR *mcu)
+{
+	/* IJMP – Indirect Jump */
+	unsigned char zh, zl;
+
+	zh = mcu->data_mem[REG_ZH];
+	zl = mcu->data_mem[REG_ZL];
+	mcu->pc = (unsigned long)(((zh<<8)&0xFF00) | (zl&0xFF));
 }
