@@ -112,6 +112,11 @@ static void exec_icall(struct MSIM_AVR *mcu);
 static void exec_ijmp(struct MSIM_AVR *mcu);
 static void exec_inc(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_jmp(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_lac(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_las(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_lat(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_lds(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_lds16(struct MSIM_AVR *mcu, unsigned int inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -609,6 +614,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			break;
 		default:
 			switch (inst & 0xFE0F) {
+			case 0x9000:
+				exec_lds(mcu, inst);
+				break;
 			case 0x9001:
 			case 0x9002:
 				exec_ld_z(mcu, inst);
@@ -631,6 +639,15 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			case 0x9201:
 			case 0x9202:
 				exec_st_z(mcu, inst);
+				break;
+			case 0x9205:
+				exec_las(mcu, inst);
+				break;
+			case 0x9206:
+				exec_lac(mcu, inst);
+				break;
+			case 0x9207:
+				exec_lat(mcu, inst);
 				break;
 			case 0x9209:
 			case 0x920A:
@@ -681,6 +698,11 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		}
 		break;
 	case 0xA000:
+		if ((inst & 0xF800) == 0xA000) {
+			exec_lds16(mcu, inst);
+			break;
+		}
+
 		switch (inst & 0xD208) {
 		case 0x8000:
 			exec_ld_zdisp(mcu, inst);
@@ -2119,24 +2141,77 @@ static void exec_jmp(struct MSIM_AVR *mcu, unsigned int inst)
 	mcu->pc = c;
 }
 
-/*
 static void exec_lac(struct MSIM_AVR *mcu, unsigned int inst)
 {
+	/* LAC - Load and Clear */
+	unsigned short rd_addr, z;
+	unsigned char zh, zl, rd;
+
+	zh = mcu->data_mem[REG_ZH];
+	zl = mcu->data_mem[REG_ZL];
+	z = (unsigned short)(((zh<<8)&0xFF00) | (zl&0xFF));
+	rd_addr = (inst>>4)&0x1F;
+	rd = mcu->data_mem[rd_addr];
+
+	mcu->data_mem[rd_addr] = mcu->data_mem[z];
+	mcu->data_mem[z] &= (unsigned char)(~rd);
+	mcu->pc += 2;
 }
 
 static void exec_las(struct MSIM_AVR *mcu, unsigned int inst)
 {
+	/* LAS - Load and Set */
+	unsigned short rd_addr, z;
+	unsigned char zh, zl, rd;
+
+	zh = mcu->data_mem[REG_ZH];
+	zl = mcu->data_mem[REG_ZL];
+	z = (unsigned short)(((zh<<8)&0xFF00) | (zl&0xFF));
+	rd_addr = (inst>>4)&0x1F;
+	rd = mcu->data_mem[rd_addr];
+
+	mcu->data_mem[rd_addr] = mcu->data_mem[z];
+	mcu->data_mem[z] |= rd;
+	mcu->pc += 2;
 }
 
 static void exec_lat(struct MSIM_AVR *mcu, unsigned int inst)
 {
+	/* LAT - Load and Toggle */
+	unsigned short rd_addr, z;
+	unsigned char zh, zl, rd;
+
+	zh = mcu->data_mem[REG_ZH];
+	zl = mcu->data_mem[REG_ZL];
+	z = (unsigned short)(((zh<<8)&0xFF00) | (zl&0xFF));
+	rd_addr = (inst>>4)&0x1F;
+	rd = mcu->data_mem[rd_addr];
+
+	mcu->data_mem[rd_addr] = mcu->data_mem[z];
+	mcu->data_mem[z] ^= rd;
+	mcu->pc += 2;
 }
 
 static void exec_lds(struct MSIM_AVR *mcu, unsigned int inst)
 {
+	/* LDS - Load Direct from Data Space */
+	unsigned short rd_addr, addr;
+
+	addr = (unsigned short)(((mcu->data_mem[mcu->pc+3]<<8)&0xFF00) |
+				(mcu->data_mem[mcu->pc+2]&0xFF));
+	rd_addr = (inst>>4)&0x1F;
+	mcu->data_mem[rd_addr] = mcu->data_mem[addr];
+	mcu->pc += 4;
 }
 
 static void exec_lds16(struct MSIM_AVR *mcu, unsigned int inst)
 {
+	/* LDS (16-bit) - Load Direct from Data Space */
+	unsigned short rd_addr, addr;
+
+	addr = (unsigned short)((((~inst)>>1)&0x80) | ((inst>>2)&0x40) |
+				((inst>>5)&0x30) | (inst&0x0F));
+	rd_addr = (unsigned short)(((inst>>4)&0x0F) + 16);
+	mcu->data_mem[rd_addr] = mcu->data_mem[addr];
+	mcu->pc += 2;
 }
-*/
