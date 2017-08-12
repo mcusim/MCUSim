@@ -117,6 +117,7 @@ static void exec_las(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_lat(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_lds(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_lds16(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_lpm(struct MSIM_AVR *mcu, unsigned int inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -612,6 +613,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		case 0x9598:
 			exec_break(mcu);
 			break;
+		case 0x95C8:
+			exec_lpm(mcu, inst);
+			break;
 		default:
 			switch (inst & 0xFE0F) {
 			case 0x9000:
@@ -620,6 +624,10 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			case 0x9001:
 			case 0x9002:
 				exec_ld_z(mcu, inst);
+				break;
+			case 0x9004:
+			case 0x9005:
+				exec_lpm(mcu, inst);
 				break;
 			case 0x9009:
 			case 0x900A:
@@ -2213,5 +2221,33 @@ static void exec_lds16(struct MSIM_AVR *mcu, unsigned int inst)
 				((inst>>5)&0x30) | (inst&0x0F));
 	rd_addr = (unsigned short)(((inst>>4)&0x0F) + 16);
 	mcu->data_mem[rd_addr] = mcu->data_mem[addr];
+	mcu->pc += 2;
+}
+
+static void exec_lpm(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* LPM - Load Program Memory
+	 * type I, R0 <- (Z)
+	 * type II, Rd <- (Z)
+	 * type III, Rd <- (Z), Z++
+	 */
+	unsigned short rd_addr, z;
+	unsigned char zh, zl;
+
+	zh = mcu->data_mem[REG_ZH];
+	zl = mcu->data_mem[REG_ZL];
+	z = (unsigned short)(((zh<<8)&0xFF00) | (zl&0xFF));
+
+	if (inst == 0x95C8) { /* type I */
+		mcu->data_mem[0] = mcu->prog_mem[z];
+	} else if ((inst & 0xFE0F) == 0x9004) { /* type II */
+		rd_addr = (inst>>4)&0x1F;
+		mcu->data_mem[rd_addr] = mcu->prog_mem[z];
+	} else if ((inst & 0xFE0F) == 0x9005) { /* type III */
+		rd_addr = (inst>>4)&0x1F;
+		mcu->data_mem[rd_addr] = mcu->prog_mem[z++];
+		mcu->data_mem[REG_ZH] = (unsigned char)((z>>8)&0xFF);
+		mcu->data_mem[REG_ZL] = (unsigned char)(z&0xFF);
+	}
 	mcu->pc += 2;
 }
