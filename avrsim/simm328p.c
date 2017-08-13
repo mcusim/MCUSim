@@ -214,5 +214,6 @@ static int set_reset_vector(struct MSIM_AVR *mcu, uint8_t fuse_high)
 		break;
 	}
 	mcu->pc = mcu->reset_pc;
+	mcu->pc_bits = 14; /* 14-bit PC */
 	return 0;
 }
