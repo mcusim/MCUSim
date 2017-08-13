@@ -119,6 +119,8 @@ static void exec_lds(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_lds16(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_lpm(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_lsr(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_sbrc(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_sbrs(struct MSIM_AVR *mcu, unsigned int inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -753,6 +755,12 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			break;
 		} else if ((inst & 0xFE08) == 0xFA00) {
 			exec_bst(mcu, inst);
+			break;
+		} else if ((inst & 0xFE08) == 0xFC00) {
+			exec_sbrc(mcu, inst);
+			break;
+		} else if ((inst & 0xFE08) == 0xFE00) {
+			exec_sbrs(mcu, inst);
 			break;
 		} else if ((inst & 0xFC00) == 0xF400) {
 			exec_brbc(mcu, inst);
@@ -2277,4 +2285,34 @@ static void exec_lsr(struct MSIM_AVR *mcu, unsigned int inst)
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
+}
+
+static void exec_sbrc(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* SBRC – Skip if Bit in Register is Cleared */
+	unsigned short rr_addr;
+	unsigned char bit, r;
+
+	rr_addr = (inst>>4)&0x1F;
+	bit = inst&7;
+	r = (mcu->data_mem[rr_addr]>>bit)&1;
+	if (!r)
+		mcu->pc += is_inst32(mcu->prog_mem[mcu->pc+2]) ? 6 : 4;
+	else
+		mcu->pc += 2;
+}
+
+static void exec_sbrs(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* SBRS – Skip if Bit in Register is Set */
+	unsigned short rr_addr;
+	unsigned char bit, r;
+
+	rr_addr = (inst>>4)&0x1F;
+	bit = inst&7;
+	r = (mcu->data_mem[rr_addr]>>bit)&1;
+	if (r)
+		mcu->pc += is_inst32(mcu->prog_mem[mcu->pc+2]) ? 6 : 4;
+	else
+		mcu->pc += 2;
 }
