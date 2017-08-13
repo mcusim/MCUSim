@@ -73,7 +73,7 @@ static void exec_subi(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_cli(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_adiw(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_adc(struct MSIM_AVR *mcu, unsigned int inst);
-static void exec_add(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_add_lsl(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_asr(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_bclr(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_bld(struct MSIM_AVR *mcu, unsigned int inst);
@@ -118,6 +118,7 @@ static void exec_lat(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_lds(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_lds16(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_lpm(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_lsr(struct MSIM_AVR *mcu, unsigned int inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -464,7 +465,7 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 				exec_cpc(mcu, inst);
 				goto exit;
 			case 0x0C00:
-				exec_add(mcu, inst);
+				exec_add_lsl(mcu, inst);
 				goto exit;
 			default:
 				break;
@@ -677,6 +678,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 				break;
 			case 0x9405:
 				exec_asr(mcu, inst);
+				break;
+			case 0x9406:
+				exec_lsr(mcu, inst);
 				break;
 			case 0x940A:
 				exec_dec(mcu, inst);
@@ -1582,9 +1586,10 @@ static void exec_adc(struct MSIM_AVR *mcu, unsigned int inst)
 	mcu->pc += 2;
 }
 
-static void exec_add(struct MSIM_AVR *mcu, unsigned int inst)
+static void exec_add_lsl(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* ADD - Add without Carry */
+	/* LSL - Logical Shift Left */
 	unsigned char rd_addr, rr_addr;
 	unsigned char rd, rr, r;
 	int buf;
@@ -2250,4 +2255,26 @@ static void exec_lpm(struct MSIM_AVR *mcu, unsigned int inst)
 		mcu->data_mem[REG_ZL] = (unsigned char)(z&0xFF);
 	}
 	mcu->pc += 2;
+}
+
+static void exec_lsr(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* LSR - Logical Shift Right */
+	unsigned short rd_addr;
+	unsigned char rd, r;
+
+	rd_addr = (inst>>4)&0x1F;
+	rd = mcu->data_mem[rd_addr];
+	r = mcu->data_mem[rd_addr] = (rd>>1)&0xFF;
+	mcu->pc += 2;
+
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, rd&1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF,
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY));
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
 }
