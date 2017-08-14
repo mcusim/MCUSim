@@ -100,6 +100,14 @@ struct MSIM_AVR {
 	unsigned char *sreg;		/* SREG in the data memory. */
 	unsigned char *sph;		/* SP(high) in the data memory. */
 	unsigned char *spl;		/* SP(low) in the data memory. */
+	unsigned char *eind;		/* Extended indirect register. */
+	unsigned char *rampz;		/* Extended Z-pointer register. */
+	unsigned char *rampy;		/* Extended Y-pointer register. */
+	unsigned char *rampx;		/* Extended X-pointer register. */
+	unsigned char *rampd;		/* Extended direct register.
+					   NOTE: Let me know if you're aware
+					   of AVR MCUs which use this register
+					   at darkness.bsd at gmail.com */
 
 	unsigned char *prog_mem;	/* Flash memory (+bootloader). */
 	unsigned char *data_mem;	/* GP and I/O registers, SRAM. */

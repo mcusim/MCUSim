@@ -80,6 +80,11 @@ int MSIM_M328PInit(struct MSIM_AVR *mcu,
 	mcu->sreg = &mcu->data_mem[_SFR_IO8(0x3F)];
 	mcu->sph = &mcu->data_mem[_SFR_IO8(0x3E)];
 	mcu->spl = &mcu->data_mem[_SFR_IO8(0x3D)];
+	mcu->eind = NULL;	/* Not available on ATmega328P */
+	mcu->rampz = NULL;	/* Not available on ATmega328P */
+	mcu->rampy = NULL;	/* Not available on ATmega328P */
+	mcu->rampx = NULL;	/* Not available on ATmega328P */
+	mcu->rampd = NULL;	/* Not available on ATmega328P */
 
 	if (set_fuse_bytes(mcu, 0xFF, 0xD9, 0x62)) {
 		fprintf(stderr, "Fuse bytes cannot be set correctly\n");

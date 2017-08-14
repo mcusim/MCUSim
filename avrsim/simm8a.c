@@ -75,6 +75,11 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu,
 	mcu->sreg = &mcu->data_mem[_SFR_IO8(0x3F)];
 	mcu->sph = &mcu->data_mem[_SFR_IO8(0x3E)];
 	mcu->spl = &mcu->data_mem[_SFR_IO8(0x3D)];
+	mcu->eind = NULL;	/* Not available on ATmega8A */
+	mcu->rampz = NULL;	/* Not available on ATmega8A */
+	mcu->rampy = NULL;	/* Not available on ATmega8A */
+	mcu->rampx = NULL;	/* Not available on ATmega8A */
+	mcu->rampd = NULL;	/* Not available on ATmega8A */
 
 	if (set_fuse_bytes(mcu, 0xD9, 0xE1)) {
 		fprintf(stderr, "Fuse bytes cannot be set correctly\n");

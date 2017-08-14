@@ -121,6 +121,8 @@ static void exec_lpm(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_lsr(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_sbrc(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_sbrs(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_eicall(struct MSIM_AVR *mcu);
+static void exec_eijmp(struct MSIM_AVR *mcu);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -583,6 +585,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		case 0x9409:
 			exec_ijmp(mcu);
 			break;
+		case 0x9419:
+			exec_eijmp(mcu);
+			break;
 		case 0x9488:
 			exec_clc(mcu, inst);
 			break;
@@ -612,6 +617,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			break;
 		case 0x9509:
 			exec_icall(mcu);
+			break;
+		case 0x9519:
+			exec_eicall(mcu);
 			break;
 		case 0x9598:
 			exec_break(mcu);
@@ -2315,4 +2323,47 @@ static void exec_sbrs(struct MSIM_AVR *mcu, unsigned int inst)
 		mcu->pc += is_inst32(mcu->prog_mem[mcu->pc+2]) ? 6 : 4;
 	else
 		mcu->pc += 2;
+}
+
+static void exec_eicall(struct MSIM_AVR *mcu)
+{
+	/* EICALL - Extended Indirect Call to Subroutine */
+	unsigned char zh, zl, eind;
+	unsigned long pc;
+
+	if (mcu->eind == NULL) {
+		fprintf(stderr, "EICALL instruction is not supported on "
+				"devices without EIND register\n");
+		exit(1);
+	}
+
+	zh = mcu->data_mem[REG_ZH];
+	zl = mcu->data_mem[REG_ZL];
+	eind = *mcu->eind;
+	pc = mcu->pc + 2;
+	MSIM_StackPush(mcu, (unsigned char)(pc & 0xFF));
+	MSIM_StackPush(mcu, (unsigned char)((pc >> 8) & 0xFF));
+	MSIM_StackPush(mcu, (unsigned char)((pc >> 16) & 0xFF));
+
+	pc = (unsigned long)(((eind<<16)&0xFF0000) |
+			     ((zh<<8)&0xFF00) | (zl&0xFF));
+	mcu->pc = pc;
+}
+
+static void exec_eijmp(struct MSIM_AVR *mcu)
+{
+	/* EIJMP - Extended Indirect Jump */
+	unsigned char zh, zl, eind;
+
+	if (mcu->eind == NULL) {
+		fprintf(stderr, "EIJMP instruction is not supported on "
+				"devices without EIND register\n");
+		exit(1);
+	}
+
+	zh = mcu->data_mem[REG_ZH];
+	zl = mcu->data_mem[REG_ZL];
+	eind = *mcu->eind;
+	mcu->pc = (unsigned long)(((eind<<16)&0xFF0000) |
+				  ((zh<<8)&0xFF00) | (zl&0xFF));
 }
