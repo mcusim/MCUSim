@@ -125,6 +125,15 @@ static void exec_eicall(struct MSIM_AVR *mcu);
 static void exec_eijmp(struct MSIM_AVR *mcu);
 static void exec_xch(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_ror(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_swap(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_reti(struct MSIM_AVR *mcu);
+static void exec_sev(struct MSIM_AVR *mcu);
+static void exec_set(struct MSIM_AVR *mcu);
+static void exec_ses(struct MSIM_AVR *mcu);
+static void exec_sen(struct MSIM_AVR *mcu);
+static void exec_sei(struct MSIM_AVR *mcu);
+static void exec_seh(struct MSIM_AVR *mcu);
+static void exec_sec(struct MSIM_AVR *mcu);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -584,11 +593,32 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		}
 
 		switch (inst) {
+		case 0x9408:
+			exec_sec(mcu);
+			break;
 		case 0x9409:
 			exec_ijmp(mcu);
 			break;
 		case 0x9419:
 			exec_eijmp(mcu);
+			break;
+		case 0x9428:
+			exec_sen(mcu);
+			break;
+		case 0x9438:
+			exec_sev(mcu);
+			break;
+		case 0x9448:
+			exec_ses(mcu);
+			break;
+		case 0x9458:
+			exec_seh(mcu);
+			break;
+		case 0x9468:
+			exec_set(mcu);
+			break;
+		case 0x9478:
+			exec_sei(mcu);
 			break;
 		case 0x9488:
 			exec_clc(mcu, inst);
@@ -619,6 +649,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			break;
 		case 0x9509:
 			exec_icall(mcu);
+			break;
+		case 0x9518:
+			exec_reti(mcu);
 			break;
 		case 0x9519:
 			exec_eicall(mcu);
@@ -687,6 +720,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 				break;
 			case 0x9400:
 				exec_com(mcu, inst);
+				break;
+			case 0x9402:
+				exec_swap(mcu, inst);
 				break;
 			case 0x9403:
 				exec_inc(mcu, inst);
@@ -1965,10 +2001,24 @@ static void exec_clc(struct MSIM_AVR *mcu, unsigned int inst)
 	mcu->pc += 2;
 }
 
+static void exec_sec(struct MSIM_AVR *mcu)
+{
+	/* SEC – Set Carry Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, 1);
+	mcu->pc += 2;
+}
+
 static void exec_clh(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* CLH – Clear Half Carry Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_HALF_CARRY, 0);
+	mcu->pc += 2;
+}
+
+static void exec_seh(struct MSIM_AVR *mcu)
+{
+	/* SEH – Set Half Carry Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_HALF_CARRY, 1);
 	mcu->pc += 2;
 }
 
@@ -1979,10 +2029,24 @@ static void exec_cli(struct MSIM_AVR *mcu, unsigned int inst)
 	mcu->pc += 2;
 }
 
+static void exec_sei(struct MSIM_AVR *mcu)
+{
+	/* SEI – Set Global Interrupt Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 1);
+	mcu->pc += 2;
+}
+
 static void exec_cln(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* CLN – Clear Negative Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, 0);
+	mcu->pc += 2;
+}
+
+static void exec_sen(struct MSIM_AVR *mcu)
+{
+	/* SEN – Set Negative Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, 1);
 	mcu->pc += 2;
 }
 
@@ -1993,6 +2057,13 @@ static void exec_cls(struct MSIM_AVR *mcu, unsigned int inst)
 	mcu->pc += 2;
 }
 
+static void exec_ses(struct MSIM_AVR *mcu)
+{
+	/* SES – Set Signed Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN, 1);
+	mcu->pc += 2;
+}
+
 static void exec_clt(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* CLT – Clear T Flag */
@@ -2000,10 +2071,24 @@ static void exec_clt(struct MSIM_AVR *mcu, unsigned int inst)
 	mcu->pc += 2;
 }
 
+static void exec_set(struct MSIM_AVR *mcu)
+{
+	/* SET – Set T Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_T_BIT, 1);
+	mcu->pc += 2;
+}
+
 static void exec_clv(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* CLV – Clear Overflow Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, 0);
+	mcu->pc += 2;
+}
+
+static void exec_sev(struct MSIM_AVR *mcu)
+{
+	/* SEV – Set Overflow Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, 1);
 	mcu->pc += 2;
 }
 
@@ -2415,4 +2500,31 @@ static void exec_ror(struct MSIM_AVR *mcu, unsigned int inst)
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_HALF_CARRY, (rd>>3)&1);
+}
+
+static void exec_reti(struct MSIM_AVR *mcu)
+{
+	/* RETI – Return from Interrupt */
+	if (mcu->pc_bits <= 16)
+		mcu->pc = (unsigned long)(((MSIM_StackPop(mcu)<<8)&0xFF00) |
+					  (MSIM_StackPop(mcu)&0xFF));
+	else
+		mcu->pc = (unsigned long)(((MSIM_StackPop(mcu)<<16)&0xFF0000) |
+					  ((MSIM_StackPop(mcu)<<8)&0xFF00) |
+					  (MSIM_StackPop(mcu)&0xFF));
+
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 1);
+}
+
+static void exec_swap(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* SWAP – Swap Nibbles */
+	unsigned short rd_addr;
+	unsigned char rdh;
+
+	rd_addr = (inst>>4)&0x1F;
+	rdh = (mcu->data_mem[rd_addr]>>4)&0x0F;
+	mcu->data_mem[rd_addr] = (unsigned char)
+			(((mcu->data_mem[rd_addr]<<4)&0xF0) | rdh);
+	mcu->pc += 2;
 }
