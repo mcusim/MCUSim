@@ -61,16 +61,6 @@ void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVRSREGFlag flag,
 unsigned char MSIM_ReadSREGFlag(struct MSIM_AVR *mcu,
 				enum MSIM_AVRSREGFlag flag);
 
-/* Sets program memory of the MCU, performs size check. Program memory should
- * statically be allocated somewhere. */
-int MSIM_SetProgmem(struct MSIM_AVR *mcu, unsigned char *mem,
-		    unsigned long memsz);
-
-/* Sets data memory of the MCU, performs size check. Data memory should
- * statically be allocated somewhere.*/
-int MSIM_SetDatamem(struct MSIM_AVR *mcu, unsigned char *mem,
-		    unsigned long memsz);
-
 /* Prints instructions from the program memory of the MCU.
  *
  * Required interval of instructions can be specified via

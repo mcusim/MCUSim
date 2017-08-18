@@ -17,16 +17,38 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef MSIM_AVR_SIMM328_H_
+#define MSIM_AVR_SIMM328_H_ 1
+
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <stdint.h>
 
-#include "mcusim/avr/sim/simm328p.h"
+/* Include headers specific to the ATMega328P */
+#define _SFR_ASM_COMPAT 1
+#define __AVR_ATmega328__ 1
+#include "mcusim/avr/io.h"
+#include "mcusim/avr/sim/sim.h"
+#include "mcusim/avr/sim/simcore.h"
 
-int MSIM_M328PInit(struct MSIM_AVR *mcu,
-		   unsigned char *pm, unsigned long pm_size,
-		   unsigned char *dm, unsigned long dm_size)
-{
-#include "mcusim/avr/sim/mcu_init.h"
-}
+#define MCU_NAME	"ATmega328"
+
+#define RESET_PC	0x0000
+#define PC_BITS		14
+#define LBITS_DEFAULT	0x3F
+
+#define CLK_SOURCE	AVR_INT_CLK
+#define CLK_FREQ	1000 /* kHz */
+
+#define GP_REGS		32
+#define IO_REGS		224 /* 64 basic + 160 extended */
+
+#define BL_START	0xC00
+#define BL_END		0xFFF
+#define BL_SIZE		1024
+
+#define FLASHSTART	0x0000
+#define RAMSIZE		2048
+#define E2START		0x0000
+#define E2SIZE		1024
+
+#endif /* MSIM_AVR_SIMM328_H_ */

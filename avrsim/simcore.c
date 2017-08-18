@@ -241,44 +241,6 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 	return 0;
 }
 
-int MSIM_SetProgmem(struct MSIM_AVR *mcu, unsigned char *mem,
-		    unsigned long memsz)
-{
-	unsigned long flash_size;
-
-	/* Size of the program memory, in bytes */
-	flash_size = (mcu->flashend - mcu->flashstart) + 1;
-
-	if (memsz < flash_size) {
-		fprintf(stderr, "Program memory is limited by %lu bytes,"
-				" %lu bytes isn't enough\n",
-				flash_size, memsz);
-		return -1;
-	}
-	mcu->prog_mem = mem;
-	mcu->pm_size = memsz;
-	return 0;
-}
-
-int MSIM_SetDatamem(struct MSIM_AVR *mcu, unsigned char *mem,
-		    unsigned long memsz)
-{
-	unsigned long dm_size;
-
-	/* Size of the data memory, in bytes */
-	dm_size = mcu->regs + mcu->io_regs + mcu->ramsize;
-
-	if (memsz < dm_size) {
-		fprintf(stderr, "Data memory is limited by %lu bytes,"
-				" %lu bytes isn't enough\n",
-				dm_size, memsz);
-		return -1;
-	}
-	mcu->data_mem = mem;
-	mcu->dm_size = memsz;
-	return 0;
-}
-
 static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 {
 	IHexRecord rec, mem_rec;

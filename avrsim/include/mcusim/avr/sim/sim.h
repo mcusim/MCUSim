@@ -90,7 +90,7 @@ struct MSIM_AVR {
 	enum MSIM_AVRState state;
 	enum MSIM_AVRClkSource clk_source;
 
-	unsigned long freq;		/* Current MCU frequency. */
+	unsigned long freq;		/* Current MCU frequency, kHz*/
 	unsigned char pc_bits;		/* 16-bit PC, 22-bit PC, etc. */
 	MSIM_AVRFlashAddr_t pc;		/* Current program counter. */
 	MSIM_AVRFlashAddr_t reset_pc;	/* Reset program counter. */

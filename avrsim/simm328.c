@@ -17,31 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
-/* We would like to include headers specific to the ATMega328P
- * microcontroller. */
-#define _SFR_ASM_COMPAT 1
-#define __AVR_ATmega328__ 1
-#include "mcusim/avr/io.h"
-#include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/simcore.h"
-
-#define FLASHSTART		0x0000
-#define RAMSIZE			2048
-#define E2START			0x0000
-#define E2SIZE			1024
+#include "mcusim/avr/sim/simm328.h"
 
 int MSIM_M328Init(struct MSIM_AVR *mcu,
 		  unsigned char *pm, unsigned long pm_size,
 		  unsigned char *dm, unsigned long dm_size)
 {
-	int r;
-
-	r = MSIM_M328PInit(mcu, pm, pm_size, dm, dm_size);
-	strcpy(mcu->name, "atmega328");
-	mcu->signature[0] = SIGNATURE_0;
-	mcu->signature[1] = SIGNATURE_1;
-	mcu->signature[2] = SIGNATURE_2;
-	return r;
+#include "mcusim/avr/sim/mcu_init.h"
 }

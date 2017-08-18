@@ -17,16 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef MSIM_AVR_SIMM8A_H_
+#define MSIM_AVR_SIMM8A_H_ 1
+
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#include <stdint.h>
 
-#include "mcusim/avr/sim/simm328p.h"
+/* Include headers specific to the ATMega8A */
+#define _SFR_ASM_COMPAT 1
+#define __AVR_ATmega8A__ 1
+#include "mcusim/avr/io.h"
+#include "mcusim/avr/sim/sim.h"
+#include "mcusim/avr/sim/simcore.h"
 
-int MSIM_M328PInit(struct MSIM_AVR *mcu,
-		   unsigned char *pm, unsigned long pm_size,
-		   unsigned char *dm, unsigned long dm_size)
-{
-#include "mcusim/avr/sim/mcu_init.h"
-}
+#define MCU_NAME	"ATmega8A"
+
+#define RESET_PC	0x0000
+#define PC_BITS		12
+#define LBITS_DEFAULT	0x3F
+
+#define CLK_SOURCE	AVR_INT_CLK
+#define CLK_FREQ	1000 /* kHz */
+
+#define GP_REGS		32
+#define IO_REGS		64
+
+#define BL_START	0xE00
+#define BL_END		0xFFF
+#define BL_SIZE		512
+
+#endif /* MSIM_AVR_SIMM8A_H_ */
