@@ -59,10 +59,12 @@ static void exec_rcall(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_sts(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_ret(struct MSIM_AVR *mcu);
 static void exec_ori(struct MSIM_AVR *mcu, unsigned int inst);
-static void exec_sbi_cbi(struct MSIM_AVR *mcu, unsigned int inst, unsigned char set_bit);
+static void exec_sbi_cbi(struct MSIM_AVR *mcu, unsigned int inst,
+			 unsigned char set_bit);
 static void exec_sbis_sbic(struct MSIM_AVR *mcu, unsigned int inst,
 			   unsigned char set_bit);
-static void exec_push_pop(struct MSIM_AVR *mcu, unsigned int inst, unsigned char push);
+static void exec_push_pop(struct MSIM_AVR *mcu, unsigned int inst,
+			  unsigned char push);
 static void exec_movw(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_mov(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_sbci(struct MSIM_AVR *mcu, unsigned int inst);

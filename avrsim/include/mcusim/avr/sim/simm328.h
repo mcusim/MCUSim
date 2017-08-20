@@ -33,18 +33,18 @@
 #define MCU_NAME	"ATmega328"
 
 #define RESET_PC	0x0000
-#define PC_BITS		14
-#define LBITS_DEFAULT	0x3F
+#define PC_BITS		14		/* PC bit capacity */
+#define LBITS_DEFAULT	0x3F		/* Default lock bits */
 
-#define CLK_SOURCE	AVR_INT_CLK
-#define CLK_FREQ	1000 /* kHz */
+#define CLK_SOURCE	AVR_INT_CLK	/* Calibrated Internal RC Oscillator */
+#define CLK_FREQ	1000		/* Oscillator frequency, in kHz */
 
-#define GP_REGS		32
-#define IO_REGS		224 /* 64 basic + 160 extended */
+#define GP_REGS		32		/* GP registers, R0, R1, ..., R31 */
+#define IO_REGS		224		/* I/O registers, PORTD, SREG, etc. */
 
-#define BL_START	0xC00
-#define BL_END		0xFFF
-#define BL_SIZE		1024
+#define BLS_START	0x7000		/* First address in BLS, in bytes */
+#define BLS_END		0x7FFF		/* Last address in BLS, in bytes */
+#define BLS_SIZE	4096		/* BLS size, in bytes */
 
 #define FLASHSTART	0x0000
 #define RAMSIZE		2048

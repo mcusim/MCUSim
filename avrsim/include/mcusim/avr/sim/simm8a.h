@@ -33,17 +33,17 @@
 #define MCU_NAME	"ATmega8A"
 
 #define RESET_PC	0x0000
-#define PC_BITS		12
-#define LBITS_DEFAULT	0x3F
+#define PC_BITS		12		/* PC bit capacity */
+#define LBITS_DEFAULT	0x3F		/* Default lock bits */
 
-#define CLK_SOURCE	AVR_INT_CLK
-#define CLK_FREQ	1000 /* kHz */
+#define CLK_SOURCE	AVR_INT_CLK	/* Calibrated Internal RC Oscillator */
+#define CLK_FREQ	1000		/* Oscillator frequency, in kHz */
 
-#define GP_REGS		32
-#define IO_REGS		64
+#define GP_REGS		32		/* GP registers, R0, R1, ..., R31 */
+#define IO_REGS		64		/* I/O registers, PORTD, SREG, etc. */
 
-#define BL_START	0xE00
-#define BL_END		0xFFF
-#define BL_SIZE		512
+#define BLS_START	0x1800		/* First address in BLS, in bytes */
+#define BLS_END		0x1FFF		/* Last address in BLS, in bytes */
+#define BLS_SIZE	2048		/* BLS size, in bytes */
 
 #endif /* MSIM_AVR_SIMM8A_H_ */

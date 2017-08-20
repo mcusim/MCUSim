@@ -114,10 +114,10 @@ mcu->fuse[1] = HFUSE_DEFAULT;
 mcu->fuse[0] = LFUSE_DEFAULT;
 /* END Fuses */
 
-#ifdef BL_START
-mcu->boot_loader->start = BL_START;
-mcu->boot_loader->end = BL_END;
-mcu->boot_loader->size = BL_SIZE;
+#ifdef BLS_START
+mcu->boot_loader->start = BLS_START;
+mcu->boot_loader->end = BLS_END;
+mcu->boot_loader->size = BLS_SIZE;
 #else
 mcu->boot_loader->start = 0;
 mcu->boot_loader->end = 0;
