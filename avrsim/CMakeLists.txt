@@ -58,6 +58,7 @@ set(SIM_SRCS		simcore.c
 			simm8a.c
 			simm328p.c
 			simm328.c
+			simm2560.c
 			ihex.c
 			cli.c
 			getopt_long.c

@@ -17,16 +17,17 @@ a perfect opportunity to help the simulator grows.
 
 These options are in development:
 
-  - AVR Simulation Core (avrsim/simcore.c)
-  - ATmega8A (avrsim/simm8a.c)
-  - ATmega328P (avrsim/simm328p.c)
-  - ATmega328 (avrsim/simm328.c)
+  - AVR Simulation Core		(avrsim/simcore.c)
+  - ATmega8A			(mcusim/avr/sim/simm8a.h)
+  - ATmega328P			(mcusim/avr/sim/simm328p.h)
+  - ATmega328			(mcusim/avr/sim/simm328.h)
+  - ATmega2560			(mcusim/avr/sim/simm2560.h)
 
 Near future plan:
 
   - ATmega48A/PA/88A/PA/168A/PA
   - ATmega128/L
-  - IPC for avrsim
+  - (obsolete) IPC for avrsim
 
 Far future plan:
   - Simulation of the AVR-based schematic (using SPICE, possibly)

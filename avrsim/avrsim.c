@@ -28,7 +28,7 @@
 
 #define CLI_OPTIONS		":hm:p:v"
 
-#define PROGRAM_MEMORY		131072 /* 128 KiB */
+#define PROGRAM_MEMORY		262144 /* 256 KiB */
 #define DATA_MEMORY		65536 /* 64 KiB */
 
 static struct MSIM_AVRBootloader bootloader;

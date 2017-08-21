@@ -17,36 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef MSIM_AVR_INIT_H_
-#define MSIM_AVR_INIT_H_ 1
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
-#ifndef MSIM_AVR_SIMCORE_H_
-#	error "Include <mcusim/avr/sim/simcore.h> instead of this file."
-#endif
+#include "mcusim/avr/sim/simm2560.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/* Initialize MCU as ATmega8A */
-int MSIM_M8AInit(struct MSIM_AVR *mcu,
-		 unsigned char *pm, unsigned long pm_size,
-		 unsigned char *dm, unsigned long dm_size);
-/* Initialize MCU as ATmega328 */
-int MSIM_M328Init(struct MSIM_AVR *mcu,
-		  unsigned char *pm, unsigned long pm_size,
-		  unsigned char *dm, unsigned long dm_size);
-/* Initialize MCU as ATmega328P */
-int MSIM_M328PInit(struct MSIM_AVR *mcu,
-		   unsigned char *pm, unsigned long pm_size,
-		   unsigned char *dm, unsigned long dm_size);
-/* Initialize MCU as ATmega2560 */
 int MSIM_M2560Init(struct MSIM_AVR *mcu,
 		   unsigned char *pm, unsigned long pm_size,
-		   unsigned char *dm, unsigned long dm_size);
-
-#ifdef __cplusplus
+		   unsigned char *dm, unsigned long dm_size)
+{
+#include "mcusim/avr/sim/mcu_init.h"
 }
-#endif
-
-#endif /* MSIM_AVR_INIT_H_ */
