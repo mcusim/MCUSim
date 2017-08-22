@@ -58,7 +58,7 @@ static void exec_brcs_brlo(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_rcall(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_sts(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_ret(struct MSIM_AVR *mcu);
-static void exec_ori(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_ori_sbr(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_sbi_cbi(struct MSIM_AVR *mcu, unsigned int inst,
 			 unsigned char set_bit);
 static void exec_sbis_sbic(struct MSIM_AVR *mcu, unsigned int inst,
@@ -138,6 +138,8 @@ static void exec_sen(struct MSIM_AVR *mcu);
 static void exec_sei(struct MSIM_AVR *mcu);
 static void exec_seh(struct MSIM_AVR *mcu);
 static void exec_sec(struct MSIM_AVR *mcu);
+static void exec_or(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_neg(struct MSIM_AVR *mcu, unsigned int inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -235,7 +237,7 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		if (MSIM_M2560Init(mcu, pm, pm_size, dm, dm_size))
 			return -1;
 	} else {
-		fprintf(stderr, "Microcontroller AVR %s is unsupported!\n",
+		fprintf(stderr, "Microcontroller AVR %s is not supported!\n",
 				mcu_name);
 		return -1;
 	}
@@ -494,6 +496,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		case 0x2400:
 			exec_eor_clr(mcu, inst);
 			break;
+		case 0x2800:
+			exec_or(mcu, inst);
+			break;
 		case 0x2C00:
 			exec_mov(mcu, inst);
 			break;
@@ -511,7 +516,7 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		exec_subi(mcu, inst);
 		break;
 	case 0x6000:
-		exec_ori(mcu, inst);
+		exec_ori_sbr(mcu, inst);
 		break;
 	case 0x7000:
 		exec_andi_cbr(mcu, inst);
@@ -695,6 +700,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 				break;
 			case 0x9400:
 				exec_com(mcu, inst);
+				break;
+			case 0x9401:
+				exec_neg(mcu, inst);
 				break;
 			case 0x9402:
 				exec_swap(mcu, inst);
@@ -1148,9 +1156,10 @@ static void exec_ret(struct MSIM_AVR *mcu)
 	mcu->pc = (unsigned int)((ah << 8) | al);
 }
 
-static void exec_ori(struct MSIM_AVR *mcu, unsigned int inst)
+static void exec_ori_sbr(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* ORI – Logical OR with Immediate */
+	/* SBR – Set Bits in Register */
 	unsigned char rd_addr, c, r;
 
 	rd_addr = (unsigned char)(((inst & 0xF0) >> 4) + 16);
@@ -2558,4 +2567,44 @@ static void exec_swap(struct MSIM_AVR *mcu, unsigned int inst)
 	mcu->data_mem[rd_addr] = (unsigned char)
 			(((mcu->data_mem[rd_addr]<<4)&0xF0) | rdh);
 	mcu->pc += 2;
+}
+
+static void exec_or(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* OR – Logical OR */
+	unsigned char rda, rra, rd, rr, r;
+
+	rda = (inst>>4)&0x1F;
+	rra = (unsigned char)(((inst>>5)&0x10) | (inst&0xF));
+	rd = mcu->data_mem[rda];
+	rr = mcu->data_mem[rra];
+	r = mcu->data_mem[rda] = rd | rr;
+	mcu->pc += 2;
+
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (r>>7)&1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
+}
+
+static void exec_neg(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* NEG – Two’s Complement */
+	unsigned char rda, rd, r;
+
+	rda = (inst>>4)&0x1F;
+	rd = mcu->data_mem[rda];
+	r = mcu->data_mem[rda] = (unsigned char)(~rd + 1);
+	mcu->pc += 2;
+
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, r ? 1 : 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (r>>7)&1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, r == 0x80 ? 1 : 0);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
+			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_HALF_CARRY, ((r>>3)&1) | ((rd>>3)&1));
 }
