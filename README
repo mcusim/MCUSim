@@ -1,70 +1,94 @@
 MCUSim
 ======
+Simulator for microcontrollers is a set of programs used to run ROM files
+which are intended to be loaded directly into the integrated circuits.
 
-An interactive simulator for microcontrollers (MCUSim) is a set of programs
-used to run ROM file which is intended to be burned into an integrated
-circuit, and analyse electronic schematic built by utilizing the curcuit.
-Main goal of the project is to save time debugging code for an embedded system
-and provide a detailed information of the processes in the circuit under
-analysis on the spot, interactively.
+MCUSim is under active development and not ready to be used by the end users.
 
-What to expect
+Synopsis
+--------
+	avrsim -m model -p program
+
+Supported MCUs
 --------------
+	- AVR
+		- ATmega8A	(mcusim/avr/sim/simm8a.h)
+		- ATmega328P	(mcusim/avr/sim/simm328p.h)
+		- ATmega328	(mcusim/avr/sim/simm328.h)
+		- ATmega2560	(mcusim/avr/sim/simm2560.h)
 
-MCUSim is in the active development stage and not ready to be used by the
-end-users (embedded systems engineers or programmers). It means that there is
-a perfect opportunity to help the simulator grows.
+Options
+-------
+	Simulator Configuration
+		-m model
+			Select an MCU model to simulate. See Models.txt to
+			obtain exact values.
+		-p program
+			Load specified program from an Intel HEX file.
+			See samples/avr-progmem.hex for details.
 
-These options are in development:
+Commands
+--------
+	step, next, stepi, nexti, si, ni, s, n
+		Execute next instruction.
 
-  - AVR Simulation Core		(avrsim/simcore.c)
-  - ATmega8A			(mcusim/avr/sim/simm8a.h)
-  - ATmega328P			(mcusim/avr/sim/simm328p.h)
-  - ATmega328			(mcusim/avr/sim/simm328.h)
-  - ATmega2560			(mcusim/avr/sim/simm2560.h)
+	step N
+		Execute next N instructions.
 
-Near future plan:
+	until ADDR
+		Execute instructions until the given address in form 0xABCD.
+		Last executed instruction is placed at ADDR.
 
-  - ATmega48A/PA/88A/PA/168A/PA
-  - ATmega128/L
-  - (obsolete) IPC for avrsim
+	where
+		Show next instruction.
 
-Far future plan:
-  - Simulation of the AVR-based schematic (using SPICE, possibly)
-  - Support for other popular MCUs (PIC by Microchip, 16-bit and 32-bit MCUs
-    by Texas Instruments)
+	run, r
+		Start execution of the program.
 
-Getting started with the simulator
-----------------------------------
+	set listsize N
+		Show N instructions during the next call to the 'list' command.
 
-  - Make sure you have installed CMake build system version 3.2 or above.
-    It is used to prepare makefiles (or other build files) for many platforms
-    and environments. Installed version can be checked by a command running
-    in your terminal:
+	show listsize
+		Show current number of instruction to show during the
+		'list' command.
 
-      cmake --version
+	list, l
+		Show next N instructions.
 
-  - Any C compiler which follows ISO/IEC 9899:1990 standard (widely known
-    as C89, C90 or ANSI C)
+Roadmap
+-------
+	- AVR
+		- [?] CPU: AVR, AVRe, AVRxm (without DES), AVRxt, AVRrc
+		- [x] Register File, I/O Registers, Internal SRAM
+		- [ ] Interrupts, internal and external
+		- [?] Boot Loader
+		- [ ] EEPROM
+		- [ ] MCUs with 22-bit PC
+		- [ ] 8-bit Timers/Counters
+		- [ ] 16-bit Timers/Counters
 
-  - If you have all of these programs above installed, build a required part
-    of the simulator (let me use avrsim as an example):
+	- Ideas
+		- Simulation of the AVR-based schematic using SPICE, maybe
+		- Support other popular MCUs (PIC by Microchip, 16-bit and
+		  32-bit MCUs by Texas Instruments)
 
-      cd avrsim
-      mkdir build
-      cd build
-      cmake ..
+Build
+-----
+	- Make sure you have installed CMake build system version 3.2
+	  or above. It is used to prepare makefiles (or other build files)
+	  for many platforms and environments. Installed version can be
+	  checked by a command running in your terminal:
 
-  - Each part of the simulator can be configured before building.
-    You are perfectly able to consult with the README files placed in the
-    specific directories.
+		cmake --version
 
-If something goes wrong
------------------------
+	- ANSI C compiler
 
-  - If you need any help regarding the project, please write to
-    Dmitry Salychev darkness.bsd<at>gmail.com or open an issue at
-    https://github.com/dsalychev/mcusim/issues.
+	- If you have all of these programs above installed:
 
-  - Help in any form (reporting a bug, code donation, etc.) is appreciated
-    a lot.
+		mkdir build
+		cd build
+		cmake ..
+
+Author
+------
+	Written by Dmitry Salychev <darkness.bsd@gmail.com>

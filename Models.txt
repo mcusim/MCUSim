@@ -1,0 +1,5 @@
+VALUE			NAME		FILE
+atmega8a		ATmega8A 	mcusim/avr/sim/simm8a.h
+atmega328p		ATmega328P	mcusim/avr/sim/simm328p.h
+atmega328		ATmega328	mcusim/avr/sim/simm328.h
+atmega2560		ATmega2560	mcusim/avr/sim/simm2560.h
