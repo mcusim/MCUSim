@@ -140,6 +140,10 @@ static void exec_seh(struct MSIM_AVR *mcu);
 static void exec_sec(struct MSIM_AVR *mcu);
 static void exec_or(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_neg(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_ser(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_mul(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_muls(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_mulsu(struct MSIM_AVR *mcu, unsigned int inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -439,6 +443,12 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		} else if ((inst & 0x77) == 0x388) {
 			exec_fmulsu(mcu, inst);
 			break;
+		} else if ((inst&0xFF00) == 0x0200) {
+			exec_muls(mcu, inst);
+			break;
+		} else if ((inst&0xFF88) == 0x0300) {
+			exec_mulsu(mcu, inst);
+			break;
 		}
 
 		switch (inst) {
@@ -569,6 +579,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			break;
 		} else if ((inst & 0xFE0E) == 0x940E) {
 			exec_call(mcu, inst);
+			break;
+		} else if ((inst&0xFC00) == 0x9C00) {
+			exec_mul(mcu, inst);
 			break;
 		}
 
@@ -782,6 +795,10 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		exec_rcall(mcu, inst);
 		break;
 	case 0xE000:
+		if ((inst&0xFF0F) == 0xEF0F) {
+			exec_ser(mcu, inst);
+			break;
+		}
 		exec_ldi(mcu, inst);
 		break;
 	case 0xF000:
@@ -2607,4 +2624,73 @@ static void exec_neg(struct MSIM_AVR *mcu, unsigned int inst)
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_HALF_CARRY, ((r>>3)&1) | ((rd>>3)&1));
+}
+
+static void exec_ser(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* SER – Set all Bits in Register */
+	unsigned char rda;
+
+	rda = ((inst>>4)&0xF)+16;
+	mcu->data_mem[rda] = 0xFF;
+	mcu->pc += 2;
+}
+
+static void exec_mul(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* MUL – Multiply Unsigned */
+	unsigned char rda, rra, rd, rr;
+	unsigned int r;
+
+	rda = (inst>>4)&0x1F;
+	rra = ((inst>>5)&0x10) | (inst&0xF);
+	rd = mcu->data_mem[rda];
+	rr = mcu->data_mem[rra];
+	r = rd*rr;
+	mcu->data_mem[0] = r&0xFF;
+	mcu->data_mem[1] = (r>>8)&0xFF;
+	mcu->pc += 2;
+
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (r>>15)&1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
+}
+
+static void exec_muls(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* MULS – Multiply Signed */
+	unsigned char rda, rra;
+	signed char rd, rr;
+	signed int r;
+
+	rda = ((inst>>4)&0xF)+16;
+	rra = (inst&0xF)+16;
+	rd = (signed char)mcu->data_mem[rda];
+	rr = (signed char)mcu->data_mem[rra];
+	r = rd*rr;
+	mcu->data_mem[0] = r&0xFF;
+	mcu->data_mem[1] = (r>>8)&0xFF;
+	mcu->pc += 2;
+
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (r>>15)&1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
+}
+
+static void exec_mulsu(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* MULSU – Multiply Signed with Unsigned */
+	unsigned char rda, rra, rr;
+	signed char rd;
+	signed int r;
+
+	rda = ((inst>>4)&0x7)+16;
+	rra = ((inst&0x7)+16);
+	rd = (signed char)mcu->data_mem[rda];
+	rr = mcu->data_mem[rra];
+	r = rd*rr;
+	mcu->data_mem[0] = r&0xFF;
+	mcu->data_mem[1] = (r>>8)&0xFF;
+	mcu->pc += 2;
+
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (r>>15)&1);
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
 }
