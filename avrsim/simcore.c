@@ -2631,7 +2631,7 @@ static void exec_ser(struct MSIM_AVR *mcu, unsigned int inst)
 	/* SER – Set all Bits in Register */
 	unsigned char rda;
 
-	rda = ((inst>>4)&0xF)+16;
+	rda = (unsigned char)(((inst>>4)&0xF)+16);
 	mcu->data_mem[rda] = 0xFF;
 	mcu->pc += 2;
 }
@@ -2643,10 +2643,10 @@ static void exec_mul(struct MSIM_AVR *mcu, unsigned int inst)
 	unsigned int r;
 
 	rda = (inst>>4)&0x1F;
-	rra = ((inst>>5)&0x10) | (inst&0xF);
+	rra = (unsigned char)(((inst>>5)&0x10) | (inst&0xF));
 	rd = mcu->data_mem[rda];
 	rr = mcu->data_mem[rra];
-	r = rd*rr;
+	r = (unsigned int)(rd*rr);
 	mcu->data_mem[0] = r&0xFF;
 	mcu->data_mem[1] = (r>>8)&0xFF;
 	mcu->pc += 2;
@@ -2662,13 +2662,13 @@ static void exec_muls(struct MSIM_AVR *mcu, unsigned int inst)
 	signed char rd, rr;
 	signed int r;
 
-	rda = ((inst>>4)&0xF)+16;
-	rra = (inst&0xF)+16;
+	rda = (unsigned char)(((inst>>4)&0xF)+16);
+	rra = (unsigned char)((inst&0xF)+16);
 	rd = (signed char)mcu->data_mem[rda];
 	rr = (signed char)mcu->data_mem[rra];
 	r = rd*rr;
-	mcu->data_mem[0] = r&0xFF;
-	mcu->data_mem[1] = (r>>8)&0xFF;
+	mcu->data_mem[0] = (unsigned char)(r&0xFF);
+	mcu->data_mem[1] = (unsigned char)((r>>8)&0xFF);
 	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (r>>15)&1);
@@ -2682,13 +2682,13 @@ static void exec_mulsu(struct MSIM_AVR *mcu, unsigned int inst)
 	signed char rd;
 	signed int r;
 
-	rda = ((inst>>4)&0x7)+16;
-	rra = ((inst&0x7)+16);
+	rda = (unsigned char)(((inst>>4)&0x7)+16);
+	rra = (unsigned char)(((inst&0x7)+16));
 	rd = (signed char)mcu->data_mem[rda];
 	rr = mcu->data_mem[rra];
 	r = rd*rr;
-	mcu->data_mem[0] = r&0xFF;
-	mcu->data_mem[1] = (r>>8)&0xFF;
+	mcu->data_mem[0] = (unsigned char)(r&0xFF);
+	mcu->data_mem[1] = (unsigned char)((r>>8)&0xFF);
 	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (r>>15)&1);
