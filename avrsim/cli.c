@@ -234,6 +234,6 @@ static int clif_show_listsize(struct MSIM_AVR *mcu, const char *cmd,
 	if (strncmp("show listsize", cmd, cmdl))
 		return 0;
 
-	printf("Instructions list size: %ld\n", inst_listsz);
+	printf("Instructions list size: %lu\n", inst_listsz);
 	return 1;
 }

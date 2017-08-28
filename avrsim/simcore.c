@@ -435,20 +435,20 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	switch (inst & 0xF000) {
 	case 0x0000:
-		if ((inst & 0x77) == 0x308) {
-			exec_fmul(mcu, inst);
-			break;
-		} else if ((inst & 0x77) == 0x380) {
-			exec_fmuls(mcu, inst);
-			break;
-		} else if ((inst & 0x77) == 0x388) {
-			exec_fmulsu(mcu, inst);
-			break;
-		} else if ((inst&0xFF00) == 0x0200) {
+		if ((inst&0xFF00) == 0x0200) {
 			exec_muls(mcu, inst);
 			break;
 		} else if ((inst&0xFF88) == 0x0300) {
 			exec_mulsu(mcu, inst);
+			break;
+		} else if ((inst & 0xFF88) == 0x308) {
+			exec_fmul(mcu, inst);
+			break;
+		} else if ((inst & 0xFF88) == 0x380) {
+			exec_fmuls(mcu, inst);
+			break;
+		} else if ((inst & 0xFF88) == 0x388) {
+			exec_fmulsu(mcu, inst);
 			break;
 		}
 

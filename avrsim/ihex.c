@@ -74,7 +74,7 @@ int Read_IHexRecord(IHexRecord *ihexRecord, FILE *in) {
 				return IHEX_ERROR_FILE;
 	}
 	/* Null-terminate the string at the first sign of a \r or \n */
-	for (i = 0; i < (int)strlen(recordBuff); i++) {
+	for (i = 0; i < strlen(recordBuff); i++) {
 		if (recordBuff[i] == '\r' || recordBuff[i] == '\n') {
 			recordBuff[i] = 0;
 			break;
@@ -144,7 +144,7 @@ int Read_IHexRecord(IHexRecord *ihexRecord, FILE *in) {
 
 /* Utility function to write an Intel HEX8 record to a file */
 int Write_IHexRecord(const IHexRecord *ihexRecord, FILE *out) {
-	int i;
+	unsigned int i;
 
 	/* Check our record pointer and file pointer */
 	if (ihexRecord == NULL || out == NULL)
@@ -173,7 +173,7 @@ int Write_IHexRecord(const IHexRecord *ihexRecord, FILE *out) {
 
 /* Utility function to print the information stored in an Intel HEX8 record */
 void Print_IHexRecord(const IHexRecord *ihexRecord) {
-	int i;
+	unsigned int i;
 	printf("Intel HEX8 Record Type: \t%d\n", ihexRecord->type);
 	printf("Intel HEX8 Record Address: \t0x%2.4X\n", ihexRecord->address);
 	printf("Intel HEX8 Record Data: \t{");
