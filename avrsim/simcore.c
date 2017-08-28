@@ -74,7 +74,7 @@ static void exec_and(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_sub(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_subi(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_sbc(struct MSIM_AVR *mcu, unsigned int inst);
-static void exec_cli(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_cli(struct MSIM_AVR *mcu);
 static void exec_adiw(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_adc_rol(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_add_lsl(struct MSIM_AVR *mcu, unsigned int inst);
@@ -99,13 +99,13 @@ static void exec_brvs(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_bset(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_bst(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_lsb);
-static void exec_clc(struct MSIM_AVR *mcu, unsigned int inst);
-static void exec_clh(struct MSIM_AVR *mcu, unsigned int inst);
-static void exec_cln(struct MSIM_AVR *mcu, unsigned int inst);
-static void exec_cls(struct MSIM_AVR *mcu, unsigned int inst);
-static void exec_clt(struct MSIM_AVR *mcu, unsigned int inst);
-static void exec_clv(struct MSIM_AVR *mcu, unsigned int inst);
-static void exec_clz(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_clc(struct MSIM_AVR *mcu);
+static void exec_clh(struct MSIM_AVR *mcu);
+static void exec_cln(struct MSIM_AVR *mcu);
+static void exec_cls(struct MSIM_AVR *mcu);
+static void exec_clt(struct MSIM_AVR *mcu);
+static void exec_clv(struct MSIM_AVR *mcu);
+static void exec_clz(struct MSIM_AVR *mcu);
 static void exec_com(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_cpse(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_dec(struct MSIM_AVR *mcu, unsigned int inst);
@@ -144,6 +144,7 @@ static void exec_ser(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_mul(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_muls(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_mulsu(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_elpm(struct MSIM_AVR *mcu, unsigned int inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -614,28 +615,28 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			exec_sei(mcu);
 			break;
 		case 0x9488:
-			exec_clc(mcu, inst);
+			exec_clc(mcu);
 			break;
 		case 0x9498:
-			exec_clz(mcu, inst);
+			exec_clz(mcu);
 			break;
 		case 0x94A8:
-			exec_cln(mcu, inst);
+			exec_cln(mcu);
 			break;
 		case 0x94B8:
-			exec_clv(mcu, inst);
+			exec_clv(mcu);
 			break;
 		case 0x94C8:
-			exec_cls(mcu, inst);
+			exec_cls(mcu);
 			break;
 		case 0x94D8:
-			exec_clh(mcu, inst);
+			exec_clh(mcu);
 			break;
 		case 0x94E8:
-			exec_clt(mcu, inst);
+			exec_clt(mcu);
 			break;
 		case 0x94F8:
-			exec_cli(mcu, inst);
+			exec_cli(mcu);
 			break;
 		case 0x9508:
 			exec_ret(mcu);
@@ -655,6 +656,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		case 0x95C8:
 			exec_lpm(mcu, inst);
 			break;
+		case 0x95D8:
+			exec_elpm(mcu, inst);
+			break;
 		default:
 			switch (inst & 0xFE0F) {
 			case 0x9000:
@@ -667,6 +671,10 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			case 0x9004:
 			case 0x9005:
 				exec_lpm(mcu, inst);
+				break;
+			case 0x9006:
+			case 0x9007:
+				exec_elpm(mcu, inst);
 				break;
 			case 0x9009:
 			case 0x900A:
@@ -2051,7 +2059,7 @@ static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_lsb)
 	mcu->pc = c;
 }
 
-static void exec_clc(struct MSIM_AVR *mcu, unsigned int inst)
+static void exec_clc(struct MSIM_AVR *mcu)
 {
 	/* CLC – Clear Carry Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, 0);
@@ -2065,7 +2073,7 @@ static void exec_sec(struct MSIM_AVR *mcu)
 	mcu->pc += 2;
 }
 
-static void exec_clh(struct MSIM_AVR *mcu, unsigned int inst)
+static void exec_clh(struct MSIM_AVR *mcu)
 {
 	/* CLH – Clear Half Carry Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_HALF_CARRY, 0);
@@ -2079,7 +2087,7 @@ static void exec_seh(struct MSIM_AVR *mcu)
 	mcu->pc += 2;
 }
 
-static void exec_cli(struct MSIM_AVR *mcu, unsigned int inst)
+static void exec_cli(struct MSIM_AVR *mcu)
 {
 	/* CLI - Clear Global Interrupt Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
@@ -2093,7 +2101,7 @@ static void exec_sei(struct MSIM_AVR *mcu)
 	mcu->pc += 2;
 }
 
-static void exec_cln(struct MSIM_AVR *mcu, unsigned int inst)
+static void exec_cln(struct MSIM_AVR *mcu)
 {
 	/* CLN – Clear Negative Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, 0);
@@ -2107,7 +2115,7 @@ static void exec_sen(struct MSIM_AVR *mcu)
 	mcu->pc += 2;
 }
 
-static void exec_cls(struct MSIM_AVR *mcu, unsigned int inst)
+static void exec_cls(struct MSIM_AVR *mcu)
 {
 	/* CLS – Clear Signed Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN, 0);
@@ -2121,7 +2129,7 @@ static void exec_ses(struct MSIM_AVR *mcu)
 	mcu->pc += 2;
 }
 
-static void exec_clt(struct MSIM_AVR *mcu, unsigned int inst)
+static void exec_clt(struct MSIM_AVR *mcu)
 {
 	/* CLT – Clear T Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_T_BIT, 0);
@@ -2135,7 +2143,7 @@ static void exec_set(struct MSIM_AVR *mcu)
 	mcu->pc += 2;
 }
 
-static void exec_clv(struct MSIM_AVR *mcu, unsigned int inst)
+static void exec_clv(struct MSIM_AVR *mcu)
 {
 	/* CLV – Clear Overflow Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, 0);
@@ -2149,7 +2157,7 @@ static void exec_sev(struct MSIM_AVR *mcu)
 	mcu->pc += 2;
 }
 
-static void exec_clz(struct MSIM_AVR *mcu, unsigned int inst)
+static void exec_clz(struct MSIM_AVR *mcu)
 {
 	/* CLZ – Clear Zero Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
@@ -2693,4 +2701,39 @@ static void exec_mulsu(struct MSIM_AVR *mcu, unsigned int inst)
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (r>>15)&1);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
+}
+
+static void exec_elpm(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* ELPM - Extended Load Program Memory
+	 * type I, R0 <- (RAMPZ:Z)
+	 * type II, Rd <- (RAMPZ:Z)
+	 * type III, Rd <- (RAMPZ:Z), (RAMPZ:Z)++
+	 */
+	unsigned char rda, zh, zl, ez;
+	unsigned long z;
+
+	if (mcu->rampz == NULL) {
+		fprintf(stderr, "ELPM instruction is not supported on "
+				"devices without RAMPZ register!\n");
+		exit(1);
+	}
+	ez = *mcu->rampz;
+	zh = mcu->data_mem[REG_ZH];
+	zl = mcu->data_mem[REG_ZL];
+	z = (unsigned long)(((ez<<16)&0xFF0000) | ((zh<<8)&0xFF00) | (zl&0xFF));
+
+	if (inst == 0x95D8) {				/* type I */
+		mcu->data_mem[0] = mcu->prog_mem[z];
+	} else if ((inst & 0xFE0F) == 0x9006) {		/* type II */
+		rda = (inst>>4)&0x1F;
+		mcu->data_mem[rda] = mcu->prog_mem[z];
+	} else if ((inst & 0xFE0F) == 0x9007) {		/* type III */
+		rda = (inst>>4)&0x1F;
+		mcu->data_mem[rda] = mcu->prog_mem[z++];
+		*mcu->rampz = (unsigned char)((z>>16)&0xFF);
+		mcu->data_mem[REG_ZH] = (unsigned char)((z>>8)&0xFF);
+		mcu->data_mem[REG_ZL] = (unsigned char)(z&0xFF);
+	}
+	mcu->pc += 2;
 }
