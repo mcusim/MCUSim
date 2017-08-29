@@ -109,8 +109,8 @@ struct MSIM_AVR {
 					   of AVR MCUs which use this register
 					   at darkness.bsd at gmail.com */
 
-	unsigned char *prog_mem;	/* Flash memory (+bootloader). */
-	unsigned char *data_mem;	/* GP and I/O registers, SRAM. */
+	unsigned char *pm;		/* Flash memory (+bootloader). */
+	unsigned char *dm;		/* GP and I/O registers, SRAM. */
 	unsigned long pm_size;		/* Actual size of the program memory. */
 	unsigned long dm_size;		/* Actual size of the data memory. */
 

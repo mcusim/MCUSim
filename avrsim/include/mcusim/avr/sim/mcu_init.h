@@ -56,7 +56,7 @@ if (pm_size < pmsz) {
 			pmsz, pm_size);
 	return -1;
 }
-mcu->prog_mem = pm;
+mcu->pm = pm;
 mcu->pm_size = pm_size;
 /* END Program memory */
 
@@ -68,37 +68,37 @@ if (dm_size < dmsz) {
 			dmsz, dm_size);
 	return -1;
 }
-mcu->data_mem = dm;
+mcu->dm = dm;
 mcu->dm_size = dm_size;
 /* END Data memory */
 
-mcu->sreg = &mcu->data_mem[SREG];
-mcu->sph = &mcu->data_mem[SPH];
-mcu->spl = &mcu->data_mem[SPL];
+mcu->sreg = &mcu->dm[SREG];
+mcu->sph = &mcu->dm[SPH];
+mcu->spl = &mcu->dm[SPL];
 
 /* Extended registers */
 #ifdef EIND
-mcu->eind = &mcu->data_mem[_SFR_IO8(EIND)];
+mcu->eind = &mcu->dm[_SFR_IO8(EIND)];
 #else
 mcu->eind = NULL;
 #endif
 #ifdef RAMPZ
-mcu->rampz = &mcu->data_mem[_SFR_IO8(RAMPZ)];
+mcu->rampz = &mcu->dm[_SFR_IO8(RAMPZ)];
 #else
 mcu->rampz = NULL;
 #endif
 #ifdef RAMPY
-mcu->rampy = &mcu->data_mem[_SFR_IO8(RAMPY)];
+mcu->rampy = &mcu->dm[_SFR_IO8(RAMPY)];
 #else
 mcu->rampy = NULL;
 #endif
 #ifdef RAMPX
-mcu->rampx = &mcu->data_mem[_SFR_IO8(RAMPX)];
+mcu->rampx = &mcu->dm[_SFR_IO8(RAMPX)];
 #else
 mcu->rampx = NULL;
 #endif
 #ifdef RAMPD
-mcu->rampd = &mcu->data_mem[_SFR_IO8(RAMPD)];
+mcu->rampd = &mcu->dm[_SFR_IO8(RAMPD)];
 #else
 mcu->rampd = NULL;
 #endif
