@@ -65,17 +65,11 @@ enum MSIM_AVRSREGFlag {
 /* Instance of the AVR microcontroller. */
 struct MSIM_AVR {
 	unsigned long id;		/* ID of a simulated AVR MCU */
-
 	char name[20];			/* Name of the MCU */
 	unsigned char signature[3];	/* Signature of the MCU */
-	unsigned int spm_pagesize;	/* For devices with bootloader support,
-					   the flash pagesize (in bytes) to be
-					   used for Self Programming Mode (SPM)
-					   instruction. */
-	unsigned long flashstart;	/* The first byte address in flash
-					   program space, in bytes. */
-	unsigned long flashend;		/* The last byte address in flash
-					   program space, in bytes. */
+
+	unsigned long flashstart;	/* The first byte address in PM. */
+	unsigned long flashend;		/* The last byte address in PM. */
 	unsigned long ramstart;
 	unsigned long ramend;
 	unsigned long ramsize;
@@ -86,7 +80,14 @@ struct MSIM_AVR {
 	unsigned char lockbits;
 	unsigned char fuse[6];
 
-	struct MSIM_AVRBootloader *boot_loader;
+	unsigned int spm_pagesize;	/* For devices with bootloader support,
+					   the flash pagesize (in bytes) to be
+					   used for Self Programming Mode (SPM)
+					   instruction. */
+	unsigned char *spmcsr;		/* Store Program Memory Control
+					   and Status Register */
+
+	struct MSIM_AVRBootloader *bls;
 	enum MSIM_AVRState state;
 	enum MSIM_AVRClkSource clk_source;
 
@@ -100,6 +101,7 @@ struct MSIM_AVR {
 	unsigned char *sreg;		/* SREG in the data memory. */
 	unsigned char *sph;		/* SP(high) in the data memory. */
 	unsigned char *spl;		/* SP(low) in the data memory. */
+
 	unsigned char *eind;		/* Extended indirect register. */
 	unsigned char *rampz;		/* Extended Z-pointer register. */
 	unsigned char *rampy;		/* Extended Y-pointer register. */
@@ -110,6 +112,7 @@ struct MSIM_AVR {
 					   at darkness.bsd at gmail.com */
 
 	unsigned char *pm;		/* Flash memory (+bootloader). */
+	unsigned char *pmp;		/* Page buffer of the flash memory. */
 	unsigned char *dm;		/* GP and I/O registers, SRAM. */
 	unsigned long pm_size;		/* Actual size of the program memory. */
 	unsigned long dm_size;		/* Actual size of the data memory. */

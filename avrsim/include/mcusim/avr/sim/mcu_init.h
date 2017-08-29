@@ -115,13 +115,21 @@ mcu->fuse[0] = LFUSE_DEFAULT;
 /* END Fuses */
 
 #ifdef BLS_START
-mcu->boot_loader->start = BLS_START;
-mcu->boot_loader->end = BLS_END;
-mcu->boot_loader->size = BLS_SIZE;
+mcu->bls->start = BLS_START;
+mcu->bls->end = BLS_END;
+mcu->bls->size = BLS_SIZE;
 #else
-mcu->boot_loader->start = 0;
-mcu->boot_loader->end = 0;
-mcu->boot_loader->size = 0;
+mcu->bls->start = 0;
+mcu->bls->end = 0;
+mcu->bls->size = 0;
+#endif
+
+#if defined(SPMCSR)
+mcu->spmcsr = &mcu->dm[_SFR_IO8(SPMCSR)];
+#elif defined(SPMCR)
+mcu->spmcsr = &mcu->dm[_SFR_IO8(SPMCR)];
+#else
+mcu->spmcsr = NULL;
 #endif
 
 mcu->clk_source = CLK_SOURCE;

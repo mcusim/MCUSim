@@ -145,6 +145,7 @@ static void exec_mul(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_muls(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_mulsu(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_elpm(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -658,6 +659,10 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			break;
 		case 0x95D8:
 			exec_elpm(mcu, inst);
+			break;
+		case 0x95E8:
+		case 0x95F8:
+			exec_spm(mcu, inst);
 			break;
 		default:
 			switch (inst & 0xFE0F) {
@@ -2706,9 +2711,9 @@ static void exec_mulsu(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_elpm(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* ELPM - Extended Load Program Memory
-	 * type I, R0 <- (RAMPZ:Z)
-	 * type II, Rd <- (RAMPZ:Z)
-	 * type III, Rd <- (RAMPZ:Z), (RAMPZ:Z)++
+	 * type I	R0 <- (RAMPZ:Z)
+	 * type II	Rd <- (RAMPZ:Z)
+	 * type III	Rd <- (RAMPZ:Z), (RAMPZ:Z)++
 	 */
 	unsigned char rda, zh, zl, ez;
 	unsigned long z;
@@ -2736,4 +2741,48 @@ static void exec_elpm(struct MSIM_AVR *mcu, unsigned int inst)
 		mcu->dm[REG_ZL] = (unsigned char)(z&0xFF);
 	}
 	mcu->pc += 2;
+}
+
+static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst)
+{
+	/* SPM – Store Program Memory
+	 * type I	(RAMPZ:Z) ← 0xFFFF, Erase program memory page
+	 * type II	(RAMPZ:Z) ← R1:R0, Fill temporary buffer (word only!)
+	 * type III	(RAMPZ:Z) ← BUF, Write buffer to PM
+	 *
+	 * type IV	(RAMPZ:Z) ← 0xFFFF, (Z) ← (Z + 2), *see above*
+	 * type V	(RAMPZ:Z) ← R1:R0, (Z) ← (Z + 2), *see above*
+	 * type VI	(RAMPZ:Z) ← BUF, (Z) ← (Z + 2), *see above*
+	 */
+	unsigned char zl, zh, ez, c;
+	unsigned long z;
+
+	if (mcu->spmcsr == NULL) {
+		fprintf(stderr, "SPMCSR(SPMCR) is not available on this "
+				"device!\n");
+		exit(1);
+	}
+
+	ez = mcu->rampz != NULL ? *mcu->rampz : 0;
+	zh = mcu->dm[REG_ZH];
+	zl = mcu->dm[REG_ZL];
+	z = (unsigned long)(((ez<<16)&0xFF0000) | ((zh<<8)&0xFF00) | (zl&0xFF));
+	c = *mcu->spmcsr & 0x7;
+
+	if (c == 0x3) {			/* erase PM page */
+		memset(&mcu->pm[z], 0xFF, mcu->spm_pagesize);
+	} else if (c == 0x1) {		/* fill the buffer */
+		memcpy(&mcu->pmp[z], &mcu->dm[0], 2);
+	} else if (c == 0x5) {		/* write a page */
+		memcpy(&mcu->pm[z], mcu->pmp, mcu->spm_pagesize);
+	}
+	mcu->pc += 2;
+
+	if (inst == 0x95F8) {
+		z += 2;
+		if (mcu->rampz != NULL)
+			*mcu->rampz = (unsigned char)((z>>16)&0xFF);
+		mcu->dm[REG_ZH] = (unsigned char)((z>>8)&0xFF);
+		mcu->dm[REG_ZL] = (unsigned char)(z&0xFF);
+	}
 }

@@ -28,20 +28,23 @@
 
 #define CLI_OPTIONS		":hm:p:v"
 
-#define PROGRAM_MEMORY		262144 /* 256 KiB */
-#define DATA_MEMORY		65536 /* 64 KiB */
+#define PROGRAM_MEMORY		262144		/* 256 KiB */
+#define DATA_MEMORY		65536		/* 64 KiB */
+#define PM_PAGESZ		1024		/* 1 KiB, PM page size */
 
 static struct MSIM_AVRBootloader bootloader;
 static struct MSIM_AVR mcu;
-static uint8_t prog_mem[PROGRAM_MEMORY];
-static uint8_t data_mem[DATA_MEMORY];
+
+static unsigned char pm[PROGRAM_MEMORY];
+static unsigned char pmp[PM_PAGESZ];
+static unsigned char dm[DATA_MEMORY];
 
 int main(int argc, char *argv[])
 {
 	extern char *optarg;
 	extern int optopt;
 	int c;
-	char *mcu_model;
+	char *mm;
 	char *prog_path;
 	uint8_t errflag = 1, ver = 0;
 	FILE *fp;
@@ -49,7 +52,7 @@ int main(int argc, char *argv[])
 	while ((c = getopt(argc, argv, CLI_OPTIONS)) != -1) {
 		switch (c) {
 		case 'm':
-			mcu_model = optarg;
+			mm = optarg;
 			errflag = 0;
 			break;
 		case 'p':
@@ -94,16 +97,14 @@ int main(int argc, char *argv[])
 	}
 
 	fp = fopen(prog_path, "r");
-	mcu.boot_loader = &bootloader;
-	if (MSIM_InitAVR(&mcu, mcu_model, prog_mem, PROGRAM_MEMORY,
-					  data_mem, DATA_MEMORY, fp)) {
-		fprintf(stderr, "AVR %s wasn't initialized successfully!\n",
-				mcu_model);
+	mcu.bls = &bootloader;
+	mcu.pmp = pmp;
+	if (MSIM_InitAVR(&mcu, mm, pm, PROGRAM_MEMORY, dm, DATA_MEMORY, fp)) {
+		fprintf(stderr, "AVR %s cannot be initialized!\n", mm);
 		return -1;
 	}
 	fclose(fp);
 
-	/* MSIM_SimulateAVR(&mcu); */
 	MSIM_InterpretCommands(&mcu);
 
 	return 0;
