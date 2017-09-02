@@ -36,6 +36,26 @@
  * an instruction. */
 static uint8_t data_mem[DATA_MEMORY];
 
+typedef int (*init_func)(struct MSIM_AVR *mcu,
+			  unsigned char *pm, unsigned long pm_size,
+			  unsigned char *dm, unsigned long dm_size);
+
+/* Cell contains AVR MCU part and its init function. */
+struct init_cell {
+	char partno[20];
+	char name[20];
+	init_func f;
+};
+
+/* Init functions for supported AVR MCUs. */
+static struct init_cell init_funcs[] = {
+	{ "m8",		"ATmega8",	MSIM_M8AInit },
+	{ "m8a",	"ATmega8A",	MSIM_M8AInit },
+	{ "m328",	"ATmega328",	MSIM_M328Init },
+	{ "m328p",	"ATmega328P",	MSIM_M328PInit },
+	{ "m2560",	"ATmega2560",	MSIM_M2560Init }
+};
+
 static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst);
 static int is_inst32(unsigned int inst);
 static void before_inst(struct MSIM_AVR *mcu);
@@ -230,19 +250,18 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		 unsigned char *dm, unsigned long dm_size,
 		 FILE *fp)
 {
-	if (!strcmp("atmega8a", mcu_name)) {
-		if (MSIM_M8AInit(mcu, pm, pm_size, dm, dm_size))
-			return -1;
-	} else if (!strcmp("atmega328p", mcu_name)) {
-		if (MSIM_M328PInit(mcu, pm, pm_size, dm, dm_size))
-			return -1;
-	} else if (!strcmp("atmega328", mcu_name)) {
-		if (MSIM_M328Init(mcu, pm, pm_size, dm, dm_size))
-			return -1;
-	} else if (!strcmp("atmega2560", mcu_name)) {
-		if (MSIM_M2560Init(mcu, pm, pm_size, dm, dm_size))
-			return -1;
-	} else {
+	unsigned int i;
+	char mcu_found = 0;
+
+	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++)
+		if (!strcmp(init_funcs[i].partno, mcu_name)) {
+			if (init_funcs[i].f(mcu, pm, pm_size, dm, dm_size))
+				return -1;
+			else
+				mcu_found = 1;
+		}
+
+	if (!mcu_found) {
 		fprintf(stderr, "Microcontroller AVR %s is not supported!\n",
 				mcu_name);
 		return -1;
@@ -430,6 +449,15 @@ static void after_inst(struct MSIM_AVR *mcu)
 		       mcu->id, i, mcu->dm[i+mcu->sfr_off]);
 		#endif
 	}
+}
+
+void MSIM_PrintParts(void)
+{
+	unsigned int i;
+
+	printf("Valid parts are:\n");
+	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++)
+		printf("%-10s= %s\n", init_funcs[i].partno, init_funcs[i].name);
 }
 
 static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
@@ -2763,7 +2791,7 @@ static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst)
 		exit(1);
 	}
 
-	ez = mcu->rampz != NULL ? *mcu->rampz : 0;
+	ez = (unsigned char)(mcu->rampz != NULL ? *mcu->rampz : 0);
 	zh = mcu->dm[REG_ZH];
 	zl = mcu->dm[REG_ZL];
 	z = (unsigned long)(((ez<<16)&0xFF0000) | ((zh<<8)&0xFF00) | (zl&0xFF));

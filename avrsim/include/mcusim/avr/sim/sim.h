@@ -28,11 +28,6 @@ extern "C" {
 
 #include "mcusim/avr/sim/bootloader.h"
 
-#define MSIM_VERSION_MAJOR	1
-#define MSIM_VERSION_MINOR	0
-#define MSIM_VERSION_PATCH	0
-#define MSIM_VERSION_META	"a"
-
 #define SIM_NAME		"avrsim"
 
 typedef unsigned long MSIM_AVRFlashAddr_t;

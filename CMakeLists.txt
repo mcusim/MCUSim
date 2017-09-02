@@ -20,6 +20,10 @@ project(MCUSim C)
 
 include(CheckFunctionExists)
 
+# Version
+set(MSIM_VERSION "\"1.0.0-alpha1\"")
+ADD_DEFINITIONS(-DMSIM_VERSION=${MSIM_VERSION})
+
 # Set application name
 set(AVRSIM "avrsim")
 

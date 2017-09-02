@@ -84,7 +84,7 @@ int MSIM_InterpretCommands(struct MSIM_AVR *mcu)
 		for (i = 0; i < sizeof(lbuf); i++)
 			if (lbuf[i] == '\n') {
 				lbuf[i] = 0;
-				cmd_len = i > 0 ? i : 0;
+				cmd_len = (unsigned short)(i>0?i:0);
 				break;
 			}
 

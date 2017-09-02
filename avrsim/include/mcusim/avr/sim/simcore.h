@@ -69,6 +69,9 @@ unsigned char MSIM_ReadSREGFlag(struct MSIM_AVR *mcu,
 int MSIM_PrintInstructions(struct MSIM_AVR *mcu, unsigned long start_addr,
 			   unsigned long end_addr, unsigned long steps);
 
+/* Prints supported AVR parts. */
+void MSIM_PrintParts(void);
+
 #ifdef __cplusplus
 }
 #endif
