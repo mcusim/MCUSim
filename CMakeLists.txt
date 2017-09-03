@@ -91,7 +91,8 @@ endif()
 include_directories("avrsim/include/")
 
 add_executable(${AVRSIM} ${AVRSIM_SRC})
-
 target_link_libraries(${AVRSIM} ${TARGET_LIBS})
 
 file(COPY "samples/avr-progmem.hex" DESTINATION ${CMAKE_BINARY_DIR})
+
+install(TARGETS ${AVRSIM} DESTINATION bin)
