@@ -96,3 +96,4 @@ target_link_libraries(${AVRSIM} ${TARGET_LIBS})
 file(COPY "samples/avr-progmem.hex" DESTINATION ${CMAKE_BINARY_DIR})
 
 install(TARGETS ${AVRSIM} DESTINATION bin)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/avrsim/man/avrsim.1 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)

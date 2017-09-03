@@ -1,0 +1,117 @@
+.\"
+.\" AVRSim - Simulator for AVR microcontrollers.
+.\" This software is a part of MCUSim, simulator for microcontrollers.
+.\" Copyright (C) 2017 Dmitry Salychev <darkness.bsd@gmail.com>
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.Dd DATE September 3, 2017
+.Os
+.Dt AVRSIM 1
+.\" ---------------------------------------------------------------------------
+.Sh NAME
+.Nm avrsim
+.Nd simulator for Atmel AVR MCUs (part of MCUSim)
+.\" ---------------------------------------------------------------------------
+.Sh SYNOPSIS
+.Nm
+.Fl p Ar partno
+.Fl U Ar memtype:op:filename
+.\" ---------------------------------------------------------------------------
+.Sh DESCRIPTION
+.Nm Avrsim
+is an interpreting simulation program to run ROM files which are intended
+to be loaded directly into the integrated circuit (Atmel AVR MCUs).
+.\" ---------------------------------------------------------------------------
+.Ss Options
+In order to run simulation for different MCUs and load specific ROM file,
+a number of options need to be specified to
+.Nm avrsim .
+.Bl -tag -offset indent -width indent
+.It Fl p Ar partno
+This is one of two mandatory options for every invocation of
+.Nm avrsim .
+It specifies the type of the simulated MCU. For currently supported MCU
+types use ? as partno, this will print a list of partno ids and official
+part names on the terminal.
+.It Xo Fl U Ar memtype Ns
+.Ar \&: Ns Ar op Ns
+.Ar \&: Ns Ar filename Ns
+.Xc
+Perform a memory operation as indicated.  The
+.Ar memtype
+field specifies the memory type to operate on.
+The available memory types are device-dependent. Typically, a device's memory
+configuration at least contains the memory types
+.Ar flash
+and
+.Ar eeprom .
+All memory types currently known are:
+.Pp
+.Bl -tag -width "calibration" -compact
+.It flash
+The flash ROM of the device.
+.El
+.Pp
+The
+.Ar op
+field specifies what operation to perform:
+.Bl -tag -width noreset
+.It Ar w
+read data from the specified file and write to the device memory
+.El
+.Pp
+The
+.Ar filename
+field indicates the name of the Intel HEX file to read.
+.El
+.\" ---------------------------------------------------------------------------
+.Ss Commands
+.Nm Avrsim
+operates in a terminal mode by default and accepts these commands:
+.Bl -tag -offset indent -width indent
+.It Ar step , next , stepi , nexti , si , ni , s , n
+Execute next instruction.
+.It Ar step N
+Execute next
+.Ar N
+instructions.
+.It Ar until ADDR
+Execute instructions until the given address in form
+.Ar 0xABCD .
+Last executed instruction is placed at
+.Ar ADDR .
+.It Ar where
+Print next instruction.
+.It Ar run , r
+Start execution of the program.
+.It Ar set listsize N
+Print
+.Ar N
+instructions during the next call to the 'list' command.
+.It Ar show listsize
+Print current number of instructions to show during the 'list' command.
+.It Ar list , l
+Show next
+.Ar N
+instructions.
+.El
+.\" ---------------------------------------------------------------------------
+.Sh AUTHORS
+.Nm Avrsim
+was written by Dmitry Salychev <darkness.bsd@gmail.com>.
+.\" ---------------------------------------------------------------------------
+.Sh BUGS
+Please report bugs via
+.Dl "https://github.com/dsalychev/mcusim/issues" .
