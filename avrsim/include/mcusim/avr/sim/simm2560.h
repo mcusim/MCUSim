@@ -36,8 +36,8 @@
 #define PC_BITS		17		/* PC bit capacity */
 #define LBITS_DEFAULT	0xFF		/* Default lock bits */
 
-#define CLK_SOURCE	AVR_INT_CLK	/* Calibrated Internal RC Oscillator */
-#define CLK_FREQ	1000		/* Oscillator frequency, in kHz */
+#define CLK_SOURCE	AVR_INT_CAL_RC_CLK /* Calibrated Internal RC */
+#define CLK_FREQ	1000000		/* Oscillator frequency, in Hz */
 
 #define GP_REGS		32		/* GP registers, R0, R1, ..., R31 */
 #define IO_REGS		480		/* I/O registers, PORTD, SREG, etc. */

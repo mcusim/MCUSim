@@ -36,8 +36,8 @@
 #define PC_BITS		12		/* PC bit capacity */
 #define LBITS_DEFAULT	0x3F		/* Default lock bits */
 
-#define CLK_SOURCE	AVR_INT_CLK	/* Calibrated Internal RC Oscillator */
-#define CLK_FREQ	1000		/* Oscillator frequency, in kHz */
+#define CLK_SOURCE	AVR_INT_CAL_RC_CLK /* Calibrated Internal RC */
+#define CLK_FREQ	1000000		/* Oscillator frequency, in Hz */
 
 #define GP_REGS		32		/* GP registers, R0, R1, ..., R31 */
 #define IO_REGS		64		/* I/O registers, PORTD, SREG, etc. */
@@ -45,5 +45,13 @@
 #define BLS_START	0x1800		/* First address in BLS, in bytes */
 #define BLS_END		0x1FFF		/* Last address in BLS, in bytes */
 #define BLS_SIZE	2048		/* BLS size, in bytes */
+
+
+#define SET_FUSE_FUNC	MSIM_M8ASetFuse
+#define SET_LOCK_FUNC	MSIM_M8ASetLock
+
+
+int MSIM_M8ASetFuse(void *mcu, unsigned int fuse_n, unsigned char fuse_v);
+int MSIM_M8ASetLock(void *mcu, unsigned char lock_v);
 
 #endif /* MSIM_AVR_SIMM8A_H_ */

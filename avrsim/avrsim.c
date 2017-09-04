@@ -29,15 +29,15 @@
 
 #define CLI_OPTIONS		"?p:U:"
 
-#define PROGRAM_MEMORY		262144		/* 256 KiB */
-#define DATA_MEMORY		65536		/* 64 KiB */
+#define PMSZ			262144		/* 256 KiB */
+#define DMSZ			65536		/* 64 KiB */
 #define PM_PAGESZ		1024		/* 1 KiB, PM page size */
 
-static struct MSIM_AVRBootloader bootloader;
+static struct MSIM_AVRBootloader bls;
 static struct MSIM_AVR mcu;
-static unsigned char pm[PROGRAM_MEMORY];
+static unsigned char pm[PMSZ];
 static unsigned char pmp[PM_PAGESZ];
-static unsigned char dm[DATA_MEMORY];
+static unsigned char dm[DMSZ];
 
 static void print_usage(void);
 
@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 		print_usage();
 		return 0;
 	}
+
 	for (c = 0; mopt[c] != 0; c++)
 		if (mopt[c] == ':')
 			mopt[c] = ' ';
@@ -82,10 +83,9 @@ int main(int argc, char *argv[])
 	}
 
 	fp = fopen(&mfn[0], "r");
-	mcu.bls = &bootloader;
+	mcu.bls = &bls;
 	mcu.pmp = pmp;
-	if (MSIM_InitAVR(&mcu, partno,
-			 pm, PROGRAM_MEMORY, dm, DATA_MEMORY, fp)) {
+	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, fp)) {
 		fprintf(stderr, "AVR %s cannot be initialized!\n", partno);
 		return -1;
 	}

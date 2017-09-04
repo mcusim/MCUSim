@@ -30,24 +30,37 @@ extern "C" {
 
 #define SIM_NAME		"avrsim"
 
+#define FUSE_LOW		0
+#define FUSE_HIGH		1
+#define FUSE_EXT		2
+
 typedef unsigned long MSIM_AVRFlashAddr_t;
 
+/* Device-specific functions to set fuse and lock bytes. */
+typedef int (*MSIM_SetFuse_f)(void *mcu,
+			      unsigned int fuse_n, unsigned char fuse_v);
+typedef int (*MSIM_SetLock_f)(void *mcu, unsigned char lock_v);
+
 enum MSIM_AVRState {
-	AVR_RUNNING = INT16_MIN,
+	AVR_RUNNING,
 	AVR_STOPPED,
 	AVR_SLEEPING
 };
 
 enum MSIM_AVRClkSource {
-	AVR_INT_CLK = INT16_MIN,
+	AVR_INT_CLK,
 	AVR_EXT_CLK,
-	AVR_LOWP_CRYSTAL_CLK,		/* Low Power Crystal Oscillator */
-	AVR_FULLSWING_CRYSTAL_CLK,	/* Full Swing Crystal Oscillator */
-	AVR_LOWFREQ_CRYSTAL_CLK		/* Low Frequency Crystal Oscillator */
+	AVR_LOWP_CRYSTAL_CLK,		/* Low power crystal */
+	AVR_FULLSWING_CRYSTAL_CLK,	/* Full swing crystal */
+	AVR_LOWFREQ_CRYSTAL_CLK,	/* Low frequency crystal */
+	AVR_EXT_LOWF_CRYSTAL_CLK,	/* External low-freq crystal */
+	AVR_INT_CAL_RC_CLK,		/* Internal calibrated RC */
+	AVR_EXT_RC_CLK,			/* External RC */
+	AVR_EXT_CRYSTAL			/* External crystal/ceramic resonator */
 };
 
 enum MSIM_AVRSREGFlag {
-	AVR_SREG_CARRY = INT16_MIN,
+	AVR_SREG_CARRY,
 	AVR_SREG_ZERO,
 	AVR_SREG_NEGATIVE,
 	AVR_SREG_TWOSCOM_OF,
@@ -80,13 +93,13 @@ struct MSIM_AVR {
 					   used for Self Programming Mode (SPM)
 					   instruction. */
 	unsigned char *spmcsr;		/* Store Program Memory Control
-					   and Status Register */
+					   and Status Register (SPMCSR). */
 
 	struct MSIM_AVRBootloader *bls;
 	enum MSIM_AVRState state;
 	enum MSIM_AVRClkSource clk_source;
 
-	unsigned long freq;		/* Current MCU frequency, kHz*/
+	unsigned long freq;		/* Current MCU frequency, Hz*/
 	unsigned char pc_bits;		/* 16-bit PC, 22-bit PC, etc. */
 	MSIM_AVRFlashAddr_t pc;		/* Current program counter. */
 	MSIM_AVRFlashAddr_t reset_pc;	/* Reset program counter. */
@@ -117,6 +130,9 @@ struct MSIM_AVR {
 					   registers. */
 	unsigned int regs;		/* Number of GP registers. */
 	unsigned int io_regs;		/* Number of all I/O registers. */
+
+	MSIM_SetFuse_f set_fusef;	/* Function to set AVR fuse byte. */
+	MSIM_SetLock_f set_lockf;	/* Function to set AVR lock byte. */
 };
 
 #ifdef __cplusplus

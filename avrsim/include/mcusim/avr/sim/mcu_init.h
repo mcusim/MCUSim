@@ -112,6 +112,17 @@ mcu->fuse[2] = EFUSE_DEFAULT;
 mcu->fuse[1] = HFUSE_DEFAULT;
 #endif
 mcu->fuse[0] = LFUSE_DEFAULT;
+
+#ifdef SET_FUSE_FUNC
+mcu->set_fusef = SET_FUSE_FUNC;
+#else
+mcu->set_fusef = NULL;
+#endif
+#ifdef SET_LOCK_FUNC
+mcu->set_lockf = SET_LOCK_FUNC;
+#else
+mcu->set_lockf = NULL;
+#endif
 /* END Fuses */
 
 #ifdef BLS_START
@@ -134,7 +145,6 @@ mcu->spmcsr = NULL;
 
 mcu->clk_source = CLK_SOURCE;
 mcu->freq = CLK_FREQ;
-
 mcu->reset_pc = RESET_PC;
 mcu->pc = mcu->reset_pc;
 mcu->pc_bits = PC_BITS;
