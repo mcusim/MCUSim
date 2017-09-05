@@ -7,7 +7,7 @@ MCUSim is under active development and not ready to be used by the end users.
 
 Synopsis
 --------
-	avrsim -m model -p program
+	avrsim -p partno -U memtype:op:filename
 
 Supported MCUs
 --------------
@@ -17,43 +17,34 @@ Supported MCUs
 		- ATmega328	(mcusim/avr/sim/simm328.h)
 		- ATmega2560	(mcusim/avr/sim/simm2560.h)
 
-Options
--------
-	Simulator Configuration
-		-m model
-			Select an MCU model to simulate. See Models.txt to
-			obtain exact values.
-		-p program
-			Load specified program from an Intel HEX file.
-			See samples/avr-progmem.hex for details.
+Build
+-----
+	- ANSI C compiler
 
-Commands
---------
-	step, next, stepi, nexti, si, ni, s, n
-		Execute next instruction.
+	- Make sure you have installed CMake build system version 3.2
+	  or above. It is used to prepare makefiles (or other build files)
+	  for many platforms and environments. Installed version can be
+	  checked by a command running in your terminal:
 
-	step N
-		Execute next N instructions.
+		cmake --version
 
-	until ADDR
-		Execute instructions until the given address in form 0xABCD.
-		Last executed instruction is placed at ADDR.
+	- If you have all of these programs above installed:
 
-	where
-		Show next instruction.
+		mkdir out && cd out
+		cmake ..
+		make
+		make install
 
-	run, r
-		Start execution of the program.
+	  The last command may fail due to the lack of write permission to the
+	  /usr directory. Try to run it as a superuser:
 
-	set listsize N
-		Show N instructions during the next call to the 'list' command.
+		su
+		make install
+		exit
 
-	show listsize
-		Show current number of instruction to show during the
-		'list' command.
+	- Note that you will be able to display manual pages using:
 
-	list, l
-		Show next N instructions.
+		man avrsim
 
 Roadmap
 -------
@@ -71,23 +62,6 @@ Roadmap
 		- Simulation of the AVR-based schematic using SPICE, maybe
 		- Support other popular MCUs (PIC by Microchip, 16-bit and
 		  32-bit MCUs by Texas Instruments)
-
-Build
------
-	- Make sure you have installed CMake build system version 3.2
-	  or above. It is used to prepare makefiles (or other build files)
-	  for many platforms and environments. Installed version can be
-	  checked by a command running in your terminal:
-
-		cmake --version
-
-	- ANSI C compiler
-
-	- If you have all of these programs above installed:
-
-		mkdir build
-		cd build
-		cmake ..
 
 Author
 ------
