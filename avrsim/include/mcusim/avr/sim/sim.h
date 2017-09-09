@@ -34,6 +34,15 @@ extern "C" {
 #define FUSE_HIGH		1
 #define FUSE_EXT		2
 
+#ifdef LUA51_FOUND
+#	include "lua.h"
+#	include "lualib.h"
+#	include "lauxlib.h"
+
+/* Global Lua state */
+extern lua_State *MSIM_LuaState;
+#endif
+
 typedef unsigned long MSIM_AVRFlashAddr_t;
 
 /* Device-specific functions to set fuse and lock bytes. */

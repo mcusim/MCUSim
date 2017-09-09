@@ -27,6 +27,15 @@
 #include "mcusim/cli.h"
 #include "mcusim/getopt.h"
 
+#ifdef LUA51_FOUND
+#	include "lua.h"
+#	include "lualib.h"
+#	include "lauxlib.h"
+
+/* Global Lua state */
+lua_State *MSIM_LuaState;
+#endif
+
 #define CLI_OPTIONS		"?p:U:"
 
 #define PMSZ			262144		/* 256 KiB */
@@ -82,6 +91,20 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
+#ifdef LUA51_FOUND
+	/* Initialize Lua */
+	MSIM_LuaState = luaL_newstate();
+
+	/* Load various Lua libraries */
+	luaL_openlibs(MSIM_LuaState);
+
+	/* Load module */
+	if (luaL_loadfile(MSIM_LuaState, "module.lua") ||
+	    lua_pcall(MSIM_LuaState, 0, 0, 0))
+		fprintf(stderr, "Cannot run configuration file: %s\n",
+				lua_tostring(MSIM_LuaState, -1));
+#endif
+
 	fp = fopen(&mfn[0], "r");
 	mcu.bls = &bls;
 	mcu.pmp = pmp;
@@ -93,6 +116,10 @@ int main(int argc, char *argv[])
 
 	MSIM_InterpretCommands(&mcu);
 
+#ifdef LUA51_FOUND
+	/* Cleanup Lua */
+	lua_close(MSIM_LuaState);
+#endif
 	return 0;
 }
 

@@ -30,15 +30,9 @@
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
 
-#define DATA_MEMORY		65536
-
-/* To temporarily store data memory and test changes after execution of
- * an instruction. */
-static uint8_t data_mem[DATA_MEMORY];
-
 typedef int (*init_func)(struct MSIM_AVR *mcu,
-			  unsigned char *pm, unsigned long pm_size,
-			  unsigned char *dm, unsigned long dm_size);
+			 unsigned char *pm, unsigned long pm_size,
+			 unsigned char *dm, unsigned long dm_size);
 
 /* Cell contains AVR MCU part and its init function. */
 struct init_cell {
@@ -58,8 +52,6 @@ static struct init_cell init_funcs[] = {
 
 static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst);
 static int is_inst32(unsigned int inst);
-static void before_inst(struct MSIM_AVR *mcu);
-static void after_inst(struct MSIM_AVR *mcu);
 static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 
 /* AVR opcodes executors. */
@@ -199,17 +191,23 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		msb = (unsigned short) mcu->pm[mcu->pc+1];
 		inst = (unsigned short) (lsb | (msb << 8));
 
+#ifdef LUA51_FOUND
+		lua_getglobal(MSIM_LuaState, "module_tick");
+		lua_pushlightuserdata(MSIM_LuaState, mcu);
+		if (lua_pcall(MSIM_LuaState, 1, 0, 0) != 0)
+			fprintf(stderr, "Error running function "
+					"module_tick(): %s\n",
+					lua_tostring(MSIM_LuaState, -1));
+#endif
 		printf("%lu:\t%lx: %x %x\n", mcu->id, mcu->pc, lsb, msb);
 		if (addr >= mcu->flashstart && addr <= mcu->flashend &&
 		    addr == mcu->pc)
 			stop = 1;
 
-		before_inst(mcu);
 		if (decode_inst(mcu, inst)) {
 			fprintf(stderr, "Unknown instruction: 0x%X\n", inst);
 			return 1;
 		}
-		after_inst(mcu);
 
 		if (stop)
 			break;
@@ -428,27 +426,6 @@ uint8_t MSIM_StackPop(struct MSIM_AVR *mcu)
 	*mcu->sph = (uint8_t) (sp >> 8);
 
 	return v;
-}
-
-static void before_inst(struct MSIM_AVR *mcu)
-{
-	memcpy(data_mem, mcu->dm, mcu->dm_size);
-}
-
-static void after_inst(struct MSIM_AVR *mcu)
-{
-	uint16_t i;
-
-	for (i = 0; i < mcu->io_regs; i++) {
-		/* Has I/O register value been changed? */
-		if (mcu->dm[i+mcu->sfr_off] == data_mem[i+mcu->sfr_off])
-			continue;
-
-		#ifdef MSIM_TEXT_MODE
-		printf("%" PRIu32 ":\tIOREG=0x%x, VALUE=0x%x\n",
-		       mcu->id, i, mcu->dm[i+mcu->sfr_off]);
-		#endif
-	}
 }
 
 void MSIM_PrintParts(void)

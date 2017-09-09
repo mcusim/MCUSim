@@ -21,15 +21,13 @@ project(MCUSim C)
 include(CheckFunctionExists)
 
 # Version
-set(MSIM_VERSION "\"1.0.0-alpha1\"")
-ADD_DEFINITIONS(-DMSIM_VERSION=${MSIM_VERSION})
+set(MSIM_VERSION "\"0.1.0a1\"")
+add_definitions(-DMSIM_VERSION=${MSIM_VERSION})
 
 # Set application name
 set(AVRSIM "avrsim")
 
-#
 # Set flags here
-#
 if (CMAKE_BUILD_TYPE MATCHES Release)
 	message(STATUS "(PROJECT) Release version of MCUSim will be built.")
 	if (CMAKE_COMPILER_IS_GNUCC OR
@@ -55,9 +53,7 @@ else()
 	endif()
 endif()
 
-#
 # Set sources here
-#
 set(AVRSIM_SRC		avrsim/simcore.c
 			avrsim/simm8a.c
 			avrsim/simm328p.c
@@ -68,14 +64,17 @@ set(AVRSIM_SRC		avrsim/simcore.c
 			avrsim/getopt_long.c
 			avrsim/avrsim.c)
 
-#
-# Set target libraries here
-#
-set(TARGET_LIBS "")
+# Look for libraries, packages, etc.
+find_package(Lua51)
 
-#
+# Set target libraries here
+set(TARGET_LIBS "")
+if (LUA51_FOUND)
+	add_definitions(-DLUA51_FOUND=1)
+	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
+endif()
+
 # Check functions exist here
-#
 if (NOT MSVC)
 	CHECK_FUNCTION_EXISTS(fmax RESULT)
 	if(NOT RESULT)
@@ -85,15 +84,18 @@ if (NOT MSVC)
 	endif()
 endif()
 
-#
 # Define includes here
-#
 include_directories("avrsim/include/")
+if (LUA51_FOUND)
+	include_directories(${LUA_INCLUDE_DIR})
+endif()
 
 add_executable(${AVRSIM} ${AVRSIM_SRC})
 target_link_libraries(${AVRSIM} ${TARGET_LIBS})
 
-file(COPY "samples/avr-progmem.hex" DESTINATION ${CMAKE_BINARY_DIR})
+# Copy required files
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/rom/avr-progmem.hex DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/peripheral/avr/examples/module.lua DESTINATION ${CMAKE_BINARY_DIR})
 
 install(TARGETS ${AVRSIM} DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/avrsim/man/avrsim.1 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
