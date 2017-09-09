@@ -96,6 +96,10 @@
 #ifndef _AVR_IO_H_
 #define _AVR_IO_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "mcusim/avr/sfr_defs.h"
 
 #if defined (__AVR_AT94K__)
@@ -639,5 +643,9 @@
 
 /* Include lock.h after individual IO header files. */
 #include "mcusim/avr/lock.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _AVR_IO_H_ */

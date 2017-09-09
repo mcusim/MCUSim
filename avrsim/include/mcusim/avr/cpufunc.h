@@ -35,6 +35,10 @@
 #ifndef _AVR_CPUFUNC_H_
 #define _AVR_CPUFUNC_H_ 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** \file */
 /** \defgroup avr_cpufunc <avr/cpufunc.h>: Special AVR CPU functions
     \code #include <avr/cpufunc.h> \endcode
@@ -79,5 +83,9 @@
 #else  /* real code */
 #define _MemoryBarrier() __asm__ __volatile__("":::"memory")
 #endif  /* __DOXYGEN__ */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _AVR_CPUFUNC_H_ */

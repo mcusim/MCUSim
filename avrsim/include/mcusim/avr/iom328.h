@@ -31,4 +31,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
  ****************************************************************************/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "iom328p.h"
+
+#ifdef __cplusplus
+}
+#endif

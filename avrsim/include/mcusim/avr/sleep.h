@@ -35,6 +35,10 @@
 #ifndef _AVR_SLEEP_H_
 #define _AVR_SLEEP_H_ 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <avr/io.h>
 #include <stdint.h>
 
@@ -55,9 +59,9 @@
     set the desired sleep mode using \c set_sleep_mode() (it usually
     defaults to idle mode where the CPU is put on sleep but all
     peripheral clocks are still running), and then call
-    \c sleep_mode(). This macro automatically sets the sleep enable bit, goes 
+    \c sleep_mode(). This macro automatically sets the sleep enable bit, goes
     to sleep, and clears the sleep enable bit.
-    
+
     Example:
     \code
     #include <avr/sleep.h>
@@ -66,8 +70,8 @@
       set_sleep_mode(<mode>);
       sleep_mode();
     \endcode
-    
-    Note that unless your purpose is to completely lock the CPU (until a 
+
+    Note that unless your purpose is to completely lock the CPU (until a
     hardware reset), interrupts need to be enabled before going to sleep.
 
     As the \c sleep_mode() macro might cause race conditions in some
@@ -103,7 +107,7 @@
     after the \c SEI is guaranteed to be executed before an interrupt
     could trigger, it is sure the device will really be put to sleep.
 
-    Some devices have the ability to disable the Brown Out Detector (BOD) before 
+    Some devices have the ability to disable the Brown Out Detector (BOD) before
     going to sleep. This will also reduce power while sleeping. If the
     specific AVR device has this ability then an additional macro is defined:
     \c sleep_bod_disable(). This macro generates inlined assembly code
@@ -354,5 +358,9 @@ do { \
 
 
 /*@}*/
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _AVR_SLEEP_H_ */

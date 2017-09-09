@@ -32,6 +32,10 @@
 #ifndef _AVR_POWER_H_
 #define _AVR_POWER_H_   1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <avr/io.h>
 #include <stdint.h>
 
@@ -40,8 +44,8 @@
 
 \code #include <avr/power.h>\endcode
 
-Many AVRs contain a Power Reduction Register (PRR) or Registers (PRRx) that 
-allow you to reduce power consumption by disabling or enabling various on-board 
+Many AVRs contain a Power Reduction Register (PRR) or Registers (PRRx) that
+allow you to reduce power consumption by disabling or enabling various on-board
 peripherals as needed. Some devices have the XTAL Divide Control Register
 (XDIV) which offer similar functionality as System Clock Prescale
 Register (CLKPR).
@@ -54,8 +58,8 @@ the ATmega8). On those devices without a Power Reduction Register, the
 power reduction macros are not available..
 
 \note Not all AVR devices contain the same peripherals (for example, the LCD
-interface), or they will be named differently (for example, USART and 
-USART0). Please consult your device's datasheet, or the header file, to 
+interface), or they will be named differently (for example, USART and
+USART0). Please consult your device's datasheet, or the header file, to
 find out which macros are applicable to your device.
 
 \note For device using the XTAL Divide Control Register (XDIV), when prescaler
@@ -659,8 +663,8 @@ the clock below 131.072 kHz.
 #endif
 
 #if defined(__AVR_HAVE_PRR0_PRLFR)
-#define power_lfreceiver_enable()       (PRR0 &= (uint8_t)~(1 << PRLFR))            
-#define power_lfreceiver_disable()      (PRR0 |= (uint8_t)(1 << PRLFR))            
+#define power_lfreceiver_enable()       (PRR0 &= (uint8_t)~(1 << PRLFR))
+#define power_lfreceiver_disable()      (PRR0 |= (uint8_t)(1 << PRLFR))
 #endif
 
 #if defined(__AVR_HAVE_PRR0_PRLIN)
@@ -779,8 +783,8 @@ the clock below 131.072 kHz.
 #endif
 
 #if defined(__AVR_HAVE_PRR1_PRLFR)
-#define power_lfreceiver_enable()       (PRR1 &= (uint8_t)~(1 << PRLFR))            
-#define power_lfreceiver_disable()      (PRR1 |= (uint8_t)(1 << PRLFR))            
+#define power_lfreceiver_enable()       (PRR1 &= (uint8_t)~(1 << PRLFR))
+#define power_lfreceiver_disable()      (PRR1 |= (uint8_t)(1 << PRLFR))
 #endif
 
 #if defined(__AVR_HAVE_PRR1_PRSCI)
@@ -1389,7 +1393,7 @@ macros are not available.
 
 
 /** \addtogroup avr_power
-\code 
+\code
 typedef enum
 {
     clock_div_1 = 0,
@@ -1709,7 +1713,7 @@ void timer_clock_prescale_set(timer_clock_div_t __x)
 || defined(__AVR_ATA8210__)
          [clpr] "I" (_SFR_IO_ADDR(CLPR)),
 #endif
-          [enable] "r" (_BV(CLPCE)),	  
+          [enable] "r" (_BV(CLPCE)),
           [not_CLTPS] "M" (0xFF & (~ ((1 << CLTPS2) | (1 << CLTPS1) | (1 << CLTPS0)))),
           [set_value] "r" ((__x & 7) << 3)
         : "r0");
@@ -1806,7 +1810,7 @@ static __inline__ void clock_prescale_set(clock_div_t) __attribute__((__always_i
 
 void clock_prescale_set(clock_div_t __x)
 {
-    
+
     __asm__ __volatile__ (
         "in __tmp_reg__,__SREG__" "\n\t"
         "cli" "\n\t"
@@ -1831,18 +1835,18 @@ void clock_prescale_set(clock_div_t __x)
 || defined(__AVR_ATtiny20__) \
 || defined(__AVR_ATtiny40__) \
 
-typedef enum 
-{ 
-    clock_div_1 = 0, 
-    clock_div_2 = 1, 
-    clock_div_4 = 2, 
-    clock_div_8 = 3, 
-    clock_div_16 = 4, 
-    clock_div_32 = 5, 
-    clock_div_64 = 6, 
-    clock_div_128 = 7, 
-    clock_div_256 = 8 
-} clock_div_t; 
+typedef enum
+{
+    clock_div_1 = 0,
+    clock_div_2 = 1,
+    clock_div_4 = 2,
+    clock_div_8 = 3,
+    clock_div_16 = 4,
+    clock_div_32 = 5,
+    clock_div_64 = 6,
+    clock_div_128 = 7,
+    clock_div_256 = 8
+} clock_div_t;
 
 static __inline__ void clock_prescale_set(clock_div_t) __attribute__((__always_inline__));
 
@@ -1951,7 +1955,11 @@ clock_div_t clock_prescale_get(void)
         return (clock_div_t)(129 - (XDIV & 0x7F));
     }
 }
- 
+
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* _AVR_POWER_H_ */

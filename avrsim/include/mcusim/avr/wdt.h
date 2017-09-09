@@ -38,6 +38,10 @@
 #ifndef _AVR_WDT_H_
 #define _AVR_WDT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <avr/io.h>
 #include <stdint.h>
 
@@ -588,5 +592,8 @@ void wdt_disable (void)
 
 #endif  /* defined(__DOXYGEN__) || defined(WDP3) */
    
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _AVR_WDT_H_ */

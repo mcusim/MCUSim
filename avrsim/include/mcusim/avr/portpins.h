@@ -33,6 +33,10 @@
 #ifndef _AVR_PORTPINS_H_
 #define _AVR_PORTPINS_H_ 1
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* This file should only be included from <avr/io.h>, never directly. */
 
 #ifndef _AVR_IO_H_
@@ -544,6 +548,10 @@
 #  define PORTL7 PL7
 #elif defined(PORTL7) && !defined(PL7)
 #  define PL7 PORTL7
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif /* _AVR_PORTPINS_H_ */

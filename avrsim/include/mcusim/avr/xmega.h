@@ -39,6 +39,10 @@
 #ifndef _AVR_XMEGA_H
 #define _AVR_XMEGA_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __DOXYGEN__
 /**
  \def _PROTECTED_WRITE
@@ -67,5 +71,9 @@
 			 [ioreg] "M" (_SFR_MEM_ADDR(reg)),	\
 			 [val] "r" (value))
 #endif /* DOXYGEN */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* _AVR_XMEGA_H */
