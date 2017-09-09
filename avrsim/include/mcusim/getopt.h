@@ -58,13 +58,13 @@ struct option {
 	int val;
 };
 
-int	 getopt_long(int, char * const *, const char *,
+int	 getopt_long(int, char **, const char *,
 	    const struct option *, int *);
-int	 getopt_long_only(int, char * const *, const char *,
+int	 getopt_long_only(int, char **, const char *,
 	    const struct option *, int *);
 #ifndef _GETOPT_DEFINED_
 #define _GETOPT_DEFINED_
-int	 getopt(int, char * const *, const char *);
+int	 getopt(int, char **, const char *);
 int	 getsubopt(char **, char * const *, char **);
 
 extern   char *optarg;                  /* getopt(3) external variables */

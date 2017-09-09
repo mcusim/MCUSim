@@ -75,12 +75,12 @@ char    *optarg;		/* argument associated with option */
 
 #define	EMSG		""
 
-static int getopt_internal(int, char * const *, const char *,
+static int getopt_internal(int, char **, const char *,
 			   const struct option *, int *, int);
 static int parse_long_options(char * const *, const char *,
 			      const struct option *, int *, int);
 static int gcd(int, int);
-static void permute_args(int, int, int, char * const *);
+static void permute_args(int, int, int, char **);
 
 static char *place = EMSG; /* option letter processing */
 
@@ -120,8 +120,7 @@ gcd(int a, int b)
  * in each block).
  */
 static void
-permute_args(int panonopt_start, int panonopt_end, int opt_end,
-	char * const *nargv)
+permute_args(int panonopt_start, int panonopt_end, int opt_end, char **nargv)
 {
 	int cstart, cyclelen, i, j, ncycle, nnonopts, nopts, pos;
 	char *swap;
@@ -143,9 +142,7 @@ permute_args(int panonopt_start, int panonopt_end, int opt_end,
 			else
 				pos += nopts;
 			swap = nargv[pos];
-			/* LINTED const cast */
-			((char **) nargv)[pos] = nargv[cstart];
-			/* LINTED const cast */
+			((char **)nargv)[pos] = nargv[cstart];
 			((char **)nargv)[cstart] = swap;
 		}
 	}
@@ -275,7 +272,7 @@ parse_long_options(char * const *nargv, const char *options,
  *	Parse argc/argv argument vector.  Called by user level routines.
  */
 static int
-getopt_internal(int nargc, char * const *nargv, const char *options,
+getopt_internal(int nargc, char **nargv, const char *options,
 	const struct option *long_options, int *idx, int flags)
 {
 	char *oli;				/* option letter list index */
@@ -471,7 +468,7 @@ start:
  * [eventually this will replace the BSD getopt]
  */
 int
-getopt(int nargc, char * const *nargv, const char *options)
+getopt(int nargc, char **nargv, const char *options)
 {
 
 	/*
@@ -490,7 +487,7 @@ getopt(int nargc, char * const *nargv, const char *options)
  *	Parse argc/argv argument vector.
  */
 int
-getopt_long(int nargc, char * const *nargv, const char *options,
+getopt_long(int nargc, char **nargv, const char *options,
     const struct option *long_options, int *idx)
 {
 
@@ -503,7 +500,7 @@ getopt_long(int nargc, char * const *nargv, const char *options,
  *	Parse argc/argv argument vector.
  */
 int
-getopt_long_only(int nargc, char * const *nargv, const char *options,
+getopt_long_only(int nargc, char **nargv, const char *options,
     const struct option *long_options, int *idx)
 {
 
