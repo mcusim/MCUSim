@@ -18,5 +18,12 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 function module_tick(mcu)
-	print("Peripheral module in Lua, mcu: " .. type(mcu))
+	print("Peripheral I/O module in Lua");
+
+	-- Read first N general purpose registers
+	for n=0,4 do
+		print("R" .. n .. ": " .. avr_dmemget(mcu, n));
+	end
+	-- Write M general purpose registers
+	avr_dmemset(mcu, 2, 75, 2);
 end

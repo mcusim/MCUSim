@@ -22,10 +22,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "mcusim/hex/ihex.h"
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/bootloader.h"
 #include "mcusim/avr/sim/simcore.h"
-#include "mcusim/hex/ihex.h"
+#include "mcusim/avr/sim/peripheral_lua.h"
 
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
@@ -191,14 +192,9 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		msb = (unsigned short) mcu->pm[mcu->pc+1];
 		inst = (unsigned short) (lsb | (msb << 8));
 
-#ifdef LUA51_FOUND
-		lua_getglobal(MSIM_LuaState, "module_tick");
-		lua_pushlightuserdata(MSIM_LuaState, mcu);
-		if (lua_pcall(MSIM_LuaState, 1, 0, 0) != 0)
-			fprintf(stderr, "Error running function "
-					"module_tick(): %s\n",
-					lua_tostring(MSIM_LuaState, -1));
-#endif
+		/* Tick each Lua peripheral. */
+		MSIM_TickLuaPeripherals(mcu);
+
 		printf("%lu:\t%lx: %x %x\n", mcu->id, mcu->pc, lsb, msb);
 		if (addr >= mcu->flashstart && addr <= mcu->flashend &&
 		    addr == mcu->pc)

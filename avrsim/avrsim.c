@@ -21,22 +21,14 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "mcusim/cli.h"
+#include "mcusim/getopt.h"
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simcore.h"
 #include "mcusim/avr/sim/bootloader.h"
-#include "mcusim/cli.h"
-#include "mcusim/getopt.h"
+#include "mcusim/avr/sim/peripheral_lua.h"
 
-#ifdef LUA51_FOUND
-#	include "lua.h"
-#	include "lualib.h"
-#	include "lauxlib.h"
-
-/* Global Lua state */
-lua_State *MSIM_LuaState;
-#endif
-
-#define CLI_OPTIONS		"?p:U:"
+#define CLI_OPTIONS		"?p:U:r:"
 
 #define PMSZ			262144		/* 256 KiB */
 #define DMSZ			65536		/* 64 KiB */
@@ -55,10 +47,10 @@ int main(int argc, char *argv[])
 	extern char *optarg;
 	FILE *fp;
 	int c, r;
-	char *partno, *mopt;
+	char *partno, *mopt, *luap;
 	char mtype[21], mop, mfn[4096];
 
-	partno = mopt = NULL;
+	partno = mopt = luap = NULL;
 	while ((c = getopt(argc, argv, CLI_OPTIONS)) != -1) {
 		switch (c) {
 		case 'p':		/* Required. AVR device. */
@@ -66,6 +58,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'U':		/* Required. Memory operation. */
 			mopt = optarg;
+			break;
+		case 'r':		/* Optional. Lua peripherals file. */
+			luap = optarg;
 			break;
 		case '?':		/* Print usage */
 			print_usage();
@@ -91,19 +86,9 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-#ifdef LUA51_FOUND
-	/* Initialize Lua */
-	MSIM_LuaState = luaL_newstate();
-
-	/* Load various Lua libraries */
-	luaL_openlibs(MSIM_LuaState);
-
-	/* Load module */
-	if (luaL_loadfile(MSIM_LuaState, "module.lua") ||
-	    lua_pcall(MSIM_LuaState, 0, 0, 0))
-		fprintf(stderr, "Cannot run configuration file: %s\n",
-				lua_tostring(MSIM_LuaState, -1));
-#endif
+	/* Load Lua peripherals if it is required */
+	if (luap != NULL && MSIM_LoadLuaPeripherals(luap))
+		return -1;
 
 	fp = fopen(&mfn[0], "r");
 	mcu.bls = &bls;
@@ -116,10 +101,7 @@ int main(int argc, char *argv[])
 
 	MSIM_InterpretCommands(&mcu);
 
-#ifdef LUA51_FOUND
-	/* Cleanup Lua */
-	lua_close(MSIM_LuaState);
-#endif
+	MSIM_CleanLuaPeripherals();
 	return 0;
 }
 
