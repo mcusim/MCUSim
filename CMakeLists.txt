@@ -96,7 +96,7 @@ target_link_libraries(${AVRSIM} ${TARGET_LIBS})
 
 # Copy required files
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/rom/avr-progmem.hex DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/peripheral/avr/examples/module.lua DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/peripheral/avr/examples/io.lua DESTINATION ${CMAKE_BINARY_DIR})
 
 install(TARGETS ${AVRSIM} DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/avrsim/man/avrsim.1 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
