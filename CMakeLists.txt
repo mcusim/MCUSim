@@ -63,6 +63,7 @@ set(AVRSIM_SRC		avrsim/simcore.c
 			avrsim/cli.c
 			avrsim/getopt_long.c
 			avrsim/peripheral_lua.c
+			avrsim/decoder.c
 			avrsim/avrsim.c)
 
 # Look for libraries, packages, etc.
