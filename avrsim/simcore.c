@@ -159,6 +159,7 @@ static void exec_muls(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_mulsu(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_elpm(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst);
+static void exec_sez(struct MSIM_AVR *mcu);
 
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_st_y(struct MSIM_AVR *mcu, unsigned int inst);
@@ -594,6 +595,9 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			break;
 		case 0x9409:
 			exec_ijmp(mcu);
+			break;
+		case 0x9418:
+			exec_sez(mcu);
 			break;
 		case 0x9419:
 			exec_eijmp(mcu);
@@ -2167,6 +2171,13 @@ static void exec_clz(struct MSIM_AVR *mcu)
 {
 	/* CLZ – Clear Zero Flag */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
+	mcu->pc += 2;
+}
+
+static void exec_sez(struct MSIM_AVR *mcu)
+{
+	/* SEZ – Set Zero Flag */
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 1);
 	mcu->pc += 2;
 }
 
