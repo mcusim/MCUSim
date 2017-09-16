@@ -4,6 +4,12 @@ compiler:
         - gcc
         - clang
 
+env:
+  global:
+   # The next declaration is the encrypted COVERITY_SCAN_TOKEN, created
+   #   via the "travis encrypt" command using the project repo's public key
+   - secure: "K1UFyoxw90ljtkl5OIk4N1Xs0e4+pw6sAZZH8E0PPsfN/rAiTsdM2oNSMKOD5t9K6lc41dMAsThpLwCFqc+LH+gsPbrBX7+xn9pLSlYORScC7KVApJYKIV30Z1YbVmBgCLxviDv9PddMAjiKOBzyRSlpVZf3JwVWJZzo0xoDAGp+zFcYSrQLgZNJe/JsEryyz3o0czr6POf8jW27RXqhg28ecRaWBIa2S3DXMeVfwycLZBG6wf5ih7B6KW8ugc8Of6JsMbDEruROTBjMKdrfeRJFdv+0wg27gOz1izSfWeW4kHfdI+4eGsi4h2RBq2ihZRkguydM6gE8Z92We5E0KZhBJu3xqt5UbAOlidQoRjuHuIqHJzyAMRs/MWfeLr008kiL36nJq/cHZ3UG6GeVAjkVObyFaRsR9DKP/xllbSWllRCOlh4aRK9bWA/GL6/oThYBe+GLCCtc8+cEnE8Vgc2YES6ZPi/clSl/InXWP9gRFE19lpTBtOMoFEzBsgMb5jUJ5eVrGgAk5v3ss8pOJfpCAxVv6/5mP9T3+og+CNjkpU6yIBzmm3Yl977BaPeVXMPCmU7oQmdblu8wd30sjuQU2achNIit8nFpJ/DVE4xnNopDs42xkDzZRf1pPTRbtRH4Vjkvlep3O2kiO2yC49u6arIxib7XpBw1WfijjqA="
+
 before_script:
         - sudo apt-get -qq update
         - sudo apt-get install -y liblua5.1-0 liblua5.1-0-dev
@@ -12,3 +18,16 @@ before_script:
         - cmake ..
 
 script: make
+
+before_install:
+      - echo -n | openssl s_client -connect scan.coverity.com:443 | sed -ne '/-BEGIN CERTIFICATE-/,/-END CERTIFICATE-/p' | sudo tee -a /etc/ssl/certs/ca-
+
+addons:
+  coverity_scan:
+    project:
+      name: "dsalychev/mcusim"
+      description: "Simulator for microcontrollers (via Travis CI)"
+    notification_email: darkness.bsd@gmail.com
+    build_command_prepend: "mkdir out; cd out; cmake .."
+    build_command:   "make"
+    branch_pattern: master
