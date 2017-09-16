@@ -168,8 +168,6 @@ int MSIM_StepAVR(struct MSIM_AVR *mcu)
 	msb = (unsigned short) mcu->pm[mcu->pc+1];
 	inst = (unsigned short) (lsb | (msb << 8));
 
-	printf("%lu:\t%lx: %x %x\n", mcu->id, mcu->pc, lsb, msb);
-
 	if (decode_inst(mcu, inst)) {
 		fprintf(stderr, "Unknown instruction: 0x%X\n", inst);
 		return -1;

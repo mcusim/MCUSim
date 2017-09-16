@@ -52,6 +52,16 @@ static int lua_avr_dmemset(lua_State *L);
  */
 static int lua_avr_dmemget(lua_State *L);
 
+/*
+ * Tests a bit value of a byte at the given address.
+ *
+ * Lua parameters:
+ * 	struct MSIM_AVR *mcu;
+ * 	unsigned long offset;
+ * 	unsigned char bit;
+ */
+static int lua_avr_isset(lua_State *L);
+
 /* END AVRSim specific functions for peripherals. */
 
 int MSIM_LoadLuaPeripherals(const char *file)
@@ -91,9 +101,11 @@ int MSIM_LoadLuaPeripherals(const char *file)
 
 		/* Register AVRSim specific functions */
 		lua_pushcfunction(MSIM_LuaStates[i], lua_avr_dmemset);
-		lua_setglobal(MSIM_LuaStates[i], "avr_dmemset");
+		lua_setglobal(MSIM_LuaStates[i], "msim_avr_dmemset");
 		lua_pushcfunction(MSIM_LuaStates[i], lua_avr_dmemget);
-		lua_setglobal(MSIM_LuaStates[i], "avr_dmemget");
+		lua_setglobal(MSIM_LuaStates[i], "msim_avr_dmemget");
+		lua_pushcfunction(MSIM_LuaStates[i], lua_avr_isset);
+		lua_setglobal(MSIM_LuaStates[i], "msim_avr_isset");
 
 		i++;
 	}
@@ -149,9 +161,26 @@ static int lua_avr_dmemget(lua_State *L)
 	return 1;	/* Number of results */
 }
 
+/*
+ * Tests a bit value of a byte at the given address.
+ *
+ * Lua parameters:
+ * 	struct MSIM_AVR *mcu;
+ * 	unsigned long offset;
+ * 	unsigned char bit;
+ */
+static int lua_avr_isset(lua_State *L)
+{
+	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
+	unsigned long off = (unsigned long)lua_tointeger(L, 2);
+	unsigned char b = (unsigned char)lua_tointeger(L, 3);
+
+	lua_pushboolean(L, mcu->dm[off]&(1<<b));
+	return 1;
+}
 #else /* LUA51_FOUND is not defined */
 
-int MSIM_LoadLuaPeripherals(const char *)
+int MSIM_LoadLuaPeripherals(const char *file)
 {
 	fprintf(stderr, "Lua peripherals are not supported!\n");
 	return 0;
