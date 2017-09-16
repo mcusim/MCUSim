@@ -1,0 +1,12 @@
+language: c
+
+compiler:
+        - gcc
+        - clang
+
+before_script:
+        - mkdir out
+        - cd out
+        - cmake ..
+
+script: make
