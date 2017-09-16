@@ -28,6 +28,6 @@ addons:
       name: "dsalychev/mcusim"
       description: "Simulator for microcontrollers (via Travis CI)"
     notification_email: darkness.bsd@gmail.com
-    build_command_prepend: "mkdir out; cd out; cmake .."
+    build_command_prepend: "make clean"
     build_command:   "make"
     branch_pattern: master
