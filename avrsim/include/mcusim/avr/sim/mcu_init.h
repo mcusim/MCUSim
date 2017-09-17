@@ -113,17 +113,25 @@ mcu->fuse[1] = HFUSE_DEFAULT;
 #endif
 mcu->fuse[0] = LFUSE_DEFAULT;
 
-#ifdef SET_FUSE_FUNC
-mcu->set_fusef = SET_FUSE_FUNC;
+#ifdef SET_FUSE_F
+mcu->set_fusef = SET_FUSE_F;
 #else
 mcu->set_fusef = NULL;
 #endif
-#ifdef SET_LOCK_FUNC
-mcu->set_lockf = SET_LOCK_FUNC;
+#ifdef SET_LOCK_F
+mcu->set_lockf = SET_LOCK_F;
 #else
 mcu->set_lockf = NULL;
 #endif
 /* END Fuses */
+
+/* Timers */
+#ifdef TICK_8TIMERS_F
+mcu->tick_8timers = TICK_8TIMERS_F;
+#else
+mcu->tick_8timers = NULL;
+#endif
+/* END Timers */
 
 #ifdef BLS_START
 mcu->bls->start = BLS_START;

@@ -67,11 +67,12 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		    addr == mcu->pc)
 			stop = 1;
 
-		/* Tick each Lua peripheral. */
-		MSIM_TickLuaPeripherals(mcu);
-
 		if (MSIM_StepAVR(mcu))
 			return 1;
+
+		MSIM_TickLuaPeripherals(mcu);
+		if (mcu->tick_8timers != NULL)
+			mcu->tick_8timers(mcu);
 
 		if (stop)
 			break;

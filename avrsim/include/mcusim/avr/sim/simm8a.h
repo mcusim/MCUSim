@@ -46,12 +46,13 @@
 #define BLS_END		0x1FFF		/* Last address in BLS, in bytes */
 #define BLS_SIZE	2048		/* BLS size, in bytes */
 
-
-#define SET_FUSE_FUNC	MSIM_M8ASetFuse
-#define SET_LOCK_FUNC	MSIM_M8ASetLock
-
+#define SET_FUSE_F	MSIM_M8ASetFuse
+#define SET_LOCK_F	MSIM_M8ASetLock
+#define TICK_8TIMERS_F	MSIM_M8ATick8Timers
+/* #define TICK_16TIMERS_F */
 
 int MSIM_M8ASetFuse(void *mcu, unsigned int fuse_n, unsigned char fuse_v);
 int MSIM_M8ASetLock(void *mcu, unsigned char lock_v);
+int MSIM_M8ATick8Timers(void *mcu);
 
 #endif /* MSIM_AVR_SIMM8A_H_ */

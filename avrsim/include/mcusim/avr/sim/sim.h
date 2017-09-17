@@ -36,10 +36,11 @@ extern "C" {
 
 typedef unsigned long MSIM_AVRFlashAddr_t;
 
-/* Device-specific functions to set fuse and lock bytes. */
+/* Device-specific functions. */
 typedef int (*MSIM_SetFuse_f)(void *mcu,
 			      unsigned int fuse_n, unsigned char fuse_v);
 typedef int (*MSIM_SetLock_f)(void *mcu, unsigned char lock_v);
+typedef int (*MSIM_Tick8Timers_f)(void *mcu);
 
 enum MSIM_AVRState {
 	AVR_RUNNING,
@@ -133,6 +134,7 @@ struct MSIM_AVR {
 
 	MSIM_SetFuse_f set_fusef;	/* Function to set AVR fuse byte. */
 	MSIM_SetLock_f set_lockf;	/* Function to set AVR lock byte. */
+	MSIM_Tick8Timers_f tick_8timers;
 };
 
 #ifdef __cplusplus

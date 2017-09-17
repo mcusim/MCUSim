@@ -162,3 +162,8 @@ int MSIM_M8ASetLock(void *m, unsigned char lock_v)
 {
 	return 0;
 }
+
+int MSIM_M8ATick8Timers(void *mcu)
+{
+	return 0;
+}
