@@ -854,6 +854,8 @@ static void exec_st(struct MSIM_AVR *mcu, unsigned int inst,
 		addr--;
 		*addr_low = (unsigned char) (addr & 0xFF);
 		*addr_high = (unsigned char) (addr >> 8);
+		mcu->dm[addr] = mcu->dm[regr];
+		break;
 	case 0x00:	/*	(X) ← Rr		X: Unchanged */
 		mcu->dm[addr] = mcu->dm[regr];
 		break;
@@ -1108,6 +1110,8 @@ static void exec_ld(struct MSIM_AVR *mcu, unsigned int inst,
 		addr--;
 		*addr_low = (unsigned char) (addr & 0xFF);
 		*addr_high = (unsigned char) (addr >> 8);
+		mcu->dm[regd] = mcu->dm[addr];
+		break;
 	case 0x00:	/*	Rd ← (X)		X: Unchanged */
 		mcu->dm[regd] = mcu->dm[addr];
 		break;
@@ -2141,9 +2145,11 @@ static void exec_lds(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* LDS - Load Direct from Data Space */
 	unsigned short rd_addr, addr;
+	unsigned char i2, i3;
 
-	addr = (unsigned short)(((mcu->dm[mcu->pc+3]<<8)&0xFF00) |
-				(mcu->dm[mcu->pc+2]&0xFF));
+	i2 = mcu->dm[mcu->pc+2];
+	i3 = mcu->dm[mcu->pc+3];
+	addr = (unsigned short)(((i3<<8)&0xFF00) | (i2&0xFF));
 	rd_addr = (inst>>4)&0x1F;
 	mcu->dm[rd_addr] = mcu->dm[addr];
 	mcu->pc += 4;
@@ -2288,10 +2294,11 @@ static void exec_xch(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* XCH - Exchange */
 	unsigned short z, rd_addr;
-	unsigned char v;
+	unsigned char v, zh, zl;
 
-	z = (unsigned short)(((mcu->dm[REG_ZH]<<8)&0xFF00) |
-			     (mcu->dm[REG_ZL]&0xFF));
+	zh = mcu->dm[REG_ZH];
+	zl = mcu->dm[REG_ZL];
+	z = (unsigned short)(((zh<<8)&0xFF00) | (zl&0xFF));
 	v = mcu->dm[z];
 	rd_addr = (inst>>4)&0x1F;
 

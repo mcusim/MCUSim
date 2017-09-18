@@ -79,6 +79,7 @@ int MSIM_InterpretCommands(struct MSIM_AVR *mcu)
 	unsigned short i, cmd_len;
 
 	un_cmd = 1;
+	cmd_len = 0;
 	printf("(" SIM_NAME ") ");
 	while (fgets(lbuf, sizeof(lbuf), stdin) != NULL) {
 		for (i = 0; i < sizeof(lbuf); i++)
