@@ -21,15 +21,15 @@ project(MCUSim C)
 include(CheckFunctionExists)
 
 # Version
-set(MSIM_VERSION "\"0.1.0a1\"")
-add_definitions(-DMSIM_VERSION=${MSIM_VERSION})
+set(MSIM_VERSION "0.1.1")
+add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Set application name
 set(AVRSIM "avrsim")
 
 # Set flags here
 if (CMAKE_BUILD_TYPE MATCHES Release)
-	message(STATUS "(PROJECT) Release version of MCUSim will be built.")
+	message(STATUS "Release version of MCUSim ${MSIM_VERSION} will be built.")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 	    ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wall -pedantic -std=iso9899:1990")
@@ -39,8 +39,8 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wsign-compare")
 	endif()
 else()
-	message(STATUS "(PROJECT) Debug version of MCUSim will be built by default.")
-	message(STATUS "(PROJECT) Set CMAKE_BUILD_TYPE=Release to build a release version.")
+	message(STATUS "Debug version of MCUSim ${MSIM_VERSION} will be built by default.")
+	message(STATUS "Set CMAKE_BUILD_TYPE=Release to build a release version.")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDEBUG")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 	    ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
@@ -82,7 +82,7 @@ if (NOT MSVC)
 	if(NOT RESULT)
 		unset(RESULT)
 		list(APPEND TARGET_LIBS -lm)
-		message(STATUS "(PROJECT) Math library added to the TARGET_LIBS")
+		message(STATUS "Math library added to the TARGET_LIBS")
 	endif()
 endif()
 
