@@ -28,6 +28,7 @@ TICK_TIME = 0.0625			-- in us, depends on MCU clock
 DDR = 0x37				-- data direction register (DDRx)
 PORT_IN = 0x38				-- I/O register (PORTx)
 PORT_OUT = 0x36				-- I/O register (PINx)
+VERBOSE = false				-- Switch on to enable DHT11 output
 
 -- Timings constants
 INIT_TICKS = 1000000/TICK_TIME		-- unstable initial state, ~1s
@@ -48,11 +49,11 @@ state = "mcu-start-low"			-- DHT state
 init_ticks = 0
 ticks = 0
 mis_ticks = 0
-data =	"00000000" ..
-	"00010100" ..
-	"00000000" ..
-	"01000001" ..
-	"01010101"
+data =	"11011110" ..
+	"10101101" ..
+	"10111110" ..
+	"11101111" ..
+	"00111000"
 ibit = 1				-- Index of a bit to send
 datalen = #data				-- Length of the data
 -- END Global variables
@@ -67,6 +68,9 @@ function module_tick(mcu)
 	-- MCU should configure its pin to output
 	-- and ask DHT for data transmission
 	if state == "mcu-start-low" then
+		if ticks == 0 and msim_avr_isset(mcu, PORT_IN, 0) then
+			return
+		end
 		-- Check low level of MCU output pin
 		if ticks < STSIG_LOW_TICKS and
 		   not msim_avr_isset(mcu, PORT_IN, 0) then
@@ -75,17 +79,28 @@ function module_tick(mcu)
 		end
 		if ticks < STSIG_LOW_TICKS and
 		   msim_avr_isset(mcu, PORT_IN, 0) then
+		   	if VERBOSE then
+			   	print("MCU start low: unexpected rise, " ..
+				      "ticks: " .. ticks)
+			end
 		   	ticks = 0
 		   	state = "mcu-start-low"
 			return
 		end
 		-- Check if MCU pulls up within a limited time
 		if msim_avr_isset(mcu, PORT_IN, 0) then
+			if VERBOSE then
+			   	print "MCU start low: rised"
+			end
 			ticks = 0
 			state = "mcu-start-high"
 			return
 		end
 		if ticks > STSIG_LOW_LIM then
+			if VERBOSE then
+			   	print("MCU start low: no rise within " ..
+				      "limited time")
+			end
 			ticks = 0
 			state = "mcu-start-low"
 			return
@@ -95,6 +110,10 @@ function module_tick(mcu)
 		-- Check MCU keeping output pin pulled up
 		if ticks < STSIG_HIGH_TICKS and
 		   not msim_avr_isset(mcu, PORT_IN, 0) then
+		   	if VERBOSE then
+			   	print("MCU start high: unexpected fall, " ..
+				      "ticks: " .. ticks)
+			end
 			ticks = 0
 			state = "mcu-start-low"
 			return
@@ -104,6 +123,9 @@ function module_tick(mcu)
 			ticks = ticks + 1
 		end
 		if ticks >= STSIG_HIGH_TICKS then
+			if VERBOSE then
+			   	print "MCU start high: DHT11 pulled down"
+			end
 			ticks = 0;
 			state = "dht-start-low"
 			return
@@ -122,6 +144,9 @@ function module_tick(mcu)
 			ticks = ticks + 1
 			return
 		else
+			if VERBOSE then
+			   	print "DHT11 start low: DHT11 pulled up"
+			end
 			mis_ticks = 0
 			ticks = 0
 			state = "dht-start-high"
@@ -139,6 +164,10 @@ function module_tick(mcu)
 			ticks = ticks + 1
 			return
 		else
+			if VERBOSE then
+			   	print "DHT11 start high: delay"
+				print "DHT11 is sending: "
+			end
 			mis_ticks = 0
 			ticks = 0
 			state = "data-delay"
@@ -169,7 +198,10 @@ function module_tick(mcu)
 			ibit = ibit + 1
 			mis_ticks = 0
 			ticks = 0
-			if (bit == 0) then
+			if VERBOSE then
+				print(bit)
+			end
+			if (bit == "0") then
 				state = "data-send0"
 			else
 				state = "data-send1"
