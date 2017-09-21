@@ -21,7 +21,7 @@ project(MCUSim C)
 include(CheckFunctionExists)
 
 # Version
-set(MSIM_VERSION "0.1.2")
+set(MSIM_VERSION "0.1.5")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Set application name

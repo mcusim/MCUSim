@@ -25,11 +25,69 @@
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simm8a.h"
 
+#define TC_PS_NONE			1
+#define TC_PS_8				8
+#define TC_PS_64			64
+#define TC_PS_256			256
+#define TC_PS_1024			1024
+
+static unsigned int tc0_div;
+static unsigned int tc0_ticks;
+
 int MSIM_M8AInit(struct MSIM_AVR *mcu,
 		 unsigned char *pm, unsigned long pm_size,
 		 unsigned char *dm, unsigned long dm_size)
 {
 #include "mcusim/avr/sim/mcu_init.h"
+}
+
+int MSIM_M8ATick8Timers(void *m)
+{
+	const struct MSIM_AVR *mcu;
+	unsigned char tccr0;
+	unsigned int div;
+
+	mcu = (struct MSIM_AVR *)m;
+	tccr0 = mcu->dm[TCCR0];
+
+	switch (tccr0) {
+	case 0x1:	/* No prescaling, clk */
+		div = TC_PS_NONE;
+		break;
+	case 0x2:	/* clk/8 */
+		div = TC_PS_8;
+		break;
+	case 0x3:	/* clk/64 */
+		div = TC_PS_64;
+		break;
+	case 0x4:	/* clk/256 */
+		div = TC_PS_256;
+		break;
+	case 0x5:	/* clk/1024 */
+		div = TC_PS_1024;
+		break;
+	case 0x0:	/* No clock source (stopped mode) */
+	case 0x6:	/* External clock sources are not supported (fall) */
+	case 0x7:	/* External clock sources are not supported (rise) */
+		tc0_div = 0;
+		tc0_ticks = 0;
+		return 0;
+	}
+
+	if (div != tc0_div) {
+		tc0_div = div;
+		tc0_ticks = 0;
+	}
+	if (tc0_ticks == (tc0_div-1)) {
+		if (mcu->dm[TCNT0] == 0xFF)
+			mcu->dm[TCNT0] = 0;
+		else
+			mcu->dm[TCNT0]++;
+		tc0_ticks = 0;
+		return 0;
+	}
+	tc0_ticks++;
+	return 0;
 }
 
 int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
@@ -159,11 +217,6 @@ int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 }
 
 int MSIM_M8ASetLock(void *m, unsigned char lock_v)
-{
-	return 0;
-}
-
-int MSIM_M8ATick8Timers(void *mcu)
 {
 	return 0;
 }
