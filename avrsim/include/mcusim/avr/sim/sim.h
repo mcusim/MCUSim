@@ -73,7 +73,6 @@ enum MSIM_AVRSREGFlag {
 
 /* Instance of the AVR microcontroller. */
 struct MSIM_AVR {
-	unsigned long id;		/* ID of a simulated AVR MCU */
 	char name[20];			/* Name of the MCU */
 	unsigned char signature[3];	/* Signature of the MCU */
 

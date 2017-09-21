@@ -101,7 +101,7 @@ int MSIM_PrintInstructions(struct MSIM_AVR *mcu, unsigned long start_addr,
 		msb = (unsigned short) mcu->pm[loc_pc+1];
 		inst = (unsigned short) (lsb | (msb << 8));
 
-		printf("%lu:\t%lx: %x %x\n", mcu->id, loc_pc, lsb, msb);
+		printf("%lx: %x %x\n", loc_pc, lsb, msb);
 
 		loc_pc += MSIM_Is32(inst) ? 4 : 2;
 	}

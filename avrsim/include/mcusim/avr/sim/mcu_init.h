@@ -40,9 +40,6 @@ mcu->e2end = E2END;
 mcu->e2size = E2SIZE;
 mcu->e2pagesize = E2PAGESIZE;
 
-srand((unsigned int) time(NULL));
-
-mcu->id = (uint32_t) rand();
 mcu->lockbits = LBITS_DEFAULT;
 mcu->sfr_off = __SFR_OFFSET;
 mcu->regs = GP_REGS;

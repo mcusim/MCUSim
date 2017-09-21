@@ -69,6 +69,7 @@ int MSIM_M8ATick8Timers(void *m)
 	case 0x0:	/* No clock source (stopped mode) */
 	case 0x6:	/* External clock sources are not supported (fall) */
 	case 0x7:	/* External clock sources are not supported (rise) */
+	default:	/* Should not happen! */
 		tc0_div = 0;
 		tc0_ticks = 0;
 		return 0;
