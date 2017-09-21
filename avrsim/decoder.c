@@ -974,9 +974,9 @@ static void exec_sbi_cbi(struct MSIM_AVR *mcu, unsigned int inst,
 	reg = (unsigned char)((inst & 0x00F8) >> 3);
 	b = inst & 0x07;
 	if (set_bit)
-		mcu->dm[reg] |= (unsigned char)(1 << b);
+		mcu->dm[reg+0x20] |= (unsigned char)(1 << b);
 	else
-		mcu->dm[reg] &= (unsigned char)(~(1 << b));
+		mcu->dm[reg+0x20] &= (unsigned char)(~(1 << b));
 
 	mcu->pc += 2;
 }
@@ -990,9 +990,9 @@ static void exec_sbis_sbic(struct MSIM_AVR *mcu, unsigned int inst,
 	unsigned char msb, lsb;
 	unsigned int ni;
 
-	reg = (unsigned char)((inst & 0x00F8) >> 3);
+	reg = (unsigned char)(((inst&0x00F8)>>3)+0x20);
 	b = inst & 0x07;
-	pc_delta = 1;
+	pc_delta = 2;
 	if (set_bit) {
 		if (mcu->dm[reg] & (1 << b)) {
 			lsb = mcu->pm[mcu->pc+2];
@@ -1040,8 +1040,8 @@ static void exec_movw(struct MSIM_AVR *mcu, unsigned int inst)
 	/* MOVW – Copy Register Word */
 	unsigned char regd, regr;
 
-	regr = inst & 0x0F;
-	regd = (inst >> 4) & 0x0F;
+	regr = (unsigned char)((inst&0x0F)<<1);
+	regd = (unsigned char)(((inst>>4)&0x0F)<<1);
 	mcu->dm[regd+1] = mcu->dm[regr+1];
 	mcu->dm[regd] = mcu->dm[regr];
 	mcu->pc += 2;
@@ -1433,8 +1433,8 @@ static void exec_adiw(struct MSIM_AVR *mcu, unsigned int inst)
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
 
-	mcu->dm[rdh_addr] = (r >> 8) & 0x0F;
-	mcu->dm[rdl_addr] = r & 0x0F;
+	mcu->dm[rdh_addr] = (r >> 8) & 0xFF;
+	mcu->dm[rdl_addr] = r & 0xFF;
 	mcu->pc += 2;
 }
 
