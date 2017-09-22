@@ -688,7 +688,7 @@ static void exec_in_out(struct MSIM_AVR *mcu, unsigned int inst,
 static void exec_cpi(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* CPI – Compare with Immediate */
-	uint8_t rd, rd_addr, c;
+	unsigned char rd, rd_addr, c;
 	int r, buf;
 
 	rd_addr = (unsigned char)(((inst & 0xF0) >> 4) + 16);
@@ -810,7 +810,7 @@ static void exec_brne(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_st_x(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* ST – Store Indirect From Register to Data Space using Index X */
-	uint8_t regr, *x_low, *x_high;
+	unsigned char regr, *x_low, *x_high;
 
 	x_low = &mcu->dm[26];
 	x_high = &mcu->dm[27];
@@ -1270,17 +1270,17 @@ static void exec_sbiw(struct MSIM_AVR *mcu, unsigned int inst)
 	unsigned char rdh_addr, rdl_addr;
 	unsigned int c, r, buf;
 
-	rdl_addr = regs[(inst >> 4) & 0x03];
-	rdh_addr = (unsigned char)(rdl_addr + 1);
-	c = ((inst >> 2) & 0x30) | (inst & 0x0F);
+	rdl_addr = regs[(inst>>4)&0x03];
+	rdh_addr = (unsigned char)(rdl_addr+1);
+	c = ((inst>>2)&0x30)|(inst&0x0F);
 
-	buf = r = (uint16_t) ((mcu->dm[rdh_addr] << 8) |
-			      mcu->dm[rdl_addr]);
+	buf = r = (unsigned int)((mcu->dm[rdh_addr]<<8)|mcu->dm[rdl_addr]);
 	r -= c;
 	buf = r & ~buf;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (buf >> 15) & 1);
-	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (uint8_t) ((r >> 15) & 1));
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE,
+			    (unsigned char)((r>>15)&1));
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, (buf >> 15) & 1);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
@@ -1421,12 +1421,11 @@ static void exec_adiw(struct MSIM_AVR *mcu, unsigned int inst)
 	rdh_addr = (unsigned char)(rdl_addr + 1);
 	c = ((inst >> 2) & 0x30) | (inst & 0x0F);
 
-	rd = (uint16_t) ((mcu->dm[rdh_addr] << 8) |
-			 mcu->dm[rdl_addr]);
+	rd = (unsigned int)((mcu->dm[rdh_addr]<<8)|mcu->dm[rdl_addr]);
 	r = rd + c;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, ((~r & rd) >> 15) & 1);
-	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (uint8_t) ((r >> 15) & 1));
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (unsigned char)((r>>15)&1));
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, ((r & ~rd) >> 15) & 1);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
 			 MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
@@ -1783,7 +1782,7 @@ static void exec_bset(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_bst(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* BST – Bit Store from Bit in Register to T Flag in SREG */
-	uint8_t b, rd_addr;
+	unsigned char b, rd_addr;
 
 	b = inst & 0x07;
 	rd_addr = (inst >> 4) & 0x1F;
@@ -1795,22 +1794,22 @@ static void exec_bst(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_lsb)
 {
 	/* CALL – Long Call to a Subroutine */
-	uint8_t lsb, msb;
-	uint16_t inst_msb;
+	unsigned char lsb, msb;
+	unsigned int inst_msb;
 	MSIM_AVRFlashAddr_t pc, c;
 
 	/* prepare the whole 32-bit instruction */
 	lsb = mcu->pm[mcu->pc+2];
 	msb = mcu->pm[mcu->pc+3];
-	inst_msb = (uint16_t) (lsb | (msb << 8));
+	inst_msb = (unsigned int) (lsb|(msb<<8));
 
-	pc = mcu->pc + 4;
-	c = (MSIM_AVRFlashAddr_t)( ((inst_msb<<6)&0xFF) |
-				   ((inst_lsb>>3)&0x3E) |
-				   (inst_lsb&1) );
+	pc = mcu->pc+4;
+	c = (MSIM_AVRFlashAddr_t)(((inst_msb<<6)&0xFF) |
+				  ((inst_lsb>>3)&0x3E) |
+				  (inst_lsb&1));
 
-	MSIM_StackPush(mcu, (uint8_t) (pc & 0xFF));
-	MSIM_StackPush(mcu, (uint8_t) ((pc >> 8) & 0xFF));
+	MSIM_StackPush(mcu, (unsigned char)(pc&0xFF));
+	MSIM_StackPush(mcu, (unsigned char)((pc>>8)&0xFF));
 	mcu->pc = c;
 }
 
