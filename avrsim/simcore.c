@@ -59,6 +59,9 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		     unsigned long addr)
 {
 	while (1) {
+		/* Terminate simulation? */
+		if (mcu->state == AVR_MSIM_STOP)
+			break;
 		/* Wait request from GDB in MCU stopped mode */
 		if (mcu->state == AVR_STOPPED && MSIM_RSPHandle())
 			return 1;

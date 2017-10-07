@@ -446,7 +446,8 @@ static void rsp_client_request(void)
 		put_str_packet("OK");
 		return;
 	case 'k':
-		/* Kill request. Do nothing. */
+		/* Kill request. Terminate simulation. */
+		rsp.mcu->state = AVR_MSIM_STOP;
 		return;
 	case 'm':
 		/* Read memory (symbolic) */

@@ -46,8 +46,9 @@ enum MSIM_AVRState {
 	AVR_RUNNING,
 	AVR_STOPPED,
 	AVR_SLEEPING,
-	AVR_MSIM_STEP			/* Single step should be performed
+	AVR_MSIM_STEP,			/* Single step should be performed
 					   only (MCUSim specific) */
+	AVR_MSIM_STOP			/* Terminate simulation and exit */
 };
 
 enum MSIM_AVRClkSource {
