@@ -1585,7 +1585,7 @@ static void exec_brbs(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_break(struct MSIM_AVR *mcu)
 {
 	/* BREAK – Break (the AVR CPU is set in the Stopped Mode). */
-	/* Treat it as NOP before actual support is implemented. */
+	mcu->state = AVR_STOPPED;
 	mcu->pc += 2;
 }
 

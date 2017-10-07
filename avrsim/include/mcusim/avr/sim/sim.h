@@ -45,7 +45,9 @@ typedef int (*MSIM_Tick8Timers_f)(void *mcu);
 enum MSIM_AVRState {
 	AVR_RUNNING,
 	AVR_STOPPED,
-	AVR_SLEEPING
+	AVR_SLEEPING,
+	AVR_MSIM_STEP			/* Single step should be performed
+					   only (MCUSim specific) */
 };
 
 enum MSIM_AVRClkSource {

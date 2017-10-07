@@ -27,12 +27,15 @@
 #include "mcusim/avr/sim/simcore.h"
 #include "mcusim/avr/sim/bootloader.h"
 #include "mcusim/avr/sim/peripheral_lua.h"
+#include "mcusim/avr/sim/gdb_rsp.h"
 
 #define CLI_OPTIONS		"?p:U:r:"
 
 #define PMSZ			262144		/* 256 KiB */
 #define DMSZ			65536		/* 64 KiB */
 #define PM_PAGESZ		1024		/* 1 KiB, PM page size */
+
+#define GDB_RSP_PORT		12750
 
 static struct MSIM_AVRBootloader bls;
 static struct MSIM_AVR mcu;
@@ -99,9 +102,10 @@ int main(int argc, char *argv[])
 	}
 	fclose(fp);
 
-	MSIM_InterpretCommands(&mcu);
-
+	MSIM_RSPInit(&mcu, GDB_RSP_PORT);
+	MSIM_SimulateAVR(&mcu, 0, mcu.flashend+1);
 	MSIM_CleanLuaPeripherals();
+	MSIM_RSPClose();
 	return 0;
 }
 

@@ -19,9 +19,10 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 include(CheckFunctionExists)
+include(CheckIncludeFiles)
 
 # Version
-set(MSIM_VERSION "0.1.6")
+set(MSIM_VERSION "0.1.8")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Set application name
@@ -64,7 +65,8 @@ set(AVRSIM_SRC		avrsim/simcore.c
 			avrsim/getopt_long.c
 			avrsim/peripheral_lua.c
 			avrsim/decoder.c
-			avrsim/avrsim.c)
+			avrsim/avrsim.c
+			avrsim/gdb_rsp.c)
 
 # Look for libraries, packages, etc.
 find_package(Lua51)
@@ -74,17 +76,43 @@ set(TARGET_LIBS "")
 if (LUA51_FOUND)
 	add_definitions(-DLUA51_FOUND=1)
 	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
+else()
+	message(STATUS "Lua 5.1+ is not found")
+	message(STATUS "Support for Lua-based peripherals will be disabled")
 endif()
 
-# Check functions exist here
+#
+# Check functions, include files here
+#
 if (NOT MSVC)
-	CHECK_FUNCTION_EXISTS(fmax RESULT)
-	if(NOT RESULT)
+	check_function_exists(fmax RESULT)
+	if (NOT RESULT)
 		unset(RESULT)
 		list(APPEND TARGET_LIBS -lm)
 		message(STATUS "Math library added to the TARGET_LIBS")
 	endif()
 endif()
+check_include_files(netdb.h HAVE_NETDB_H)
+check_include_files("sys/socket.h" HAVE_SYS_SOCKET_H)
+check_include_files(string.h HAVE_STRING_H)
+check_include_files(fcntl.h HAVE_FCNTL_H)
+check_include_files(unistd.h HAVE_UNISTD_H)
+check_include_files(errno.h HAVE_ERRNO_H)
+check_include_files(poll.h HAVE_POLL_H)
+check_include_files(netinet/tcp.h HAVE_NETINET_TCP_H)
+if (HAVE_NETDB_H AND
+    HAVE_SYS_SOCKET_H AND
+    HAVE_STRING_H AND
+    HAVE_FCNTL_H AND
+    HAVE_UNISTD_H AND
+    HAVE_ERRNO_H AND
+    HAVE_POLL_H AND
+    HAVE_NETINET_TCP_H)
+	add_definitions(-DMSIM_POSIX=1)
+endif()
+#
+# END Check functions, include files here
+#
 
 # Define includes here
 include_directories("avrsim/include/")

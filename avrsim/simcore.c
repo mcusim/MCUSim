@@ -28,6 +28,7 @@
 #include "mcusim/avr/sim/simcore.h"
 #include "mcusim/avr/sim/peripheral_lua.h"
 #include "mcusim/avr/sim/decoder.h"
+#include "mcusim/avr/sim/gdb_rsp.h"
 
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
@@ -57,27 +58,22 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		     unsigned long addr)
 {
-	char inf_loop, stop;
-
-	stop = 0;
-	inf_loop = !steps ? 1 : 0;
-	steps = !steps ? 1 : steps;
-	while (steps > 0) {
-		if (addr >= mcu->flashstart && addr <= mcu->flashend &&
-		    addr == mcu->pc)
-			stop = 1;
-
-		if (MSIM_StepAVR(mcu))
+	while (1) {
+		/* Wait request from GDB in MCU stopped mode */
+		if (mcu->state == AVR_STOPPED && MSIM_RSPHandle())
 			return 1;
 
 		MSIM_TickLuaPeripherals(mcu);
 		if (mcu->tick_8timers != NULL)
 			mcu->tick_8timers(mcu);
 
-		if (stop)
-			break;
-		if (!inf_loop)
-			steps--;
+		if (mcu->state == AVR_RUNNING || mcu->state == AVR_MSIM_STEP)
+			if (MSIM_StepAVR(mcu))
+				return 1;
+
+		/* Halt MCU after a single step performed*/
+		if (mcu->state == AVR_MSIM_STEP)
+			mcu->state = AVR_STOPPED;
 	}
 	return 0;
 }
@@ -135,6 +131,7 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 				"file!\n");
 		return -1;
 	}
+	mcu->state = AVR_STOPPED;
 	return 0;
 }
 
