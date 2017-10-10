@@ -162,11 +162,21 @@ static void exec_ld(struct MSIM_AVR *mcu, unsigned int inst,
 
 int MSIM_StepAVR(struct MSIM_AVR *mcu)
 {
-	unsigned short inst, msb, lsb;
+	unsigned char msb, lsb;
+	unsigned short inst;
 
-	lsb = (unsigned short) mcu->pm[mcu->pc];
-	msb = (unsigned short) mcu->pm[mcu->pc+1];
-	inst = (unsigned short) (lsb | (msb << 8));
+	if (!mcu->read_from_mpm) {
+		/* Decode instruction from program memory as usual */
+		lsb = (unsigned char) mcu->pm[mcu->pc];
+		msb = (unsigned char) mcu->pm[mcu->pc+1];
+		inst = (unsigned short) (lsb | (msb << 8));
+	} else {
+		/* Decode instruction from match points memory */
+		lsb = (unsigned char) mcu->mpm[mcu->pc];
+		msb = (unsigned char) mcu->mpm[mcu->pc+1];
+		inst = (unsigned short) (lsb | (msb << 8));
+		mcu->read_from_mpm = 0;
+	}
 
 	if (decode_inst(mcu, inst)) {
 		fprintf(stderr, "Unknown instruction: 0x%X\n", inst);
@@ -1586,7 +1596,7 @@ static void exec_break(struct MSIM_AVR *mcu)
 {
 	/* BREAK – Break (the AVR CPU is set in the Stopped Mode). */
 	mcu->state = AVR_STOPPED;
-	mcu->pc += 2;
+	mcu->read_from_mpm = 1;
 }
 
 static void exec_breq(struct MSIM_AVR *mcu, unsigned int inst)

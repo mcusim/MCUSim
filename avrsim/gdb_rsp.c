@@ -23,6 +23,7 @@
 
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/gdb_rsp.h"
+#include "mcusim/avr/sim/decoder.h"
 
 #ifdef MSIM_POSIX
 #	include <netdb.h>
@@ -36,7 +37,19 @@
 
 #define AVRSIM_RSP_PROTOCOL		"tcp"
 
+#define BREAK_LOW			0x98
+#define BREAK_HIGH			0x95
+#define BREAK				((BREAK_HIGH<<8)|BREAK_LOW)
+
 #define GDB_BUF_MAX			(16*1024)
+
+enum mp_type {
+	BP_SOFTWARE	= 0,
+	BP_HARDWARE	= 1,
+	WP_WRITE	= 2,
+	WP_READ		= 3,
+	WP_ACCESS	= 4
+};
 
 struct rsp_state {
 	char client_waiting;
@@ -76,9 +89,10 @@ static void rsp_read_all_regs(void);
 static void rsp_write_all_regs(struct rsp_buf *buf);
 static void rsp_read_mem(struct rsp_buf *buf);
 static void rsp_step(struct rsp_buf *buf);
+static void rsp_insert_matchpoint(struct rsp_buf *buf);
+static void rsp_remove_matchpoint(struct rsp_buf *buf);
 
 static size_t read_reg(int n, char *buf);
-static void write_reg(int n, unsigned char *val);
 
 void MSIM_RSPInit(struct MSIM_AVR *mcu, int portn)
 {
@@ -87,7 +101,6 @@ void MSIM_RSPInit(struct MSIM_AVR *mcu, int portn)
 	struct sockaddr_in sock_addr;	/* Socket address */
 	int optval;			/* Socket options */
 	int flags; 			/* Socket flags */
-	char name[256];			/* Hostname */
 
 	/* Reset GDB RSP state */
 	rsp.client_waiting = 0;		/* GDB client is not waiting */
@@ -150,29 +163,18 @@ void MSIM_RSPInit(struct MSIM_AVR *mcu, int portn)
 		return;
 	}
 
-	/* Find our hostname */
-	/*
-	if (gethostname(name, sizeof name) < 0) {
-		fprintf(stderr, "Unable to get hostname for RSP server: %s\n",
-				strerror(errno));
-		rsp_close_server();
-		return;
-	}
-	 */
-	strncpy(name, "localhost", sizeof name);
-
 	/* Find our host entry */
-	host = gethostbyname(name);
+	host = gethostbyname("localhost");
 	if (host == NULL) {
 		fprintf(stderr, "Unable to get host entry for RSP server "
-				"by '%s' name: %s\n", name, strerror(errno));
+				"by 'localhost' name: %s\n", strerror(errno));
 		rsp_close_server();
 		return;
 	}
 
 	/* Bind socket to the appropriate address */
 	memset(&sock_addr, 0, sizeof sock_addr);
-	sock_addr.sin_family = host->h_addrtype;
+	sock_addr.sin_family = (unsigned char)host->h_addrtype;
 	sock_addr.sin_port = htons(portn);
 	if (bind(rsp.fserv, (struct sockaddr *)&sock_addr,
 		 sizeof sock_addr) < 0) {
@@ -403,8 +405,6 @@ static void rsp_client_request(void)
 		return;
 	}
 
-	printf("GDB client request: %s\n", buf->data);
-
 	switch (buf->data[0]) {
 	case 0x03:
 		fprintf(stderr, "Break command received while MCU stopped\n");
@@ -488,16 +488,140 @@ static void rsp_client_request(void)
 		return;
 	case 'z':
 		/* Remove a breakpoint/watchpoint */
-		/*rsp_remove_matchpoint(buf);*/
+		rsp_remove_matchpoint(buf);
 		return;
 	case 'Z':
 		/* Insert a breakpoint/watchpoint */
-		/*rsp_insert_matchpoint(buf);*/
+		rsp_insert_matchpoint(buf);
 		return;
 	default:
 		/* Unknown commands are ignored */
 		fprintf(stderr, "Unknown RSP request: %s\n", buf->data);
 		return;
+	}
+}
+
+static void rsp_insert_matchpoint(struct rsp_buf *buf)
+{
+	enum mp_type type;
+	unsigned long addr;
+	int len;
+	unsigned char llsb, lmsb, hlsb, hmsb;
+	unsigned short inst;
+	struct MSIM_AVR *mcu;
+
+	mcu = rsp.mcu;
+	if (sscanf(buf->data, "Z%1d,%lx,%1d", &type, &addr, &len) != 3) {
+		fprintf(stderr, "RSP matchpoint insertion request not "
+				"recognized: %s\n", buf->data);
+		put_str_packet("E01");
+		return;
+	}
+
+	if (len != 2) {
+		fprintf(stderr, "RSP matchpoint length %d is not valid: "
+				"2 assumed\n", len);
+		len = 2;
+	}
+
+	switch (type) {
+	case BP_SOFTWARE:
+		/*
+		 * This is the only type of matchpoints to be supported in
+		 * this minimal implementation. Insertion of a breakpoint at
+		 * the same location twice won't make any change.
+		 */
+		llsb = (unsigned char) mcu->pm[addr];
+		lmsb = (unsigned char) mcu->pm[addr+1];
+		inst = (unsigned short) (llsb | (lmsb << 8));
+		if (inst == BREAK) {
+			fprintf(stderr, "BREAK is already at 0x%8lX, "
+					"ignoring\n", addr);
+			put_str_packet("OK");
+			return;
+		}
+
+		mcu->pm[addr] = BREAK_LOW;
+		mcu->pm[addr+1] = BREAK_HIGH;
+		mcu->mpm[addr] = llsb;
+		mcu->mpm[addr+1] = lmsb;
+		if (MSIM_Is32(inst)) {
+			hlsb = (unsigned char) mcu->pm[addr+2];
+			hmsb = (unsigned char) mcu->pm[addr+3];
+			mcu->pm[addr+2] = 0;
+			mcu->pm[addr+3] = 0;
+			mcu->mpm[addr+2] = hlsb;
+			mcu->mpm[addr+3] = hmsb;
+		}
+		put_str_packet("OK");
+		break;
+	default:
+		fprintf(stderr, "RSP matchpoint type %d is not "
+				"supported\n", type);
+		put_str_packet("");
+		break;
+	}
+}
+
+static void rsp_remove_matchpoint(struct rsp_buf *buf)
+{
+	enum mp_type type;
+	unsigned long addr;
+	int len;
+	unsigned char llsb, lmsb, hlsb, hmsb;
+	unsigned short inst;
+	struct MSIM_AVR *mcu;
+
+	mcu = rsp.mcu;
+	if (sscanf(buf->data, "z%1d,%lx,%1d", &type, &addr, &len) != 3) {
+		fprintf(stderr, "RSP matchpoint insertion request not "
+				"recognized: %s\n", buf->data);
+		put_str_packet("E01");
+		return;
+	}
+
+	if (len != 2) {
+		fprintf(stderr, "RSP matchpoint length %d is not valid: "
+				"2 assumed\n", len);
+		len = 2;
+	}
+
+	switch (type) {
+	case BP_SOFTWARE:
+		/*
+		 * This is the only type of matchpoints to be supported in
+		 * this minimal implementation. Double check if breakpoint
+		 * exists at the given address.
+		 */
+		llsb = (unsigned char) mcu->pm[addr];
+		lmsb = (unsigned char) mcu->pm[addr+1];
+		inst = (unsigned short) (llsb | (lmsb << 8));
+		if (inst != BREAK) {
+			fprintf(stderr, "There is no BREAK at 0x%8lX "
+					"address, ignoring\n", addr);
+			put_str_packet("E01");
+			return;
+		}
+
+		llsb = (unsigned char) mcu->mpm[addr];
+		lmsb = (unsigned char) mcu->mpm[addr+1];
+		mcu->pm[addr] = llsb;
+		mcu->pm[addr+1] = lmsb;
+
+		inst = (unsigned short) (llsb | (lmsb << 8));
+		if (MSIM_Is32(inst)) {
+			hlsb = (unsigned char) mcu->mpm[addr+2];
+			hmsb = (unsigned char) mcu->mpm[addr+3];
+			mcu->pm[addr+2] = hlsb;
+			mcu->pm[addr+3] = hmsb;
+		}
+		put_str_packet("OK");
+		break;
+	default:
+		fprintf(stderr, "RSP matchpoint type %d is not "
+				"supported\n", type);
+		put_str_packet("");
+		break;
 	}
 }
 
@@ -508,14 +632,14 @@ static struct rsp_buf *get_packet(void)
 	/* Keep getting packets, until one is found with a valid checksum */
 	while (1) {
 		unsigned char checksum;
-		int count;		/* Index into the buffer */
-		int ch;			/* Current character */
+		unsigned long count;		/* Index into the buffer */
+		char ch;			/* Current character */
 
 		/*
 		 * Wait around for the start character ('$'). Ignore
 		 * all other characters
 		 */
-		ch = get_rsp_char();
+		ch = (char)get_rsp_char();
 		while (ch != '$') {
 			if (ch == -1)
 				return  NULL;
@@ -529,14 +653,14 @@ static struct rsp_buf *get_packet(void)
 				buf.len = 1;
 				return &buf;
 			}
-			ch = get_rsp_char();
+			ch = (char)get_rsp_char();
 		}
 
 		/* Read until a '#' or end of buffer is found */
 		checksum = 0;
 		count = 0;
 		while (count < GDB_BUF_MAX-1) {
-			ch = get_rsp_char();
+			ch = (char)get_rsp_char();
 
 			/* Check for connection failure */
 			if (ch == -1)
@@ -577,13 +701,13 @@ static struct rsp_buf *get_packet(void)
 		if (ch == '#') {
 			unsigned char xmitcsum;
 
-			ch = get_rsp_char();
+			ch = (char)get_rsp_char();
 			if (ch == -1)
 				return  NULL;
 
-			xmitcsum = hex(ch) << 4;
+			xmitcsum = (unsigned char)(hex(ch)<<4);
 
-			ch = get_rsp_char();
+			ch = (char)get_rsp_char();
 			if (ch == -1)
 				return  NULL;
 
@@ -690,7 +814,7 @@ static int hex(int c)
 static void put_str_packet(const char *str)
 {
 	struct rsp_buf buf;
-	int len = strlen(str);
+	unsigned long len = strlen(str);
 
 	/*
 	 * Construct the packet to send, so long as string is not too big,
@@ -707,7 +831,6 @@ static void put_str_packet(const char *str)
 	buf.data[len] = 0;
 	buf.len = len;
 
-	printf("Put packet: %s\n", buf.data);
 	put_packet(&buf);
 }
 
@@ -727,18 +850,17 @@ static void put_packet(struct rsp_buf *buf)
 
 		/* Body of the packet */
 		for (count = 0; count < buf->len; count++) {
-			char ch = buf->data[count];
+			char c = buf->data[count];
 
 			/* Check for escaped chars */
-			if (('$' == ch) || ('#' == ch) ||
-			    ('*' == ch) || ('}' == ch)) {
-				ch ^= 0x20;
+			if (('$' == c) || ('#' == c) ||
+			    ('*' == c) || ('}' == c)) {
+				c ^= 0x20;
 				checksum += (unsigned char)'}';
 				put_rsp_char('}');
 			}
-
-			checksum += ch;
-			put_rsp_char(ch);
+			checksum += c;
+			put_rsp_char(c);
 		}
 
 		put_rsp_char ('#');		/* End char */
@@ -750,7 +872,7 @@ static void put_packet(struct rsp_buf *buf)
 		ch = get_rsp_char();
 		if (ch == -1)
 			return;			/* Fail the put silently. */
-	} while ('+' != ch);
+	} while (ch != '+');
 }
 
 static void rsp_report_exception(void)
@@ -771,17 +893,11 @@ static void rsp_continue(struct rsp_buf *buf)
 {
 	unsigned long addr;
 
-	if (strncmp(buf->data, "c", 2)) {
-		if (sscanf(buf->data, "c%lx", &addr) != 1) {
-			fprintf(stderr, "RSP continue address %s "
-					"not recognized: ignored\n",
-					buf->data);
-		} else {
-			rsp.mcu->pc = addr;
-			rsp.mcu->state = AVR_RUNNING;
-			rsp.client_waiting = 1;
-		}
+	if (sscanf(buf->data, "c%lx", &addr) == 1) {
+		rsp.mcu->pc = addr;
 	}
+	rsp.mcu->state = AVR_RUNNING;
+	rsp.client_waiting = 1;
 }
 
 static void rsp_query(struct rsp_buf *buf)
@@ -907,31 +1023,6 @@ static size_t read_reg(int n, char *buf)
 		break;
 	}
 	return strlen(buf);
-}
-
-static void write_reg(int n, unsigned char *val)
-{
-	/*
-	 * This function writes registers in order required to reply to
-	 * GDB client. Remember that N is not an index in this case!
-	 */
-	if (n >= 0 && n <= 31) {	/* GPR0..31 */
-		rsp.mcu->dm[n] = val[0];
-		return;
-	}
-
-	switch (n) {
-	case 32:			/* SREG */
-		*rsp.mcu->sreg = val[0];
-		break;
-	case 33:			/* SPH and SPL */
-		*rsp.mcu->spl = val[0];
-		*rsp.mcu->sph = val[1];
-		break;
-	case 34:			/* PC */
-		rsp.mcu->pc = val[0] | (val[1]<<8) | (val[2]<<16) | (0<<24);
-		break;
-	}
 }
 
 static void rsp_read_all_regs(void)

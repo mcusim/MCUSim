@@ -125,8 +125,12 @@ struct MSIM_AVR {
 	unsigned char *pm;		/* Flash memory (+bootloader). */
 	unsigned char *pmp;		/* Page buffer of the flash memory. */
 	unsigned char *dm;		/* GP and I/O registers, SRAM. */
+	unsigned char *mpm;		/* Memory to store instructions at
+					   breakpoints. */
 	unsigned long pm_size;		/* Actual size of the program memory. */
 	unsigned long dm_size;		/* Actual size of the data memory. */
+	unsigned char read_from_mpm;	/* Flag to read from breakpoints
+					   memory, it is 0 usually */
 
 
 	unsigned int sfr_off;		/* Offset to the AVR special function

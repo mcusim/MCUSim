@@ -110,7 +110,7 @@ int MSIM_PrintInstructions(struct MSIM_AVR *mcu, unsigned long start_addr,
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		 unsigned char *pm, unsigned long pm_size,
 		 unsigned char *dm, unsigned long dm_size,
-		 FILE *fp)
+		 unsigned char *mpm, FILE *fp)
 {
 	unsigned int i;
 	char mcu_found = 0;
@@ -135,6 +135,8 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		return -1;
 	}
 	mcu->state = AVR_STOPPED;
+	mcu->mpm = mpm;
+	mcu->read_from_mpm = 0;
 	return 0;
 }
 

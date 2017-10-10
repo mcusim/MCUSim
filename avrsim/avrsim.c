@@ -39,9 +39,12 @@
 
 static struct MSIM_AVRBootloader bls;
 static struct MSIM_AVR mcu;
-static unsigned char pm[PMSZ];
-static unsigned char pmp[PM_PAGESZ];
-static unsigned char dm[DMSZ];
+
+/* Statically allocated memory for MCU */
+static unsigned char pm[PMSZ];			/* Program memory */
+static unsigned char pmp[PM_PAGESZ];		/* Page buffer (PM) */
+static unsigned char dm[DMSZ];			/* Data memory */
+static unsigned char mpm[PMSZ];			/* Match points memory */
 
 static void print_usage(void);
 
@@ -96,7 +99,7 @@ int main(int argc, char *argv[])
 	fp = fopen(&mfn[0], "r");
 	mcu.bls = &bls;
 	mcu.pmp = pmp;
-	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, fp)) {
+	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp)) {
 		fprintf(stderr, "AVR %s cannot be initialized!\n", partno);
 		return -1;
 	}
