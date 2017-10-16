@@ -33,6 +33,7 @@
 #	include <unistd.h>
 #	include <errno.h>
 #	include <poll.h>
+#	include <netinet/in.h>
 #	include <netinet/tcp.h>
 
 #define AVRSIM_RSP_PROTOCOL		"tcp"
@@ -86,11 +87,13 @@ static void rsp_query(struct rsp_buf *buf);
 static void rsp_vpkt(struct rsp_buf *buf);
 static void rsp_restart(void);
 static void rsp_read_all_regs(void);
-static void rsp_write_all_regs(struct rsp_buf *buf);
 static void rsp_read_mem(struct rsp_buf *buf);
+static void rsp_write_mem(struct rsp_buf *buf);
+static void rsp_write_mem_bin(struct rsp_buf *buf);
 static void rsp_step(struct rsp_buf *buf);
 static void rsp_insert_matchpoint(struct rsp_buf *buf);
 static void rsp_remove_matchpoint(struct rsp_buf *buf);
+static unsigned long rsp_unescape(char *data, unsigned long len);
 
 static size_t read_reg(int n, char *buf);
 
@@ -437,7 +440,8 @@ static void rsp_client_request(void)
 		rsp_read_all_regs();
 		return;
 	case 'G':
-		rsp_write_all_regs(buf);
+		/* rsp_write_all_regs(buf); */
+		put_str_packet("");
 		return;
 	case 'H':
 		/*
@@ -455,13 +459,15 @@ static void rsp_client_request(void)
 		return;
 	case 'M':
 		/* Write memory (symbolic) */
-		/*rsp_write_mem(buf);*/
+		rsp_write_mem(buf);
 		return;
 	case 'p':
 		/*rsp_read_reg(buf);*/
+		put_str_packet("");
 		return;
 	case 'P':
 		/*rsp_write_reg(buf);*/
+		put_str_packet("");
 		return;
 	case 'q':
 		/* One of query packets */
@@ -484,7 +490,7 @@ static void rsp_client_request(void)
 		return;
 	case 'X':
 		/* Write memory (binary) */
-		/*rsp_write_mem_bin(buf);*/
+		rsp_write_mem_bin(buf);
 		return;
 	case 'z':
 		/* Remove a breakpoint/watchpoint */
@@ -1038,10 +1044,6 @@ static void rsp_read_all_regs(void)
 	put_str_packet(reply);
 }
 
-static void rsp_write_all_regs(struct rsp_buf *buf)
-{
-}
-
 static void rsp_read_mem(struct rsp_buf *buf)
 {
 	unsigned int addr, len, i;
@@ -1068,14 +1070,14 @@ static void rsp_read_mem(struct rsp_buf *buf)
 	if (addr < rsp.mcu->flashend) {
 		src = rsp.mcu->pm + addr;
 	} else if ((addr >= 0x800000) &&
-		   (rsp.mcu->ramend >= (addr-0x800000))) {
+		   ((addr-0x800000) <= rsp.mcu->ramend)) {
 		src = rsp.mcu->dm + addr - 0x800000;
 	} else if (addr == (0x800000 + rsp.mcu->ramend+1) && len == 2) {
 		put_str_packet("0000");
 		return;
 	} else if (addr >= 0x810000 && (addr-0x810000) <= rsp.mcu->e2end) {
 		/* There should be a pointer to EEPROM */
-		/*src = rsp.mcu->ee;*/
+		/*src = rsp.mcu->ee + addr - 0x810000;*/
 		put_str_packet("E01");
 		return;
 	} else {
@@ -1094,6 +1096,146 @@ static void rsp_read_mem(struct rsp_buf *buf)
 	buf->data[i*2] = 0;
 	buf->len = strlen(buf->data);
 	put_packet(buf);
+}
+
+static void rsp_write_mem(struct rsp_buf *buf)
+{
+	static unsigned char tmpbuf[GDB_BUF_MAX];
+
+	unsigned long addr, datlen;
+	unsigned int len;
+	char *symdat;
+	unsigned int off;
+	unsigned char mnyb, lnyb;
+	unsigned char *dest;
+
+	if (sscanf(buf->data, "M%lx,%x:", &addr, &len) != 2) {
+		fprintf(stderr, "Failed to recognize RSP write memory "
+				"command: %s\n", buf->data);
+		put_str_packet("E01");
+		return;
+	}
+
+	/*
+	 * Find the start of the data and check there is the amount
+	 * we expect.
+	 */
+	symdat = memchr((const void *)buf->data, ':', GDB_BUF_MAX);
+	symdat++;
+	datlen = buf->len - (unsigned long)(symdat - buf->data);
+
+	/* Sanity check */
+	if (datlen != len*2) {
+		fprintf(stderr, "Write of %d digits requested, but %lu "
+				"digits supplied: request ignored\n",
+				len*2, datlen);
+		put_str_packet("E01");
+		return;
+	}
+
+	/* Write bytes to memory */
+	for (off = 0; off < len; off++) {
+		mnyb = (unsigned char)hex(symdat[off*2]);
+		lnyb = (unsigned char)hex(symdat[off*2+1]);
+		tmpbuf[off] = ((mnyb<<4)&0xF0)|(lnyb&0x0F);
+	}
+	/* Find a memory to write to */
+	if (addr < rsp.mcu->flashend) {
+		dest = rsp.mcu->pm + addr;
+	} else if ((addr >= 0x800000) &&
+		   ((addr-0x800000) <= rsp.mcu->ramend)) {
+		dest = rsp.mcu->dm + addr - 0x800000;
+	} else if (addr >= 0x810000 && (addr-0x810000) <= rsp.mcu->e2end) {
+		/* There should be a pointer to EEPROM */
+		/*dest = rsp.mcu->ee + addr - 0x810000;*/
+		put_str_packet("E01");
+		return;
+	} else {
+		fprintf(stderr, "Unable to write memory %08lX, %08X\n",
+				addr, len);
+		put_str_packet("E01");
+		return;
+	}
+	memcpy(dest, tmpbuf, len);
+	put_str_packet("OK");
+}
+
+static void rsp_write_mem_bin(struct rsp_buf *buf)
+{
+	unsigned long addr, datlen, len;
+	char *bindat;
+	unsigned int off;
+	unsigned char *dest;
+
+	if (sscanf(buf->data, "X%lx,%lx:", &addr, &len) != 2) {
+		fprintf(stderr, "Failed to recognize RSP write memory "
+				"command: %s\n", buf->data);
+		put_str_packet("E01");
+		return;
+	}
+
+	/* Find the start of the data and "unescape" it. */
+	bindat = memchr((const void *)buf->data, ':', GDB_BUF_MAX);
+	bindat++;
+	off = (unsigned int)(bindat - buf->data);
+	datlen = rsp_unescape(bindat, buf->len - off);
+
+	/* Sanity check */
+	if (datlen != len) {
+		unsigned long minlen = len < datlen ? len : datlen;
+
+		fprintf(stderr, "Write of %lu bytes requested, but %lu bytes "
+				"supplied. %lu will be written\n",
+				len, datlen, minlen);
+		len = minlen;
+	}
+	/* Find a memory to write to */
+	if (addr < rsp.mcu->flashend) {
+		dest = rsp.mcu->pm + addr;
+	} else if ((addr >= 0x800000) &&
+		   ((addr-0x800000) <= rsp.mcu->ramend)) {
+		dest = rsp.mcu->dm + addr - 0x800000;
+	} else if (addr >= 0x810000 && (addr-0x810000) <= rsp.mcu->e2end) {
+		/* There should be a pointer to EEPROM */
+		/*dest = rsp.mcu->ee + addr - 0x810000;*/
+		put_str_packet("E01");
+		return;
+	} else {
+		fprintf(stderr, "Unable to write memory %08lX, %08lX\n",
+				addr, len);
+		put_str_packet("E01");
+		return;
+	}
+	memcpy(dest, bindat, len);
+	put_str_packet("OK");
+}
+
+/*
+ * "Unescape" RSP binary data.
+ * '#', '$' and '}' are escaped by preceding them by '}' and oring with 0x20.
+ * This function reverses that, modifying the data in place.
+ *
+ * @param[in] data The array of bytes to convert
+ * @para[in] len The number of bytes to be converted
+ * @return The number of bytes AFTER conversion
+ */
+static unsigned long rsp_unescape(char *data, unsigned long len)
+{
+	unsigned long from_off = 0;		/* Offset to source char */
+	unsigned long to_off = 0;		/* Offset to dest char */
+
+	while (from_off < len) {
+		/* Is it escaped? */
+		if (data[from_off] == '}') {
+			from_off++;
+			data[to_off] = data[from_off] ^ 0x20;
+		} else {
+			data[to_off] = data[from_off];
+		}
+		from_off++;
+		to_off++;
+	}
+	return  to_off;
 }
 
 static void rsp_step(struct rsp_buf *buf)
