@@ -43,6 +43,7 @@
 #define BREAK				((BREAK_HIGH<<8)|BREAK_LOW)
 
 #define GDB_BUF_MAX			(16*1024)
+#define REG_BUF_MAX			32
 
 enum mp_type {
 	BP_SOFTWARE	= 0,
@@ -80,6 +81,7 @@ static void put_packet(struct rsp_buf *buf);
 static int get_rsp_char(void);
 static void put_rsp_char(char c);
 static int hex(int c);
+static unsigned long hex2reg(char *buf);
 static void put_str_packet(const char *str);
 static void rsp_report_exception(void);
 static void rsp_continue(struct rsp_buf *buf);
@@ -94,8 +96,11 @@ static void rsp_step(struct rsp_buf *buf);
 static void rsp_insert_matchpoint(struct rsp_buf *buf);
 static void rsp_remove_matchpoint(struct rsp_buf *buf);
 static unsigned long rsp_unescape(char *data, unsigned long len);
+static void rsp_read_reg(struct rsp_buf *buf);
+static void rsp_write_reg(struct rsp_buf *buf);
 
 static size_t read_reg(int n, char *buf);
+static void write_reg(int n, char *buf);
 
 void MSIM_RSPInit(struct MSIM_AVR *mcu, int portn)
 {
@@ -462,12 +467,10 @@ static void rsp_client_request(void)
 		rsp_write_mem(buf);
 		return;
 	case 'p':
-		/*rsp_read_reg(buf);*/
-		put_str_packet("");
+		rsp_read_reg(buf);
 		return;
 	case 'P':
-		/*rsp_write_reg(buf);*/
-		put_str_packet("");
+		rsp_write_reg(buf);
 		return;
 	case 'q':
 		/* One of query packets */
@@ -505,6 +508,40 @@ static void rsp_client_request(void)
 		fprintf(stderr, "Unknown RSP request: %s\n", buf->data);
 		return;
 	}
+}
+
+static void rsp_read_reg(struct rsp_buf *buf)
+{
+	int regn;
+	char val[REG_BUF_MAX];
+
+	if (sscanf(buf->data, "p%x", &regn) != 1) {
+		fprintf(stderr, "Failed to recognize RSP read register "
+				"command: %s\n", buf->data);
+		put_str_packet("E01");
+		return;
+	}
+
+	val[0] = 0;
+	if (!read_reg(regn, val))
+		fprintf(stderr, "Unknown register %u, empty response "
+				"will be returned\n", regn);
+	put_str_packet(val);
+}
+
+static void rsp_write_reg(struct rsp_buf *buf)
+{
+	int regn;
+	char val[REG_BUF_MAX];
+
+	if (sscanf(buf->data, "P%x=%8s", &regn, val) != 2) {
+		fprintf(stderr, "Failed to recognize RSP write register "
+				"command: %s\n", buf->data);
+		put_str_packet("E01");
+		return;
+	}
+	write_reg(regn, val);
+	put_str_packet("OK");
 }
 
 static void rsp_insert_matchpoint(struct rsp_buf *buf)
@@ -817,6 +854,30 @@ static int hex(int c)
 	       ((c >= 'A') && (c <= 'F')) ? c - 'A' + 10 : -1;
 }
 
+/*
+ * Convert a hex digit string to a register value.
+ * The supplied 8 digit hex string is converted to a 32-bit value according
+ * the target endianness.
+ *
+ * buf		The buffer with the hex string
+ * return	The value to convert
+ */
+static unsigned long hex2reg(char *buf)
+{
+	unsigned int n;			/* Counter for digits */
+	unsigned long dign;		/* Number of digits */
+	unsigned long val;		/* The result */
+	int nyb_shift;
+
+	val = buf[9] = 0;
+	dign = strlen(buf);
+	for (n = 0; n < dign; n++) {
+		nyb_shift = (int)(((dign-1)*4)-(n*4));
+		val |= (unsigned long)(hex(buf[n]) << nyb_shift);
+	}
+	return val;
+}
+
 static void put_str_packet(const char *str)
 {
 	struct rsp_buf buf;
@@ -1029,6 +1090,31 @@ static size_t read_reg(int n, char *buf)
 		break;
 	}
 	return strlen(buf);
+}
+
+static void write_reg(int n, char *buf)
+{
+	unsigned long v;
+
+	if (n >= 0 && n <= 31) {	/* GPR0..31 */
+		rsp.mcu->dm[n] = (unsigned char)hex2reg(buf);
+		return;
+	}
+
+	switch (n) {
+	case 32:			/* SREG */
+		*rsp.mcu->sreg = (unsigned char)hex2reg(buf);
+		break;
+	case 33:			/* SPH and SPL */
+		v = hex2reg(buf);
+		*rsp.mcu->sph = (unsigned char)(v&0xFF);
+		*rsp.mcu->spl = (unsigned char)((v>>8)&0xFF);
+		break;
+	case 34:			/* PC */
+		rsp.mcu->pc = hex2reg(buf);
+		break;
+	}
+	return;
 }
 
 static void rsp_read_all_regs(void)
