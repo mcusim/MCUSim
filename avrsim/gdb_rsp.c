@@ -81,7 +81,7 @@ static void put_packet(struct rsp_buf *buf);
 static int get_rsp_char(void);
 static void put_rsp_char(char c);
 static int hex(int c);
-static unsigned long hex2reg(char *buf);
+static unsigned long hex2reg(char *buf, const unsigned long dign);
 static void put_str_packet(const char *str);
 static void rsp_report_exception(void);
 static void rsp_continue(struct rsp_buf *buf);
@@ -89,6 +89,7 @@ static void rsp_query(struct rsp_buf *buf);
 static void rsp_vpkt(struct rsp_buf *buf);
 static void rsp_restart(void);
 static void rsp_read_all_regs(void);
+static void rsp_write_all_regs(struct rsp_buf *buf);
 static void rsp_read_mem(struct rsp_buf *buf);
 static void rsp_write_mem(struct rsp_buf *buf);
 static void rsp_write_mem_bin(struct rsp_buf *buf);
@@ -445,8 +446,7 @@ static void rsp_client_request(void)
 		rsp_read_all_regs();
 		return;
 	case 'G':
-		/* rsp_write_all_regs(buf); */
-		put_str_packet("");
+		rsp_write_all_regs(buf);
 		return;
 	case 'H':
 		/*
@@ -860,17 +860,16 @@ static int hex(int c)
  * the target endianness.
  *
  * buf		The buffer with the hex string
+ * dign		Number of digits in buffer to convert
  * return	The value to convert
  */
-static unsigned long hex2reg(char *buf)
+static unsigned long hex2reg(char *buf, const unsigned long dign)
 {
 	unsigned int n;			/* Counter for digits */
-	unsigned long dign;		/* Number of digits */
 	unsigned long val;		/* The result */
 	int nyb_shift;
 
-	val = buf[9] = 0;
-	dign = strlen(buf);
+	val = 0;
 	for (n = 0; n < dign; n++) {
 		nyb_shift = (int)(((dign-1)*4)-(n*4));
 		val |= (unsigned long)(hex(buf[n]) << nyb_shift);
@@ -1097,21 +1096,21 @@ static void write_reg(int n, char *buf)
 	unsigned long v;
 
 	if (n >= 0 && n <= 31) {	/* GPR0..31 */
-		rsp.mcu->dm[n] = (unsigned char)hex2reg(buf);
+		rsp.mcu->dm[n] = (unsigned char)hex2reg(buf, 2);
 		return;
 	}
 
 	switch (n) {
 	case 32:			/* SREG */
-		*rsp.mcu->sreg = (unsigned char)hex2reg(buf);
+		*rsp.mcu->sreg = (unsigned char)hex2reg(buf, 2);
 		break;
 	case 33:			/* SPH and SPL */
-		v = hex2reg(buf);
+		v = hex2reg(buf, 4);
 		*rsp.mcu->sph = (unsigned char)(v&0xFF);
 		*rsp.mcu->spl = (unsigned char)((v>>8)&0xFF);
 		break;
 	case 34:			/* PC */
-		rsp.mcu->pc = hex2reg(buf);
+		rsp.mcu->pc = hex2reg(buf, 8);
 		break;
 	}
 	return;
@@ -1128,6 +1127,41 @@ static void rsp_read_all_regs(void)
 		rep += read_reg(i, rep);
 	*rep = 0;
 	put_str_packet(reply);
+}
+
+static void rsp_write_all_regs(struct rsp_buf *buf)
+{
+	unsigned int n, off;
+	unsigned long v;
+
+	off = 0;
+	for (n = 0; n < 35; n++) {
+		if (n <= 31) {			/* GPR0..31 */
+			rsp.mcu->dm[n] = (unsigned char)
+				hex2reg(buf->data+off, 2);
+			off += 2;
+			continue;
+		}
+
+		switch (n) {
+		case 32:			/* SREG */
+			*rsp.mcu->sreg = (unsigned char)
+				hex2reg(buf->data+off, 2);
+			off += 2;
+			break;
+		case 33:			/* SPH and SPL */
+			v = hex2reg(buf->data+off, 4);
+			off += 4;
+			*rsp.mcu->sph = (unsigned char)(v&0xFF);
+			*rsp.mcu->spl = (unsigned char)((v>>8)&0xFF);
+			break;
+		case 34:			/* PC */
+			rsp.mcu->pc = hex2reg(buf->data+off, 8);
+			off += 8;
+			break;
+		}
+	}
+	put_str_packet("OK");
 }
 
 static void rsp_read_mem(struct rsp_buf *buf)
