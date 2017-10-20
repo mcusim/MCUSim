@@ -22,7 +22,7 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Version
-set(MSIM_VERSION "0.1.13")
+set(MSIM_VERSION "0.1.14")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Set application name
@@ -77,7 +77,6 @@ if (LUA51_FOUND)
 	add_definitions(-DLUA51_FOUND=1)
 	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
 else()
-	message(STATUS "Lua 5.1+ is not found")
 	message(STATUS "Support for Lua-based peripherals will be disabled")
 endif()
 
@@ -100,17 +99,33 @@ check_include_files(unistd.h HAVE_UNISTD_H)
 check_include_files(errno.h HAVE_ERRNO_H)
 check_include_files(poll.h HAVE_POLL_H)
 check_include_files(netinet/in.h HAVE_NETINET_IN_H)
-check_include_files(netinet/tcp.h HAVE_NETINET_TCP_H)
-if (HAVE_NETDB_H AND
-    HAVE_SYS_SOCKET_H AND
-    HAVE_STRING_H AND
-    HAVE_FCNTL_H AND
-    HAVE_UNISTD_H AND
-    HAVE_ERRNO_H AND
-    HAVE_POLL_H AND
-    HAVE_NETINET_IN_H AND
-    HAVE_NETINET_TCP_H)
-	add_definitions(-DMSIM_POSIX=1)
+if (NOT CYGWIN)
+	check_include_files(netinet/tcp.h HAVE_NETINET_TCP_H)
+	if (HAVE_NETDB_H AND
+	    HAVE_SYS_SOCKET_H AND
+	    HAVE_STRING_H AND
+	    HAVE_FCNTL_H AND
+	    HAVE_UNISTD_H AND
+	    HAVE_ERRNO_H AND
+	    HAVE_POLL_H AND
+	    HAVE_NETINET_IN_H AND
+	    HAVE_NETINET_TCP_H)
+		add_definitions(-DMSIM_POSIX=1)
+	endif()
+else()
+	# CMake cannot find netinet/tcp.h under CYGWIN and it's not
+	# required, to be honest. Let me ignore this header silently.
+	if (HAVE_NETDB_H AND
+	    HAVE_SYS_SOCKET_H AND
+	    HAVE_STRING_H AND
+	    HAVE_FCNTL_H AND
+	    HAVE_UNISTD_H AND
+	    HAVE_ERRNO_H AND
+	    HAVE_POLL_H AND
+	    HAVE_NETINET_IN_H)
+		add_definitions(-DMSIM_POSIX=1)
+		add_definitions(-DMSIM_POSIX_CYGWIN=1)
+	endif()
 endif()
 #
 # END Check functions, include files here

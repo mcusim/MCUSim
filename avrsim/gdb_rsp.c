@@ -34,7 +34,9 @@
 #	include <errno.h>
 #	include <poll.h>
 #	include <netinet/in.h>
+#ifndef MSIM_POSIX_CYGWIN
 #	include <netinet/tcp.h>
+#endif
 
 #define AVRSIM_RSP_PROTOCOL		"tcp"
 
@@ -1366,7 +1368,7 @@ static void rsp_step(struct rsp_buf *buf)
 
 #else /* MSIM_POSIX is not defined */
 
-void MSIM_RSPInit(int portn)
+void MSIM_RSPInit(struct MSIM_AVR *mcu, int portn)
 {
 }
 
