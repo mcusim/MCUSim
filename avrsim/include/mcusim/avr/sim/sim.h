@@ -27,6 +27,7 @@ extern "C" {
 #include <stdint.h>
 
 #include "mcusim/avr/sim/bootloader.h"
+#include "mcusim/avr/sim/vcd_dump.h"
 
 #define SIM_NAME		"avrsim"
 
@@ -118,7 +119,7 @@ struct MSIM_AVR {
 	unsigned char *rampy;		/* Extended Y-pointer register. */
 	unsigned char *rampx;		/* Extended X-pointer register. */
 	unsigned char *rampd;		/* Extended direct register.
-					   NOTE: Let me know if you're aware
+					   NOTE: Email me if you're aware
 					   of AVR MCUs which use this register
 					   at darkness.bsd at gmail.com */
 
@@ -141,6 +142,9 @@ struct MSIM_AVR {
 	MSIM_SetFuse_f set_fusef;	/* Function to set AVR fuse byte. */
 	MSIM_SetLock_f set_lockf;	/* Function to set AVR lock byte. */
 	MSIM_Tick8Timers_f tick_8timers;
+
+	struct MSIM_VCD_DumpReg vcd_regs[64];	/* MCU registers to dump. */
+	unsigned int vcd_rn;		/* Number of registers to dump. */
 };
 
 #ifdef __cplusplus

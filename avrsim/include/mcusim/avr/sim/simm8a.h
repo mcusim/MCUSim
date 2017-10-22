@@ -33,18 +33,18 @@
 #define MCU_NAME	"ATmega8A"
 
 #define RESET_PC	0x0000
-#define PC_BITS		12		/* PC bit capacity */
-#define LBITS_DEFAULT	0x3F		/* Default lock bits */
+#define PC_BITS		12	/* PC bit capacity */
+#define LBITS_DEFAULT	0x3F	/* Default lock bits */
 
 #define CLK_SOURCE	AVR_INT_CAL_RC_CLK /* Calibrated Internal RC */
-#define CLK_FREQ	1000000		/* Oscillator frequency, in Hz */
+#define CLK_FREQ	1000000	/* Oscillator frequency, in Hz */
 
-#define GP_REGS		32		/* GP registers, R0, R1, ..., R31 */
-#define IO_REGS		64		/* I/O registers, PORTD, SREG, etc. */
+#define GP_REGS		32	/* GP registers (r0, r1, etc.) */
+#define IO_REGS		64	/* I/O registers (PORTD, SREG, etc.) */
 
-#define BLS_START	0x1800		/* First address in BLS, in bytes */
-#define BLS_END		0x1FFF		/* Last address in BLS, in bytes */
-#define BLS_SIZE	2048		/* BLS size, in bytes */
+#define BLS_START	0x1800	/* First address in BLS, in bytes */
+#define BLS_END		0x1FFF	/* Last address in BLS, in bytes */
+#define BLS_SIZE	2048	/* BLS size, in bytes */
 
 #define SET_FUSE_F	MSIM_M8ASetFuse
 #define SET_LOCK_F	MSIM_M8ASetLock
@@ -54,5 +54,21 @@
 int MSIM_M8ASetFuse(void *mcu, unsigned int fuse_n, unsigned char fuse_v);
 int MSIM_M8ASetLock(void *mcu, unsigned char lock_v);
 int MSIM_M8ATick8Timers(void *mcu);
+
+/* Available MCU registers to include into VCD dump */
+#define VCD_DUMP_REGS {							\
+	{ "SREG",	0x5F, NULL, 0 },				\
+	{ "SPH",	0x5E, NULL, 0 },				\
+	{ "SPL",	0x5D, NULL, 0 },				\
+	{ "PORTB",	0x38, NULL, 0 },				\
+	{ "DDRB",	0x37, NULL, 0 },				\
+	{ "PINB",	0x36, NULL, 0 },				\
+	{ "PORTC",	0x35, NULL, 0 },				\
+	{ "DDRC",	0x34, NULL, 0 },				\
+	{ "PINC",	0x33, NULL, 0 },				\
+	{ "PORTD",	0x32, NULL, 0 },				\
+	{ "DDRD",	0x31, NULL, 0 },				\
+	{ "PIND",	0x30, NULL, 0 }					\
+}
 
 #endif /* MSIM_AVR_SIMM8A_H_ */

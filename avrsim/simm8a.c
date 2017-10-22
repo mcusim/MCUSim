@@ -36,7 +36,8 @@ static unsigned int tc0_ticks;
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu,
 		 unsigned char *pm, unsigned long pm_size,
-		 unsigned char *dm, unsigned long dm_size)
+		 unsigned char *dm, unsigned long dm_size,
+		 char *vcd_regs[], unsigned long vcd_rn)
 {
 #include "mcusim/avr/sim/mcu_init.h"
 }

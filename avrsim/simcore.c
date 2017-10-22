@@ -29,13 +29,15 @@
 #include "mcusim/avr/sim/peripheral_lua.h"
 #include "mcusim/avr/sim/decoder.h"
 #include "mcusim/avr/sim/gdb_rsp.h"
+#include "mcusim/avr/sim/vcd_dump.h"
 
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
 
 typedef int (*init_func)(struct MSIM_AVR *mcu,
 			 unsigned char *pm, unsigned long pm_size,
-			 unsigned char *dm, unsigned long dm_size);
+			 unsigned char *dm, unsigned long dm_size,
+			 char *vcd_regs[], unsigned long vcd_rn);
 
 /* Cell contains AVR MCU part and its init function. */
 struct init_cell {
@@ -110,14 +112,16 @@ int MSIM_PrintInstructions(struct MSIM_AVR *mcu, unsigned long start_addr,
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		 unsigned char *pm, unsigned long pm_size,
 		 unsigned char *dm, unsigned long dm_size,
-		 unsigned char *mpm, FILE *fp)
+		 unsigned char *mpm, FILE *fp,
+		 char *vcd_regs[], unsigned long vcd_rn)
 {
 	unsigned int i;
 	char mcu_found = 0;
 
 	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++)
 		if (!strcmp(init_funcs[i].partno, mcu_name)) {
-			if (init_funcs[i].f(mcu, pm, pm_size, dm, dm_size))
+			if (init_funcs[i].f(mcu, pm, pm_size, dm, dm_size,
+					    vcd_regs, vcd_rn))
 				return -1;
 			else
 				mcu_found = 1;

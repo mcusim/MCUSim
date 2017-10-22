@@ -19,6 +19,10 @@
  */
 
 unsigned long dmsz, pmsz;
+#ifdef VCD_DUMP_REGS
+unsigned int i, j;
+static struct MSIM_VCD_DumpReg known_regs[] = VCD_DUMP_REGS;
+#endif
 
 if (!mcu) {
 	fprintf(stderr, "MCU should not be NULL\n");
@@ -146,6 +150,29 @@ mcu->spmcsr = &mcu->dm[_SFR_IO8(SPMCSR)];
 mcu->spmcsr = &mcu->dm[_SFR_IO8(SPMCR)];
 #else
 mcu->spmcsr = NULL;
+#endif
+
+#ifdef VCD_DUMP_REGS
+/*
+ * Setting up only registers which will be included into a dump.
+ */
+mcu->vcd_rn = 0;
+for (i = 0; i < sizeof known_regs/sizeof known_regs[0]; i++) {
+	known_regs[i].addr = &mcu->dm[known_regs[i].off];
+	known_regs[i].oldv = *known_regs[i].addr;
+}
+for (i = 0; i < vcd_rn; i++) {
+	for (j = 0; j < sizeof known_regs/sizeof known_regs[0]; j++) {
+		if (!strncmp(known_regs[j].name, vcd_regs[i],
+			     sizeof known_regs[j].name)) {
+			/*
+			 * We've found a requested register among known ones.
+			 */
+			mcu->vcd_regs[mcu->vcd_rn++] = known_regs[j];
+			break;
+		}
+	}
+}
 #endif
 
 mcu->clk_source = CLK_SOURCE;

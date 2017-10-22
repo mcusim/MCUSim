@@ -17,17 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
+#ifndef MSIM_AVR_VCD_DUMP_H_
+#define MSIM_AVR_VCD_DUMP_H_ 1
 
-#include "mcusim/avr/sim/simm2560.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-int MSIM_M2560Init(struct MSIM_AVR *mcu,
-		   unsigned char *pm, unsigned long pm_size,
-		   unsigned char *dm, unsigned long dm_size,
-		   char *vcd_regs[], unsigned long vcd_rn)
-{
-#include "mcusim/avr/sim/mcu_init.h"
+struct MSIM_VCD_DumpReg {
+	char name[16];			/* Name of a register (DDRB, etc.) */
+	unsigned long off;		/* Offset to the register in RAM */
+	unsigned char *addr;		/* Pointer to the register in
+					   the data memory */
+	unsigned char oldv;		/* This value will help us to
+					   understand whether register
+					   has been changed */
+};
+
+#ifdef __cplusplus
 }
+#endif
+
+#endif /* MSIM_AVR_VCD_DUMP_H_ */
