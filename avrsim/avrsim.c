@@ -54,7 +54,7 @@ static char vcd_regs[VCD_DUMP_REGS][16];	/* MCU registers to dump */
 static char *vcd_regsp[VCD_DUMP_REGS];
 static unsigned int vcd_rn;			/* Number of registers */
 static unsigned int vcd_time;			/* Simulated time, in ms */
-static unsigned char print_regs;		/* Print available registers
+static char print_regs;				/* Print available registers
 						   which can be dumped */
 
 static void print_usage(void);
@@ -127,11 +127,14 @@ int main(int argc, char *argv[])
 	mcu.bls = &bls;
 	mcu.pmp = pmp;
 	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp,
-		         vcd_regsp, vcd_rn)) {
+		         vcd_regsp, vcd_rn, print_regs)) {
 		fprintf(stderr, "AVR %s cannot be initialized!\n", partno);
 		return -1;
 	}
 	fclose(fp);
+
+	if (print_regs)
+		return 0;	/* Do not simulate, just print registers. */
 
 	/* Prepare and run AVR simulation */
 	MSIM_RSPInit(&mcu, GDB_RSP_PORT);

@@ -34,10 +34,7 @@
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
 
-typedef int (*init_func)(struct MSIM_AVR *mcu,
-			 unsigned char *pm, unsigned long pm_size,
-			 unsigned char *dm, unsigned long dm_size,
-			 char *vcd_regs[], unsigned long vcd_rn);
+typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 
 /* Cell contains AVR MCU part and its init function. */
 struct init_cell {
@@ -113,15 +110,24 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		 unsigned char *pm, unsigned long pm_size,
 		 unsigned char *dm, unsigned long dm_size,
 		 unsigned char *mpm, FILE *fp,
-		 char *vcd_regs[], unsigned long vcd_rn)
+		 char *vcd_regs[], unsigned long vcd_rn,
+		 char print_vcd_regs)
 {
 	unsigned int i;
 	char mcu_found = 0;
+	struct MSIM_InitArgs args;
+
+	args.pm = pm;
+	args.dm = dm;
+	args.pmsz = pm_size;
+	args.dmsz = dm_size;
+	args.vcd_regs = vcd_regs;
+	args.vcd_rn = vcd_rn;
+	args.print_vcd_regs = print_vcd_regs;
 
 	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++)
 		if (!strcmp(init_funcs[i].partno, mcu_name)) {
-			if (init_funcs[i].f(mcu, pm, pm_size, dm, dm_size,
-					    vcd_regs, vcd_rn))
+			if (init_funcs[i].f(mcu, &args))
 				return -1;
 			else
 				mcu_found = 1;

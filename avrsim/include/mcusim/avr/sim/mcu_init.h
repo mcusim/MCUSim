@@ -18,7 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-unsigned long dmsz, pmsz;
+unsigned char *pm;
+unsigned char *dm;
+unsigned long pmsz, pm_size;
+unsigned long dmsz, dm_size;
+char **vcd_regs;
+unsigned long vcd_rn;
+
 #ifdef VCD_DUMP_REGS
 unsigned int i, j;
 static struct MSIM_VCD_DumpReg known_regs[] = VCD_DUMP_REGS;
@@ -28,8 +34,15 @@ if (!mcu) {
 	fprintf(stderr, "MCU should not be NULL\n");
 	return -1;
 }
-strcpy(mcu->name, MCU_NAME);
 
+pm = args->pm;
+dm = args->dm;
+pm_size = args->pmsz;
+dm_size = args->dmsz;
+vcd_regs = args->vcd_regs;
+vcd_rn = args->vcd_rn;
+
+strcpy(mcu->name, MCU_NAME);
 mcu->signature[0] = SIGNATURE_0;
 mcu->signature[1] = SIGNATURE_1;
 mcu->signature[2] = SIGNATURE_2;
@@ -160,8 +173,15 @@ mcu->vcd_rn = 0;
 for (i = 0; i < sizeof known_regs/sizeof known_regs[0]; i++) {
 	known_regs[i].addr = &mcu->dm[known_regs[i].off];
 	known_regs[i].oldv = *known_regs[i].addr;
+
+	if (args->print_vcd_regs)
+		printf("%s (0x%2lX)\n", known_regs[i].name,
+					known_regs[i].off);
 }
 for (i = 0; i < vcd_rn; i++) {
+	if (args->print_vcd_regs)
+		break;	/* Print registers only, do not dump */
+
 	for (j = 0; j < sizeof known_regs/sizeof known_regs[0]; j++) {
 		if (!strncmp(known_regs[j].name, vcd_regs[i],
 			     sizeof known_regs[j].name)) {

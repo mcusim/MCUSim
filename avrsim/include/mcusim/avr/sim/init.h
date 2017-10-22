@@ -28,29 +28,30 @@
 extern "C" {
 #endif
 
+struct MSIM_InitArgs {
+	unsigned char *pm;
+	unsigned char *dm;
+	unsigned long pmsz;
+	unsigned long dmsz;
+	char **vcd_regs;
+	unsigned long vcd_rn;
+	char print_vcd_regs;		/* Flag to print registers which
+					   can be included into VCD dump.
+					   No register will be dumped if
+					   this flag is set. */
+};
+
 /* Initialize MCU as ATmega8A */
-int MSIM_M8AInit(struct MSIM_AVR *mcu,
-		 unsigned char *pm, unsigned long pm_size,
-		 unsigned char *dm, unsigned long dm_size,
-		 char *vcd_regs[], unsigned long vcd_rn);
+int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 
 /* Initialize MCU as ATmega328 */
-int MSIM_M328Init(struct MSIM_AVR *mcu,
-		  unsigned char *pm, unsigned long pm_size,
-		  unsigned char *dm, unsigned long dm_size,
-		  char *vcd_regs[], unsigned long vcd_rn);
+int MSIM_M328Init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 
 /* Initialize MCU as ATmega328P */
-int MSIM_M328PInit(struct MSIM_AVR *mcu,
-		   unsigned char *pm, unsigned long pm_size,
-		   unsigned char *dm, unsigned long dm_size,
-		   char *vcd_regs[], unsigned long vcd_rn);
+int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 
 /* Initialize MCU as ATmega2560 */
-int MSIM_M2560Init(struct MSIM_AVR *mcu,
-		   unsigned char *pm, unsigned long pm_size,
-		   unsigned char *dm, unsigned long dm_size,
-		   char *vcd_regs[], unsigned long vcd_rn);
+int MSIM_M2560Init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 
 #ifdef __cplusplus
 }

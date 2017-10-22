@@ -24,10 +24,7 @@
 
 #include "mcusim/avr/sim/simm328.h"
 
-int MSIM_M328Init(struct MSIM_AVR *mcu,
-		  unsigned char *pm, unsigned long pm_size,
-		  unsigned char *dm, unsigned long dm_size,
-		  char *vcd_regs[], unsigned long vcd_rn)
+int MSIM_M328Init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
 #include "mcusim/avr/sim/mcu_init.h"
 }
