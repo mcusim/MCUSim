@@ -37,8 +37,6 @@
 
 #define GDB_RSP_PORT		12750
 
-#define VCD_DUMP_REGS		64
-
 static struct MSIM_AVRBootloader bls;
 static struct MSIM_AVR mcu;
 
@@ -49,11 +47,8 @@ static unsigned char dm[DMSZ];			/* Data memory */
 static unsigned char mpm[PMSZ];			/* Match points memory */
 
 /* VCD dump options */
-static char *vcd_file;				/* VCD dump file */
-static char vcd_regs[VCD_DUMP_REGS][16];	/* MCU registers to dump */
-static char *vcd_regsp[VCD_DUMP_REGS];
+static char vcd_regs[VCD_REGS_MAX][16];		/* MCU registers to dump */
 static unsigned int vcd_rn;			/* Number of registers */
-static unsigned int vcd_time;			/* Simulated time, in ms */
 static char print_regs;				/* Print available registers
 						   which can be dumped */
 
@@ -67,11 +62,9 @@ int main(int argc, char *argv[])
 	int c, r;
 	char mtype[21], mop, mfn[4096];
 	char *partno, *mopt, *luap;
-	unsigned int i;
+	unsigned int i, j, regs, dregs;
 
 	partno = mopt = luap = NULL;
-	vcd_file = "avr-dump.vcd";
-	vcd_time = 1000;
 	vcd_rn = 0;
 	print_regs = 0;
 
@@ -114,10 +107,6 @@ int main(int argc, char *argv[])
 		return 0;
 	}
 
-	/* Parse registers to be dumped into VCD file */
-	for (i = 0; i < sizeof vcd_regsp/sizeof vcd_regsp[0]; i++)
-		vcd_regsp[i] = vcd_regs[i];
-
 	/* Load Lua peripherals if it is required */
 	if (luap != NULL && MSIM_LoadLuaPeripherals(luap))
 		return -1;
@@ -126,15 +115,35 @@ int main(int argc, char *argv[])
 	fp = fopen(&mfn[0], "r");
 	mcu.bls = &bls;
 	mcu.pmp = pmp;
-	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp,
-		         vcd_regsp, vcd_rn, print_regs)) {
+	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp)) {
 		fprintf(stderr, "AVR %s cannot be initialized!\n", partno);
 		return -1;
 	}
 	fclose(fp);
 
-	if (print_regs)
-		return 0;	/* Do not simulate, just print registers. */
+	/* Print available registers only? */
+	regs = sizeof mcu.vcd_regs/sizeof mcu.vcd_regs[0];
+	if (print_regs) {
+		for (i = 0; i < regs; i++) {
+			/* Print first N registers only */
+			if (mcu.vcd_regs[i].name[0] == 0)
+				break;
+			printf("%s (0x%2lX)\n", mcu.vcd_regs[i].name,
+						mcu.vcd_regs[i].off);
+		}
+		return 0;
+	}
+
+	/* Select registers to be dumped */
+	dregs = 0;
+	for (i = 0; i < vcd_rn; i++) {
+		for (j = 0; j < regs; j++) {
+			if (!strcmp(vcd_regs[i], mcu.vcd_regs[j].name)) {
+				mcu.vcd_regsn[dregs++] = (short)j;
+				break;
+			}
+		}
+	}
 
 	/* Prepare and run AVR simulation */
 	MSIM_RSPInit(&mcu, GDB_RSP_PORT);
@@ -166,15 +175,7 @@ static void parse_dump(char *cmd)
 	if (!strcmp(cmd, "ump-regs=?")) {
 		print_regs = 1;
 		return;
-	}
-
-	if (strstr(cmd, "ump-time=") != NULL) {
-	    if (sscanf(cmd, "ump-time=%d", &vcd_time) != 1)
-		    fprintf(stderr, "Failed to set dump time: %s\n", cmd);
-	    return;
-	}
-
-	if (strstr(cmd, "ump-regs=") != NULL) {
+	} else if (strstr(cmd, "ump-regs=") != NULL) {
 		for (c = 0; cmd[c] != 0; c++)
 			if (cmd[c] == ',')
 				cmd[c] = ' ';
@@ -198,5 +199,4 @@ static void parse_dump(char *cmd)
 		}
 		return;
 	}
-	vcd_file = cmd;
 }

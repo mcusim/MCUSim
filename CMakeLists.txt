@@ -22,7 +22,7 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Version
-set(MSIM_VERSION "0.1.14")
+set(MSIM_VERSION "0.1.17")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Set application name
@@ -66,7 +66,8 @@ set(AVRSIM_SRC		avrsim/simcore.c
 			avrsim/peripheral_lua.c
 			avrsim/decoder.c
 			avrsim/avrsim.c
-			avrsim/gdb_rsp.c)
+			avrsim/gdb_rsp.c
+			avrsim/vcd_dump.c)
 
 # Look for libraries, packages, etc.
 find_package(Lua51)

@@ -48,9 +48,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		 unsigned char *pm, unsigned long pm_size,
 		 unsigned char *dm, unsigned long dm_size,
-		 unsigned char *mpm, FILE *fp,
-		 char *vcd_regs[], unsigned long vcd_rn,
-		 char print_vcd_regs);
+		 unsigned char *mpm, FILE *fp);
 
 /* Functions to work with a stack inside MCU */
 void MSIM_StackPush(struct MSIM_AVR *mcu, uint8_t val);

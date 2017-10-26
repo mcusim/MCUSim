@@ -57,26 +57,51 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		     unsigned long addr)
 {
+	unsigned long tick;
+	FILE *vcd_f;
+
+	tick = 0;
+
+	vcd_f = NULL;
+	/* Do we have registers to dump? */
+	if (mcu->vcd_regsn[0] >= 0) {
+		vcd_f = MSIM_VCDOpenDump(mcu, "dump.vcd");
+		if (!vcd_f) {
+			fprintf(stderr, "Failed to open dump "
+					"file: dump.vcd\n");
+			return -1;
+		}
+	}
+
+	/* Main simulation loop */
 	while (1) {
 		/* Terminate simulation? */
 		if (mcu->state == AVR_MSIM_STOP)
 			break;
-		/* Wait request from GDB in MCU stopped mode */
+		/* Wait for request from GDB in MCU stopped mode */
 		if (mcu->state == AVR_STOPPED && MSIM_RSPHandle())
 			return 1;
 
+		/* Tick peripherals and timers */
 		MSIM_TickLuaPeripherals(mcu);
 		if (mcu->tick_8timers != NULL)
 			mcu->tick_8timers(mcu);
+
+		/* Dump registers to VCD */
+		if (mcu->vcd_regsn[0] >= 0)
+			MSIM_VCDDumpFrame(vcd_f, mcu, tick);
 
 		if (mcu->state == AVR_RUNNING || mcu->state == AVR_MSIM_STEP)
 			if (MSIM_StepAVR(mcu))
 				return 1;
 
-		/* Halt MCU after a single step performed*/
+		/* Halt MCU after a single step performed */
 		if (mcu->state == AVR_MSIM_STEP)
 			mcu->state = AVR_STOPPED;
+		tick++;
 	}
+	if (vcd_f != NULL)
+		fclose(vcd_f);
 	return 0;
 }
 
@@ -109,9 +134,7 @@ int MSIM_PrintInstructions(struct MSIM_AVR *mcu, unsigned long start_addr,
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		 unsigned char *pm, unsigned long pm_size,
 		 unsigned char *dm, unsigned long dm_size,
-		 unsigned char *mpm, FILE *fp,
-		 char *vcd_regs[], unsigned long vcd_rn,
-		 char print_vcd_regs)
+		 unsigned char *mpm, FILE *fp)
 {
 	unsigned int i;
 	char mcu_found = 0;
@@ -121,9 +144,6 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 	args.dm = dm;
 	args.pmsz = pm_size;
 	args.dmsz = dm_size;
-	args.vcd_regs = vcd_regs;
-	args.vcd_rn = vcd_rn;
-	args.print_vcd_regs = print_vcd_regs;
 
 	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++)
 		if (!strcmp(init_funcs[i].partno, mcu_name)) {

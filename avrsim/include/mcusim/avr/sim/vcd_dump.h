@@ -24,15 +24,20 @@
 extern "C" {
 #endif
 
-struct MSIM_VCD_DumpReg {
+#include <stdio.h>
+#include <stdint.h>
+
+/* Register of MCU which can be written into VCD file */
+struct MSIM_VCDRegister {
 	char name[16];			/* Name of a register (DDRB, etc.) */
 	unsigned long off;		/* Offset to the register in RAM */
-	unsigned char *addr;		/* Pointer to the register in
-					   the data memory */
-	unsigned char oldv;		/* This value will help us to
-					   understand whether register
-					   has been changed */
+	unsigned char *addr;		/* Pointer to the register in RAM*/
+	unsigned char oldv;
 };
+
+FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname);
+
+void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick);
 
 #ifdef __cplusplus
 }

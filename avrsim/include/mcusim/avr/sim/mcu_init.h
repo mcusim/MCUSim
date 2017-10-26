@@ -18,16 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+unsigned int i;
 unsigned char *pm;
 unsigned char *dm;
 unsigned long pmsz, pm_size;
 unsigned long dmsz, dm_size;
-char **vcd_regs;
-unsigned long vcd_rn;
 
 #ifdef VCD_DUMP_REGS
-unsigned int i, j;
-static struct MSIM_VCD_DumpReg known_regs[] = VCD_DUMP_REGS;
+static struct MSIM_VCDRegister known_regs[] = VCD_DUMP_REGS;
+unsigned short known_regsn = sizeof known_regs/sizeof known_regs[0];
 #endif
 
 if (!mcu) {
@@ -39,8 +38,6 @@ pm = args->pm;
 dm = args->dm;
 pm_size = args->pmsz;
 dm_size = args->dmsz;
-vcd_regs = args->vcd_regs;
-vcd_rn = args->vcd_rn;
 
 strcpy(mcu->name, MCU_NAME);
 mcu->signature[0] = SIGNATURE_0;
@@ -165,33 +162,16 @@ mcu->spmcsr = &mcu->dm[_SFR_IO8(SPMCR)];
 mcu->spmcsr = NULL;
 #endif
 
+/* Do not include any register into dump by default */
+for (i = 0; i < sizeof mcu->vcd_regsn/sizeof mcu->vcd_regsn[0]; i++)
+	mcu->vcd_regsn[i] = -1;
 #ifdef VCD_DUMP_REGS
-/*
- * Setting up only registers which will be included into a dump.
- */
-mcu->vcd_rn = 0;
-for (i = 0; i < sizeof known_regs/sizeof known_regs[0]; i++) {
+for (i = 0; i < sizeof mcu->vcd_regs/sizeof mcu->vcd_regs[0]; i++) {
+	if (i == known_regsn)
+		break;
 	known_regs[i].addr = &mcu->dm[known_regs[i].off];
 	known_regs[i].oldv = *known_regs[i].addr;
-
-	if (args->print_vcd_regs)
-		printf("%s (0x%2lX)\n", known_regs[i].name,
-					known_regs[i].off);
-}
-for (i = 0; i < vcd_rn; i++) {
-	if (args->print_vcd_regs)
-		break;	/* Print registers only, do not dump */
-
-	for (j = 0; j < sizeof known_regs/sizeof known_regs[0]; j++) {
-		if (!strncmp(known_regs[j].name, vcd_regs[i],
-			     sizeof known_regs[j].name)) {
-			/*
-			 * We've found a requested register among known ones.
-			 */
-			mcu->vcd_regs[mcu->vcd_rn++] = known_regs[j];
-			break;
-		}
-	}
+	mcu->vcd_regs[i] = known_regs[i];
 }
 #endif
 

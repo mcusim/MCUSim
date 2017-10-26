@@ -33,12 +33,6 @@ struct MSIM_InitArgs {
 	unsigned char *dm;
 	unsigned long pmsz;
 	unsigned long dmsz;
-	char **vcd_regs;
-	unsigned long vcd_rn;
-	char print_vcd_regs;		/* Flag to print registers which
-					   can be included into VCD dump.
-					   No register will be dumped if
-					   this flag is set. */
 };
 
 /* Initialize MCU as ATmega8A */

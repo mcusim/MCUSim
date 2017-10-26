@@ -35,6 +35,8 @@ extern "C" {
 #define FUSE_HIGH		1
 #define FUSE_EXT		2
 
+#define VCD_REGS_MAX		512
+
 typedef unsigned long MSIM_AVRFlashAddr_t;
 
 /* Device-specific functions. */
@@ -61,7 +63,7 @@ enum MSIM_AVRClkSource {
 	AVR_EXT_LOWF_CRYSTAL_CLK,	/* External low-freq crystal */
 	AVR_INT_CAL_RC_CLK,		/* Internal calibrated RC */
 	AVR_EXT_RC_CLK,			/* External RC */
-	AVR_EXT_CRYSTAL			/* External crystal/ceramic resonator */
+	AVR_EXT_CRYSTAL			/* External crystal/ceramic resonator*/
 };
 
 enum MSIM_AVRSREGFlag {
@@ -128,7 +130,7 @@ struct MSIM_AVR {
 	unsigned char *dm;		/* GP and I/O registers, SRAM. */
 	unsigned char *mpm;		/* Memory to store instructions at
 					   breakpoints. */
-	unsigned long pm_size;		/* Actual size of the program memory. */
+	unsigned long pm_size;		/* Actual size of the program memory.*/
 	unsigned long dm_size;		/* Actual size of the data memory. */
 	unsigned char read_from_mpm;	/* Flag to read from breakpoints
 					   memory, it is 0 usually */
@@ -143,8 +145,9 @@ struct MSIM_AVR {
 	MSIM_SetLock_f set_lockf;	/* Function to set AVR lock byte. */
 	MSIM_Tick8Timers_f tick_8timers;
 
-	struct MSIM_VCD_DumpReg vcd_regs[64];	/* MCU registers to dump. */
-	unsigned int vcd_rn;		/* Number of registers to dump. */
+	struct MSIM_VCDRegister vcd_regs[VCD_REGS_MAX];
+	short vcd_regsn[VCD_REGS_MAX];	/* Indices of VCD registers to be
+					   dumped. */
 };
 
 #ifdef __cplusplus
