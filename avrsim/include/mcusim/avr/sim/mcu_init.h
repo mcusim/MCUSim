@@ -167,11 +167,13 @@ for (i = 0; i < sizeof mcu->vcd_regsn/sizeof mcu->vcd_regsn[0]; i++)
 	mcu->vcd_regsn[i] = -1;
 #ifdef VCD_DUMP_REGS
 for (i = 0; i < sizeof mcu->vcd_regs/sizeof mcu->vcd_regs[0]; i++) {
-	if (i == known_regsn)
+	if (i < known_regsn) {
+		known_regs[i].addr = &mcu->dm[known_regs[i].off];
+		known_regs[i].oldv = *known_regs[i].addr;
+		mcu->vcd_regs[i] = known_regs[i];
+	} else {
 		break;
-	known_regs[i].addr = &mcu->dm[known_regs[i].off];
-	known_regs[i].oldv = *known_regs[i].addr;
-	mcu->vcd_regs[i] = known_regs[i];
+	}
 }
 #endif
 

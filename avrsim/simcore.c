@@ -72,15 +72,17 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 			return -1;
 		}
 	}
-
 	/* Main simulation loop */
 	while (1) {
 		/* Terminate simulation? */
 		if (mcu->state == AVR_MSIM_STOP)
 			break;
 		/* Wait for request from GDB in MCU stopped mode */
-		if (mcu->state == AVR_STOPPED && MSIM_RSPHandle())
+		if (mcu->state == AVR_STOPPED && MSIM_RSPHandle()) {
+			if (vcd_f != NULL)
+				fclose(vcd_f);
 			return 1;
+		}
 
 		/* Tick peripherals and timers */
 		MSIM_TickLuaPeripherals(mcu);
@@ -91,9 +93,14 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		if (mcu->vcd_regsn[0] >= 0)
 			MSIM_VCDDumpFrame(vcd_f, mcu, tick);
 
-		if (mcu->state == AVR_RUNNING || mcu->state == AVR_MSIM_STEP)
-			if (MSIM_StepAVR(mcu))
+		if (mcu->state == AVR_RUNNING ||
+		    mcu->state == AVR_MSIM_STEP) {
+			if (MSIM_StepAVR(mcu)) {
+				if (vcd_f != NULL)
+					fclose(vcd_f);
 				return 1;
+			}
+		}
 
 		/* Halt MCU after a single step performed */
 		if (mcu->state == AVR_MSIM_STEP)
