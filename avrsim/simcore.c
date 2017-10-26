@@ -93,6 +93,18 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		if (mcu->vcd_regsn[0] >= 0)
 			MSIM_VCDDumpFrame(vcd_f, mcu, tick);
 
+		/* Test scope of program counter */
+		if ((mcu->pc+1) >= mcu->pm_size) {
+			if (vcd_f != NULL)
+				fclose(vcd_f);
+			fprintf(stderr, "Program counter is out of scope: "
+					"pc=0x%4lX, pc+1=0x%4lX, "
+					"flash_addr=0x%4lX\n",
+					mcu->pc, mcu->pc+1, mcu->pm_size-1);
+			return 1;
+		}
+
+		/* Decode next instruction */
 		if (mcu->state == AVR_RUNNING ||
 		    mcu->state == AVR_MSIM_STEP) {
 			if (MSIM_StepAVR(mcu)) {
