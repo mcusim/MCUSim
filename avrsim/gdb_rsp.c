@@ -785,6 +785,7 @@ static struct rsp_buf *get_packet(void)
 static int get_rsp_char(void)
 {
 	unsigned char c;
+	ssize_t bytes;
 
 	if (rsp.fcli == -1) {
 		fprintf(stderr, "Attempt to read from unopened RSP "
@@ -797,22 +798,24 @@ static int get_rsp_char(void)
 	 * catastrophic failure.
 	 */
 	while (1) {
-		switch(read(rsp.fcli, &c, sizeof c)) {
-		case -1:
+		bytes = read(rsp.fcli, &c, sizeof c);
+
+		if (bytes == sizeof c)
+			return c&0xFF;
+
+		if (bytes == -1) {
 			/* Error: only allow interrupts or would block */
 			if (errno == EAGAIN || errno == EINTR)
-				break;
+				continue;
 
 			fprintf(stderr, "Failed to read from RSP client: "
 					"Closing client connection: %s\n",
 					strerror(errno));
 			rsp_close_client();
 			return -1;
-		case 0: /* EOF */
+		} else {
 			rsp_close_client();
 			return -1;
-		default:
-			return c&0xff;
 		}
 	}
 }
