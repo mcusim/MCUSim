@@ -1,0 +1,33 @@
+\documentclass[a4paper,twoside,openright]{report}
+\usepackage{listings}
+%\usepackage{showframe} % uncomment to highligh page frame
+\usepackage[inner=4cm,outer=2cm]{geometry}
+
+\title{MCUSim Handbook}
+\author{1KIB}
+
+\def\postbreak{%
+  \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookrightarrow\space}}}
+
+%
+% Configure listings
+%
+\lstset{
+	language=C,
+	postbreak=\postbreak,
+	basicstyle=\ttfamily,
+	showspaces=false,
+	showtabs=false,
+}
+
+\begin{document}
+	\maketitle
+	\thispagestyle{empty}
+	\pagenumbering{arabic}
+
+	\tableofcontents
+
+	\include{chapter1/introduction}
+	\include{chapter2/preparing-binaries}
+	\include{chapter3/avrsim}
+\end{document}
