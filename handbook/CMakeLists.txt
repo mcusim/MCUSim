@@ -20,11 +20,13 @@ project(MCUSim_Handbook NONE)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake)
 
-include(UseLATEX)
+find_package(LATEX)
+if (LATEX_FOUND)
+	include(UseLATEX)
+	set(HANDBOOK_SRC	mcusim-handbook.tex
+				chapter1/introduction.tex
+				chapter2/preparing-binaries.tex
+				chapter3/avrsim.tex)
 
-set(HANDBOOK_SRC	mcusim-handbook.tex
-			chapter1/introduction.tex
-			chapter2/preparing-binaries.tex
-			chapter3/avrsim.tex)
-
-add_latex_document(mcusim-handbook.tex INPUTS ${HANDBOOK_SRC})
+	add_latex_document(mcusim-handbook.tex INPUTS ${HANDBOOK_SRC})
+endif()

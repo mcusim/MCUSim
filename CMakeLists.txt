@@ -24,7 +24,7 @@ include(CheckIncludeFiles)
 add_subdirectory(handbook)
 
 # Version
-set(MSIM_VERSION "0.1.21")
+set(MSIM_VERSION "0.1.23")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Set application name
