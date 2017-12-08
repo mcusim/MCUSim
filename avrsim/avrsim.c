@@ -29,8 +29,6 @@
 #include "mcusim/avr/sim/peripheral_lua.h"
 #include "mcusim/avr/sim/gdb_rsp.h"
 
-#define CLI_OPTIONS		"?p:U:r:d:"
-
 #define PMSZ			262144		/* 256 KiB */
 #define DMSZ			65536		/* 64 KiB */
 #define PM_PAGESZ		1024		/* 1 KiB, PM page size */
@@ -39,6 +37,15 @@
 
 static struct MSIM_AVRBootloader bls;
 static struct MSIM_AVR mcu;
+
+/* Command line options */
+#define CLI_OPTIONS		":p:U:r:"
+#define DUMP_REGS_OPT		7575
+#define VERSION_OPT		7576
+static struct option longopts[] = {
+	{ "dump-regs", required_argument, NULL, DUMP_REGS_OPT },
+	{ "version", no_argument, NULL, VERSION_OPT }
+};
 
 /* Statically allocated memory for MCU */
 static unsigned char pm[PMSZ];			/* Program memory */
@@ -68,7 +75,8 @@ int main(int argc, char *argv[])
 	vcd_rn = 0;
 	print_regs = 0;
 
-	while ((c = getopt(argc, argv, CLI_OPTIONS)) != -1) {
+	while ((c = getopt_long(argc, argv, CLI_OPTIONS,
+				longopts, NULL)) != -1) {
 		switch (c) {
 		case 'p':		/* Required. AVR device. */
 			partno = optarg;
@@ -79,12 +87,19 @@ int main(int argc, char *argv[])
 		case 'r':		/* Optional. Lua peripherals file. */
 			luap = optarg;
 			break;
-		case 'd':		/* Dump options */
+		case DUMP_REGS_OPT:	/* Registers to dump into VCD file */
 			parse_dump(optarg);
 			break;
-		case '?':		/* Print usage */
+		case VERSION_OPT:
 			print_usage();
 			return 0;
+		case ':':		/* Missing operand */
+			fprintf(stderr, "Option -%c required an operand\n",
+					optopt);
+			break;
+		case '?':		/* Unknown option */
+			fprintf(stderr, "Unknown option: -%c\n", optopt);
+			break;
 		}
 	}
 
@@ -155,14 +170,20 @@ int main(int argc, char *argv[])
 
 static void print_usage(void)
 {
+	printf("AVRSim %s - Simulator for AVR microcontrollers,\n"
+		"part of MCUSim <http://www.mcusim.org>\n\n", MSIM_VERSION);
 	printf("Usage: avrsim [options]\n"
 		"Options:\n"
-		"  -p <partno>                Required. Specify AVR device.\n"
-		"  -U <memtype>:r|w|v:<filename>\n"
-		"                             Required. Memory operation "
-		"specification.\n"
-		"  -?                         Display this usage.\n\n"
-		"avrsim version %s, <http://www.mcusim.org>\n", MSIM_VERSION);
+		"  -p <partno|?>              Specify AVR device (required).\n"
+		"  -U <memtype>:w:<filename>\n"
+		"                             Memory operation "
+		"specification (required).\n"
+		"  -r <filename>              Specify text file with "
+		"simulated modules written in Lua.\n"
+		"  --dump-regs=<reg0,reg1,...,regN|?\n"
+		"                             Dump specified registers into "
+		"VCD file.\n"
+		"  --version                  Print this message\n");
 }
 
 static void parse_dump(char *cmd)
@@ -172,15 +193,15 @@ static void parse_dump(char *cmd)
 
 	if (cmd == NULL)
 		return;
-	if (!strcmp(cmd, "ump-regs=?")) {
+	if (!strcmp(cmd, "?")) {
 		print_regs = 1;
 		return;
-	} else if (strstr(cmd, "ump-regs=") != NULL) {
+	} else {
 		for (c = 0; cmd[c] != 0; c++)
 			if (cmd[c] == ',')
 				cmd[c] = ' ';
 
-		p = cmd+9;
+		p = cmd;
 		while (1) {
 			ret = sscanf(p, "%s", &vcd_regs[vcd_rn][0]);
 			if (ret == EOF)

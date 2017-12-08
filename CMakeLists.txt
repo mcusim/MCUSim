@@ -21,11 +21,12 @@ project(MCUSim C)
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
-add_subdirectory(handbook)
-
 # Version
-set(MSIM_VERSION "0.1.23")
+set(MSIM_VERSION "0.1.24")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
+
+# Add subprojects here
+add_subdirectory(handbook)
 
 # Set application name
 set(AVRSIM "avrsim")
@@ -35,6 +36,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
 	message(STATUS "Release version of MCUSim ${MSIM_VERSION} will be built.")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 	    ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
+		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wall -pedantic -std=iso9899:1990")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wshadow -Wpointer-arith -Wcast-qual")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wcast-align -Wstrict-prototypes")
