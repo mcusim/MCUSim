@@ -55,20 +55,9 @@ int MSIM_M8ASetFuse(void *mcu, unsigned int fuse_n, unsigned char fuse_v);
 int MSIM_M8ASetLock(void *mcu, unsigned char lock_v);
 int MSIM_M8ATick8Timers(void *mcu);
 
-/* Available MCU registers to include into VCD dump */
-#define VCD_DUMP_REGS {							\
-	{ "SREG",	0x5F, NULL, 0 },				\
-	{ "SPH",	0x5E, NULL, 0 },				\
-	{ "SPL",	0x5D, NULL, 0 },				\
-	{ "PORTB",	0x38, NULL, 0 },				\
-	{ "DDRB",	0x37, NULL, 0 },				\
-	{ "PINB",	0x36, NULL, 0 },				\
-	{ "PORTC",	0x35, NULL, 0 },				\
-	{ "DDRC",	0x34, NULL, 0 },				\
-	{ "PINC",	0x33, NULL, 0 },				\
-	{ "PORTD",	0x32, NULL, 0 },				\
-	{ "DDRD",	0x31, NULL, 0 },				\
-	{ "PIND",	0x30, NULL, 0 }					\
-}
+#define SREG		_SFR_IO8(0x3F)
+#define SPH		_SFR_IO8(0x3E)
+#define SPL		_SFR_IO8(0x3D)
+#include "mcusim/avr/sim/vcd_regs.h"
 
 #endif /* MSIM_AVR_SIMM8A_H_ */

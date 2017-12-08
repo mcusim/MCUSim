@@ -51,4 +51,9 @@
 #define E2START		0x0000
 #define E2SIZE		1024
 
+#define SREG		_SFR_IO8(0x3F)
+#define SPH		_SFR_IO8(0x3E)
+#define SPL		_SFR_IO8(0x3D)
+#include "mcusim/avr/sim/vcd_regs.h"
+
 #endif /* MSIM_AVR_SIMM328_H_ */

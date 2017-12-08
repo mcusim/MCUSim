@@ -143,6 +143,8 @@ int main(int argc, char *argv[])
 			/* Print first N registers only */
 			if (mcu.vcd_regs[i].name[0] == 0)
 				break;
+			if (mcu.vcd_regs[i].off < 0)
+				continue;
 			printf("%s (0x%2lX)\n", mcu.vcd_regs[i].name,
 						mcu.vcd_regs[i].off);
 		}
@@ -180,7 +182,7 @@ static void print_usage(void)
 		"specification (required).\n"
 		"  -r <filename>              Specify text file with "
 		"simulated modules written in Lua.\n"
-		"  --dump-regs=<reg0,reg1,...,regN|?\n"
+		"  --dump-regs=<reg0,reg1,...,regN|?>\n"
 		"                             Dump specified registers into "
 		"VCD file.\n"
 		"  --version                  Print this message\n");
