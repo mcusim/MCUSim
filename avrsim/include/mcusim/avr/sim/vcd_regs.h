@@ -18,13 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define NO_REG		-1
-
 /*
  * It's a common situation whether one AVR MCU has a set of registers, but
  * another one - doesn't. Memory offset of the unavailable registers
  * will be marked as NO_REG.
  */
+#define NO_REG		-1
+
 /* Status and stack registers */
 #ifndef SREG
 #define SREG		NO_REG
@@ -198,6 +198,8 @@
 #ifndef PCIFR
 #define PCIFR		NO_REG
 #endif
+
+/* Timer/Counter Interrupt Flag Register */
 #ifndef TIFR5
 #define TIFR5		NO_REG
 #endif
@@ -215,6 +217,30 @@
 #endif
 #ifndef TIFR0
 #define TIFR0		NO_REG
+#endif
+
+#ifndef TIFR
+#define TIFR		NO_REG
+#endif
+/* END Timer/Counter Interrupt Flag Register */
+
+#ifndef GICR
+#define GICR		NO_REG
+#endif
+#ifndef GIFR
+#define GIFR		NO_REG
+#endif
+#ifndef TIMSK
+#define TIMSK		NO_REG
+#endif
+#ifndef SPMCR
+#define SPMCR		NO_REG
+#endif
+#ifndef TWCR
+#define TWCR		NO_REG
+#endif
+#ifndef MCUCSR
+#define MCUCSR		NO_REG
 #endif
 
 /*
@@ -279,10 +305,19 @@
 	{ "EIMSK",	EIMSK, NULL, 0 },				\
 	{ "EIFR",	EIFR, NULL, 0 },				\
 	{ "PCIFR",	PCIFR, NULL, 0 },				\
+									\
 	{ "TIFR5",	TIFR5, NULL, 0 },				\
 	{ "TIFR4",	TIFR4, NULL, 0 },				\
 	{ "TIFR3",	TIFR3, NULL, 0 },				\
 	{ "TIFR2",	TIFR2, NULL, 0 },				\
 	{ "TIFR1",	TIFR1, NULL, 0 },				\
-	{ "TIFR0",	TIFR0, NULL, 0 }				\
+	{ "TIFR0",	TIFR0, NULL, 0 },				\
+	{ "TIFR",	TIFR, NULL, 0 },				\
+									\
+	{ "GICR",	GICR, NULL, 0 },				\
+	{ "GIFR",	GIFR, NULL, 0 },				\
+	{ "TIMSK",	TIMSK, NULL, 0 },				\
+	{ "SPMCR",	SPMCR, NULL, 0 },				\
+	{ "TWCR",	TWCR, NULL, 0 },				\
+	{ "MCUCSR",	MCUCSR, NULL, 0 }				\
 }
