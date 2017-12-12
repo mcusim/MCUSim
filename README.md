@@ -12,3 +12,15 @@ when not all of its components are available, affordable or easy to
 set up and run.
 
 ![Example of AVRSim and GDB RSP](https://i.imgur.com/cDzPNkG.gif)
+
+Build and install
+-----------------
+AVRSim (part of MCUSim, simulator for AVR microcontrollers) requires Lua 5.2
+or above to mimic external devices. Please, install it in your operating
+system. This is how it can be done in macOS:
+
+	# brew install lua
+	# git clone https://github.com/dsalychev/mcusim.git
+	# cd mcusim && mkdir build && cd build
+	# cmake -DCMAKE_BUILD_TYPE=Release ..
+	# make && make install
