@@ -11,4 +11,4 @@ Goal of the project is to simplify firmware debugging of a real hardware
 when not all of its components are available, affordable or easy to
 set up and run.
 
-![AVRSim and GDB RSP example](https://imgur.com/a/3s5La)
+![Example of AVRSim and GDB RSP](https://i.imgur.com/cDzPNkG.gifv)
