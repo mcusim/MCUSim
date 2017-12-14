@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "mcusim/cli.h"
 #include "mcusim/getopt.h"
@@ -39,13 +40,17 @@ static struct MSIM_AVRBootloader bls;
 static struct MSIM_AVR mcu;
 
 /* Command line options */
-#define CLI_OPTIONS		":p:U:r:"
+#define CLI_OPTIONS		":p:U:r:P:"
 #define DUMP_REGS_OPT		7575
 #define VERSION_OPT		7576
+#define GDB_RSP_PORT_OPT	7577
+
 static struct option longopts[] = {
 	{ "dump-regs", required_argument, NULL, DUMP_REGS_OPT },
-	{ "version", no_argument, NULL, VERSION_OPT }
+	{ "version", no_argument, NULL, VERSION_OPT },
+	{ "rsp-port", required_argument, NULL, GDB_RSP_PORT_OPT }
 };
+/* END Command line options */
 
 /* Statically allocated memory for MCU */
 static unsigned char pm[PMSZ];			/* Program memory */
@@ -61,6 +66,7 @@ static char print_regs;				/* Print available registers
 
 static void print_usage(void);
 static void parse_dump(char *cmd);
+static int parse_rsp_port(char *opt);
 
 int main(int argc, char *argv[])
 {
@@ -70,10 +76,12 @@ int main(int argc, char *argv[])
 	char mtype[21], mop, mfn[4096];
 	char *partno, *mopt, *luap;
 	unsigned int i, j, regs, dregs;
+	int rsp_port;
 
 	partno = mopt = luap = NULL;
 	vcd_rn = 0;
 	print_regs = 0;
+	rsp_port = GDB_RSP_PORT;
 
 	while ((c = getopt_long(argc, argv, CLI_OPTIONS,
 				longopts, NULL)) != -1) {
@@ -90,9 +98,16 @@ int main(int argc, char *argv[])
 		case DUMP_REGS_OPT:	/* Registers to dump into VCD file */
 			parse_dump(optarg);
 			break;
-		case VERSION_OPT:
+		case VERSION_OPT:	/* Print version and usage */
 			print_usage();
 			return 0;
+		case GDB_RSP_PORT_OPT:	/* Set port for incoming connections
+					   from GDB RSP */
+			rsp_port = parse_rsp_port(optarg);
+			break;
+		case 'P':
+			rsp_port = parse_rsp_port(optarg);
+			break;
 		case ':':		/* Missing operand */
 			fprintf(stderr, "Option -%c required an operand\n",
 					optopt);
@@ -163,7 +178,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Prepare and run AVR simulation */
-	MSIM_RSPInit(&mcu, GDB_RSP_PORT);
+	MSIM_RSPInit(&mcu, rsp_port);
 	MSIM_SimulateAVR(&mcu, 0, mcu.flashend+1);
 	MSIM_CleanLuaPeripherals();
 	MSIM_RSPClose();
@@ -175,17 +190,20 @@ static void print_usage(void)
 	printf("AVRSim %s - Simulator for AVR microcontrollers,\n"
 		"part of MCUSim <http://www.mcusim.org>\n\n", MSIM_VERSION);
 	printf("Usage: avrsim [options]\n"
-		"Options:\n"
-		"  -p <partno|?>              Specify AVR device (required).\n"
-		"  -U <memtype>:w:<filename>\n"
-		"                             Memory operation "
-		"specification (required).\n"
-		"  -r <filename>              Specify text file with "
-		"simulated modules written in Lua.\n"
-		"  --dump-regs=<reg0,reg1,...,regN|?>\n"
-		"                             Dump specified registers into "
-		"VCD file.\n"
-		"  --version                  Print this message\n");
+	       "Options:\n"
+	       "  -p <partno|?>              Specify AVR device (required).\n"
+	       "  -U <memtype>:w:<filename>\n"
+	       "                             Memory operation "
+	       "specification (required).\n"
+	       "  -r <filename>              Specify text file with "
+	       "simulated modules written in Lua.\n"
+	       "  --dump-regs=<reg0,reg1,...,regN|?>\n"
+	       "                             Dump specified registers into "
+	       "VCD file.\n"
+	       "  --version                  Print this message.\n");
+	printf("  -P <port>, --rsp-port=<port>\n"
+	       "                             Set port to listen to incoming "
+	       "connections from GDB RSP.\n");
 }
 
 static void parse_dump(char *cmd)
@@ -222,4 +240,16 @@ static void parse_dump(char *cmd)
 		}
 		return;
 	}
+}
+
+static int parse_rsp_port(char *opt)
+{
+	int rsp_port;
+
+	rsp_port = atoi(opt);
+	if (!(rsp_port > 1024 && rsp_port < 65536)) {
+		printf("GDB RSP port should be within (1024, 65536) range!\n");
+		rsp_port = GDB_RSP_PORT;
+	}
+	return rsp_port;
 }
