@@ -96,7 +96,7 @@ int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 
 	mcu = (struct MSIM_AVR *)m;
 	if (fuse_n > 1) {
-		fprintf(stderr, "Fuse #%d is not supported by %s\n",
+		fprintf(stderr, "WARN: Fuse #%d is not supported by %s\n",
 				fuse_n, mcu->name);
 		return -1;
 	}

@@ -30,14 +30,15 @@
 #include "mcusim/avr/sim/peripheral_lua.h"
 #include "mcusim/avr/sim/gdb_rsp.h"
 
-#define PMSZ			262144		/* 256 KiB */
-#define DMSZ			65536		/* 64 KiB */
-#define PM_PAGESZ		1024		/* 1 KiB, PM page size */
+/* Limits of statically allocated MCU memory */
+#define PMSZ			256*1024	/* Program memory limit */
+#define DMSZ			64*1024		/* Data memory limit */
+#define PM_PAGESZ		1024		/* PM page size */
 
-#define GDB_RSP_PORT		12750
-
-static struct MSIM_AVRBootloader bls;
-static struct MSIM_AVR mcu;
+#define GDB_RSP_PORT		12750		/* Default GDB RSP port */
+#define MAX_MEMOPS		16		/* Maximum MCU memory
+						   modifications during
+						   initialization */
 
 /* Command line options */
 #define CLI_OPTIONS		":p:U:r:P:"
@@ -52,6 +53,9 @@ static struct option longopts[] = {
 };
 /* END Command line options */
 
+static struct MSIM_AVR mcu;			/* Central MCU descriptor */
+static struct MSIM_AVRBootloader bls;		/* Bootloader section */
+
 /* Statically allocated memory for MCU */
 static unsigned char pm[PMSZ];			/* Program memory */
 static unsigned char pmp[PM_PAGESZ];		/* Page buffer (PM) */
@@ -64,23 +68,29 @@ static unsigned int vcd_rn;			/* Number of registers */
 static char print_regs;				/* Print available registers
 						   which can be dumped */
 
+/* MCU memory operations */
+static struct MSIM_MemOp memops[MAX_MEMOPS];
+static unsigned short memops_num;
+
 static void print_usage(void);
 static void parse_dump(char *cmd);
-static int parse_rsp_port(char *opt);
+static int parse_rsp_port(const char *opt);
+static int parse_memop(char *opt);
+static int apply_memop(struct MSIM_AVR *m, struct MSIM_MemOp *mo);
+static int set_fuse(struct MSIM_AVR *m, struct MSIM_MemOp *mo,
+		    unsigned int fuse_n);
+static int set_lock(struct MSIM_AVR *m, struct MSIM_MemOp *mo);
 
 int main(int argc, char *argv[])
 {
 	extern char *optarg;
 	FILE *fp;
-	int c, r;
-	char mtype[21], mop, mfn[4096];
-	char *partno, *mopt, *luap;
+	int c, rsp_port;
+	char *partno, *luap;
 	unsigned int i, j, regs, dregs;
-	int rsp_port;
 
-	partno = mopt = luap = NULL;
-	vcd_rn = 0;
-	print_regs = 0;
+	partno = luap = NULL;
+	vcd_rn = print_regs = memops_num = 0;
 	rsp_port = GDB_RSP_PORT;
 
 	while ((c = getopt_long(argc, argv, CLI_OPTIONS,
@@ -90,7 +100,12 @@ int main(int argc, char *argv[])
 			partno = optarg;
 			break;
 		case 'U':		/* Required. Memory operation. */
-			mopt = optarg;
+			if (parse_memop(optarg)) {
+				fprintf(stderr, "ERR: Incorrect memory "
+						"operation specified!\n");
+				print_usage();
+				return 1;
+			}
 			break;
 		case 'r':		/* Optional. Lua peripherals file. */
 			luap = optarg;
@@ -109,12 +124,14 @@ int main(int argc, char *argv[])
 			rsp_port = parse_rsp_port(optarg);
 			break;
 		case ':':		/* Missing operand */
-			fprintf(stderr, "Option -%c required an operand\n",
+			fprintf(stderr, "Option -%c requires an operand\n",
 					optopt);
-			break;
+			print_usage();
+			return 1;
 		case '?':		/* Unknown option */
 			fprintf(stderr, "Unknown option: -%c\n", optopt);
-			break;
+			print_usage();
+			return 1;
 		}
 	}
 
@@ -122,36 +139,50 @@ int main(int argc, char *argv[])
 		MSIM_PrintParts();
 		return 0;
 	}
-	if (partno == NULL || mopt == NULL) {
-		print_usage();
-		return 0;
-	}
-
-	/* Parse memory operation */
-	for (c = 0; mopt[c] != 0; c++)
-		if (mopt[c] == ':')
-			mopt[c] = ' ';
-	r = sscanf(mopt, "%20s %1c %4095s", &mtype[0], &mop, &mfn[0]);
-	if (r == EOF || r != 3) {
+	if (partno == NULL) {		/* MCU model is necessary! */
 		print_usage();
 		return 0;
 	}
 
 	/* Load Lua peripherals if it is required */
 	if (luap != NULL && MSIM_LoadLuaPeripherals(luap))
-		return -1;
+		return 1;
+
+	/* Preparing file for program memory */
+	fp = NULL;
+	for (i = 0; i < memops_num; i++) {
+		if (memops[i].format == 'f' &&
+		    !strcmp(memops[i].memtype, "flash")) {
+			/* Try to open file to read program memory from */
+			fp = fopen(memops[i].operand, "r");
+			if (!fp) {
+				fprintf(stderr, "ERR: Failed to open file to "
+					"read a content of flash memory "
+					"from: %s\n", memops[i].operand);
+				return 1;
+			}
+			/* Mark this operation as applied one */
+			memops[i].format = -1;
+		}
+	}
+	if (fp == NULL) {
+		fprintf(stderr, "ERR: It is necessary to fill program "
+				"memory, i.e. do not forget to "
+				"-U flash:w:<filename>!\n");
+		return 1;
+	}
 
 	/* Initialize MCU as one of AVR models */
-	fp = fopen(&mfn[0], "r");
 	mcu.bls = &bls;
 	mcu.pmp = pmp;
 	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp)) {
-		fprintf(stderr, "AVR %s cannot be initialized!\n", partno);
-		return -1;
+		fprintf(stderr, "ERR: AVR %s cannot be initialized!\n",
+				partno);
+		return 1;
 	}
 	fclose(fp);
 
-	/* Print available registers only? */
+	/* Do we have to print available registers only? */
 	regs = sizeof mcu.vcd_regs/sizeof mcu.vcd_regs[0];
 	if (print_regs) {
 		for (i = 0; i < regs; i++) {
@@ -165,6 +196,16 @@ int main(int argc, char *argv[])
 		}
 		return 0;
 	}
+
+	/* Apply memory modifications */
+	for (i = 0; i < memops_num; i++)
+		if (apply_memop(&mcu, &memops[i])) {
+			fprintf(stderr, "ERR: Memory modification failed: "
+				"memtype=%s, op=%c, val=%s\n",
+				&memops[i].memtype[0], memops[i].operation,
+				&memops[i].operand[0]);
+			return 1;
+		}
 
 	/* Select registers to be dumped */
 	dregs = 0;
@@ -192,7 +233,7 @@ static void print_usage(void)
 	printf("Usage: avrsim [options]\n"
 	       "Options:\n"
 	       "  -p <partno|?>              Specify AVR device (required).\n"
-	       "  -U <memtype>:w:<filename>\n"
+	       "  -U <memtype>:w:<filename|value>[:<format>]\n"
 	       "                             Memory operation "
 	       "specification (required).\n"
 	       "  -r <filename>              Specify text file with "
@@ -234,22 +275,109 @@ static void parse_dump(char *cmd)
 				p++;
 				continue;
 			}
-			fprintf(stderr, "Failed to parse list of registers "
-					"to dump: %s\n", p);
+			fprintf(stderr, "ERR: Failed to parse list of "
+					"registers to dump: %s\n", p);
 			break;
 		}
 		return;
 	}
 }
 
-static int parse_rsp_port(char *opt)
+static int parse_rsp_port(const char *opt)
 {
 	int rsp_port;
 
 	rsp_port = atoi(opt);
 	if (!(rsp_port > 1024 && rsp_port < 65536)) {
-		printf("GDB RSP port should be within (1024, 65536) range!\n");
+		fprintf(stderr, "WARN: GDB RSP port should be within "
+				"(1024, 65536) range! Default port will "
+				"be used.\n");
 		rsp_port = GDB_RSP_PORT;
 	}
 	return rsp_port;
+}
+
+static int parse_memop(char *opt)
+{
+	int c, r;
+
+	for (c = 0; opt[c] != 0; c++)
+		if (opt[c] == ':')
+			opt[c] = ' ';
+	r = sscanf(opt, "%16s %1c %4096s %1c",
+			&memops[memops_num].memtype[0],
+			&memops[memops_num].operation,
+			&memops[memops_num].operand[0],
+			&memops[memops_num].format);
+
+	if (r == EOF || r < 3 || r > 4) /* Something went wrong */
+		return 1;
+	if (r == 3)			/* 'File' format is default one */
+		memops[memops_num].format = 'f';
+	memops_num++;
+	return 0;
+}
+
+static int apply_memop(struct MSIM_AVR *m, struct MSIM_MemOp *mo)
+{
+	if (mo->format < 0)	/* Operation is applied already, skipping */
+		return 0;
+
+	if (!strcmp(mo->memtype, "efuse")) {
+		return set_fuse(m, mo, FUSE_EXT);
+	} else if (!strcmp(mo->memtype, "hfuse")) {
+		return set_fuse(m, mo, FUSE_HIGH);
+	} else if (!strcmp(mo->memtype, "lfuse")) {
+		return set_fuse(m, mo, FUSE_LOW);
+	} else if (!strcmp(mo->memtype, "lock")) {
+		return set_lock(m, mo);
+	} else {
+		return 1;
+	}
+	return 0;
+}
+
+static int set_fuse(struct MSIM_AVR *m, struct MSIM_MemOp *mo,
+		    unsigned int fuse_n)
+{
+	unsigned int fusev;
+
+	if (m->set_fusef == NULL)
+		return 0;	/* No function, return silently */
+	if (mo->format != 'h') {
+		fprintf(stderr, "WARN: Failed to modify fuse, expected "
+				"format is 'h'\n");
+		return 1;
+	}
+
+	if (sscanf(mo->operand, "0x%2X", &fusev) != 1) {
+		fprintf(stderr, "ERR: Failed to parse fuse value from %s!\n",
+				mo->operand);
+		return 1;
+	}
+	m->set_fusef(m, fuse_n, (unsigned char)fusev);
+	mo->format = -1;	/* Operation is applied correctly */
+	return 0;
+}
+
+static int set_lock(struct MSIM_AVR *m, struct MSIM_MemOp *mo)
+{
+	unsigned int lockv;
+
+	if (m->set_lockf == NULL)
+		return 0;	/* No function, return silently */
+	if (mo->format != 'h') {
+		fprintf(stderr, "WARN: Failed to modify lock byte, expected "
+				"format is 'h'\n");
+		return 1;
+	}
+
+	if (sscanf(mo->operand, "0x%2X", &lockv) != 1) {
+		fprintf(stderr, "ERR: Failed to parse lock value from %s!\n",
+				mo->operand);
+		return 1;
+	}
+	m->set_lockf(m, (unsigned char)lockv);
+	mo->format = -1;	/* Operation is applied correctly */
+	return 0;
 }

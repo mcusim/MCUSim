@@ -26,6 +26,14 @@ extern "C" {
 
 #include "mcusim/avr/sim/sim.h"
 
+/* Structure to describe a memory operation requested by user. */
+struct MSIM_MemOp {
+	char memtype[16];		/* Type of MCU memory */
+	char operation;			/* Memory operation */
+	char operand[4096];		/* Path to file, value, etc. */
+	char format;			/* Optional, value format */
+};
+
 int MSIM_InterpretCommands(struct MSIM_AVR *mcu);
 
 #ifdef __cplusplus
