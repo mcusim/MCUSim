@@ -156,7 +156,7 @@
 #define GPIOR0		NO_REG
 #endif
 
-/* Timer/Counter0 */
+    /* Timer/Counter0 */
 #ifndef OCR0B
 #define OCR0B		NO_REG
 #endif
@@ -242,7 +242,99 @@
 #ifndef MCUCSR
 #define MCUCSR		NO_REG
 #endif
-
+#ifndef OSCCAL
+#define OSCCAL		NO_REG
+#endif
+#ifndef SFIOR
+#define SFIOR		NO_REG
+#endif
+#ifndef TCCR1A
+#define TCCR1A		NO_REG
+#endif
+#ifndef TCCR1B
+#define TCCR1B		NO_REG
+#endif
+#ifndef TCNT1H
+#define TCNT1H		NO_REG
+#endif
+#ifndef TCNT1L
+#define TCNT1L		NO_REG
+#endif
+#ifndef OCR1AH
+#define OCR1AH		NO_REG
+#endif
+#ifndef OCR1AL
+#define OCR1AL		NO_REG
+#endif
+#ifndef OCR1BH
+#define OCR1BH		NO_REG
+#endif
+#ifndef OCR1BL
+#define OCR1BL		NO_REG
+#endif
+#ifndef ICR1H
+#define ICR1H		NO_REG
+#endif
+#ifndef ICR1L
+#define ICR1L		NO_REG
+#endif
+#ifndef TCCR2
+#define TCCR2		NO_REG
+#endif
+#ifndef TCNT2
+#define TCNT2		NO_REG
+#endif
+#ifndef OCR2
+#define OCR2		NO_REG
+#endif
+#ifndef ASSR
+#define ASSR		NO_REG
+#endif
+#ifndef WDTCR
+#define WDTCR		NO_REG
+#endif
+#ifndef UBRRH
+#define UBRRH		NO_REG
+#endif
+#ifndef UCSRC
+#define UCSRC		NO_REG
+#endif
+#ifndef UDR
+#define UDR		NO_REG
+#endif
+#ifndef UCSRA
+#define UCSRA		NO_REG
+#endif
+#ifndef UCSRB
+#define UCSRB		NO_REG
+#endif
+#ifndef UBRRL
+#define UBRRL		NO_REG
+#endif
+#ifndef ADMUX
+#define ADMUX		NO_REG
+#endif
+#ifndef ADCSRA
+#define ADCSRA		NO_REG
+#endif
+#ifndef ADCH
+#define ADCH		NO_REG
+#endif
+#ifndef ADCL
+#define ADCL		NO_REG
+#endif
+#ifndef TWDR
+#define TWDR		NO_REG
+#endif
+#ifndef TWAR
+#define TWAR		NO_REG
+#endif
+#ifndef TWSR
+#define TWSR		NO_REG
+#endif
+#ifndef TWBR
+#define TWBR		NO_REG
+#endif
 /*
  * Available MCU registers to include into VCD dump.
  * See mcusim/avr/sim/vcd_dump.h for details.
@@ -320,4 +412,35 @@
 	{ "SPMCR",	SPMCR, NULL, 0 },				\
 	{ "TWCR",	TWCR, NULL, 0 },				\
 	{ "MCUCSR",	MCUCSR, NULL, 0 }				\
+	{ "OSCCAL",	OSCCAL, NULL, 0 }				\
+	{ "SFIOR",	SFIOR, NULL, 0 }				\
+	{ "TCCR1A",	TCCR1A, NULL, 0 }				\
+	{ "TCCR1B",	TCCR1B, NULL, 0 }				\
+	{ "TCNT1H",	TCNT1H, NULL, 0 }				\
+	{ "TCNT1L",	TCNT1L, NULL, 0 }				\
+	{ "OCR1AH",	OCR1AH, NULL, 0 }				\
+	{ "OCR1AL",	OCR1AL, NULL, 0 }				\
+	{ "OCR1BH",	OCR1BH, NULL, 0 }				\
+	{ "OCR1BL",	OCR1BL, NULL, 0 }				\
+	{ "ICR1H",	ICR1H, NULL, 0 }				\
+	{ "ICR1L",	ICR1L, NULL, 0 }				\
+	{ "TCCR2",	TCCR2, NULL, 0 }				\
+	{ "TCNT2",	TCNT2, NULL, 0 }				\
+	{ "OCR2",	OCR2, NULL, 0 }					\
+	{ "ASSR",	ASSR, NULL, 0 }					\
+	{ "WDTCR",	WDTCR, NULL, 0 }				\
+	{ "UBRRH",	UBRRH, NULL, 0 }				\
+	{ "UCSRC",	UCSRC, NULL, 0 }				\
+	{ "UDR",	UDR, NULL, 0 }					\
+	{ "UCSRA",	UCSRA, NULL, 0 }				\
+	{ "UCSRB",	UCSRB, NULL, 0 }				\
+	{ "UBRRL",	UBRRL, NULL, 0 }				\
+	{ "ADMUX",	ADMUX, NULL, 0 }				\
+	{ "ADCSRA",	ADCSRA, NULL, 0 }				\
+	{ "ADCH",	ADCH, NULL, 0 }					\
+	{ "ADCL",	ADCL, NULL, 0 }					\
+	{ "TWDR",	TWDR, NULL, 0 }					\
+	{ "TWAR",	TWAR, NULL, 0 }					\
+	{ "TWSR",	TWSR, NULL, 0 }					\
+	{ "TWBR",	TWBR, NULL, 0 }					\
 }
