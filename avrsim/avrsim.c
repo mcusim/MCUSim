@@ -41,7 +41,7 @@
 						   initialization */
 
 /* Command line options */
-#define CLI_OPTIONS		":p:U:r:P:"
+#define CLI_OPTIONS		":p:U:r:P:f:"
 #define DUMP_REGS_OPT		7575
 #define VERSION_OPT		7576
 #define GDB_RSP_PORT_OPT	7577
@@ -73,9 +73,11 @@ static struct MSIM_MemOp memops[MAX_MEMOPS];
 static unsigned short memops_num;
 
 static void print_usage(void);
+static void print_config(const struct MSIM_AVR *m);
 static void parse_dump(char *cmd);
 static int parse_rsp_port(const char *opt);
 static int parse_memop(char *opt);
+static unsigned int parse_freq(const char *opt);
 static int apply_memop(struct MSIM_AVR *m, struct MSIM_MemOp *mo);
 static int set_fuse(struct MSIM_AVR *m, struct MSIM_MemOp *mo,
 		    unsigned int fuse_n);
@@ -88,10 +90,17 @@ int main(int argc, char *argv[])
 	int c, rsp_port;
 	char *partno, *luap;
 	unsigned int i, j, regs, dregs;
+	unsigned int freq;
 
 	partno = luap = NULL;
 	vcd_rn = print_regs = memops_num = 0;
 	rsp_port = GDB_RSP_PORT;
+
+	/* Print welcome message */
+	printf("INFO: AVRSim %s - Simulator for AVR microcontrollers,\n"
+	       "INFO: part of MCUSim <http://www.mcusim.org>\n"
+	       "INFO: --------------------------------------\n",
+	       MSIM_VERSION);
 
 	while ((c = getopt_long(argc, argv, CLI_OPTIONS,
 				longopts, NULL)) != -1) {
@@ -101,7 +110,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'U':		/* Required. Memory operation. */
 			if (parse_memop(optarg)) {
-				fprintf(stderr, "ERR: Incorrect memory "
+				fprintf(stderr, "ERRO: Incorrect memory "
 						"operation specified!\n");
 				print_usage();
 				return 1;
@@ -123,13 +132,17 @@ int main(int argc, char *argv[])
 		case 'P':
 			rsp_port = parse_rsp_port(optarg);
 			break;
+		case 'f':
+			freq = parse_freq(optarg);
+			break;
 		case ':':		/* Missing operand */
-			fprintf(stderr, "Option -%c requires an operand\n",
-					optopt);
+			fprintf(stderr, "WARN: Option -%c requires "
+					"an operand\n", optopt);
 			print_usage();
 			return 1;
 		case '?':		/* Unknown option */
-			fprintf(stderr, "Unknown option: -%c\n", optopt);
+			fprintf(stderr, "WARN: Unknown option: -%c\n",
+					optopt);
 			print_usage();
 			return 1;
 		}
@@ -156,7 +169,7 @@ int main(int argc, char *argv[])
 			/* Try to open file to read program memory from */
 			fp = fopen(memops[i].operand, "r");
 			if (!fp) {
-				fprintf(stderr, "ERR: Failed to open file to "
+				fprintf(stderr, "ERRO: Failed to open file to "
 					"read a content of flash memory "
 					"from: %s\n", memops[i].operand);
 				return 1;
@@ -166,7 +179,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	if (fp == NULL) {
-		fprintf(stderr, "ERR: It is necessary to fill program "
+		fprintf(stderr, "ERRO: It is necessary to fill program "
 				"memory, i.e. do not forget to "
 				"-U flash:w:<filename>!\n");
 		return 1;
@@ -176,7 +189,7 @@ int main(int argc, char *argv[])
 	mcu.bls = &bls;
 	mcu.pmp = pmp;
 	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp)) {
-		fprintf(stderr, "ERR: AVR %s cannot be initialized!\n",
+		fprintf(stderr, "ERRO: AVR %s cannot be initialized!\n",
 				partno);
 		return 1;
 	}
@@ -191,8 +204,8 @@ int main(int argc, char *argv[])
 				break;
 			if (mcu.vcd_regs[i].off < 0)
 				continue;
-			printf("%s (0x%2lX)\n", mcu.vcd_regs[i].name,
-						mcu.vcd_regs[i].off);
+			printf("INFO: %s (0x%2lX)\n",
+				mcu.vcd_regs[i].name, mcu.vcd_regs[i].off);
 		}
 		return 0;
 	}
@@ -200,7 +213,7 @@ int main(int argc, char *argv[])
 	/* Apply memory modifications */
 	for (i = 0; i < memops_num; i++)
 		if (apply_memop(&mcu, &memops[i])) {
-			fprintf(stderr, "ERR: Memory modification failed: "
+			fprintf(stderr, "ERRO: Memory modification failed: "
 				"memtype=%s, op=%c, val=%s\n",
 				&memops[i].memtype[0], memops[i].operation,
 				&memops[i].operand[0]);
@@ -218,6 +231,20 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	/* Try to set required frequency */
+	if (freq > mcu.freq)
+		fprintf(stderr, "WARN: Frequency %u.%u kHz is above maximum "
+				"possible %lu.%lu kHz for selected clock "
+				"source\n", freq/1000, freq%1000,
+				mcu.freq/1000, mcu.freq%1000);
+	else if (freq > 0)
+		mcu.freq = freq;
+
+	/* Print MCU configuration */
+	print_config(&mcu);
+	printf("INFO: Listening for incoming GDB connections "
+	       "at localhost:%d...\n", rsp_port);
+
 	/* Prepare and run AVR simulation */
 	MSIM_RSPInit(&mcu, rsp_port);
 	MSIM_SimulateAVR(&mcu, 0, mcu.flashend+1);
@@ -228,8 +255,7 @@ int main(int argc, char *argv[])
 
 static void print_usage(void)
 {
-	printf("AVRSim %s - Simulator for AVR microcontrollers,\n"
-		"part of MCUSim <http://www.mcusim.org>\n\n", MSIM_VERSION);
+	/* Print usage and options */
 	printf("Usage: avrsim [options]\n"
 	       "Options:\n"
 	       "  -p <partno|?>              Specify AVR device (required).\n"
@@ -244,7 +270,40 @@ static void print_usage(void)
 	       "  --version                  Print this message.\n");
 	printf("  -P <port>, --rsp-port=<port>\n"
 	       "                             Set port to listen to incoming "
-	       "connections from GDB RSP.\n");
+	       "connections from GDB RSP.\n"
+	       "  -f <frequency>             MCU frequency, in Hz.\n");
+
+	/* Print examples */
+	printf("Examples:\n"
+	       "  avrsim -p m328p -U flash:w:./dhtc.hex -U hfuse:w:0x57:h "
+	       "-r ./lua-modules --dump-regs=PORTB,POPTC\n"
+	       "  avrsim -p m8a -U flash:w:./dhtc.hex -r ./lua-modules "
+	       "-f 1000000\n\n");
+}
+
+static void print_config(const struct MSIM_AVR *m)
+{
+	/*
+	 * AVR memory is organized as array of bytes in the simulator, but
+	 * it's natural to measure program memory in words because
+	 * all AVR instructions are 16- or 32-bits wide.
+	 *
+	 * It's why all program memory addresses are divided by two before
+	 * printing.
+	 */
+	printf("INFO: Model: %s\n", m->name);
+	printf("INFO: Signature: 0x%X%2X%2X\n",
+			m->signature[2], m->signature[1], m->signature[0]);
+	printf("INFO: Clock frequency: %lu.%lu kHz\n",
+			m->freq/1000, m->freq%1000);
+	printf("INFO: Program memory: 0x%lX-0x%lX\n",
+	       m->flashstart/2, m->flashend/2);
+	printf("INFO: Bootloader section: 0x%lX-0x%lX\n",
+	       m->bls->start/2, m->bls->end/2);
+	printf("INFO: Data memory: 0x%lX-0x%lX\n", m->ramstart, m->ramend);
+	printf("INFO: EEPROM: 0x%X-0x%X\n", m->e2start, m->e2end);
+	printf("INFO: PC: 0x%lX\n", m->pc/2);
+	printf("INFO: Reset PC: 0x%lX\n", m->reset_pc/2);
 }
 
 static void parse_dump(char *cmd)
@@ -275,7 +334,7 @@ static void parse_dump(char *cmd)
 				p++;
 				continue;
 			}
-			fprintf(stderr, "ERR: Failed to parse list of "
+			fprintf(stderr, "ERRO: Failed to parse list of "
 					"registers to dump: %s\n", p);
 			break;
 		}
@@ -295,6 +354,18 @@ static int parse_rsp_port(const char *opt)
 		rsp_port = GDB_RSP_PORT;
 	}
 	return rsp_port;
+}
+
+static unsigned int parse_freq(const char *opt)
+{
+	int freq;
+
+	freq = atoi(opt);
+	if (freq <= 0) {
+		fprintf(stderr, "WARN: Frequency should be positive!\n");
+		return 0;
+	}
+	return (unsigned int)freq;
 }
 
 static int parse_memop(char *opt)
@@ -342,8 +413,11 @@ static int set_fuse(struct MSIM_AVR *m, struct MSIM_MemOp *mo,
 {
 	unsigned int fusev;
 
-	if (m->set_fusef == NULL)
-		return 0;	/* No function, return silently */
+	if (m->set_fusef == NULL) {
+		fprintf(stderr, "WARN: Cannot modify fuse, MCU-specific "
+				"function is not available\n");
+		return 0;	/* No function to set fuse */
+	}
 	if (mo->format != 'h') {
 		fprintf(stderr, "WARN: Failed to modify fuse, expected "
 				"format is 'h'\n");
@@ -351,7 +425,7 @@ static int set_fuse(struct MSIM_AVR *m, struct MSIM_MemOp *mo,
 	}
 
 	if (sscanf(mo->operand, "0x%2X", &fusev) != 1) {
-		fprintf(stderr, "ERR: Failed to parse fuse value from %s!\n",
+		fprintf(stderr, "ERRO: Failed to parse fuse value from %s!\n",
 				mo->operand);
 		return 1;
 	}
@@ -364,8 +438,11 @@ static int set_lock(struct MSIM_AVR *m, struct MSIM_MemOp *mo)
 {
 	unsigned int lockv;
 
-	if (m->set_lockf == NULL)
-		return 0;	/* No function, return silently */
+	if (m->set_lockf == NULL) {
+		fprintf(stderr, "WARN: Cannot modify lock bits, MCU-specific "
+				"function is not available\n");
+		return 0;	/* No function to set lock bits */
+	}
 	if (mo->format != 'h') {
 		fprintf(stderr, "WARN: Failed to modify lock byte, expected "
 				"format is 'h'\n");
@@ -373,7 +450,7 @@ static int set_lock(struct MSIM_AVR *m, struct MSIM_MemOp *mo)
 	}
 
 	if (sscanf(mo->operand, "0x%2X", &lockv) != 1) {
-		fprintf(stderr, "ERR: Failed to parse lock value from %s!\n",
+		fprintf(stderr, "ERRO: Failed to parse lock value from %s!\n",
 				mo->operand);
 		return 1;
 	}

@@ -83,7 +83,8 @@ int MSIM_LoadLuaPeripherals(const char *file)
 
 	f = fopen(file, "r");
 	if (f == NULL) {
-		fprintf(stderr, "Cannot load Lua peripherals from: %s\n", file);
+		fprintf(stderr, "ERRO: Cannot load Lua peripherals from: %s\n",
+				file);
 		return -1;
 	}
 
@@ -103,8 +104,8 @@ int MSIM_LoadLuaPeripherals(const char *file)
 		/* Load peripheral */
 		if (luaL_loadfile(MSIM_LuaStates[i], path) ||
 		    lua_pcall(MSIM_LuaStates[i], 0, 0, 0)) {
-			fprintf(stderr, "Cannot load peripheral file: %s, "
-					"reason: %s\n", path,
+			fprintf(stderr, "ERRO: Cannot load peripheral "
+					"file: %s, reason: %s\n", path,
 					lua_tostring(MSIM_LuaStates[i], -1));
 			fclose(f);
 			return -1;
@@ -145,7 +146,7 @@ void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu)
 		lua_getglobal(MSIM_LuaStates[i], "module_tick");
 		lua_pushlightuserdata(MSIM_LuaStates[i], mcu);
 		if (lua_pcall(MSIM_LuaStates[i], 1, 0, 0) != 0)
-			fprintf(stderr, "Error running function "
+			fprintf(stderr, "ERRO: Error running function "
 					"module_tick(): %s\n",
 					lua_tostring(MSIM_LuaStates[i], -1));
 	}
@@ -201,7 +202,7 @@ static int lua_avr_setbit(lua_State *L)
 
 int MSIM_LoadLuaPeripherals(const char *file)
 {
-	fprintf(stderr, "Lua peripherals are not supported!\n");
+	fprintf(stderr, "WARN: Lua peripherals are not supported\n");
 	return 0;
 }
 

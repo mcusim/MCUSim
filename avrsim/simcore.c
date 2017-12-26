@@ -67,7 +67,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 	if (mcu->vcd_regsn[0] >= 0) {
 		vcd_f = MSIM_VCDOpenDump(mcu, "dump.vcd");
 		if (!vcd_f) {
-			fprintf(stderr, "Failed to open dump "
+			fprintf(stderr, "ERRO: Failed to open dump "
 					"file: dump.vcd\n");
 			return -1;
 		}
@@ -97,8 +97,8 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		if ((mcu->pc+1) >= mcu->pm_size) {
 			if (vcd_f != NULL)
 				fclose(vcd_f);
-			fprintf(stderr, "Program counter is out of scope: "
-					"pc=0x%4lX, pc+1=0x%4lX, "
+			fprintf(stderr, "ERRO: Program counter is out of "
+					"scope: pc=0x%4lX, pc+1=0x%4lX, "
 					"flash_addr=0x%4lX\n",
 					mcu->pc, mcu->pc+1, mcu->pm_size-1);
 			return 1;
@@ -143,7 +143,7 @@ int MSIM_PrintInstructions(struct MSIM_AVR *mcu, unsigned long start_addr,
 		msb = (unsigned short) mcu->pm[loc_pc+1];
 		inst = (unsigned short) (lsb | (msb << 8));
 
-		printf("%lx: %x %x\n", loc_pc, lsb, msb);
+		printf("INFO: %lx: %x %x\n", loc_pc, lsb, msb);
 
 		loc_pc += MSIM_Is32(inst) ? 4 : 2;
 	}
@@ -173,14 +173,14 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		}
 
 	if (!mcu_found) {
-		fprintf(stderr, "Microcontroller AVR %s is not supported!\n",
+		fprintf(stderr, "ERRO: Model is not supported: %s\n",
 				mcu_name);
 		return -1;
 	}
 
 	if (load_progmem(mcu, fp)) {
-		fprintf(stderr, "Program memory cannot be loaded from a "
-				"file!\n");
+		fprintf(stderr, "ERRO: Program memory cannot be loaded from a "
+				"file\n");
 		return -1;
 	}
 	mcu->state = AVR_STOPPED;
@@ -194,7 +194,7 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 	IHexRecord rec, mem_rec;
 
 	if (!fp) {
-		fprintf(stderr, "Cannot read from the filestream\n");
+		fprintf(stderr, "ERRO: Cannot read from the filestream\n");
 		return -1;
 	}
 
@@ -226,11 +226,11 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 
 		mem_rec.checksum = Checksum_IHexRecord(&mem_rec);
 		if (mem_rec.checksum != rec.checksum) {
-			printf("Checksum is not correct: 0x%X (memory) != "
-			       "0x%X (file)\nFile record:\n",
+			printf("ERRO: Checksum is not correct: 0x%X (memory) "
+			       "!= 0x%X (file)\nFile record:\n",
 			       mem_rec.checksum, rec.checksum);
 			Print_IHexRecord(&rec);
-			printf("Memory record:\n");
+			printf("ERRO: Memory record: \n");
 			Print_IHexRecord(&mem_rec);
 			return -1;
 		}
@@ -244,7 +244,7 @@ void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVRSREGFlag flag,
 	unsigned char v;
 
 	if (!mcu) {
-		fprintf(stderr, "MCU is null");
+		fprintf(stderr, "ERRO: MCU is null");
 		return;
 	}
 
@@ -287,7 +287,7 @@ unsigned char MSIM_ReadSREGFlag(struct MSIM_AVR *mcu,
 	unsigned char pos;
 
 	if (!mcu) {
-		fprintf(stderr, "MCU is null");
+		fprintf(stderr, "ERRO: MCU is null");
 		return UINT8_MAX;
 	}
 
@@ -348,7 +348,8 @@ void MSIM_PrintParts(void)
 {
 	unsigned int i;
 
-	printf("Valid parts are:\n");
+	printf("INFO: Valid parts are:\n");
 	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++)
-		printf("%-10s= %s\n", init_funcs[i].partno, init_funcs[i].name);
+		printf("INFO: %-10s= %s\n", init_funcs[i].partno,
+					    init_funcs[i].name);
 }

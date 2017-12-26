@@ -27,11 +27,9 @@ extern "C" {
 #endif
 
 struct MSIM_AVRBootloader {
-	uint32_t start;		/* The first bootloader address in
-				   program memory, in bytes. */
-	uint32_t end;		/* The last bootloader address in
-				   program memory, in bytes. */
-	uint32_t size;		/* The bootloader size, in bytes. */
+	unsigned long start;	/* First Bootloader byte in PM */
+	unsigned long end;	/* Last Bootloader byte in PM */
+	unsigned long size;	/* Bootloader size, in bytes */
 };
 
 #ifdef __cplusplus

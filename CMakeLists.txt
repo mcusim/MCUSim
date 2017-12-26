@@ -22,7 +22,7 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Version
-set(MSIM_VERSION "0.1.29")
+set(MSIM_VERSION "0.1.30")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Add subprojects here
