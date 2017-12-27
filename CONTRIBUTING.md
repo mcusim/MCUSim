@@ -7,7 +7,7 @@ I started working on this program keeping in mind that a lot of makers and
 engineers work on MCU-based circuits on a daily basis, and just using MCUSim
 and sharing your opinion can help a lot!
 
-##How to find any help
+## How to find any help
 
 * Ask directly in IRC (#mcusim on [freenode](https://webchat.freenode.net/))
 * Drop me a letter (Dmitry Salychev, darkness.bsd at gmail.com)
