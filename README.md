@@ -24,3 +24,8 @@ system. This is how it can be done in macOS:
 	# cd mcusim && mkdir build && cd build
 	# cmake -DCMAKE_BUILD_TYPE=Release ..
 	# make && make install
+
+How to contribute
+-----------------
+If you're feeling ready to make any changes, please, read a
+[Contribution Guide](https://github.com/dsalychev/mcusim/blob/master/CONTRIBUTING.md).

@@ -28,11 +28,13 @@ you've done. Please, do not forget to sign off your commit:
 `git commit -s -m "..."`.
 3. Prepare a patch. Please, sign it off, too:
 `git format-patch -s -1 <COMMIT_HASH>`.
+4. Attach your patch to a comment to the issue you've fixed
+(if this one exists) or post to the mailing list for developers.
 
 _Important_: Please, do not combine more then one commit in a patch file.
 It will help everyone to understand your changes clearly. If you're going
 to make several commits in your local repository, consider
 [squashing commits](https://stackoverflow.com/a/5201642/2667262) together.
 
-Thanks,
+Thanks,  
 Dmitry Salychev
