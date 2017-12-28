@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
 	partno = luap = NULL;
 	vcd_rn = print_regs = memops_num = 0;
 	rsp_port = GDB_RSP_PORT;
+	freq = 0;
 
 	/* Print welcome message */
 	printf("INFO: AVRSim %s - Simulator for AVR microcontrollers,\n"
@@ -256,28 +257,29 @@ int main(int argc, char *argv[])
 static void print_usage(void)
 {
 	/* Print usage and options */
-	printf("Usage: avrsim [options]\n"
-	       "Options:\n"
-	       "  -p <partno|?>              Specify AVR device (required).\n"
-	       "  -U <memtype>:w:<filename|value>[:<format>]\n"
-	       "                             Memory operation "
+	printf("INFO: Usage: avrsim [options]\n"
+	       "INFO: Options:\n"
+	       "INFO:   -p <partno|?>              Specify AVR device "
+	       "(required).\n"
+	       "INFO:   -U <memtype>:w:<filename|value>[:<format>]\n"
+	       "INFO:                              Memory operation "
 	       "specification (required).\n"
-	       "  -r <filename>              Specify text file with "
+	       "INFO:   -r <filename>              Specify text file with "
 	       "simulated modules written in Lua.\n"
-	       "  --dump-regs=<reg0,reg1,...,regN|?>\n"
-	       "                             Dump specified registers into "
-	       "VCD file.\n"
-	       "  --version                  Print this message.\n");
-	printf("  -P <port>, --rsp-port=<port>\n"
-	       "                             Set port to listen to incoming "
-	       "connections from GDB RSP.\n"
-	       "  -f <frequency>             MCU frequency, in Hz.\n");
+	       "INFO:   --dump-regs=<reg0,reg1,...,regN|?>\n"
+	       "INFO:                              Dump specified registers "
+	       "into VCD file.\n"
+	       "INFO:   --version                  Print this message.\n");
+	printf("INFO:   -P <port>, --rsp-port=<port>\n"
+	       "INFO:                              Set port to listen to the "
+	       "incoming connections from GDB RSP.\n"
+	       "INFO:   -f <frequency>             MCU frequency, in Hz.\n");
 
 	/* Print examples */
-	printf("Examples:\n"
-	       "  avrsim -p m328p -U flash:w:./dhtc.hex -U hfuse:w:0x57:h "
-	       "-r ./lua-modules --dump-regs=PORTB,POPTC\n"
-	       "  avrsim -p m8a -U flash:w:./dhtc.hex -r ./lua-modules "
+	printf("INFO: Examples:\n"
+	       "INFO:   avrsim -p m328p -U flash:w:./dhtc.hex -U "
+	       "hfuse:w:0x57:h -r ./lua-modules --dump-regs=PORTB,POPTC\n"
+	       "INFO:   avrsim -p m8a -U flash:w:./dhtc.hex -r ./lua-modules "
 	       "-f 1000000\n\n");
 }
 
