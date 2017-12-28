@@ -650,6 +650,18 @@
 #ifndef WDTCSR
 #define WDTCSR		NO_REG
 #endif
+#ifndef SPCR0
+#define SPCR0		NO_REG
+#endif
+#ifndef SPSR0
+#define SPSR0		NO_REG
+#endif
+#ifndef DWDR
+#define DWDR		NO_REG
+#endif
+#ifndef PRR
+#define PRR		NO_REG
+#endif
 /*
  * Available MCU registers to include into VCD dump.
  * See mcusim/avr/sim/vcd_dump.h for details.
@@ -863,5 +875,9 @@
 	{ "PRR1",	PRR1, NULL, 0 },				\
 	{ "PRR0",	PRR0, NULL, 0 },				\
 	{ "CLKPR",	CLKPR, NULL, 0 },				\
-	{ "WDTCSR",	WDTCSR, NULL, 0 }				\
+	{ "WDTCSR",	WDTCSR, NULL, 0 },				\
+	{ "SPCR0",	SPCR0, NULL, 0 },				\
+	{ "SPSR0",	SPSR0, NULL, 0 },				\
+	{ "DWDR",	DWDR, NULL, 0 },				\
+	{ "PRR",	PRR, NULL, 0 }					\
 }
