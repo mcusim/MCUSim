@@ -1,6 +1,9 @@
 MCUSim
 ======
 Simulator for microcontrollers with GDB Remote Serial Protocol interface.
+[![travis-ci](https://img.shields.io/travis/dsalychev/mcusim.svg)](https://travis-ci.org/dsalychev/mcusim)
+[![coverity](https://scan.coverity.com/projects/13784/badge.svg)](https://scan.coverity.com/projects/dsalychev-mcusim)
+[![latest-tag](https://img.shields.io/github/tag/dsalychev/mcusim.svg)](https://github.com/dsalychev/mcusim/releases)
 
 Main purpose of the simulator is to reproduce microcontroller unit (MCU)
 within electronic circuit. It is achieved by decoding opcodes and
