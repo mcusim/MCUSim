@@ -239,12 +239,13 @@ static int handle_irq(struct MSIM_AVR *mcu)
 	for (i = 0; i < AVR_IRQ_NUM; i++)
 		if (mcu->intr->irq[i] > 0)
 			break;
-	/* Clear selected IRQ */
-	mcu->intr->irq[i] = 0;
 
 	if (i == AVR_IRQ_NUM) {		/* No IRQ, do nothing */
 		return 2;
 	} else {			/* Execute ISR */
+		/* Clear selected IRQ */
+		mcu->intr->irq[i] = 0;
+
 		/* Disable interrupts globally */
 		MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
 		/* Push PC onto the stack */
