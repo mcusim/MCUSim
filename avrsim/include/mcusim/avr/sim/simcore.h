@@ -52,7 +52,6 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 
 /* Functions to work with a stack inside MCU */
 void MSIM_StackPush(struct MSIM_AVR *mcu, uint8_t val);
-
 uint8_t MSIM_StackPop(struct MSIM_AVR *mcu);
 
 /* Functions to update/read SREG bits */
@@ -60,14 +59,6 @@ void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVRSREGFlag flag,
 			 unsigned char set_f);
 unsigned char MSIM_ReadSREGFlag(struct MSIM_AVR *mcu,
 				enum MSIM_AVRSREGFlag flag);
-
-/* Prints instructions from the program memory of the MCU.
- *
- * Required interval of instructions can be specified via
- * [start_addr, end_addr] (steps = 0) or as a number of instructions
- * from the current program counter (steps != 0). */
-int MSIM_PrintInstructions(struct MSIM_AVR *mcu, unsigned long start_addr,
-			   unsigned long end_addr, unsigned long steps);
 
 /* Prints supported AVR parts. */
 void MSIM_PrintParts(void);

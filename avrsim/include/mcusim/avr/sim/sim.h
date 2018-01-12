@@ -28,6 +28,7 @@ extern "C" {
 
 #include "mcusim/avr/sim/bootloader.h"
 #include "mcusim/avr/sim/vcd_dump.h"
+#include "mcusim/avr/sim/interrupt.h"
 
 #define SIM_NAME		"avrsim"
 
@@ -37,20 +38,18 @@ extern "C" {
 
 #define VCD_REGS_MAX		512
 
-typedef unsigned long MSIM_AVRFlashAddr_t;
-
 /* Device-specific functions. */
 typedef int (*MSIM_SetFuse_f)(void *mcu,
 			      unsigned int fuse_n, unsigned char fuse_v);
 typedef int (*MSIM_SetLock_f)(void *mcu, unsigned char lock_v);
-typedef int (*MSIM_Tick8Timers_f)(void *mcu);
+typedef int (*MSIM_TickTimers_f)(void *mcu);
+typedef int (*MSIM_ProvideIRQs_f)(void *mcu);
 
 enum MSIM_AVRState {
 	AVR_RUNNING,
 	AVR_STOPPED,
 	AVR_SLEEPING,
-	AVR_MSIM_STEP,			/* Single step should be performed
-					   only (MCUSim specific) */
+	AVR_MSIM_STEP,			/* Execute next instruction */
 	AVR_MSIM_STOP			/* Terminate simulation and exit */
 };
 
@@ -107,10 +106,8 @@ struct MSIM_AVR {
 
 	unsigned long freq;		/* Current MCU frequency, Hz */
 	unsigned char pc_bits;		/* 16-bit PC, 22-bit PC, etc. */
-	MSIM_AVRFlashAddr_t pc;		/* Current program counter */
-	MSIM_AVRFlashAddr_t reset_pc;	/* Reset program counter */
-	MSIM_AVRFlashAddr_t ivt;	/* Address of Interrupt Vectors Table
-					   in program memory */
+	unsigned long pc;		/* Current program counter */
+	struct MSIM_AVRInt *intr;	/* Interrupts and IRQs */
 
 	unsigned char *sreg;		/* SREG in the data memory */
 	unsigned char *sph;		/* SP(high) in the data memory */
@@ -142,7 +139,9 @@ struct MSIM_AVR {
 
 	MSIM_SetFuse_f set_fusef;	/* Function to set AVR fuse byte */
 	MSIM_SetLock_f set_lockf;	/* Function to set AVR lock byte */
-	MSIM_Tick8Timers_f tick_8timers; /* Function to tick 8-bit timers */
+	MSIM_TickTimers_f tick_timers;	/* Function to tick 8-bit timers */
+	MSIM_ProvideIRQs_f provide_irqs; /* Function to check MCU flags and
+					    set IRQs accordingly */
 
 	struct MSIM_VCDRegister vcd_regs[VCD_REGS_MAX];
 	short vcd_regsn[VCD_REGS_MAX];	/* Indices of VCD registers to be

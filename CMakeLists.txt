@@ -22,7 +22,7 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Version
-set(MSIM_VERSION "0.1.34")
+set(MSIM_VERSION "0.1.35")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Add subprojects here
@@ -65,7 +65,6 @@ set(AVRSIM_SRC		avrsim/simcore.c
 			avrsim/simm328.c
 			avrsim/simm2560.c
 			avrsim/ihex.c
-			avrsim/cli.c
 			avrsim/getopt_long.c
 			avrsim/peripheral_lua.c
 			avrsim/decoder.c

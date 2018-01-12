@@ -32,7 +32,8 @@
 
 #define MCU_NAME	"ATmega8A"
 
-#define RESET_PC	0x0000
+#define RESET_PC	0x0000	/* Reset vector address, in bytes */
+#define IVT_ADDR	0x0002	/* Interrupt vectors address, in bytes */
 #define PC_BITS		12	/* PC bit capacity */
 #define LBITS_DEFAULT	0x3F	/* Default lock bits */
 
@@ -48,12 +49,13 @@
 
 #define SET_FUSE_F	MSIM_M8ASetFuse
 #define SET_LOCK_F	MSIM_M8ASetLock
-#define TICK_8TIMERS_F	MSIM_M8ATick8Timers
-/* #define TICK_16TIMERS_F */
+#define TICK_TIMERS_F	MSIM_M8ATickTimers
+#define PROVIDE_IRQS_F	MSIM_M8AProvideIRQs
 
 int MSIM_M8ASetFuse(void *mcu, unsigned int fuse_n, unsigned char fuse_v);
 int MSIM_M8ASetLock(void *mcu, unsigned char lock_v);
-int MSIM_M8ATick8Timers(void *mcu);
+int MSIM_M8ATickTimers(void *mcu);
+int MSIM_M8AProvideIRQs(void *mcu);
 
 #define SREG		_SFR_IO8(0x3F)
 #define SPH		_SFR_IO8(0x3E)

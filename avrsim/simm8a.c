@@ -25,68 +25,157 @@
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simm8a.h"
 
-#define TC_PS_NONE			1
-#define TC_PS_8				8
-#define TC_PS_64			64
-#define TC_PS_256			256
-#define TC_PS_1024			1024
-
-static unsigned int tc0_div;
-static unsigned int tc0_ticks;
+static void tick_timer0(struct MSIM_AVR *mcu);
+static void tick_timer2(struct MSIM_AVR *mcu);
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
 #include "mcusim/avr/sim/mcu_init.h"
 }
 
-int MSIM_M8ATick8Timers(void *m)
+int MSIM_M8ATickTimers(void *m)
 {
-	const struct MSIM_AVR *mcu;
-	unsigned char tccr0;
-	unsigned int div;
+	struct MSIM_AVR *mcu;
 
 	mcu = (struct MSIM_AVR *)m;
+	tick_timer2(mcu);
+	tick_timer0(mcu);
+	return 0;
+}
+
+static void tick_timer0(struct MSIM_AVR *mcu)
+{
+	static unsigned int tc0_presc;
+	static unsigned int tc0_ticks;
+
+	unsigned char tccr0;
+	unsigned int presc;
+
 	tccr0 = mcu->dm[TCCR0];
 
 	switch (tccr0) {
-	case 0x1:	/* No prescaling, clk */
-		div = TC_PS_NONE;
+	case 0x1:
+		presc = 0;		/* No prescaling, clk_io */
 		break;
-	case 0x2:	/* clk/8 */
-		div = TC_PS_8;
+	case 0x2:
+		presc = 8;		/* clk_io/8 */
 		break;
-	case 0x3:	/* clk/64 */
-		div = TC_PS_64;
+	case 0x3:
+		presc = 64;		/* clk_io/64 */
 		break;
-	case 0x4:	/* clk/256 */
-		div = TC_PS_256;
+	case 0x4:
+		presc = 256;		/* clk_io/256 */
 		break;
-	case 0x5:	/* clk/1024 */
-		div = TC_PS_1024;
+	case 0x5:
+		presc = 1024;		/* clk_io/1024 */
 		break;
 	case 0x0:	/* No clock source (stopped mode) */
 	case 0x6:	/* External clock sources are not supported (fall) */
 	case 0x7:	/* External clock sources are not supported (rise) */
 	default:	/* Should not happen! */
-		tc0_div = 0;
+		tc0_presc = 0;
 		tc0_ticks = 0;
-		return 0;
+		return;
 	}
 
-	if (div != tc0_div) {
-		tc0_div = div;
+	if (presc != tc0_presc) {
+		tc0_presc = presc;
 		tc0_ticks = 0;
 	}
-	if (tc0_ticks == (tc0_div-1)) {
-		if (mcu->dm[TCNT0] == 0xFF)
+	if (tc0_ticks == (tc0_presc-1)) {
+		if (mcu->dm[TCNT0] == 0xFF) {
+			/* Reset Timer/Counter0 */
 			mcu->dm[TCNT0] = 0;
-		else
+			/* Timer/Counter0 overflow occured */
+			mcu->dm[TIFR] |= (1<<TOV0);
+		} else {
 			mcu->dm[TCNT0]++;
+		}
 		tc0_ticks = 0;
-		return 0;
+		return;
 	}
 	tc0_ticks++;
-	return 0;
+}
+
+static void tick_timer2(struct MSIM_AVR *mcu)
+{
+	static unsigned int tc2_presc;
+	static unsigned int tc2_ticks;
+	static unsigned char prev_wgm;
+
+	unsigned char tccr2;
+	unsigned char cs;		/* Clock Select bits CS22:CS20 */
+	unsigned char wgm;		/* Waveform Generation WGM21:20 */
+	unsigned int presc;
+
+	tccr2 = mcu->dm[TCCR2];
+	cs = tccr2 & 0x7;
+	wgm = (((tccr2>>WGM21)<<1)&2) | ((tccr2>>WGM20)&1);
+
+	/*
+	 * There are several modes of operation available.
+	 *
+	 * - (supported) The simplest mode is a normal one, when counter
+	 *   is incremented only and no counter clear is performed,
+	 *   WGM21:20 = 0;
+	 *
+	 * - (planned) Phase Correct PWM Mode, WGM21:20 = 1.
+	 * - (planned) Clear Timer on Compare Match (CTC) Mode, WGM21:20 = 2;
+	 * - (planned) Fast PWM Mode, WGM21:20 = 3;
+	 */
+	if (wgm > 0 && wgm != prev_wgm) {
+		fprintf(stderr, "WARN: Selected mode WGM21:20 = %u of "
+				"Timer/Counter2 is not supported, normal "
+				"mode will be used by default\n", wgm);
+		prev_wgm = wgm;
+	}
+
+	switch (cs) {
+	case 0x1:
+		presc = 0;		/* No prescaling, clk_io */
+		break;
+	case 0x2:
+		presc = 8;		/* clk_io/8 */
+		break;
+	case 0x3:
+		presc = 32;		/* clk_io/32 */
+		break;
+	case 0x4:
+		presc = 64;		/* clk_io/64 */
+		break;
+	case 0x5:
+		presc = 128;		/* clk_io/128 */
+		break;
+	case 0x6:
+		presc = 256;		/* clk_io/256 */
+		break;
+	case 0x7:
+		presc = 1024;		/* clk_io/1024 */
+		break;
+	case 0x0:	/* No clock source (stopped mode) */
+	default:	/* Should not happen! */
+		tc2_presc = 0;
+		tc2_ticks = 0;
+		return;
+	}
+
+	if (presc != tc2_presc) {
+		tc2_presc = presc;
+		tc2_ticks = 0;
+	}
+	if (tc2_ticks == (tc2_presc-1)) {
+		if (mcu->dm[TCNT2] == 0xFF) {
+			/* Reset Timer/Counter2 */
+			mcu->dm[TCNT2] = 0;
+			/* Timer/Counter2 overflow occured */
+			mcu->dm[TIFR] |= (1<<TOV2);
+		} else {
+			mcu->dm[TCNT2]++;
+		}
+		tc2_ticks = 0;
+		return;
+	}
+	tc2_ticks++;
 }
 
 int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
@@ -190,9 +279,9 @@ int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 		}
 
 		if (fuse_v&0x1)		/* BOOTRST is 1(unprogrammed) */
-			mcu->reset_pc = mcu->pc = 0x0000;
+			mcu->intr->reset_pc = mcu->pc = 0x0000;
 		else			/* BOOTRST is 0(programmed) */
-			mcu->reset_pc = mcu->pc = mcu->bls->start;
+			mcu->intr->reset_pc = mcu->pc = mcu->bls->start;
 
 		switch (cksel) {
 		case 5:
@@ -217,5 +306,31 @@ int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 
 int MSIM_M8ASetLock(void *m, unsigned char lock_v)
 {
+	return 0;
+}
+
+int MSIM_M8AProvideIRQs(void *m)
+{
+	struct MSIM_AVR *mcu;
+	unsigned char timsk, tifr;
+
+	mcu = (struct MSIM_AVR *)m;
+	timsk = mcu->dm[TIMSK];
+	tifr = mcu->dm[TIFR];
+
+	/* Provide Timer/Counter0 Overflow Interrupt */
+	if ((timsk>>TOIE0)&1 && (tifr>>TOV0)&1) {
+		mcu->intr->irq[TIMER0_OVF_vect_num-1] = 1;
+		/* Clear TOV0 flag */
+		mcu->dm[TIFR] &= ~(1<<TOV0);
+	}
+
+	/* Provide Timer/Counter2 Overflow Interrupt */
+	if ((timsk>>TOIE2)&1 && (tifr>>TOV2)&1) {
+		mcu->intr->irq[TIMER2_OVF_vect_num-1] = 1;
+		/* Clear TOV2 flag */
+		mcu->dm[TIFR] &= ~(1<<TOV2);
+	}
+
 	return 0;
 }

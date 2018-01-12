@@ -30,11 +30,15 @@
 #include "mcusim/avr/sim/decoder.h"
 #include "mcusim/avr/sim/gdb_rsp.h"
 #include "mcusim/avr/sim/vcd_dump.h"
+#include "mcusim/avr/sim/interrupt.h"
 
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
 
 typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
+
+/* Function to process interrupt request according to the order */
+static int handle_irq(struct MSIM_AVR *mcu);
 
 /* Cell contains AVR MCU part and its init function. */
 struct init_cell {
@@ -72,6 +76,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 			return -1;
 		}
 	}
+
 	/* Main simulation loop */
 	while (1) {
 		/* Terminate simulation? */
@@ -84,11 +89,11 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 			return 1;
 		}
 
-		/* Tick peripherals and timers */
+		/* Tick peripherals written in Lua */
 		MSIM_TickLuaPeripherals(mcu);
-		if (mcu->tick_8timers != NULL)
-			mcu->tick_8timers(mcu);
-
+		/* Tick timers. NOTE: MCU-specific! */
+		if (mcu->tick_timers != NULL)
+			mcu->tick_timers(mcu);
 		/* Dump registers to VCD */
 		if (mcu->vcd_regsn[0] >= 0)
 			MSIM_VCDDumpFrame(vcd_f, mcu, tick);
@@ -114,39 +119,23 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 			}
 		}
 
+		/* Provide IRQs based on MCU flags. NOTE: MCU-specific! */
+		if (mcu->provide_irqs != NULL)
+			mcu->provide_irqs(mcu);
+		/* Handle IRQ if interrupts are enabled globally */
+		if (MSIM_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT) &&
+		    mcu->intr->exec_main == 0 &&
+		    (mcu->state == AVR_RUNNING || mcu->state == AVR_MSIM_STEP))
+			handle_irq(mcu);
 		/* Halt MCU after a single step performed */
 		if (mcu->state == AVR_MSIM_STEP)
 			mcu->state = AVR_STOPPED;
+
+		mcu->intr->exec_main = 0;
 		tick++;
 	}
 	if (vcd_f != NULL)
 		fclose(vcd_f);
-	return 0;
-}
-
-int MSIM_PrintInstructions(struct MSIM_AVR *mcu, unsigned long start_addr,
-			   unsigned long end_addr, unsigned long steps)
-{
-	unsigned short inst, msb, lsb;
-	unsigned long loc_pc;
-
-	loc_pc = mcu->pc;
-	if (start_addr > mcu->flashend || start_addr < mcu->flashstart)
-		return 0;
-	if (end_addr > mcu->flashend || end_addr < mcu->flashstart)
-		end_addr = start_addr + steps;
-	if (end_addr < start_addr)
-		return 0;
-
-	while (loc_pc <= end_addr) {
-		lsb = (unsigned short) mcu->pm[loc_pc];
-		msb = (unsigned short) mcu->pm[loc_pc+1];
-		inst = (unsigned short) (lsb | (msb << 8));
-
-		printf("INFO: %lx: %x %x\n", loc_pc, lsb, msb);
-
-		loc_pc += MSIM_Is32(inst) ? 4 : 2;
-	}
 	return 0;
 }
 
@@ -236,6 +225,40 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 		}
 	}
 	return 0;
+}
+
+static int handle_irq(struct MSIM_AVR *mcu)
+{
+	unsigned int i;
+
+	/*
+	 * Look for the priority IRQ to process:
+	 * i == 0		highest priority
+	 * i == AVR_IRQ_NUM-1	lowest priority
+	 */
+	for (i = 0; i < AVR_IRQ_NUM; i++)
+		if (mcu->intr->irq[i] > 0)
+			break;
+	/* Clear selected IRQ */
+	mcu->intr->irq[i] = 0;
+
+	if (i == AVR_IRQ_NUM) {		/* No IRQ, do nothing */
+		return 2;
+	} else {			/* Execute ISR */
+		/* Disable interrupts globally */
+		MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
+		/* Push PC onto the stack */
+		MSIM_StackPush(mcu, (unsigned char)(mcu->pc & 0xFF));
+		MSIM_StackPush(mcu, (unsigned char)((mcu->pc >> 8) & 0xFF));
+		/* Load interrupt vector to PC */
+		mcu->pc = mcu->intr->ivt+(i*2);
+
+		/* Switch MCU to step mode to notify user about interrupt */
+		if (mcu->intr->trap_at_isr && mcu->state == AVR_RUNNING)
+			mcu->state = AVR_MSIM_STEP;
+
+		return 0;
+	}
 }
 
 void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVRSREGFlag flag,

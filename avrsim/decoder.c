@@ -1739,8 +1739,7 @@ static void exec_brts(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	if (f)
-		mcu->pc = (MSIM_AVRFlashAddr_t)
-			  (((long)mcu->pc) + (c + 1) * 2);
+		mcu->pc = (unsigned long)(((long)mcu->pc) + (c + 1) * 2);
 	else
 		mcu->pc += 2;
 }
@@ -1756,8 +1755,7 @@ static void exec_brvc(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	if (!f)
-		mcu->pc = (MSIM_AVRFlashAddr_t)
-			  (((long)mcu->pc) + (c + 1) * 2);
+		mcu->pc = (unsigned long)(((long)mcu->pc) + (c + 1) * 2);
 	else
 		mcu->pc += 2;
 }
@@ -1773,8 +1771,7 @@ static void exec_brvs(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	if (f)
-		mcu->pc = (MSIM_AVRFlashAddr_t)
-			  (((long)mcu->pc) + (c + 1) * 2);
+		mcu->pc = (unsigned long)(((long)mcu->pc) + (c + 1) * 2);
 	else
 		mcu->pc += 2;
 }
@@ -1806,7 +1803,7 @@ static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_lsb)
 	/* CALL – Long Call to a Subroutine */
 	unsigned char lsb, msb;
 	unsigned int inst_msb;
-	MSIM_AVRFlashAddr_t pc, c;
+	unsigned long pc, c;
 
 	/* prepare the whole 32-bit instruction */
 	lsb = mcu->pm[mcu->pc+2];
@@ -1814,9 +1811,9 @@ static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_lsb)
 	inst_msb = (unsigned int) (lsb|(msb<<8));
 
 	pc = mcu->pc+4;
-	c = (MSIM_AVRFlashAddr_t)(((inst_msb<<6)&0xFF) |
-				  ((inst_lsb>>3)&0x3E) |
-				  (inst_lsb&1));
+	c = (unsigned long)(((inst_msb<<6)&0xFF) |
+			    ((inst_lsb>>3)&0x3E) |
+			    (inst_lsb&1));
 
 	MSIM_StackPush(mcu, (unsigned char)(pc&0xFF));
 	MSIM_StackPush(mcu, (unsigned char)((pc>>8)&0xFF));
@@ -2352,7 +2349,13 @@ static void exec_reti(struct MSIM_AVR *mcu)
 					  ((MSIM_StackPop(mcu)<<8)&0xFF00) |
 					  (MSIM_StackPop(mcu)&0xFF));
 
+	/* Enable interrupts globally */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 1);
+	/*
+	 * Execute one more instruction from the main program
+	 * after an exit from interrupt service routine.
+	 */
+	mcu->intr->exec_main = 1;
 }
 
 static void exec_swap(struct MSIM_AVR *mcu, unsigned int inst)

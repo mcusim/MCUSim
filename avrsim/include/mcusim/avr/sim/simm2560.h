@@ -32,7 +32,8 @@
 
 #define MCU_NAME	"ATmega2560"
 
-#define RESET_PC	0x0000
+#define RESET_PC	0x0000	/* Reset vector address, in bytes */
+#define IVT_ADDR	0x0002	/* Interrupt vectors address, in bytes */
 #define PC_BITS		17		/* PC bit capacity */
 #define LBITS_DEFAULT	0xFF		/* Default lock bits */
 

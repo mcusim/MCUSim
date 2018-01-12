@@ -29,6 +29,7 @@
 #include "mcusim/avr/sim/bootloader.h"
 #include "mcusim/avr/sim/peripheral_lua.h"
 #include "mcusim/avr/sim/gdb_rsp.h"
+#include "mcusim/avr/sim/interrupt.h"
 
 /* Limits of statically allocated MCU memory */
 #define PMSZ			256*1024	/* Program memory limit */
@@ -45,16 +46,19 @@
 #define DUMP_REGS_OPT		7575
 #define VERSION_OPT		7576
 #define GDB_RSP_PORT_OPT	7577
+#define TRAP_AT_ISR_OPT		7578
 
 static struct option longopts[] = {
 	{ "dump-regs", required_argument, NULL, DUMP_REGS_OPT },
 	{ "version", no_argument, NULL, VERSION_OPT },
-	{ "rsp-port", required_argument, NULL, GDB_RSP_PORT_OPT }
+	{ "rsp-port", required_argument, NULL, GDB_RSP_PORT_OPT },
+	{ "trap-at-isr", no_argument, NULL, TRAP_AT_ISR_OPT }
 };
 /* END Command line options */
 
 static struct MSIM_AVR mcu;			/* Central MCU descriptor */
 static struct MSIM_AVRBootloader bls;		/* Bootloader section */
+static struct MSIM_AVRInt intr;			/* Interrupts and IRQs */
 
 /* Statically allocated memory for MCU */
 static unsigned char pm[PMSZ];			/* Program memory */
@@ -91,11 +95,13 @@ int main(int argc, char *argv[])
 	char *partno, *luap;
 	unsigned int i, j, regs, dregs;
 	unsigned int freq;
+	unsigned char trap_at_isr;
 
 	partno = luap = NULL;
 	vcd_rn = print_regs = memops_num = 0;
 	rsp_port = GDB_RSP_PORT;
 	freq = 0;
+	trap_at_isr = 0;
 
 	/* Print welcome message */
 	printf("INFO: AVRSim %s - Simulator for AVR microcontrollers,\n"
@@ -120,16 +126,6 @@ int main(int argc, char *argv[])
 		case 'r':		/* Optional. Lua peripherals file. */
 			luap = optarg;
 			break;
-		case DUMP_REGS_OPT:	/* Registers to dump into VCD file */
-			parse_dump(optarg);
-			break;
-		case VERSION_OPT:	/* Print version and usage */
-			print_usage();
-			return 0;
-		case GDB_RSP_PORT_OPT:	/* Set port for incoming connections
-					   from GDB RSP */
-			rsp_port = parse_rsp_port(optarg);
-			break;
 		case 'P':
 			rsp_port = parse_rsp_port(optarg);
 			break;
@@ -146,6 +142,20 @@ int main(int argc, char *argv[])
 					optopt);
 			print_usage();
 			return 1;
+		case DUMP_REGS_OPT:	/* Registers to dump into VCD file */
+			parse_dump(optarg);
+			break;
+		case VERSION_OPT:	/* Print version and usage */
+			print_usage();
+			return 0;
+		case GDB_RSP_PORT_OPT:	/* Set port for incoming connections
+					   from GDB RSP */
+			rsp_port = parse_rsp_port(optarg);
+			break;
+		case TRAP_AT_ISR_OPT:	/* Enter stopped mode when interrupt
+					   occured */
+			trap_at_isr = 1;
+			break;
 		}
 	}
 
@@ -189,6 +199,8 @@ int main(int argc, char *argv[])
 	/* Initialize MCU as one of AVR models */
 	mcu.bls = &bls;
 	mcu.pmp = pmp;
+	mcu.intr = &intr;
+	intr.trap_at_isr = trap_at_isr;
 	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp)) {
 		fprintf(stderr, "ERRO: AVR %s cannot be initialized!\n",
 				partno);
@@ -273,7 +285,9 @@ static void print_usage(void)
 	printf("INFO:   -P <port>, --rsp-port=<port>\n"
 	       "INFO:                              Set port to listen to the "
 	       "incoming connections from GDB RSP.\n"
-	       "INFO:   -f <frequency>             MCU frequency, in Hz.\n");
+	       "INFO:   -f <frequency>             MCU frequency, in Hz.\n"
+	       "INFO:   --trap-at-isr              Enter stopped mode when "
+	       "interrupt occured.\n");
 
 	/* Print examples */
 	printf("INFO: Examples:\n"
@@ -305,7 +319,8 @@ static void print_config(const struct MSIM_AVR *m)
 	printf("INFO: Data memory: 0x%lX-0x%lX\n", m->ramstart, m->ramend);
 	printf("INFO: EEPROM: 0x%X-0x%X\n", m->e2start, m->e2end);
 	printf("INFO: PC: 0x%lX\n", m->pc/2);
-	printf("INFO: Reset PC: 0x%lX\n", m->reset_pc/2);
+	printf("INFO: Reset address: 0x%lX\n", m->intr->reset_pc/2);
+	printf("INFO: Interrupt vectors: 0x%lX\n", m->intr->ivt/2);
 }
 
 static void parse_dump(char *cmd)

@@ -137,10 +137,10 @@ mcu->set_lockf = NULL;
 /* END Fuses */
 
 /* Timers */
-#ifdef TICK_8TIMERS_F
-mcu->tick_8timers = TICK_8TIMERS_F;
+#ifdef TICK_TIMERS_F
+mcu->tick_timers = TICK_TIMERS_F;
 #else
-mcu->tick_8timers = NULL;
+mcu->tick_timers = NULL;
 #endif
 /* END Timers */
 
@@ -179,8 +179,16 @@ for (i = 0; i < sizeof mcu->vcd_regs/sizeof mcu->vcd_regs[0]; i++) {
 
 mcu->clk_source = CLK_SOURCE;
 mcu->freq = CLK_FREQ;
-mcu->reset_pc = RESET_PC;
-mcu->pc = mcu->reset_pc;
 mcu->pc_bits = PC_BITS;
+mcu->pc = RESET_PC;
+
+/* Set up interrupts and IRQs */
+mcu->intr->reset_pc = RESET_PC;
+mcu->intr->ivt = IVT_ADDR;
+#ifdef PROVIDE_IRQS_F
+mcu->provide_irqs = PROVIDE_IRQS_F;
+#else
+mcu->provide_irqs = NULL;
+#endif
 
 return 0;

@@ -62,7 +62,7 @@ struct rsp_state {
 	int fserv;			/* FD for incoming connections */
 	int fcli;			/* FD for talking to GDB client */
 	int sigval;			/* GDB signal for any exception */
-	MSIM_AVRFlashAddr_t start_addr;	/* Start of last run */
+	unsigned long start_addr;	/* Start of last run */
 };
 
 struct rsp_buf {
@@ -120,7 +120,7 @@ void MSIM_RSPInit(struct MSIM_AVR *mcu, int portn)
 	rsp.fserv = -1;			/* i.e. invalid */
 	rsp.fcli = -1;			/* i.e. invalid */
 	rsp.sigval = 0;			/* No exceptions */
-	rsp.start_addr = mcu->reset_pc;	/* Reset PC by default */
+	rsp.start_addr = mcu->intr->reset_pc;	/* Reset PC by default */
 
 	protocol = getprotobyname(AVRSIM_RSP_PROTOCOL);
 	if (protocol == NULL) {
@@ -1055,6 +1055,10 @@ static void rsp_vpkt(struct rsp_buf *buf)
 		 */
 		rsp_restart();
 		put_str_packet("S05");
+	} else if (!strncmp("vKill;", buf->data, strlen("vKill;"))) {
+		/* Restart MCU in stopped state on kill request */
+		rsp_restart();
+		put_str_packet("OK");
 	} else {
 		fprintf(stderr, "Unknown RSP 'v' packet type %s: ignored\n",
 				buf->data);
@@ -1065,7 +1069,8 @@ static void rsp_vpkt(struct rsp_buf *buf)
 
 static void rsp_restart(void)
 {
-	rsp.mcu->pc = rsp.mcu->reset_pc;
+	rsp.mcu->pc = rsp.mcu->intr->reset_pc;
+	rsp.mcu->state = AVR_STOPPED;
 }
 
 static size_t read_reg(int n, char *buf)

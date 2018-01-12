@@ -32,7 +32,8 @@
 
 #define MCU_NAME	"ATmega328P"
 
-#define RESET_PC	0x0000
+#define RESET_PC	0x0000	/* Reset vector address, in bytes */
+#define IVT_ADDR	0x0002	/* Interrupt vectors address, in bytes */
 #define PC_BITS		14		/* PC bit capacity */
 #define LBITS_DEFAULT	0x3F		/* Default lock bits */
 
