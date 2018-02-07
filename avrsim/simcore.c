@@ -119,7 +119,8 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		if (!fall && mcu->tick_timers != NULL)
 			mcu->tick_timers(mcu);
 		/* Dump registers to VCD */
-		MSIM_VCDDumpFrame(vcd_f, mcu, tick, fall);
+		if (vcd_f)
+			MSIM_VCDDumpFrame(vcd_f, mcu, tick, fall);
 
 		/* Test scope of program counter */
 		if ((mcu->pc+1) >= mcu->pm_size) {
