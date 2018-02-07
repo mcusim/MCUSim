@@ -37,7 +37,12 @@ struct MSIM_VCDRegister {
 
 FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname);
 
-void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick);
+/*
+ * Function to dump MCU registers to VCD file.
+ * This one is usually called each iteration of the main simulation loop.
+ */
+void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
+		       unsigned char fall);
 
 #ifdef __cplusplus
 }

@@ -24,6 +24,9 @@
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/vcd_dump.h"
 
+#define TERA			1000000000000.0
+#define MAX_CLK_PRINTS		50
+
 static void print_reg(char *buf, unsigned int len, unsigned char r);
 
 FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
@@ -33,9 +36,10 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 	char buf[32];
 	struct tm *tm_info;
 	unsigned int i, regs;
-	struct MSIM_AVR *mcu = (struct MSIM_AVR *)vmcu;
+	struct MSIM_AVR *mcu;
 	struct MSIM_VCDRegister *reg;
 
+	mcu = (struct MSIM_AVR *)vmcu;
 	regs = sizeof mcu->vcd_regsn/sizeof mcu->vcd_regsn[0];
 
 	f = fopen(dumpname, "w");
@@ -48,14 +52,17 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 
 	/* Printing VCD header */
 	fprintf(f, "$date %s $end\n", buf);
-	fprintf(f, "$version AVRSim %s $end\n", MSIM_VERSION);
+	fprintf(f, "$version MCUSim %s $end\n", MSIM_VERSION);
 	fprintf(f, "$comment It is a dump of simulated %s $end\n", mcu->name);
-	fprintf(f, "$timescale 62500 ps $end\n");
+	fprintf(f, "$timescale %lu ps $end\n",
+		(unsigned long)(((1.0/(double)mcu->freq)*TERA)/2.0));
 	fprintf(f, "$scope module %s $end\n", mcu->name);
+
+	/* Declare variables to dump */
+	fprintf(f, "$var reg 1 CLK_IO CLK_IO $end\n");
 	for (i = 0; i < regs; i++) {
 		if (mcu->vcd_regsn[i] < 0)
 			break;
-
 		reg = &mcu->vcd_regs[mcu->vcd_regsn[i]];
 		fprintf(f, "$var reg 8 %s %s $end\n", reg->name, reg->name);
 	}
@@ -64,6 +71,7 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 
 	/* Dumping initial register values */
 	fprintf(f, "$dumpvars\n");
+	fprintf(f, "b0 CLK_IO\n");
 	for (i = 0; i < regs; i++) {
 		if (mcu->vcd_regsn[i] < 0)
 			break;
@@ -77,16 +85,51 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 	return f;
 }
 
-void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick)
+void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
+		       unsigned char fall)
 {
+	static unsigned int clk_prints_left;
 	unsigned int i, regs;
-	char buf[32], print_tick;
-	struct MSIM_AVR *mcu = (struct MSIM_AVR *)vmcu;
+	char buf[32], print_tick, new_value;
+	struct MSIM_AVR *mcu;
 	struct MSIM_VCDRegister *reg;
 
+	mcu = (struct MSIM_AVR *)vmcu;
 	regs = sizeof mcu->vcd_regsn/sizeof mcu->vcd_regsn[0];
 	print_tick = 1;
+	new_value = 0;
 
+	/* Do we have at least one register which value has changed? */
+	for (i = 0; i < regs; i++) {
+		/* First N registers to be dumped only */
+		if (mcu->vcd_regsn[i] < 0)
+			break;
+		reg = &mcu->vcd_regs[mcu->vcd_regsn[i]];
+		/* Has register been changed? */
+		if (*reg->addr != reg->oldv) {
+			new_value = 1;
+			break;
+		}
+	}
+
+	/*
+	 * There is no register which value changed. Should we print a
+	 * clock pulse in this case?
+	 */
+	if (!new_value) {
+		if (!clk_prints_left)
+			return;
+		fprintf(f, "#%lu\n", tick);
+		fprintf(f, "b%d CLK_IO\n", !fall ? 1 : 0);
+		if (fall)
+			clk_prints_left--;
+		return;
+	}
+
+	/*
+	 * We've at least one register which value changed.
+	 * Let's print it.
+	 */
 	for (i = 0; i < regs; i++) {
 		/* First N registers to be dumped only */
 		if (mcu->vcd_regsn[i] < 0)
@@ -97,10 +140,15 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick)
 		if (*reg->addr == reg->oldv)
 			continue;
 
+		/* Print current tick and main clock only once */
 		if (print_tick) {
 			print_tick = 0;
 			fprintf(f, "#%lu\n", tick);
+			fprintf(f, "b%d CLK_IO\n", !fall ? 1 : 0);
+			clk_prints_left = MAX_CLK_PRINTS;
 		}
+
+		/* Print selected register */
 		reg->oldv = *reg->addr;
 		print_reg(buf, sizeof buf, *reg->addr);
 		fprintf(f, "b%s %s\n", buf, reg->name);

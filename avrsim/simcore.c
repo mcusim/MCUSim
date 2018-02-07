@@ -61,10 +61,11 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		     unsigned long addr)
 {
-	unsigned long tick;
+	unsigned long tick;	/* Number of pulses sinse simulation start */
+	unsigned char fall;	/* Main clock rise or a fall flag */
 	FILE *vcd_f;
 
-	tick = 0;
+	tick = fall = 0;
 
 	vcd_f = NULL;
 	/* Do we have registers to dump? */
@@ -77,26 +78,48 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		}
 	}
 
-	/* Main simulation loop */
+	/*
+	 * Main simulation loop. Each iteration represents rise (R) or
+	 * fall (F) of the microcontroller's clock pulse. It's necessary
+	 * to dump CLK_IO to the timing diagram in a pulse-accurate way.
+	 *
+	 *                          MAIN LOOP ITERATIONS
+	 *            R     F     R     F     R     F     R     F     R
+	 *           /     /     /     /     /     /     /     /     /
+	 *
+	 *          |           |           |           |           |
+	 *          |_____      |_____      |_____      |_____      |_____
+	 *          |     |     |     |     |     |     |     |     |     |
+	 * CLK_IO   |     |     |     |     |     |     |     |     |     |
+	 *          |     |_____|     |_____|     |_____|     |_____|     |__
+	 *          |           |           |           |           |
+	 *          |           |___________|           |___________|
+	 *          |           |           |           |           |
+	 * CLK_IO/2 |           |           |           |           |
+	 *          |___________|           |___________|           |________
+	 *          |           |           |           |           |
+	 *          |           |           |           |           |
+	 *          |           |           |           |           |
+	 */
 	while (1) {
 		/* Terminate simulation? */
-		if (mcu->state == AVR_MSIM_STOP)
+		if (!fall && mcu->state == AVR_MSIM_STOP)
 			break;
 		/* Wait for request from GDB in MCU stopped mode */
-		if (mcu->state == AVR_STOPPED && MSIM_RSPHandle()) {
+		if (!fall && mcu->state == AVR_STOPPED && MSIM_RSPHandle()) {
 			if (vcd_f != NULL)
 				fclose(vcd_f);
 			return 1;
 		}
 
 		/* Tick peripherals written in Lua */
-		MSIM_TickLuaPeripherals(mcu);
+		if (!fall)
+			MSIM_TickLuaPeripherals(mcu);
 		/* Tick timers. NOTE: MCU-specific! */
-		if (mcu->tick_timers != NULL)
+		if (!fall && mcu->tick_timers != NULL)
 			mcu->tick_timers(mcu);
 		/* Dump registers to VCD */
-		if (mcu->vcd_regsn[0] >= 0)
-			MSIM_VCDDumpFrame(vcd_f, mcu, tick);
+		MSIM_VCDDumpFrame(vcd_f, mcu, tick, fall);
 
 		/* Test scope of program counter */
 		if ((mcu->pc+1) >= mcu->pm_size) {
@@ -110,8 +133,8 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		}
 
 		/* Decode next instruction */
-		if (mcu->state == AVR_RUNNING ||
-		    mcu->state == AVR_MSIM_STEP) {
+		if (!fall && (mcu->state == AVR_RUNNING ||
+		    mcu->state == AVR_MSIM_STEP)) {
 			if (MSIM_StepAVR(mcu)) {
 				if (vcd_f != NULL)
 					fclose(vcd_f);
@@ -120,19 +143,20 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		}
 
 		/* Provide IRQs based on MCU flags. NOTE: MCU-specific! */
-		if (mcu->provide_irqs != NULL)
+		if (!fall && mcu->provide_irqs != NULL)
 			mcu->provide_irqs(mcu);
 		/* Handle IRQ if interrupts are enabled globally */
-		if (MSIM_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT) &&
+		if (!fall && MSIM_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT) &&
 		    mcu->intr->exec_main == 0 &&
 		    (mcu->state == AVR_RUNNING || mcu->state == AVR_MSIM_STEP))
 			handle_irq(mcu);
 		/* Halt MCU after a single step performed */
-		if (mcu->state == AVR_MSIM_STEP)
+		if (!fall && mcu->state == AVR_MSIM_STEP)
 			mcu->state = AVR_STOPPED;
 
 		mcu->intr->exec_main = 0;
 		tick++;
+		fall = !fall ? 1 : 0;
 	}
 	if (vcd_f != NULL)
 		fclose(vcd_f);
