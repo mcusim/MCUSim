@@ -1,6 +1,6 @@
 MCUSim
 ======
-Simulator for microcontrollers with GDB Remote Serial Protocol interface.  
+Simulator for microcontrollers with GDB Remote Serial Protocol interface.
 [![travis-ci](https://img.shields.io/travis/dsalychev/mcusim.svg)](https://travis-ci.org/dsalychev/mcusim)
 [![coverity](https://scan.coverity.com/projects/13784/badge.svg)](https://scan.coverity.com/projects/dsalychev-mcusim)
 [![latest-tag](https://img.shields.io/github/tag/dsalychev/mcusim.svg)](https://github.com/dsalychev/mcusim/releases)
@@ -32,3 +32,25 @@ How to contribute
 -----------------
 If you're feeling ready to make any changes, please, read a
 [Contribution Guide](https://github.com/dsalychev/mcusim/blob/master/CONTRIBUTING.md).
+
+Third-party projects and libraries
+----------------------------------
+I'd like to thank all contributors to the projects listed below because their
+code gave me some ideas or helped a lot.
+
+	avr-libc by the University of California et al.
+	Copyright (c) 1999-2010,
+	Modified BSD License,
+	http://www.nongnu.org/avr-libc
+
+	libGIS by Ivan A. Sergeev
+	Copyright (c) 2010,
+	MIT License and Public Domain,
+	https://github.com/vsergeev/libGIS
+
+	getopt.h and getopt_long.c are derived from the software
+	contributed to the NetBSD Foundation by Dieter Baron and
+	Thomas Klausner,
+	Copyright (c) 2000 The NetBSD Foundation, Inc.
+	2-clause BSD license,
+	http://netbsd.org
