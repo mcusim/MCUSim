@@ -116,7 +116,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		if (!fall)
 			MSIM_TickLuaPeripherals(mcu);
 		/* Tick timers. NOTE: MCU-specific! */
-		if (!fall && mcu->tick_timers != NULL)
+		if (!fall && (mcu->tick_timers != NULL))
 			mcu->tick_timers(mcu);
 		/* Dump registers to VCD */
 		if (vcd_f)
@@ -144,13 +144,16 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		}
 
 		/* Provide IRQs based on MCU flags. NOTE: MCU-specific! */
-		if (!fall && mcu->provide_irqs != NULL)
+		if (!fall && (mcu->provide_irqs != NULL))
 			mcu->provide_irqs(mcu);
+
 		/* Handle IRQ if interrupts are enabled globally */
-		if (!fall && MSIM_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT) &&
+		if (!fall &&
+		    MSIM_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT) &&
 		    mcu->intr->exec_main == 0 &&
 		    (mcu->state == AVR_RUNNING || mcu->state == AVR_MSIM_STEP))
 			handle_irq(mcu);
+
 		/* Halt MCU after a single step performed */
 		if (!fall && mcu->state == AVR_MSIM_STEP)
 			mcu->state = AVR_STOPPED;

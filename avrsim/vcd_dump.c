@@ -101,6 +101,9 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 
 	/* Do we have at least one register which value has changed? */
 	for (i = 0; i < regs; i++) {
+		/* No register changes on fall should be */
+		if (fall)
+			break;
 		/* First N registers to be dumped only */
 		if (mcu->vcd_regsn[i] < 0)
 			break;

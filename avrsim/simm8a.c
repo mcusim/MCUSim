@@ -306,6 +306,7 @@ int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 
 int MSIM_M8ASetLock(void *m, unsigned char lock_v)
 {
+	/* Waiting to be implemented */
 	return 0;
 }
 
