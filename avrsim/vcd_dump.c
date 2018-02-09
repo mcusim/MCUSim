@@ -147,7 +147,7 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 		if (print_tick) {
 			print_tick = 0;
 			fprintf(f, "#%lu\n", tick);
-			fprintf(f, "b%d CLK_IO\n", !fall ? 1 : 0);
+			fprintf(f, "b1 CLK_IO\n");
 			clk_prints_left = MAX_CLK_PRINTS;
 		}
 
