@@ -5,7 +5,6 @@ Simulator for microcontrollers with GDB Remote Serial Protocol interface.
 [![travis-ci](https://img.shields.io/travis/dsalychev/mcusim.svg)](https://travis-ci.org/dsalychev/mcusim)
 [![coverity](https://scan.coverity.com/projects/13784/badge.svg)](https://scan.coverity.com/projects/dsalychev-mcusim)
 [![latest-tag](https://img.shields.io/github/tag/dsalychev/mcusim.svg)](https://github.com/dsalychev/mcusim/releases)
-[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/mcusim/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link)
 
 Main purpose of the simulator is to reproduce microcontroller unit (MCU)
 within electronic circuit. It is achieved by decoding opcodes and
@@ -18,17 +17,47 @@ set up and run.
 
 ![Example of AVRSim and GDB RSP](https://i.imgur.com/vRkcXQR.gif)
 
-Build and install
------------------
-AVRSim (part of MCUSim, simulator for AVR microcontrollers) requires Lua 5.2
-or above to mimic external devices. Please, install it in your operating
-system. This is how it can be done in macOS:
+Build from sources
+------------------
+MCUSim is intended to be a suite for different types of microcontrollers, like
+AVR® (Atmel, Microchip), PIC® (Microchip), etc. AVRSim is the first part of
+the suite and under development at the moment. It requires Lua 5.2 or above
+to mimic external devices. Please, install it in your operating
+system.
+
+### macOS
+Debug version of the suite can be compiled and installed using missing
+package manager `brew` to solve dependencies:
 
 	# brew install lua
 	# git clone https://github.com/dsalychev/mcusim.git
 	# cd mcusim && mkdir build && cd build
-	# cmake -DCMAKE_BUILD_TYPE=Release ..
-	# make && make install
+	# cmake ..
+	# make install clean
+
+Release version can be compiled the very similar way. You'll have to call
+`cmake -DCMAKE_BUILD_TYPE=Release ..`.
+
+### FreeBSD
+Debug version of the suite can be compiled and installed using package
+manager `pkg` (FreeBSD 10 and above) or via collection of ports to solve
+dependencies:
+
+	# pkg install cmake git lua51 lua52
+	# git clone https://github.com/dsalychev/mcusim.git
+	# cd mcusim && mkdir build && cd build
+	# cmake ..
+	# make install clean
+
+It's highly likely that you'll need super user rights to perform
+the last command. Release version can be compiled the very similar way.
+You'll have to call `cmake -DCMAKE_BUILD_TYPE=Release ..`.
+
+Availability matrix
+-------------------
+This matrix should give you an idea which parts of the microcontrollers are
+already supported by the simulator.
+(I'm still painting it...)
 
 How to contribute
 -----------------
