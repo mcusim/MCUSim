@@ -46,8 +46,6 @@ extern "C" {
 #define FUSE_HIGH		1
 #define FUSE_EXT		2
 
-#define VCD_REGS_MAX		512
-
 /* Device-specific functions. */
 typedef int (*MSIM_SetFuse_f)(void *mcu,
 			      unsigned int fuse_n, unsigned char fuse_v);
@@ -153,9 +151,8 @@ struct MSIM_AVR {
 	MSIM_ProvideIRQs_f provide_irqs; /* Function to check MCU flags and
 					    set IRQs accordingly */
 
-	struct MSIM_VCDRegister vcd_regs[VCD_REGS_MAX];
-	short vcd_regsn[VCD_REGS_MAX];	/* Indices of VCD registers to be
-					   dumped */
+	struct MSIM_VCDDetails *vcdd;	/* Details about registers to
+					   be dumped into VCD file */
 };
 
 #ifdef __cplusplus

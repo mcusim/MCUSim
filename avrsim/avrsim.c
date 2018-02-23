@@ -31,7 +31,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-
 #include "mcusim/cli.h"
 #include "mcusim/getopt.h"
 #include "mcusim/avr/sim/sim.h"
@@ -40,6 +39,7 @@
 #include "mcusim/avr/sim/peripheral_lua.h"
 #include "mcusim/avr/sim/gdb_rsp.h"
 #include "mcusim/avr/sim/interrupt.h"
+#include "mcusim/avr/sim/vcd_dump.h"
 
 /* Limits of statically allocated MCU memory */
 #define PMSZ			256*1024	/* Program memory limit */
@@ -66,9 +66,10 @@ static struct option longopts[] = {
 };
 /* END Command line options */
 
-static struct MSIM_AVR mcu;			/* Central MCU descriptor */
-static struct MSIM_AVRBootloader bls;		/* Bootloader section */
-static struct MSIM_AVRInt intr;			/* Interrupts and IRQs */
+static struct MSIM_AVR mcu;		/* Central MCU descriptor */
+static struct MSIM_AVRBootloader bls;	/* Bootloader section */
+static struct MSIM_AVRInt intr;		/* Interrupts and IRQs */
+static struct MSIM_VCDDetails vcdd;	/* Details about registers to dump */
 
 /* Statically allocated memory for MCU */
 static unsigned char pm[PMSZ];			/* Program memory */
@@ -103,9 +104,11 @@ int main(int argc, char *argv[])
 	FILE *fp;
 	int c, rsp_port;
 	char *partno, *luap;
-	unsigned int i, j, regs, dregs;
+	unsigned int i, j, regs;
+	unsigned int dump_regs;		/* Number of registers for VCD dump */
 	unsigned int freq;
-	unsigned char trap_at_isr;
+	unsigned char trap_at_isr;	/* Flag to trap debugger if interrupt
+					   generated */
 
 	partno = luap = NULL;
 	vcd_rn = print_regs = memops_num = 0;
@@ -210,6 +213,7 @@ int main(int argc, char *argv[])
 	mcu.bls = &bls;
 	mcu.pmp = pmp;
 	mcu.intr = &intr;
+	mcu.vcdd = &vcdd;
 	intr.trap_at_isr = trap_at_isr;
 	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp)) {
 		fprintf(stderr, "ERRO: AVR %s cannot be initialized!\n",
@@ -219,16 +223,16 @@ int main(int argc, char *argv[])
 	fclose(fp);
 
 	/* Do we have to print available registers only? */
-	regs = sizeof mcu.vcd_regs/sizeof mcu.vcd_regs[0];
+	regs = sizeof mcu.vcdd->regs/sizeof mcu.vcdd->regs[0];
 	if (print_regs) {
 		for (i = 0; i < regs; i++) {
 			/* Print first N registers only */
-			if (mcu.vcd_regs[i].name[0] == 0)
+			if (mcu.vcdd->regs[i].name[0] == 0)
 				break;
-			if (mcu.vcd_regs[i].off < 0)
+			if (mcu.vcdd->regs[i].off < 0)
 				continue;
 			printf("INFO: %s (0x%2lX)\n",
-				mcu.vcd_regs[i].name, mcu.vcd_regs[i].off);
+				mcu.vcdd->regs[i].name, mcu.vcdd->regs[i].off);
 		}
 		return 0;
 	}
@@ -244,13 +248,28 @@ int main(int argc, char *argv[])
 		}
 
 	/* Select registers to be dumped */
-	dregs = 0;
+	dump_regs = 0;
 	for (i = 0; i < vcd_rn; i++) {
 		for (j = 0; j < regs; j++) {
-			if (!strcmp(vcd_regs[i], mcu.vcd_regs[j].name)) {
-				mcu.vcd_regsn[dregs++] = (short)j;
-				break;
-			}
+			char *bit;
+			size_t len = strlen(mcu.vcdd->regs[j].name);
+			int bitn, cr, bit_cr;
+
+			cr = strncmp(mcu.vcdd->regs[j].name, vcd_regs[i], len);
+			if (cr)
+				continue;
+
+			/* Do we have a bit index suffix? */
+			bit = len < sizeof vcd_regs[0]/sizeof vcd_regs[0][0]
+				? &vcd_regs[i][len] : NULL;
+			bit_cr = sscanf(bit, "%d", &bitn);
+			if (bit_cr != 1)
+				bitn = -1;
+
+			/* Set index of a register to be dumped */
+			mcu.vcdd->bit[dump_regs].regi = (short)j;
+			mcu.vcdd->bit[dump_regs++].n = (short)bitn;
+			break;
 		}
 	}
 
@@ -341,9 +360,14 @@ static void parse_dump(char *cmd)
 	if (cmd == NULL)
 		return;
 	if (!strcmp(cmd, "?")) {
+		/*
+		 * User asked to print all registers which can be included
+		 * into VCD dump. Set flag and return, no more.
+		 */
 		print_regs = 1;
 		return;
 	} else {
+		/* We've got a register name to parse. Let's do it! */
 		for (c = 0; cmd[c] != 0; c++)
 			if (cmd[c] == ',')
 				cmd[c] = ' ';

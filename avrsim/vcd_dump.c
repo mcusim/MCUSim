@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <time.h>
-
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/vcd_dump.h"
 
@@ -38,6 +37,8 @@
 #define MAX_CLK_PRINTS		50
 
 static void print_reg(char *buf, unsigned int len, unsigned char r);
+static void print_regbit(char *buf, unsigned int len, unsigned char r,
+			 short bit);
 
 FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 {
@@ -50,7 +51,7 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 	struct MSIM_VCDRegister *reg;
 
 	mcu = (struct MSIM_AVR *)vmcu;
-	regs = sizeof mcu->vcd_regsn/sizeof mcu->vcd_regsn[0];
+	regs = sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0];
 
 	f = fopen(dumpname, "w");
 	if (!f)
@@ -68,27 +69,43 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 		(unsigned long)(((1.0/(double)mcu->freq)*TERA)/2.0));
 	fprintf(f, "$scope module %s $end\n", mcu->name);
 
-	/* Declare variables to dump */
+	/* Declare VCD variables to dump */
 	fprintf(f, "$var reg 1 CLK_IO CLK_IO $end\n");
 	for (i = 0; i < regs; i++) {
-		if (mcu->vcd_regsn[i] < 0)
+		if (mcu->vcdd->bit[i].regi < 0)
 			break;
-		reg = &mcu->vcd_regs[mcu->vcd_regsn[i]];
-		fprintf(f, "$var reg 8 %s %s $end\n", reg->name, reg->name);
+		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
+
+		/* Are we going to dump a register bit only? */
+		if (mcu->vcdd->bit[i].n < 0)
+			fprintf(f, "$var reg 8 %s %s $end\n",
+				reg->name, reg->name);
+		else
+			fprintf(f, "$var reg 1 %s%d %s%d $end\n",
+				reg->name, mcu->vcdd->bit[i].n,
+				reg->name, mcu->vcdd->bit[i].n);
 	}
 	fprintf(f, "$upscope $end\n");
 	fprintf(f, "$enddefinitions $end\n");
 
-	/* Dumping initial register values */
+	/* Dumping initial register values to VCD file */
 	fprintf(f, "$dumpvars\n");
 	fprintf(f, "b0 CLK_IO\n");
 	for (i = 0; i < regs; i++) {
-		if (mcu->vcd_regsn[i] < 0)
+		if (mcu->vcdd->bit[i].regi < 0)
 			break;
 
-		reg = &mcu->vcd_regs[mcu->vcd_regsn[i]];
-		print_reg(buf, sizeof buf, *reg->addr);
-		fprintf(f, "b%s %s\n", buf, reg->name);
+		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
+
+		if (mcu->vcdd->bit[i].n < 0) {
+			print_reg(buf, sizeof buf, *reg->addr);
+			fprintf(f, "b%s %s\n", buf, reg->name);
+		} else {
+			print_regbit(buf, sizeof buf, *reg->addr,
+				     mcu->vcdd->bit[i].n);
+			fprintf(f, "b%s %s%d\n", buf, reg->name,
+				mcu->vcdd->bit[i].n);
+		}
 	}
 	fprintf(f, "$end\n");
 
@@ -105,7 +122,7 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 	struct MSIM_VCDRegister *reg;
 
 	mcu = (struct MSIM_AVR *)vmcu;
-	regs = sizeof mcu->vcd_regsn/sizeof mcu->vcd_regsn[0];
+	regs = sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0];
 	print_tick = 1;
 	new_value = 0;
 
@@ -115,9 +132,9 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 		if (fall)
 			break;
 		/* First N registers to be dumped only */
-		if (mcu->vcd_regsn[i] < 0)
+		if (mcu->vcdd->bit[i].regi < 0)
 			break;
-		reg = &mcu->vcd_regs[mcu->vcd_regsn[i]];
+		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
 		/* Has register been changed? */
 		if (*reg->addr != reg->oldv) {
 			new_value = 1;
@@ -145,10 +162,10 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 	 */
 	for (i = 0; i < regs; i++) {
 		/* First N registers to be dumped only */
-		if (mcu->vcd_regsn[i] < 0)
+		if (mcu->vcdd->bit[i].regi < 0)
 			break;
 
-		reg = &mcu->vcd_regs[mcu->vcd_regsn[i]];
+		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
 		/* Hasn't it been changed? */
 		if (*reg->addr == reg->oldv)
 			continue;
@@ -163,8 +180,15 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 
 		/* Print selected register */
 		reg->oldv = *reg->addr;
-		print_reg(buf, sizeof buf, *reg->addr);
-		fprintf(f, "b%s %s\n", buf, reg->name);
+		if (mcu->vcdd->bit[i].n < 0) {
+			print_reg(buf, sizeof buf, *reg->addr);
+			fprintf(f, "b%s %s\n", buf, reg->name);
+		} else {
+			print_regbit(buf, sizeof buf, *reg->addr,
+				     mcu->vcdd->bit[i].n);
+			fprintf(f, "b%s %s%d\n", buf, reg->name,
+				mcu->vcdd->bit[i].n);
+		}
 	}
 }
 
@@ -184,4 +208,15 @@ static void print_reg(char *buf, unsigned int len, unsigned char r)
 			buf[j++] = '0';
 	}
 	buf[j] = 0;
+}
+
+static void print_regbit(char *buf, unsigned int len, unsigned char r,
+			 short bit)
+{
+	if (len < 2) {
+		buf[0] = 0;
+		return;
+	}
+	buf[0] = (r >> bit)&1 ? '1' : '0';
+	buf[1] = 0;
 }

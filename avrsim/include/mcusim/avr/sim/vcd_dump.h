@@ -37,12 +37,29 @@ extern "C" {
 #include <stdio.h>
 #include <stdint.h>
 
+#define VCD_REGS_MAX		512
+
 /* Register of MCU which can be written into VCD file */
 struct MSIM_VCDRegister {
 	char name[16];			/* Name of a register (DDRB, etc.) */
 	long off;			/* Offset to the register in RAM */
 	unsigned char *addr;		/* Pointer to the register in RAM*/
 	unsigned char oldv;
+};
+
+/* Specific bit of a register */
+struct MSIM_VCDBit {
+	short regi;			/* Register index */
+	short n;			/* Bit number (may be negative) */
+};
+
+/* Structure to keep details about registers to be dumped into VCD file */
+struct MSIM_VCDDetails {
+	/* List of all available registers for VCD dump */
+	struct MSIM_VCDRegister regs[VCD_REGS_MAX];
+	/* Flags to dump the whole 8 bits (negative) or
+	 * selected bit only (bit index) */
+	struct MSIM_VCDBit bit[VCD_REGS_MAX];
 };
 
 FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname);

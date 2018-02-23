@@ -79,7 +79,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 
 	vcd_f = NULL;
 	/* Do we have registers to dump? */
-	if (mcu->vcd_regsn[0] >= 0) {
+	if (mcu->vcdd->bit[0].regi >= 0) {
 		vcd_f = MSIM_VCDOpenDump(mcu, "dump.vcd");
 		if (!vcd_f) {
 			fprintf(stderr, "ERRO: Failed to open dump "
