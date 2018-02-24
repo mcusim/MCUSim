@@ -32,7 +32,7 @@
 
 #include "mcusim/avr/sim/peripheral_lua.h"
 
-#ifdef LUA51_FOUND
+#ifdef LUA_FOUND
 #	include "lua.h"
 #	include "lualib.h"
 #	include "lauxlib.h"
@@ -208,7 +208,7 @@ static int lua_avr_setbit(lua_State *L)
 		mcu->dm[off] &= (unsigned char)(~(1 << b));
 	return 0;
 }
-#else /* LUA51_FOUND is not defined */
+#else /* LUA_FOUND is not defined */
 
 int MSIM_LoadLuaPeripherals(const char *file)
 {
@@ -226,4 +226,4 @@ void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu)
 	return;
 }
 
-#endif /* LUA51_FOUND */
+#endif /* LUA_FOUND */

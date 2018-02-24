@@ -35,11 +35,8 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Version
-set(MSIM_VERSION "0.1.42")
+set(MSIM_VERSION "0.1.43")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
-
-# Add subprojects here
-add_subdirectory(handbook)
 
 # Set application name
 set(AVRSIM "avrsim")
@@ -86,15 +83,19 @@ set(AVRSIM_SRC		avrsim/simcore.c
 			avrsim/vcd_dump.c)
 
 # Look for libraries, packages, etc.
-find_package(Lua51)
+find_package(Lua)
 
 # Set target libraries here
 set(TARGET_LIBS "")
-if (LUA51_FOUND)
-	add_definitions(-DLUA51_FOUND=1)
+if (LUA_FOUND AND
+    ((LUA_VERSION_MAJOR EQUAL 5) OR (LUA_VERSION_MAJOR GREATER 5)) AND
+    ((LUA_VERSION_MINOR EQUAL 2) OR (LUA_VERSION_MINOR GREATER 2)))
+	add_definitions(-DLUA_FOUND=1 -DLUA_C89_NUMBERS)
 	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
+	message(STATUS "Support for Lua-based peripherals will be enabled")
 else()
 	message(STATUS "Support for Lua-based peripherals will be disabled")
+	message(STATUS "Required Lua version is 5.2 or above")
 endif()
 
 #
@@ -150,12 +151,30 @@ endif()
 
 # Define includes here
 include_directories("avrsim/include/")
-if (LUA51_FOUND)
+if (LUA_FOUND)
 	include_directories(${LUA_INCLUDE_DIR})
 endif()
 
 add_executable(${AVRSIM} ${AVRSIM_SRC})
 target_link_libraries(${AVRSIM} ${TARGET_LIBS})
+
+add_custom_command(
+	OUTPUT handbook-createdir
+	COMMAND rm -f ./mcusim-handbook.pdf
+	COMMAND rm -fr ../handbook/build
+	COMMAND mkdir ../handbook/build
+)
+add_custom_command(
+	OUTPUT handbook-commands
+	WORKING_DIRECTORY ../handbook/build
+	COMMAND cmake ..
+	COMMAND make
+	COMMAND cp ./mcusim-handbook.pdf ../../build/mcusim-handbook.pdf
+	VERBATIM
+)
+add_custom_target(
+	handbook DEPENDS handbook-createdir handbook-commands
+)
 
 # Copy required files
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/rom/avr-progmem.hex DESTINATION ${CMAKE_BINARY_DIR})

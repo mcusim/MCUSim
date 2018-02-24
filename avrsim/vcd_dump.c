@@ -115,8 +115,9 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 		       unsigned char fall)
 {
-	static unsigned int clk_prints_left;
+	static unsigned int clk_prints_left = 0;
 	unsigned int i, regs;
+	short n;				/* Bit index of a register */
 	char buf[32], print_tick, new_value;
 	struct MSIM_AVR *mcu;
 	struct MSIM_VCDRegister *reg;
@@ -135,8 +136,15 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 		if (mcu->vcdd->bit[i].regi < 0)
 			break;
 		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
-		/* Has register been changed? */
-		if (*reg->addr != reg->oldv) {
+
+		/* Has register value been changed? */
+		if (((n = mcu->vcdd->bit[i].n) < 0) &&
+		    (*reg->addr != reg->oldv)) {
+			new_value = 1;
+			break;
+		}
+		if (n >= 0 && (((*reg->addr >> n)&1) !=
+			       ((reg->oldv >> n)&1))) {
 			new_value = 1;
 			break;
 		}

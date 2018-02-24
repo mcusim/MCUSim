@@ -41,5 +41,8 @@ if (LATEX_FOUND)
 				chapter2/preparing-binaries.tex
 				chapter3/avrsim.tex)
 
-	add_latex_document(mcusim-handbook.tex INPUTS ${HANDBOOK_SRC})
+	add_latex_document(
+		mcusim-handbook.tex
+		INPUTS ${HANDBOOK_SRC}
+	)
 endif()
