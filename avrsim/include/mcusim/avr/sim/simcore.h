@@ -61,7 +61,7 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 		 unsigned char *mpm, FILE *fp);
 
 /* Functions to work with a stack inside MCU */
-void MSIM_StackPush(struct MSIM_AVR *mcu, uint8_t val);
+void MSIM_StackPush(struct MSIM_AVR *mcu, unsigned char val);
 uint8_t MSIM_StackPop(struct MSIM_AVR *mcu);
 
 /* Functions to update/read SREG bits */

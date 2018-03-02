@@ -189,7 +189,7 @@ int MSIM_StepAVR(struct MSIM_AVR *mcu)
 	}
 
 	if (decode_inst(mcu, inst)) {
-		fprintf(stderr, "Unknown instruction: 0x%X\n", inst);
+		fprintf(stderr, "ERRO: Unknown instruction: 0x%X\n", inst);
 		return -1;
 	}
 	return 0;
@@ -931,12 +931,15 @@ static void exec_rcall(struct MSIM_AVR *mcu, unsigned int inst)
 	int c;
 	unsigned long pc;
 
-	pc = mcu->pc + 2;
-	c = inst & 0x0FFF;
+	pc = mcu->pc+2;
+	c = inst&0x0FFF;
 	if (c >= 2048)
 		c -= 4096;
-	MSIM_StackPush(mcu, (unsigned char) (pc & 0xFF));
-	MSIM_StackPush(mcu, (unsigned char) ((pc >> 8) & 0xFF));
+
+	MSIM_StackPush(mcu, (unsigned char)(pc&0xFF));
+	MSIM_StackPush(mcu, (unsigned char)((pc>>8)&0xFF));
+	if (mcu->pc_bits > 16)			/* for 22-bit PC or above */
+		MSIM_StackPush(mcu, (unsigned char)((pc>>16)&0xFF));
 	mcu->pc = (unsigned long) (((long) mcu->pc) + (c + 1) * 2);
 }
 
@@ -958,11 +961,14 @@ static void exec_sts(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_ret(struct MSIM_AVR *mcu)
 {
 	/* RET – Return from Subroutine */
-	unsigned char ah, al;
+	unsigned char ae, ah, al;
 
+	ae = ah = al = 0;
+	if (mcu->pc_bits > 16)
+		ae = MSIM_StackPop(mcu);
 	ah = MSIM_StackPop(mcu);
 	al = MSIM_StackPop(mcu);
-	mcu->pc = (unsigned int)((ah << 8) | al);
+	mcu->pc = (unsigned int)((ae<<16) | (ah<<8) | al);
 }
 
 static void exec_ori_sbr(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1827,6 +1833,8 @@ static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_lsb)
 
 	MSIM_StackPush(mcu, (unsigned char)(pc&0xFF));
 	MSIM_StackPush(mcu, (unsigned char)((pc>>8)&0xFF));
+	if (mcu->pc_bits > 16)			/* for 22-bit PC or above */
+		MSIM_StackPush(mcu, (unsigned char)((pc>>16)&0xFF));
 	mcu->pc = c;
 }
 
@@ -2058,8 +2066,10 @@ static void exec_icall(struct MSIM_AVR *mcu)
 	zh = mcu->dm[REG_ZH];
 	zl = mcu->dm[REG_ZL];
 
-	MSIM_StackPush(mcu, (unsigned char) (pc & 0xFF));
-	MSIM_StackPush(mcu, (unsigned char) ((pc >> 8) & 0xFF));
+	MSIM_StackPush(mcu, (unsigned char)(pc&0xFF));
+	MSIM_StackPush(mcu, (unsigned char)((pc>>8) & 0xFF));
+	if (mcu->pc_bits > 16)		/* for 22-bit PC or above */
+		MSIM_StackPush(mcu, (unsigned char)((pc>>16) & 0xFF));
 	mcu->pc = (unsigned long)(((zh<<8)&0xFF00) | (zl&0xFF));
 }
 
@@ -2270,8 +2280,8 @@ static void exec_eicall(struct MSIM_AVR *mcu)
 	unsigned long pc;
 
 	if (mcu->eind == NULL) {
-		fprintf(stderr, "EICALL instruction is not supported on "
-				"devices without EIND register\n");
+		fprintf(stderr, "ERRO: EICALL instruction is not supported "
+				"on devices without EIND register\n");
 		exit(1);
 	}
 
@@ -2294,7 +2304,7 @@ static void exec_eijmp(struct MSIM_AVR *mcu)
 	unsigned char zh, zl, eind;
 
 	if (mcu->eind == NULL) {
-		fprintf(stderr, "EIJMP instruction is not supported on "
+		fprintf(stderr, "ERRO: EIJMP instruction is not supported on "
 				"devices without EIND register\n");
 		exit(1);
 	}
@@ -2351,13 +2361,15 @@ static void exec_ror(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_reti(struct MSIM_AVR *mcu)
 {
 	/* RETI – Return from Interrupt */
-	if (mcu->pc_bits <= 16)
-		mcu->pc = (unsigned long)(((MSIM_StackPop(mcu)<<8)&0xFF00) |
-					  (MSIM_StackPop(mcu)&0xFF));
+	if (mcu->pc_bits > 16)
+		mcu->pc = (unsigned long)(
+				((MSIM_StackPop(mcu)<<16)&0xFF0000) |
+				((MSIM_StackPop(mcu)<<8)&0xFF00) |
+				(MSIM_StackPop(mcu)&0xFF));
 	else
-		mcu->pc = (unsigned long)(((MSIM_StackPop(mcu)<<16)&0xFF0000) |
-					  ((MSIM_StackPop(mcu)<<8)&0xFF00) |
-					  (MSIM_StackPop(mcu)&0xFF));
+		mcu->pc = (unsigned long)(
+				((MSIM_StackPop(mcu)<<8)&0xFF00) |
+				(MSIM_StackPop(mcu)&0xFF));
 
 	/* Enable interrupts globally */
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 1);
@@ -2501,7 +2513,7 @@ static void exec_elpm(struct MSIM_AVR *mcu, unsigned int inst)
 	unsigned long z;
 
 	if (mcu->rampz == NULL) {
-		fprintf(stderr, "ELPM instruction is not supported on "
+		fprintf(stderr, "ERRO: ELPM instruction is not supported on "
 				"devices without RAMPZ register!\n");
 		exit(1);
 	}
@@ -2540,8 +2552,8 @@ static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst)
 	unsigned long z;
 
 	if (mcu->spmcsr == NULL) {
-		fprintf(stderr, "SPMCSR(SPMCR) is not available on this "
-				"device!\n");
+		fprintf(stderr, "ERRO: SPMCSR(SPMCR) is not available on "
+				"this device!\n");
 		exit(1);
 	}
 

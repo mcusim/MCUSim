@@ -35,7 +35,7 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Version
-set(MSIM_VERSION "0.1.43")
+set(MSIM_VERSION "0.1.44")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Set application name

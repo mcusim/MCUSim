@@ -383,26 +383,25 @@ unsigned char MSIM_ReadSREGFlag(struct MSIM_AVR *mcu,
 	return (unsigned char)((*mcu->sreg >> pos) & 0x01);
 }
 
-void MSIM_StackPush(struct MSIM_AVR *mcu, uint8_t val)
+void MSIM_StackPush(struct MSIM_AVR *mcu, unsigned char val)
 {
-	uint16_t sp;
+	unsigned int sp;
 
-	sp = (uint16_t) ((*mcu->spl) | (*mcu->sph << 8));
+	sp = (unsigned int)((*mcu->spl) | (*mcu->sph<<8));
 	mcu->dm[sp--] = val;
-	*mcu->spl = (uint8_t) (sp & 0xFF);
-	*mcu->sph = (uint8_t) (sp >> 8);
+	*mcu->spl = (unsigned char) (sp & 0xFF);
+	*mcu->sph = (unsigned char) (sp >> 8);
 }
 
 uint8_t MSIM_StackPop(struct MSIM_AVR *mcu)
 {
-	uint16_t sp;
-	uint8_t v;
+	unsigned int sp;
+	unsigned char v;
 
-	sp = (uint16_t) ((*mcu->spl) | (*mcu->sph << 8));
+	sp = (unsigned int)((*mcu->spl) | (*mcu->sph<<8));
 	v = mcu->dm[++sp];
-	*mcu->spl = (uint8_t) (sp & 0xFF);
-	*mcu->sph = (uint8_t) (sp >> 8);
-
+	*mcu->spl = (unsigned char)(sp & 0xFF);
+	*mcu->sph = (unsigned char)(sp >> 8);
 	return v;
 }
 
