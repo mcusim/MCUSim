@@ -38,6 +38,8 @@ extern "C" {
 
 #define LUA_PERIPHERALS		256
 
+#ifdef LUA_FOUND		/* Lua library is defined */
+
 /*
  * Configuration functions to work with peripherals written in Lua.
  */
@@ -52,6 +54,14 @@ void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu);
 /*
  * END Configuration functions to work with peripherals written in Lua.
  */
+
+#else				/* Lua library is not defined */
+
+#define MSIM_LoadLuaPeripherals(file)
+#define MSIM_CleanLuaPeripherals(void)
+#define MSIM_TickLuaPeripherals(mcu)
+
+#endif
 
 #ifdef __cplusplus
 }

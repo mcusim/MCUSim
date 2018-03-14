@@ -32,13 +32,8 @@
 
 #include "mcusim/avr/sim/peripheral_lua.h"
 
-#ifndef LUA_FOUND		/* Lua library is not defined */
+#ifdef LUA_FOUND		/* Lua library is defined */
 
-#define MSIM_LoadLuaPeripherals(file)
-#define MSIM_CleanLuaPeripherals(void)
-#define MSIM_TickLuaPeripherals(mcu)
-
-#else				/* Lua library is defined */
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
