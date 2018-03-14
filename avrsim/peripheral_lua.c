@@ -32,10 +32,16 @@
 
 #include "mcusim/avr/sim/peripheral_lua.h"
 
-#ifdef LUA_FOUND
-#	include "lua.h"
-#	include "lualib.h"
-#	include "lauxlib.h"
+#ifndef LUA_FOUND		/* Lua library is not defined */
+
+#define MSIM_LoadLuaPeripherals(file)
+#define MSIM_CleanLuaPeripherals(void)
+#define MSIM_TickLuaPeripherals(mcu)
+
+#else				/* Lua library is defined */
+#include "lua.h"
+#include "lualib.h"
+#include "lauxlib.h"
 
 static lua_State *MSIM_LuaStates[LUA_PERIPHERALS];
 
@@ -85,7 +91,7 @@ static int lua_avr_setbit(lua_State *L);
 
 /* END AVRSim specific functions for peripherals. */
 
-int MSIM_LoadLuaPeripherals(const char *file)
+void MSIM_LoadLuaPeripherals(const char *file)
 {
 	static char path[4096];
 	unsigned int i, ci;
@@ -95,7 +101,7 @@ int MSIM_LoadLuaPeripherals(const char *file)
 	if (f == NULL) {
 		fprintf(stderr, "ERRO: Cannot load Lua peripherals from: %s\n",
 				file);
-		return -1;
+		return;
 	}
 
 	i = 0;
@@ -118,7 +124,7 @@ int MSIM_LoadLuaPeripherals(const char *file)
 					"file: %s, reason: %s\n", path,
 					lua_tostring(MSIM_LuaStates[i], -1));
 			fclose(f);
-			return -1;
+			return;
 		}
 
 		/* Register AVRSim specific functions */
@@ -134,7 +140,6 @@ int MSIM_LoadLuaPeripherals(const char *file)
 		i++;
 	}
 	fclose(f);
-	return 0;
 }
 
 void MSIM_CleanLuaPeripherals(void)
@@ -208,22 +213,4 @@ static int lua_avr_setbit(lua_State *L)
 		mcu->dm[off] &= (unsigned char)(~(1 << b));
 	return 0;
 }
-#else /* LUA_FOUND is not defined */
-
-int MSIM_LoadLuaPeripherals(const char *file)
-{
-	fprintf(stderr, "WARN: Lua peripherals are not supported\n");
-	return 0;
-}
-
-void MSIM_CleanLuaPeripherals(void)
-{
-	return;
-}
-
-void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu)
-{
-	return;
-}
-
 #endif /* LUA_FOUND */

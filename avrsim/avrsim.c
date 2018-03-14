@@ -31,6 +31,8 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
+
 #include "mcusim/cli.h"
 #include "mcusim/getopt.h"
 #include "mcusim/avr/sim/sim.h"
@@ -182,8 +184,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* Load Lua peripherals if it is required */
-	if (luap != NULL && MSIM_LoadLuaPeripherals(luap))
-		return 1;
+	if (luap)
+		MSIM_LoadLuaPeripherals(luap);
 
 	/* Preparing file for program memory */
 	fp = NULL;
@@ -350,6 +352,13 @@ static void print_config(const struct MSIM_AVR *m)
 	printf("INFO: PC: 0x%lX\n", m->pc/2);
 	printf("INFO: Reset address: 0x%lX\n", m->intr->reset_pc/2);
 	printf("INFO: Interrupt vectors: 0x%lX\n", m->intr->ivt/2);
+#ifndef ULLONG_MAX
+	printf("INFO: Maximum rises and falls of CLK_IO to dump: %lu\n",
+	       ULONG_MAX);
+#else
+	printf("INFO: Maximum rises and falls of CLK_IO to dump: %llu\n",
+	       ULLONG_MAX);
+#endif
 }
 
 static void parse_dump(char *cmd)

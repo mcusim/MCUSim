@@ -53,6 +53,17 @@ strcpy(mcu->name, MCU_NAME);
 mcu->signature[0] = SIGNATURE_0;
 mcu->signature[1] = SIGNATURE_1;
 mcu->signature[2] = SIGNATURE_2;
+#ifdef XMEGA
+mcu->xmega = 1;
+#else
+mcu->xmega = 0;
+#endif
+#ifdef REDUCED_CORE
+mcu->reduced_core = 1;
+#else
+mcu->reduced_core = 0;
+#endif
+
 mcu->spm_pagesize = SPM_PAGESIZE;
 mcu->flashstart = FLASHSTART;
 mcu->flashend = FLASHEND;

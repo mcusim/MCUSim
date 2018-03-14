@@ -43,7 +43,7 @@ extern "C" {
  */
 
 /* Load peripherals written in Lua from a given list file. */
-int MSIM_LoadLuaPeripherals(const char *);
+void MSIM_LoadLuaPeripherals(const char *);
 
 /* Close previously created Lua states. */
 void MSIM_CleanLuaPeripherals(void);

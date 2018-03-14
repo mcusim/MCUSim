@@ -35,7 +35,7 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Version
-set(MSIM_VERSION "0.1.44")
+set(MSIM_VERSION "0.1.45")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Set application name
@@ -94,7 +94,7 @@ if (LUA_FOUND AND
 	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
 	message(STATUS "Support for Lua-based peripherals will be enabled")
 else()
-	message(STATUS "Support for Lua-based peripherals will be disabled")
+	message(STATUS "[!] Support for Lua-based peripherals will be disabled")
 	message(STATUS "Required Lua version is 5.2 or above")
 endif()
 
@@ -161,15 +161,15 @@ target_link_libraries(${AVRSIM} ${TARGET_LIBS})
 add_custom_command(
 	OUTPUT handbook-createdir
 	COMMAND rm -f ./mcusim-handbook.pdf
-	COMMAND rm -fr ../handbook/build
-	COMMAND mkdir ../handbook/build
+	COMMAND rm -fr ${CMAKE_CURRENT_SOURCE_DIR}/handbook/build
+	COMMAND mkdir ${CMAKE_CURRENT_SOURCE_DIR}/handbook/build
 )
 add_custom_command(
 	OUTPUT handbook-commands
-	WORKING_DIRECTORY ../handbook/build
+	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/handbook/build
 	COMMAND cmake ..
 	COMMAND make
-	COMMAND cp ./mcusim-handbook.pdf ../../build/mcusim-handbook.pdf
+	COMMAND cp ./mcusim-handbook.pdf ${CMAKE_CURRENT_BINARY_DIR}/mcusim-handbook.pdf
 	VERBATIM
 )
 add_custom_target(

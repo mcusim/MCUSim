@@ -88,6 +88,8 @@ enum MSIM_AVRSREGFlag {
 struct MSIM_AVR {
 	char name[20];			/* Name of the MCU */
 	unsigned char signature[3];	/* Signature of the MCU */
+	unsigned char xmega;		/* XMEGA flag */
+	unsigned char reduced_core;	/* Reduced core flag */
 
 	unsigned long flashstart;	/* First program memory byte */
 	unsigned long flashend;		/* Last program memory byte */
@@ -116,6 +118,9 @@ struct MSIM_AVR {
 	unsigned char pc_bits;		/* 16-bit PC, 22-bit PC, etc. */
 	unsigned long pc;		/* Current program counter */
 	struct MSIM_AVRInt *intr;	/* Interrupts and IRQs */
+	unsigned char ic_left;		/* Cycles left to finish current
+					   instruction */
+	unsigned char in_mcinst;	/* Multi-cycle instruction flag */
 
 	unsigned char *sreg;		/* SREG in the data memory */
 	unsigned char *sph;		/* SP(high) in the data memory */

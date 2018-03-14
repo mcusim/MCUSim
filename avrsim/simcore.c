@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
 
 #include "mcusim/hex/ihex.h"
 #include "mcusim/avr/sim/sim.h"
@@ -44,6 +45,21 @@
 
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
+#define CLK_RISE		0
+#define CLK_FALL		1
+
+#ifndef ULLONG_MAX
+	/*
+	 * For compilers without "unsigned long long"
+	 * NOTE: Amount of simulation time for VCD dump will be limited to
+	 * 134218 ms (MCU clock is 16 MHz) because of a limit of 32-bits
+	 * unsigned integer.
+	 */
+#	define TICKS_MAX	ULONG_MAX
+#else
+	/* For compilers with "unsigned long long" */
+#	define TICKS_MAX	ULLONG_MAX
+#endif
 
 typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 
@@ -71,12 +87,15 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		     unsigned long addr)
 {
-	unsigned long tick;	/* Number of pulses sinse simulation start */
-	unsigned char fall;	/* Main clock rise or a fall flag */
-	FILE *vcd_f;
+#ifndef ULLONG_MAX
+	unsigned long tick;	/* Number of rises and falls sinse start */
+#else
+	unsigned long long tick;
+#endif
+	unsigned char tick_ovf;	/* Have we reached maximum number of ticks? */
+	FILE *vcd_f;		/* File to store VCD dump to */
 
-	tick = fall = 0;
-
+	tick = tick_ovf = 0;
 	vcd_f = NULL;
 	/* Do we have registers to dump? */
 	if (mcu->vcdd->bit[0].regi >= 0) {
@@ -89,9 +108,11 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 	}
 
 	/*
-	 * Main simulation loop. Each iteration represents rise (R) or
-	 * fall (F) of the microcontroller's clock pulse. It's necessary
-	 * to dump CLK_IO to the timing diagram in a pulse-accurate way.
+	 * Main simulation loop.
+	 *
+	 * Each iteration represents both rise (R) and fall (F) of the
+	 * microcontroller's clock pulse. It's necessary to dump CLK_IO to the
+	 * timing diagram in a pulse-accurate way.
 	 *
 	 *                          MAIN LOOP ITERATIONS
 	 *            R     F     R     F     R     F     R     F     R
@@ -112,29 +133,35 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 	 *          |           |           |           |           |
 	 */
 	while (1) {
-		/* Terminate simulation? */
-		if (!fall && mcu->state == AVR_MSIM_STOP)
+		/*
+		 * Do we need to terminate simulation?
+		 * The main simulation loop can be terminated by setting
+		 * MCU state to AVR_MSIM_STOP. The primary (and maybe only)
+		 * source of this state setting is a command from debugger.
+		 */
+		if (!mcu->ic_left && (mcu->state == AVR_MSIM_STOP))
 			break;
+
 		/* Wait for request from GDB in MCU stopped mode */
-		if (!fall && mcu->state == AVR_STOPPED && MSIM_RSPHandle()) {
-			if (vcd_f != NULL)
+		if (!mcu->ic_left && (mcu->state == AVR_STOPPED) &&
+		    MSIM_RSPHandle()) {
+			if (vcd_f)
 				fclose(vcd_f);
 			return 1;
 		}
 
 		/* Tick peripherals written in Lua */
-		if (!fall)
-			MSIM_TickLuaPeripherals(mcu);
-		/* Tick timers. NOTE: MCU-specific! */
-		if (!fall && (mcu->tick_timers != NULL))
+		MSIM_TickLuaPeripherals(mcu);
+		/* Tick timers (MCU-defined!) */
+		if (mcu->tick_timers)
 			mcu->tick_timers(mcu);
 		/* Dump registers to VCD */
-		if (vcd_f)
-			MSIM_VCDDumpFrame(vcd_f, mcu, tick, fall);
+		if (vcd_f && !tick_ovf)
+			MSIM_VCDDumpFrame(vcd_f, mcu, tick, CLK_RISE);
 
-		/* Test scope of program counter */
+		/* Test scope of a program counter */
 		if ((mcu->pc+1) >= mcu->pm_size) {
-			if (vcd_f != NULL)
+			if (vcd_f)
 				fclose(vcd_f);
 			fprintf(stderr, "ERRO: Program counter is out of "
 					"scope: pc=0x%4lX, pc+1=0x%4lX, "
@@ -143,36 +170,84 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 			return 1;
 		}
 
-		/* Decode next instruction */
-		if (!fall && (mcu->state == AVR_RUNNING ||
-		    mcu->state == AVR_MSIM_STEP)) {
-			if (MSIM_StepAVR(mcu)) {
-				if (vcd_f != NULL)
-					fclose(vcd_f);
-				return 1;
-			}
+		/*
+		 * Decode next instruction.
+		 *
+		 * It's usually hard to say in which state the MCU registers
+		 * will be between neighbor cycles of a multi-cycle
+		 * instruction. This talk may be taken into account:
+		 * https://electronics.stackexchange.com/questions/132171/
+		 * 	what-happens-to-avr-registers-during-multi-
+		 * 	cycle-instructions,
+		 * but this change of LSB and MSB can be MCU-specific and
+		 * not a general way of how it really works. Detailed
+		 * information can be obtained directly from Atmel, but
+		 * there is no intention to do this in order not to
+		 * unveil their secrets. However, any details they're ready
+		 * to share are highly welcome.
+		 *
+		 * Simulator doesn't guarantee anything special
+		 * here either. The only thing you may rely on is instruction
+		 * which will be completed _after all_ of these cycles.
+		 */
+		if ((mcu->state == AVR_RUNNING ||
+		     mcu->state == AVR_MSIM_STEP) && MSIM_StepAVR(mcu)) {
+			if (vcd_f)
+				fclose(vcd_f);
+			return 1;
 		}
 
-		/* Provide IRQs based on MCU flags. NOTE: MCU-specific! */
-		if (!fall && (mcu->provide_irqs != NULL))
+		/*
+		 * Provide IRQs (MCU-defined!) based on MCU flags and handle
+		 * them if this is possible.
+		 *
+		 * It's important to understand an interrupt may occur during
+		 * execution of a multi-cycle instruction. This instruction
+		 * is completed before the interrupt is served (according to
+		 * the multiple AVR datasheets). It means that we may provide
+		 * IRQs, but will have to wait required number of cycles
+		 * to serve them.
+		 */
+		if (mcu->provide_irqs)
 			mcu->provide_irqs(mcu);
-
-		/* Handle IRQ if interrupts are enabled globally */
-		if (!fall &&
+		if (!mcu->ic_left && !mcu->intr->exec_main &&
 		    MSIM_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT) &&
-		    mcu->intr->exec_main == 0 &&
 		    (mcu->state == AVR_RUNNING || mcu->state == AVR_MSIM_STEP))
 			handle_irq(mcu);
 
 		/* Halt MCU after a single step performed */
-		if (!fall && mcu->state == AVR_MSIM_STEP)
+		if (!mcu->ic_left && mcu->state == AVR_MSIM_STEP)
 			mcu->state = AVR_STOPPED;
 
-		mcu->intr->exec_main = 0;
+		/*
+		 * All cycles of a single instruction from a main program
+		 * have to be performed.
+		 */
+		if (!mcu->ic_left)
+			mcu->intr->exec_main = 0;
+
+		/*
+		 * Increment ticks or print a warning message in case of
+		 * maximum amount of ticks reached (extremely unlikely
+		 * if compiler supports "unsigned long long" type).
+		 */
+		if (tick == TICKS_MAX) {
+			tick_ovf = 1;
+			printf("WARN: Maximum amount of simulation ticks "
+			       "reached!\n");
+			if (vcd_f)
+				printf("WARN: VCD dump won't be recorded "
+				       "further\n");
+		} else {
+			tick++;
+		}
+		/* Dump fall to VCD */
+		if (vcd_f && !tick_ovf)
+			MSIM_VCDDumpFrame(vcd_f, mcu, tick, CLK_FALL);
 		tick++;
-		fall = !fall ? 1 : 0;
 	}
-	if (vcd_f != NULL)
+
+	if (vcd_f)
 		fclose(vcd_f);
 	return 0;
 }
@@ -284,11 +359,17 @@ static int handle_irq(struct MSIM_AVR *mcu)
 		/* Clear selected IRQ */
 		mcu->intr->irq[i] = 0;
 
-		/* Disable interrupts globally */
-		MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
+		/* Disable interrupts globally (doesn't work for AVR XMEGA) */
+		if (!mcu->xmega)
+			MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
+
 		/* Push PC onto the stack */
 		MSIM_StackPush(mcu, (unsigned char)(mcu->pc & 0xFF));
 		MSIM_StackPush(mcu, (unsigned char)((mcu->pc >> 8) & 0xFF));
+		if (mcu->pc_bits > 16)
+			MSIM_StackPush(mcu,
+				(unsigned char)((mcu->pc >> 16) & 0xFF));
+
 		/* Load interrupt vector to PC */
 		mcu->pc = mcu->intr->ivt+(i*2);
 
