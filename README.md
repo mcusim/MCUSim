@@ -20,18 +20,19 @@ set up and run.
 Build from sources
 ------------------
 MCUSim is intended to be a suite for different types of microcontrollers, like
-AVR® (Atmel, Microchip), PIC® (Microchip), etc. AVRSim is the first part of
-the suite and under development at the moment. It requires Lua 5.2 or above
-to mimic external devices. Please, install it in your operating
-system.
+AVR® (Atmel, Microchip), PIC® (Microchip), etc. It requires:
+
+* CMake 3.2+ (to generate build files)
+* Lua 5.2+ (to mimic external devices)
+* astyle (to check code style in pre-commit hook)
 
 ### macOS
-Debug version of the suite can be compiled and installed using missing
-package manager `brew` to solve dependencies:
+Debug version of the suite can be compiled and installed using package
+manager `brew` to solve dependencies:
 
-	# brew install lua
+	# brew install cmake lua astyle
 	# git clone https://github.com/dsalychev/mcusim.git
-	# cd mcusim && mkdir build && cd build
+	# cd mcusim && scripts/install-hooks.sh && mkdir build && cd build
 	# cmake ..
 	# make install clean
 
@@ -43,9 +44,9 @@ Debug version of the suite can be compiled and installed using package
 manager `pkg` (FreeBSD 10 and above) or via collection of ports to solve
 dependencies:
 
-	# pkg install cmake git lua51 lua52
+	# pkg install cmake lua52 astyle
 	# git clone https://github.com/dsalychev/mcusim.git
-	# cd mcusim && mkdir build && cd build
+	# cd mcusim && scripts/install-hooks.sh && mkdir build && cd build
 	# cmake ..
 	# make install clean
 
