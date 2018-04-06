@@ -35,12 +35,30 @@
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simm8a.h"
 
+#define EXT_CLK_NONE		0
+#define EXT_CLK_RISE		1
+#define EXT_CLK_FALL		2
+
+#define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
+#define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
+#define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
+
+static unsigned char init_pd;		/* Initial port D value to track
+					   T0/PD4 and T1/PD5. */
+static unsigned char init_pb;		/* Initial port B value to track
+					   TOSC1/PB6 and TOSC2/PB7. */
+
+
 static void tick_timer0(struct MSIM_AVR *mcu);
+static void tick_timer1(struct MSIM_AVR *mcu);
 static void tick_timer2(struct MSIM_AVR *mcu);
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
-#include "mcusim/avr/sim/mcu_init.h"
+	#include "mcusim/avr/sim/mcu_init.h"
+	/* Keep initial port values */
+	init_pd = mcu->dm[PORTD];
+	init_pb = mcu->dm[PORTB];
 }
 
 int MSIM_M8ATickTimers(void *m)
@@ -49,7 +67,11 @@ int MSIM_M8ATickTimers(void *m)
 
 	mcu = (struct MSIM_AVR *)m;
 	tick_timer2(mcu);
+	tick_timer1(mcu);
 	tick_timer0(mcu);
+
+	init_pd = mcu->dm[PORTD];
+	init_pb = mcu->dm[PORTB];
 	return 0;
 }
 
@@ -57,11 +79,12 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 {
 	static unsigned int tc0_presc;
 	static unsigned int tc0_ticks;
-
-	unsigned char tccr0;
-	unsigned int presc;
+	unsigned char tccr0;		/* Timer/Counter0 control register */
+	unsigned int presc;		/* Prescaler value */
+	unsigned char extclk;		/* External clock source flag */
 
 	tccr0 = mcu->dm[TCCR0];
+	extclk = EXT_CLK_NONE;
 
 	switch (tccr0) {
 	case 0x1:
@@ -79,15 +102,40 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 	case 0x5:
 		presc = 1024;		/* clk_io/1024 */
 		break;
-	case 0x0:	/* No clock source (stopped mode) */
-	case 0x6:	/* External clock sources are not supported (fall) */
-	case 0x7:	/* External clock sources are not supported (rise) */
-	default:	/* Should not happen! */
+	case 0x6:			/* Ext. clock on T0/PD4 (fall) */
+		extclk = EXT_CLK_FALL;
+		tc0_presc = 0;
+		tc0_ticks = 0;
+		break;
+	case 0x7:			/* Ext. clock on T0/PD4 (rise) */
+		extclk = EXT_CLK_RISE;
+		tc0_presc = 0;
+		tc0_ticks = 0;
+		break;
+	case 0x0:			/* No clock source (stopped mode) */
+	default:			/* Should not happen! */
 		tc0_presc = 0;
 		tc0_ticks = 0;
 		return;
 	}
 
+	/* External clock */
+	if (extclk && (((extclk == EXT_CLK_FALL) &&
+	                IS_FALL(init_pd, mcu->dm[PORTD], PD4)) ||
+	                ((extclk == EXT_CLK_RISE) &&
+	                IS_RISE(init_pd, mcu->dm[PORTD], PD4)))) {
+		if (mcu->dm[TCNT0] == 0xFF) {
+			/* Reset Timer/Counter0 */
+			mcu->dm[TCNT0] = 0;
+			/* Timer/Counter0 overflow occured */
+			mcu->dm[TIFR] |= (1<<TOV0);
+		} else {
+			mcu->dm[TCNT0]++;
+		}
+		return;
+	}
+
+	/* Internal clock */
 	if (presc != tc0_presc) {
 		tc0_presc = presc;
 		tc0_ticks = 0;
@@ -105,6 +153,11 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 		return;
 	}
 	tc0_ticks++;
+}
+
+static void tick_timer1(struct MSIM_AVR *mcu)
+{
+	/* ... */
 }
 
 static void tick_timer2(struct MSIM_AVR *mcu)
@@ -195,7 +248,7 @@ int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 
 	mcu = (struct MSIM_AVR *)m;
 	if (fuse_n > 1) {
-		fprintf(stderr, "WARN: Fuse #%d is not supported by %s\n",
+		fprintf(stderr, "WARN: Fuse #%u is not supported by %s\n",
 				fuse_n, mcu->name);
 		return -1;
 	}
@@ -336,12 +389,14 @@ int MSIM_M8AProvideIRQs(void *m)
 		mcu->dm[TIFR] &= ~(1<<TOV0);
 	}
 
-	/* Provide Timer/Counter2 Overflow Interrupt */
+	/* Provide TIMER2 OVF */
 	if ((timsk>>TOIE2)&1 && (tifr>>TOV2)&1) {
 		mcu->intr->irq[TIMER2_OVF_vect_num-1] = 1;
 		/* Clear TOV2 flag */
 		mcu->dm[TIFR] &= ~(1<<TOV2);
 	}
+	/* Provide TIMER2 COMP */
+	/* ... */
 
 	return 0;
 }
