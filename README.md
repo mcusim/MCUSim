@@ -1,7 +1,5 @@
 MCUSim
 ======
-Simulator for microcontrollers with GDB Remote Serial Protocol interface.    
-    
 [![travis-ci](https://img.shields.io/travis/dsalychev/mcusim.svg)](https://travis-ci.org/dsalychev/mcusim)
 [![coverity](https://scan.coverity.com/projects/13784/badge.svg)](https://scan.coverity.com/projects/dsalychev-mcusim)
 [![latest-tag](https://img.shields.io/github/tag/dsalychev/mcusim.svg)](https://github.com/dsalychev/mcusim/releases)
@@ -15,9 +13,11 @@ Goal of the project is to simplify firmware debugging of a real hardware
 when not all of its components are available, affordable or easy to
 set up and run.
 
-![Example of AVRSim and GDB RSP](https://i.imgur.com/vRkcXQR.gif)
+Site: http://www.mcusim.org
+Issue tracker: https://trac.mcusim.org
+Roadmap: https://trac.mcusim.org/roadmap
 
-Build from sources
+Build it from sources
 ------------------
 MCUSim is intended to be a suite for different types of microcontrollers, like
 AVR® (Atmel, Microchip), PIC® (Microchip), etc. It requires:
