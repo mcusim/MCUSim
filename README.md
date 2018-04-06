@@ -13,9 +13,9 @@ Goal of the project is to simplify firmware debugging of a real hardware
 when not all of its components are available, affordable or easy to
 set up and run.
 
-Site: http://www.mcusim.org
-Issue tracker: https://trac.mcusim.org
-Roadmap: https://trac.mcusim.org/roadmap
+Site: http://www.mcusim.org    
+Issue tracker: https://trac.mcusim.org    
+Roadmap: https://trac.mcusim.org/roadmap    
 
 Build it from sources
 ------------------
