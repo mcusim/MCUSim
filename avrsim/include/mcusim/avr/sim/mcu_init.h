@@ -186,6 +186,8 @@ mcu->spmcsr = NULL;
 /* Do not include any register into dump by default */
 for (i = 0; i < sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0]; i++)
 	mcu->vcdd->bit[i].regi = -1;
+for (i = 0; i < sizeof mcu->vcdd->regs/sizeof mcu->vcdd->regs[0]; i++)
+	mcu->vcdd->regs[i].off = -1;
 #ifdef VCD_DUMP_REGS
 for (i = 0; i < sizeof mcu->vcdd->regs/sizeof mcu->vcdd->regs[0]; i++) {
 	if (i < known_regsn) {
@@ -212,4 +214,6 @@ mcu->provide_irqs = PROVIDE_IRQS_F;
 mcu->provide_irqs = NULL;
 #endif
 
-return 0;
+/* Do not forget to add "return 0;" right after this init body in the
+ * MCU-specific initialization functions!
+ */

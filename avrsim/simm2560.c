@@ -37,4 +37,5 @@
 int MSIM_M2560Init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
 #include "mcusim/avr/sim/mcu_init.h"
+	return 0;
 }

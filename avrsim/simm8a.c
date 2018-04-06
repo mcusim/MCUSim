@@ -55,10 +55,11 @@ static void tick_timer2(struct MSIM_AVR *mcu);
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
-	#include "mcusim/avr/sim/mcu_init.h"
+#include "mcusim/avr/sim/mcu_init.h"
 	/* Keep initial port values */
 	init_pd = mcu->dm[PORTD];
 	init_pb = mcu->dm[PORTB];
+	return 0;
 }
 
 int MSIM_M8ATickTimers(void *m)
@@ -85,6 +86,7 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 
 	tccr0 = mcu->dm[TCCR0];
 	extclk = EXT_CLK_NONE;
+	presc = 0;
 
 	switch (tccr0) {
 	case 0x1:
@@ -123,7 +125,7 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 	if (extclk && (((extclk == EXT_CLK_FALL) &&
 	                IS_FALL(init_pd, mcu->dm[PORTD], PD4)) ||
 	                ((extclk == EXT_CLK_RISE) &&
-	                IS_RISE(init_pd, mcu->dm[PORTD], PD4)))) {
+	                 IS_RISE(init_pd, mcu->dm[PORTD], PD4)))) {
 		if (mcu->dm[TCNT0] == 0xFF) {
 			/* Reset Timer/Counter0 */
 			mcu->dm[TCNT0] = 0;
@@ -188,8 +190,8 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	 */
 	if (wgm > 0 && wgm != prev_wgm) {
 		fprintf(stderr, "WARN: Selected mode WGM21:20 = %u of "
-				"Timer/Counter2 is not supported, normal "
-				"mode will be used by default\n", wgm);
+		        "Timer/Counter2 is not supported, normal mode "
+		        "will be used by default\n", wgm);
 		prev_wgm = wgm;
 	}
 
@@ -249,7 +251,7 @@ int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 	mcu = (struct MSIM_AVR *)m;
 	if (fuse_n > 1) {
 		fprintf(stderr, "WARN: Fuse #%u is not supported by %s\n",
-				fuse_n, mcu->name);
+		        fuse_n, mcu->name);
 		return -1;
 	}
 
