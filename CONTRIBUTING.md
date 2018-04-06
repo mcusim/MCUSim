@@ -9,13 +9,13 @@ and sharing your opinion can help a lot!
 
 ## How to find any help
 
+* Create a [ticket](https://trac.mcusim.org/report/3) on MCUSim Trac
 * Ask directly in IRC (#mcusim on [freenode](https://webchat.freenode.net/))
-* Drop me a letter (Dmitry Salychev, darkness.bsd at gmail.com)
 * Drop a letter to mailing list for users: mcusim@googlegroups.com
 (you must be subscribed to post)
 * Drop a letter to mailing list for developers: mcusim-dev@googlegroups.com
 (you must be subscribed to post)
-* Open an [issue](https://github.com/dsalychev/mcusim/issues)
+* Drop me a letter (Dmitry Salychev, darkness.bsd at gmail.com)
 
 ## Sharing changes
 
