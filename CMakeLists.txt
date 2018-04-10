@@ -35,7 +35,7 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Version
-set(MSIM_VERSION "0.1.49")
+set(MSIM_VERSION "0.1.50")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Set application name
@@ -176,9 +176,6 @@ add_custom_target(
 	handbook DEPENDS handbook-createdir handbook-commands
 )
 
-# Copy required files
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/rom/avr-progmem.hex DESTINATION ${CMAKE_BINARY_DIR})
-file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/peripheral/avr/examples/io.lua DESTINATION ${CMAKE_BINARY_DIR})
-
+# Install MCUSim and man pages
 install(TARGETS ${AVRSIM} DESTINATION bin)
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/avrsim/man/avrsim.1 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)

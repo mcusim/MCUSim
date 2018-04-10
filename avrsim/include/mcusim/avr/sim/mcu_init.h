@@ -39,7 +39,8 @@ static struct MSIM_VCDRegister known_regs[] = VCD_DUMP_REGS;
 unsigned short known_regsn = sizeof known_regs/sizeof known_regs[0];
 #endif
 
-if (!mcu) {
+if (!mcu)
+{
 	fprintf(stderr, "MCU should not be NULL\n");
 	return -1;
 }
@@ -82,10 +83,10 @@ mcu->io_regs = IO_REGS;
 
 /* Program memory */
 pmsz = (mcu->flashend - mcu->flashstart) + 1;
-if (pm_size < pmsz) {
-	fprintf(stderr, "Program memory is limited by %lu bytes,"
-			" %lu bytes isn't enough\n",
-			pmsz, pm_size);
+if (pm_size < pmsz)
+{
+	fprintf(stderr, "Program memory is limited by %lu bytes, %lu bytes "
+	        "is not enough\n", pmsz, pm_size);
 	return -1;
 }
 mcu->pm = pm;
@@ -94,10 +95,10 @@ mcu->pm_size = pm_size;
 
 /* Data memory */
 dmsz = mcu->regs + mcu->io_regs + mcu->ramsize;
-if (dm_size < dmsz) {
-	fprintf(stderr, "Data memory is limited by %lu bytes,"
-			" %lu bytes isn't enough\n",
-			dmsz, dm_size);
+if (dm_size < dmsz)
+{
+	fprintf(stderr, "Data memory is limited by %lu bytes, %lu bytes "
+	        "is not enough\n", dmsz, dm_size);
 	return -1;
 }
 mcu->dm = dm;
@@ -189,7 +190,8 @@ for (i = 0; i < sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0]; i++)
 for (i = 0; i < sizeof mcu->vcdd->regs/sizeof mcu->vcdd->regs[0]; i++)
 	mcu->vcdd->regs[i].off = -1;
 #ifdef VCD_DUMP_REGS
-for (i = 0; i < sizeof mcu->vcdd->regs/sizeof mcu->vcdd->regs[0]; i++) {
+for (i = 0; i < sizeof mcu->vcdd->regs/sizeof mcu->vcdd->regs[0]; i++)
+{
 	if (i < known_regsn) {
 		known_regs[i].addr = &mcu->dm[known_regs[i].off];
 		known_regs[i].oldv = *known_regs[i].addr;

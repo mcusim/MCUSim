@@ -52,7 +52,7 @@ done
 
 if [ $RETURN -eq 1 ]; then
 	echo "[I]" >&2
-	echo "[I] Make sure you have run astyle with the following options:" >&2
+	echo "[I] These options of astyle used to check the files above:" >&2
 	echo "[I] $ASTYLE $OPTIONS < FILE" >&2
 fi
 

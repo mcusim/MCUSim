@@ -96,6 +96,13 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 			break;
 
 		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
+		if (!reg->addr) {
+			fprintf(stderr, "WARN: Register with known address "
+					"(placed in data memory) can be "
+					"dumped only: regname=\"\"%16s\n",
+					reg->name);
+			continue;
+		}
 
 		if (mcu->vcdd->bit[i].n < 0) {
 			print_reg(buf, sizeof buf, *reg->addr);
@@ -117,7 +124,6 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 {
 	static unsigned int clk_prints_left = 0;
 	unsigned int i, regs;
-	short n;				/* Bit index of a register */
 	char buf[32], print_tick, new_value;
 	struct MSIM_AVR *mcu;
 	struct MSIM_VCDRegister *reg;
@@ -129,6 +135,8 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 
 	/* Do we have at least one register which value has changed? */
 	for (i = 0; i < regs; i++) {
+		short n;			/* Bit index of a register */
+
 		/* No register changes on fall should be */
 		if (fall)
 			break;
@@ -225,6 +233,6 @@ static void print_regbit(char *buf, unsigned int len, unsigned char r,
 		buf[0] = 0;
 		return;
 	}
-	buf[0] = (r >> bit)&1 ? '1' : '0';
+	buf[0] = ((r >> bit) & 1) ? '1' : '0';
 	buf[1] = 0;
 }

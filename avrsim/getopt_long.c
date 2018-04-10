@@ -151,7 +151,7 @@ gcd(int a, int b)
 static void
 permute_args(int panonopt_start, int panonopt_end, int opt_end, char **nargv)
 {
-	int cstart, cyclelen, i, j, ncycle, nnonopts, nopts, pos;
+	int cyclelen, i, j, ncycle, nnonopts, nopts;
 	char *swap;
 
 	/*
@@ -163,6 +163,8 @@ permute_args(int panonopt_start, int panonopt_end, int opt_end, char **nargv)
 	cyclelen = (opt_end - panonopt_start) / ncycle;
 
 	for (i = 0; i < ncycle; i++) {
+		int cstart, pos;
+
 		cstart = panonopt_end+i;
 		pos = cstart;
 		for (j = 0; j < cyclelen; j++) {
