@@ -94,8 +94,8 @@ void MSIM_LoadLuaPeripherals(const char *file)
 
 	f = fopen(file, "r");
 	if (f == NULL) {
-		fprintf(stderr, "ERRO: Cannot load Lua peripherals from: %s\n",
-				file);
+		fprintf(stderr, "ERRO: Cannot load Lua peripherals "
+		        "from: %s\n", file);
 		return;
 	}
 
@@ -114,7 +114,7 @@ void MSIM_LoadLuaPeripherals(const char *file)
 
 		/* Load peripheral */
 		if (luaL_loadfile(MSIM_LuaStates[i], path) ||
-		    lua_pcall(MSIM_LuaStates[i], 0, 0, 0)) {
+		                lua_pcall(MSIM_LuaStates[i], 0, 0, 0)) {
 			fprintf(stderr, "ERRO: Cannot load peripheral "
 			        "file: %s, reason: %s\n", path,
 			        lua_tostring(MSIM_LuaStates[i], -1));

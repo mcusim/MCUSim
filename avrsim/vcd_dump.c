@@ -38,7 +38,7 @@
 
 static void print_reg(char *buf, unsigned int len, unsigned char r);
 static void print_regbit(char *buf, unsigned int len, unsigned char r,
-			 short bit);
+                         short bit);
 
 FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 {
@@ -66,7 +66,7 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 	fprintf(f, "$version MCUSim %s $end\n", MSIM_VERSION);
 	fprintf(f, "$comment It is a dump of simulated %s $end\n", mcu->name);
 	fprintf(f, "$timescale %lu ps $end\n",
-		(unsigned long)(((1.0/(double)mcu->freq)*TERA)/2.0));
+	        (unsigned long)(((1.0/(double)mcu->freq)*TERA)/2.0));
 	fprintf(f, "$scope module %s $end\n", mcu->name);
 
 	/* Declare VCD variables to dump */
@@ -79,11 +79,11 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 		/* Are we going to dump a register bit only? */
 		if (mcu->vcdd->bit[i].n < 0)
 			fprintf(f, "$var reg 8 %s %s $end\n",
-				reg->name, reg->name);
+			        reg->name, reg->name);
 		else
 			fprintf(f, "$var reg 1 %s%d %s%d $end\n",
-				reg->name, mcu->vcdd->bit[i].n,
-				reg->name, mcu->vcdd->bit[i].n);
+			        reg->name, mcu->vcdd->bit[i].n,
+			        reg->name, mcu->vcdd->bit[i].n);
 	}
 	fprintf(f, "$upscope $end\n");
 	fprintf(f, "$enddefinitions $end\n");
@@ -98,9 +98,8 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
 		if (!reg->addr) {
 			fprintf(stderr, "WARN: Register with known address "
-					"(placed in data memory) can be "
-					"dumped only: regname=\"\"%16s\n",
-					reg->name);
+			        "(placed in data memory) can be dumped "
+			        "only: regname=\"\"%16s\n", reg->name);
 			continue;
 		}
 
@@ -109,9 +108,9 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 			fprintf(f, "b%s %s\n", buf, reg->name);
 		} else {
 			print_regbit(buf, sizeof buf, *reg->addr,
-				     mcu->vcdd->bit[i].n);
+			             mcu->vcdd->bit[i].n);
 			fprintf(f, "b%s %s%d\n", buf, reg->name,
-				mcu->vcdd->bit[i].n);
+			        mcu->vcdd->bit[i].n);
 		}
 	}
 	fprintf(f, "$end\n");
@@ -120,7 +119,7 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 }
 
 void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
-		       unsigned char fall)
+                       unsigned char fall)
 {
 	static unsigned int clk_prints_left = 0;
 	unsigned int i, regs;
@@ -147,12 +146,12 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 
 		/* Has register value been changed? */
 		if (((n = mcu->vcdd->bit[i].n) < 0) &&
-		    (*reg->addr != reg->oldv)) {
+		                (*reg->addr != reg->oldv)) {
 			new_value = 1;
 			break;
 		}
 		if (n >= 0 && (((*reg->addr >> n)&1) !=
-			       ((reg->oldv >> n)&1))) {
+		                ((reg->oldv >> n)&1))) {
 			new_value = 1;
 			break;
 		}
@@ -201,9 +200,9 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 			fprintf(f, "b%s %s\n", buf, reg->name);
 		} else {
 			print_regbit(buf, sizeof buf, *reg->addr,
-				     mcu->vcdd->bit[i].n);
+			             mcu->vcdd->bit[i].n);
 			fprintf(f, "b%s %s%d\n", buf, reg->name,
-				mcu->vcdd->bit[i].n);
+			        mcu->vcdd->bit[i].n);
 		}
 	}
 }
@@ -227,7 +226,7 @@ static void print_reg(char *buf, unsigned int len, unsigned char r)
 }
 
 static void print_regbit(char *buf, unsigned int len, unsigned char r,
-			 short bit)
+                         short bit)
 {
 	if (len < 2) {
 		buf[0] = 0;
