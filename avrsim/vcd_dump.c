@@ -97,7 +97,7 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 
 		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
 		if (!reg->addr) {
-			fprintf(stderr, "WARN: Register with known address "
+			fprintf(stderr, "[!]: Register with known address "
 			        "(placed in data memory) can be dumped "
 			        "only: regname=\"\"%16s\n", reg->name);
 			continue;

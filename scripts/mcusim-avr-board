@@ -1,0 +1,303 @@
+#!/bin/sh
+#
+# Copyright (c) 2017, 2018,
+# Dmitry Salychev <darkness.bsd@gmail.com>,
+# Alexander Salychev <ppsalex@rambler.ru> et al.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the <organization> nor the
+#       names of its contributors may be used to endorse or promote products
+#       derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+# OF SUCH DAMAGE.
+#
+#
+# Interactive script to create a simulated board (MCU + peripherals) with
+# AVR microcontroller.
+#
+
+# Welcome message and script description
+echo "                                                                        "
+echo "                                            ????????????????,           "
+echo "  Welcome to MCUSim AVR Board Generating   ,?,,,,,,,,,,,,,??,           "
+echo "  Script!                                  ,?,??,         ??,           "
+echo "                                           ,?,            ??,           "
+echo "  We usually create a PCB in real life     ,?,            ??,           "
+echo "  to test our ideas or proof a concept.    ,?,            ??,           "
+echo "  Aim of a simulated board is the same.    ,?,            ??,           "
+echo "  You may:                                 ,?,            ??,           "
+echo "                                           ,????????????????,           "
+echo "  - Test firmware with specific MCU         =??????????????+            "
+echo "    model and peripherals;                ,~????????????????:           "
+echo "  - Test feature of the simulator        ,???????????=???????=          "
+echo "    (phase-correct PWM generating,      :???????????:+???=????~,        "
+echo "     for example);                    ,:?????:,????= ???? :?????,       "
+echo "  - Create and run a board which     ,????=,  ,???,  ???=   :????~      "
+echo "    resembles a part of your         ?????    =??=   ???,    ,+????,    "
+echo "    schematic (or even a full one).  =????:,  +??+,  =???,    ,:????,   "
+echo "                                      :????+  ,:???~  ,:??~,    =???,   "
+echo "                                                                        "
+
+#
+# Check programs available within operating system
+#
+MSIM_AVR=$(which mcusim-avr)
+if [ $? -ne 0 ]; then
+	printf "[!] mcusim-avr not installed. Unable to generate AVR "
+	printf "board correctly.\n" >&2
+	exit 1
+fi
+
+#
+# Default values for script-wide variables
+#
+HOME=`getent passwd $USER | awk -F ':' '{print $6}'`
+MCU_FAMILY_DEFAULT="avr"
+BRD_DIR_DEFAULT="$HOME/mcusim"
+MSIM_VERSION=`$MSIM_AVR --short-version`
+MCU_FAMILY=$MCU_FAMILY_DEFAULT
+
+#
+# Ask about a directory to store a board
+#
+printf "Directory to store a board [ $BRD_DIR_DEFAULT ]: "
+read BRD_DIR
+if [ -z "$BRD_DIR" ]; then
+	BRD_DIR=$BRD_DIR_DEFAULT
+fi
+# Ask about a name for the board
+printf "Name of the board [ $MCU_FAMILY-board ]: "
+read BRD_NAME
+if [ -z "$BRD_NAME" ]; then
+	BRD_NAME="$MCU_FAMILY-board"
+fi
+# Check whether a board directory doens't exit
+if [ -d $BRD_DIR/$BRD_NAME ]; then
+	echo "[!] board directory $BRD_DIR/$BRD_NAME already exists"
+else
+	break;
+fi
+while [ -d $BRD_DIR/$BRD_NAME ]; do
+	# Ask about a directory to store a board
+	printf "Directory to store a board [ $BRD_DIR_DEFAULT ]: "
+	read BRD_DIR
+	if [ -z "$BRD_DIR" ]; then
+		BRD_DIR=$BRD_DIR_DEFAULT
+	fi
+	# Ask about a name for the board
+	printf "Name of the board [ $MCU_FAMILY-board ]: "
+	read BRD_NAME
+	if [ -z "$BRD_NAME" ]; then
+		BRD_NAME="$MCU_FAMILY-board"
+	fi
+	# Check whether a board directory doens't exit
+	if [ -d $BRD_DIR/$BRD_NAME ]; then
+		echo "[!] board directory $BRD_DIR/$BRD_NAME already exists"
+	else
+		break;
+	fi
+done
+
+#
+# Ask about an MCU model
+#
+MCU_MODELS=`$MSIM_AVR -p ? | awk 'BEGIN{ORS=" "}; {print $1}'`
+while [ -z "$MCU_MODEL" ]; do
+	printf "Select an AVR model [ $MCU_MODELS]: "
+	read MCU_MODEL
+	if [ -z "$MCU_MODEL" ]; then
+		printf "[!] model is necessary to generate a board "
+		printf "correctly\n" >&2
+	else
+		break
+	fi
+done
+
+#
+# Ask about firmware of the main program and a bootloader
+#
+FMW_PROVIDED=0
+while [ $FMW_PROVIDED -eq 0 ]; do
+	while [ 0 -eq 0 ]; do
+		printf "Path to main program firmware "
+		printf "(Leave empty to skip): "
+		read FMW_PATH
+		if [ ! -z "$FMW_PATH" ]; then
+			if [ ! -f "$FMW_PATH" ]; then
+				printf "[!] firmware file $FMW_PATH "
+				echo "doesn't exist"
+				continue
+			else
+				FMW_PROVIDED=1
+				break;
+			fi
+		else
+			break;
+		fi
+	done
+	while [ 0 -eq 0 ]; do
+		printf "Path to bootloader firmware (Leave empty to skip): "
+		read BLD_PATH
+		if [ ! -z "$BLD_PATH" ]; then
+			if [ ! -f "$BLD_PATH" ]; then
+				printf "[!] firmware file $BLD_PATH "
+				echo "doesn't exist"
+				continue
+			else
+				FMW_PROVIDED=1
+				break;
+			fi
+		else
+			break;
+		fi
+	done
+	if [ $FMW_PROVIDED -eq 0 ]; then
+		printf "[!] it's necessary to specify at least one "
+		echo "firmware file"
+	fi
+done
+
+#
+# Ask about lock bits and fuse bytes
+#
+printf "Lock bits byte (Leave empty for default): "
+read LOCK_BYTE
+printf "Extended fuse byte (Leave empty for default): "
+read EXT_FUSE
+printf "High fuse byte (Leave empty for default): "
+read HIGH_FUSE
+printf "Low fuse byte (Leave empty for default): "
+read LOW_FUSE
+
+#
+# Ask about a minimal version of MCUSim to run a board
+#
+printf "Minimal version of MCUSim to run the board [ $MSIM_VERSION ]: "
+read MIN_MSIM_VERSION
+if [ -z "$MIN_MSIM_VERSION" ]; then
+	MIN_MSIM_VERSION=$MSIM_VERSION
+fi
+
+#
+# Let user verify the board configuration
+#
+echo ""
+echo "Please, verify the board configuration:"
+echo ""
+echo "    Board directory: $BRD_DIR/$BRD_NAME"
+echo "    AVR model: $MCU_MODEL"
+echo "    AVR lock bits byte: $LOCK_BYTE"
+echo "    AVR fuses: EXT=$EXT_FUSE, HIGH=$HIGH_FUSE, LOW=$LOW_FUSE"
+echo "    Minimal MCUSim version: $MIN_MSIM_VERSION"
+echo ""
+printf "Is it correct? [y/N] "
+read VALID_BRD
+if [ "$VALID_BRD" != "y" ] && [ "$VALID_BRD" != "Y" ] ; then
+	echo "Configuration is incorrect, board won't be generated"
+	exit 0
+else
+	printf "Configuration is correct, board will be created "
+	printf "at $BRD_DIR/$BRD_NAME\n"
+fi
+
+#
+# Configuration is valid, let's generate a board!
+#
+mkdir -p -- $BRD_DIR/$BRD_NAME
+if [ $? -ne 0 ]; then
+	printf "[!] unable to create a board directory\n" >&2
+	exit 1
+fi
+mkdir -p -- $BRD_DIR/$BRD_NAME/peripherals
+mkdir -p -- $BRD_DIR/$BRD_NAME/firmware
+if [ -f "$FMW_PATH" ]; then
+	cp $FMW_PATH $BRD_DIR/$BRD_NAME/firmware/fmw
+fi
+if [ -f "$BLD_PATH" ]; then
+	cp $BLD_PATH $BRD_DIR/$BRD_NAME/firmware/bld
+fi
+touch $BRD_DIR/$BRD_NAME/run-board
+touch $BRD_DIR/$BRD_NAME/peripherals/list
+chmod +x $BRD_DIR/$BRD_NAME/run-board
+
+echo "#!/bin/sh" >> $BRD_DIR/$BRD_NAME/run-board
+echo "#" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# NOTE: This script has been generated by MCUSim. It is a good idea to" >> $BRD_DIR/$BRD_NAME/run-board
+echo "#       adjust it only if you know what you're doing." >> $BRD_DIR/$BRD_NAME/run-board
+echo "#" >> $BRD_DIR/$BRD_NAME/run-board
+echo "#" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# Copyright (c) 2017, 2018," >> $BRD_DIR/$BRD_NAME/run-board
+echo "# Dmitry Salychev <darkness.bsd@gmail.com>," >> $BRD_DIR/$BRD_NAME/run-board
+echo "# Alexander Salychev <ppsalex@rambler.ru> et al." >> $BRD_DIR/$BRD_NAME/run-board
+echo "# All rights reserved." >> $BRD_DIR/$BRD_NAME/run-board
+echo "#" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# Redistribution and use in source and binary forms, with or without" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# modification, are permitted provided that the following conditions are met:" >> $BRD_DIR/$BRD_NAME/run-board
+echo "#     * Redistributions of source code must retain the above copyright" >> $BRD_DIR/$BRD_NAME/run-board
+echo "#       notice, this list of conditions and the following disclaimer." >> $BRD_DIR/$BRD_NAME/run-board
+echo "#     * Redistributions in binary form must reproduce the above copyright" >> $BRD_DIR/$BRD_NAME/run-board
+echo "#       notice, this list of conditions and the following disclaimer in the" >> $BRD_DIR/$BRD_NAME/run-board
+echo "#       documentation and/or other materials provided with the distribution." >> $BRD_DIR/$BRD_NAME/run-board
+echo "#     * Neither the name of the <organization> nor the" >> $BRD_DIR/$BRD_NAME/run-board
+echo "#       names of its contributors may be used to endorse or promote products" >> $BRD_DIR/$BRD_NAME/run-board
+echo "#       derived from this software without specific prior written permission." >> $BRD_DIR/$BRD_NAME/run-board
+echo "#" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO," >> $BRD_DIR/$BRD_NAME/run-board
+echo "# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT," >> $BRD_DIR/$BRD_NAME/run-board
+echo "# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# OF SUCH DAMAGE." >> $BRD_DIR/$BRD_NAME/run-board
+echo "#" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# This script is used to start a simulation of the AVR board generated" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# according to the parameters provided by a user. It can, however, be manually" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# tweaked to follow requirements as close as possible." >> $BRD_DIR/$BRD_NAME/run-board
+echo "#" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# Site: www.mcusim.org" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# Issue tracker: trac.mcusim.org" >> $BRD_DIR/$BRD_NAME/run-board
+echo "# Roadmap: trac.mcusim.org/roadmap" >> $BRD_DIR/$BRD_NAME/run-board
+echo "#" >> $BRD_DIR/$BRD_NAME/run-board
+
+MSIM_CMD="$MSIM_AVR -p $MCU_MODEL -r $BRD_DIR/$BRD_NAME/peripherals/list"
+
+if [ -f "$BRD_DIR/$BRD_NAME/firmware/fmw" ]; then
+	MSIM_CMD="$MSIM_CMD -U flash:w:$BRD_DIR/$BRD_NAME/firmware/fmw"
+fi
+if [ -f "$BRD_DIR/$BRD_NAME/firmware/bld" ]; then
+	MSIM_CMD="$MSIM_CMD -U flash:w:$BRD_DIR/$BRD_NAME/firmware/bld"
+fi
+if [ ! -z "$LOCK_BYTE" ]; then
+	MSIM_CMD="$MSIM_CMD -U lock:w:$LOCK_BYTE:h"
+fi
+if [ ! -z "$EXT_FUSE" ]; then
+	MSIM_CMD="$MSIM_CMD -U efuse:w:$EXT_FUSE:h"
+fi
+if [ ! -z "$HIGH_FUSE" ]; then
+	MSIM_CMD="$MSIM_CMD -U hfuse:w:$HIGH_FUSE:h"
+fi
+if [ ! -z "$LOW_FUSE" ]; then
+	MSIM_CMD="$MSIM_CMD -U lfuse:w:$LOW_FUSE:h"
+fi
+echo "$MSIM_CMD" >> $BRD_DIR/$BRD_NAME/run-board

@@ -216,7 +216,7 @@ int MSIM_StepAVR(struct MSIM_AVR *mcu)
 	}
 
 	if (decode_inst(mcu, inst)) {
-		fprintf(stderr, "ERRO: Unknown instruction: 0x%X\n", inst);
+		fprintf(stderr, "[e]: Unknown instruction: 0x%X\n", inst);
 		return -1;
 	}
 	return 0;
@@ -2411,12 +2411,12 @@ static void exec_eicall(struct MSIM_AVR *mcu)
 	unsigned long pc;
 
 	if (!mcu->eind) {
-		fprintf(stderr, "ERRO: EICALL instruction is not supported "
+		fprintf(stderr, "[e]: EICALL instruction is not supported "
 		        "on devices without EIND register\n");
 		exit(1);
 	}
 	if (mcu->pc_bits < 22) {
-		fprintf(stderr, "ERRO: EICALL is implemented in devices "
+		fprintf(stderr, "[e]: EICALL is implemented in devices "
 		        "with 22-bit PC only\n");
 		exit(1);
 	}
@@ -2442,7 +2442,7 @@ static void exec_eijmp(struct MSIM_AVR *mcu)
 	unsigned char zh, zl, eind;
 
 	if (!mcu->eind) {
-		fprintf(stderr, "ERRO: EIJMP instruction is not supported on "
+		fprintf(stderr, "[e]: EIJMP instruction is not supported on "
 		        "devices without EIND register\n");
 		exit(1);
 	}
@@ -2664,7 +2664,7 @@ static void exec_elpm(struct MSIM_AVR *mcu, unsigned int inst)
 	unsigned long z;
 
 	if (mcu->rampz == NULL) {
-		fprintf(stderr, "ERRO: ELPM instruction is not supported on "
+		fprintf(stderr, "[e]: ELPM instruction is not supported on "
 		        "devices without RAMPZ register!\n");
 		exit(1);
 	}
@@ -2708,7 +2708,7 @@ static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst)
 	unsigned long z;
 
 	if (mcu->spmcsr == NULL) {
-		fprintf(stderr, "ERRO: SPMCSR(SPMCR) is not available on "
+		fprintf(stderr, "[e]: SPMCSR(SPMCR) is not available on "
 		        "this device!\n");
 		exit(1);
 	}

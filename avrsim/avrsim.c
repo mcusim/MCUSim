@@ -60,12 +60,17 @@
 #define VERSION_OPT		7576
 #define GDB_RSP_PORT_OPT	7577
 #define TRAP_AT_ISR_OPT		7578
+#define SHORT_VERSION_OPT	7579
+#define PRINT_USAGE_OPT		7580
 
+/* Long command line options */
 static struct option longopts[] = {
 	{ "dump-regs", required_argument, NULL, DUMP_REGS_OPT },
-	{ "version", no_argument, NULL, VERSION_OPT },
 	{ "rsp-port", required_argument, NULL, GDB_RSP_PORT_OPT },
-	{ "trap-at-isr", no_argument, NULL, TRAP_AT_ISR_OPT }
+	{ "trap-at-isr", no_argument, NULL, TRAP_AT_ISR_OPT },
+	{ "version", no_argument, NULL, VERSION_OPT },
+	{ "short-version", no_argument, NULL, SHORT_VERSION_OPT },
+	{ "help", no_argument, NULL, PRINT_USAGE_OPT }
 };
 /* END Command line options */
 
@@ -92,6 +97,7 @@ static unsigned short memops_num;
 
 static void print_usage(void);
 static void print_config(const struct MSIM_AVR *m);
+static void print_version(void);
 static void parse_dump(char *cmd);
 static int parse_rsp_port(const char *opt);
 static int parse_memop(char *opt);
@@ -119,12 +125,6 @@ int main(int argc, char *argv[])
 	freq = 0;
 	trap_at_isr = 0;
 
-	/* Print welcome message */
-	printf("INFO: AVRSim %s - Simulator for AVR microcontrollers,\n"
-	       "INFO: part of MCUSim <http://www.mcusim.org>\n"
-	       "INFO: --------------------------------------\n",
-	       MSIM_VERSION);
-
 	while ((c = getopt_long(argc, argv, CLI_OPTIONS,
 	                        longopts, NULL)) != -1) {
 		switch (c) {
@@ -133,9 +133,8 @@ int main(int argc, char *argv[])
 			break;
 		case 'U':		/* Required. Memory operation. */
 			if (parse_memop(optarg)) {
-				fprintf(stderr, "ERRO: Incorrect memory "
+				fprintf(stderr, "[e]: Incorrect memory "
 				        "operation specified!\n");
-				print_usage();
 				return 1;
 			}
 			break;
@@ -149,21 +148,16 @@ int main(int argc, char *argv[])
 			freq = parse_freq(optarg);
 			break;
 		case ':':		/* Missing operand */
-			fprintf(stderr, "WARN: Option -%c requires "
+			fprintf(stderr, "[!]: Option -%c requires "
 			        "an operand\n", optopt);
-			print_usage();
 			return 1;
 		case '?':		/* Unknown option */
-			fprintf(stderr, "WARN: Unknown option: -%c\n",
+			fprintf(stderr, "[!]: Unknown option: -%c\n",
 			        optopt);
-			print_usage();
 			return 1;
 		case DUMP_REGS_OPT:	/* Registers to dump into VCD file */
 			parse_dump(optarg);
 			break;
-		case VERSION_OPT:	/* Print version and usage */
-			print_usage();
-			return 0;
 		case GDB_RSP_PORT_OPT:	/* Set port for incoming connections
 					   from GDB RSP */
 			rsp_port = parse_rsp_port(optarg);
@@ -172,6 +166,15 @@ int main(int argc, char *argv[])
 					   occured */
 			trap_at_isr = 1;
 			break;
+		case VERSION_OPT:	/* Print version only */
+			print_version();
+			return 0;
+		case SHORT_VERSION_OPT:
+			printf("%s\n", MSIM_VERSION);
+			return 0;
+		case PRINT_USAGE_OPT:
+			print_usage();
+			return 0;
 		}
 	}
 
@@ -179,8 +182,9 @@ int main(int argc, char *argv[])
 		MSIM_PrintParts();
 		return 0;
 	}
-	if (partno == NULL) {		/* MCU model is necessary! */
-		print_usage();
+	if (partno == NULL) {
+		/* MCU model is necessary! */
+		fprintf(stderr, "[e]: Please, specify MCU model\n");
 		return 0;
 	}
 
@@ -196,7 +200,7 @@ int main(int argc, char *argv[])
 			/* Try to open file to read program memory from */
 			fp = fopen(memops[i].operand, "r");
 			if (!fp) {
-				fprintf(stderr, "ERRO: Failed to open file to "
+				fprintf(stderr, "[e]: Failed to open file to "
 				        "read a content of flash memory "
 				        "from: %s\n", memops[i].operand);
 				return 1;
@@ -206,7 +210,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	if (fp == NULL) {
-		fprintf(stderr, "ERRO: It is necessary to fill program "
+		fprintf(stderr, "[e]: It is necessary to fill program "
 		        "memory, i.e. do not forget to "
 		        "-U flash:w:<filename>!\n");
 		return 1;
@@ -219,7 +223,7 @@ int main(int argc, char *argv[])
 	mcu.vcdd = &vcdd;
 	intr.trap_at_isr = trap_at_isr;
 	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp)) {
-		fprintf(stderr, "ERRO: AVR %s cannot be initialized!\n",
+		fprintf(stderr, "[e]: AVR %s cannot be initialized!\n",
 		        partno);
 		return 1;
 	}
@@ -234,7 +238,7 @@ int main(int argc, char *argv[])
 				break;
 			if (mcu.vcdd->regs[i].off < 0)
 				continue;
-			printf("INFO: %s (0x%2lX)\n",
+			printf("%s (0x%2lX)\n",
 			       mcu.vcdd->regs[i].name, mcu.vcdd->regs[i].off);
 		}
 		return 0;
@@ -243,7 +247,7 @@ int main(int argc, char *argv[])
 	/* Apply memory modifications */
 	for (i = 0; i < memops_num; i++)
 		if (apply_memop(&mcu, &memops[i])) {
-			fprintf(stderr, "ERRO: Memory modification failed: "
+			fprintf(stderr, "[e]: Memory modification failed: "
 			        "memtype=%s, op=%c, val=%s\n",
 			        &memops[i].memtype[0], memops[i].operation,
 			        &memops[i].operand[0]);
@@ -280,7 +284,7 @@ int main(int argc, char *argv[])
 
 	/* Try to set required frequency */
 	if (freq > mcu.freq)
-		fprintf(stderr, "WARN: Frequency %u.%u kHz is above maximum "
+		fprintf(stderr, "[!]: Frequency %u.%u kHz is above maximum "
 		        "possible %lu.%lu kHz for selected clock source\n",
 		        freq/1000, freq%1000, mcu.freq/1000, mcu.freq%1000);
 	else if (freq > 0)
@@ -288,7 +292,7 @@ int main(int argc, char *argv[])
 
 	/* Print MCU configuration */
 	print_config(&mcu);
-	printf("INFO: Listening for incoming GDB connections "
+	printf("Listening for incoming GDB connections "
 	       "at localhost:%d...\n", rsp_port);
 
 	/* Prepare and run AVR simulation */
@@ -302,32 +306,41 @@ int main(int argc, char *argv[])
 static void print_usage(void)
 {
 	/* Print usage and options */
-	printf("INFO: Usage: avrsim [options]\n"
-	       "INFO: Options:\n"
-	       "INFO:   -p <partno|?>              Specify AVR device "
+	printf("mcusim-avr %s - Simulator for AVR microcontrollers "
+	       "<http://www.mcusim.org>\n", MSIM_VERSION);
+	printf("Usage: mcusim-avr [options]\n"
+	       "Options:\n"
+	       "  -p <partno|?>              Specify AVR device "
 	       "(required).\n"
-	       "INFO:   -U <memtype>:w:<filename|value>[:<format>]\n"
-	       "INFO:                              Memory operation "
+	       "  -U <memtype>:w:<filename|value>[:<format>]\n"
+	       "                             Memory operation "
 	       "specification (required).\n"
-	       "INFO:   -r <filename>              Specify text file with "
+	       "  -r <filename>              Specify text file with "
 	       "simulated modules written in Lua.\n"
-	       "INFO:   --dump-regs=<reg0,reg1,...,regN|?>\n"
-	       "INFO:                              Dump specified registers "
+	       "  --dump-regs=<reg0,reg1,...,regN|?>\n"
+	       "                             Dump specified registers "
 	       "into VCD file.\n"
-	       "INFO:   --version                  Print this message.\n");
-	printf("INFO:   -P <port>, --rsp-port=<port>\n"
-	       "INFO:                              Set port to listen to the "
+	       "  --help                     Print this message.\n");
+	printf("  -P <port>, --rsp-port=<port>\n"
+	       "                             Set port to listen to the "
 	       "incoming connections from GDB RSP.\n"
-	       "INFO:   -f <frequency>             MCU frequency, in Hz.\n"
-	       "INFO:   --trap-at-isr              Enter stopped mode when "
+	       "  -f <frequency>             MCU frequency, in Hz.\n"
+	       "  --trap-at-isr              Enter stopped mode when "
 	       "interrupt occured.\n");
 
 	/* Print examples */
-	printf("INFO: Examples:\n"
-	       "INFO:   avrsim -p m328p -U flash:w:./dhtc.hex -U "
+	printf("Examples:\n"
+	       "  mcusim-avr -p m328p -U flash:w:./dhtc.hex -U "
 	       "hfuse:w:0x57:h -r ./lua-modules --dump-regs=PORTB,PORTC\n"
-	       "INFO:   avrsim -p m8a -U flash:w:./dhtc.hex -r ./lua-modules "
-	       "-f 1000000\n\n");
+	       "  mcusim-avr -p m8a -U flash:w:./dhtc.hex "
+	       "-r ./lua-modules -f 1000000\n\n");
+}
+
+static void print_version(void)
+{
+	printf("mcusim-avr %s - Simulator for AVR microcontrollers "
+	       "<http://www.mcusim.org>\n", MSIM_VERSION);
+	printf("Usage: mcusim-avr --help\n");
 }
 
 static void print_config(const struct MSIM_AVR *m)
@@ -340,25 +353,25 @@ static void print_config(const struct MSIM_AVR *m)
 	 * It's why all program memory addresses are divided by two before
 	 * printing.
 	 */
-	printf("INFO: Model: %s\n", m->name);
-	printf("INFO: Signature: 0x%X%2X%2X\n",
+	printf("Model: %s\n", m->name);
+	printf("Signature: 0x%X%2X%2X\n",
 	       m->signature[2], m->signature[1], m->signature[0]);
-	printf("INFO: Clock frequency: %lu.%lu kHz\n",
+	printf("Clock frequency: %lu.%lu kHz\n",
 	       m->freq/1000, m->freq%1000);
-	printf("INFO: Program memory: 0x%lX-0x%lX\n",
-	       m->flashstart/2, m->flashend/2);
-	printf("INFO: Bootloader section: 0x%lX-0x%lX\n",
-	       m->bls->start/2, m->bls->end/2);
-	printf("INFO: Data memory: 0x%lX-0x%lX\n", m->ramstart, m->ramend);
-	printf("INFO: EEPROM: 0x%X-0x%X\n", m->e2start, m->e2end);
-	printf("INFO: PC: 0x%lX\n", m->pc/2);
-	printf("INFO: Reset address: 0x%lX\n", m->intr->reset_pc/2);
-	printf("INFO: Interrupt vectors: 0x%lX\n", m->intr->ivt/2);
+	printf("Program memory: 0x%lX-0x%lX\n",
+	       m->flashstart >> 1, m->flashend >> 1);
+	printf("Bootloader section: 0x%lX-0x%lX\n",
+	       m->bls->start >> 1, m->bls->end >> 1);
+	printf("Data memory: 0x%lX-0x%lX\n", m->ramstart, m->ramend);
+	printf("EEPROM: 0x%X-0x%X\n", m->e2start, m->e2end);
+	printf("PC: 0x%lX\n", m->pc >> 1);
+	printf("Reset address: 0x%lX\n", m->intr->reset_pc >> 1);
+	printf("Interrupt vectors table: 0x%lX\n", m->intr->ivt >> 1);
 #ifndef ULLONG_MAX
-	printf("INFO: Maximum rises and falls of CLK_IO to dump: %lu\n",
+	printf("Maximum rises and falls of CLK_IO to dump: %lu\n",
 	       ULONG_MAX);
 #else
-	printf("INFO: Maximum rises and falls of CLK_IO to dump: %llu\n",
+	printf("Maximum rises and falls of CLK_IO to dump: %llu\n",
 	       ULLONG_MAX);
 #endif
 }
@@ -396,7 +409,7 @@ static void parse_dump(char *cmd)
 				p++;
 				continue;
 			}
-			fprintf(stderr, "ERRO: Failed to parse list of "
+			fprintf(stderr, "[e]: Failed to parse list of "
 			        "registers to dump: %s\n", p);
 			break;
 		}
@@ -410,7 +423,7 @@ static int parse_rsp_port(const char *opt)
 
 	rsp_port = atoi(opt);
 	if (!(rsp_port > 1024 && rsp_port < 65536)) {
-		fprintf(stderr, "WARN: GDB RSP port should be within "
+		fprintf(stderr, "[!]: GDB RSP port should be within "
 		        "(1024, 65536) range! Default port will be used.\n");
 		rsp_port = GDB_RSP_PORT;
 	}
@@ -423,7 +436,7 @@ static unsigned int parse_freq(const char *opt)
 
 	freq = atoi(opt);
 	if (freq <= 0) {
-		fprintf(stderr, "WARN: Frequency should be positive!\n");
+		fprintf(stderr, "[!]: Frequency should be positive!\n");
 		return 0;
 	}
 	return (unsigned int)freq;
@@ -475,18 +488,18 @@ static int set_fuse(struct MSIM_AVR *m, struct MSIM_MemOp *mo,
 	unsigned int fusev;
 
 	if (m->set_fusef == NULL) {
-		fprintf(stderr, "WARN: Cannot modify fuse, MCU-specific "
+		fprintf(stderr, "[!]: Cannot modify fuse, MCU-specific "
 		        "function is not available\n");
 		return 0;	/* No function to set fuse */
 	}
 	if (mo->format != 'h') {
-		fprintf(stderr, "WARN: Failed to modify fuse, expected "
+		fprintf(stderr, "[!]: Failed to modify fuse, expected "
 		        "format is 'h'\n");
 		return 1;
 	}
 
 	if (sscanf(mo->operand, "0x%2X", &fusev) != 1) {
-		fprintf(stderr, "ERRO: Failed to parse fuse value from %s!\n",
+		fprintf(stderr, "[e]: Failed to parse fuse value from %s!\n",
 		        mo->operand);
 		return 1;
 	}
@@ -500,18 +513,18 @@ static int set_lock(struct MSIM_AVR *m, struct MSIM_MemOp *mo)
 	unsigned int lockv;
 
 	if (m->set_lockf == NULL) {
-		fprintf(stderr, "WARN: Cannot modify lock bits, MCU-specific "
+		fprintf(stderr, "[!]: Cannot modify lock bits, MCU-specific "
 		        "function is not available\n");
 		return 0;	/* No function to set lock bits */
 	}
 	if (mo->format != 'h') {
-		fprintf(stderr, "WARN: Failed to modify lock byte, expected "
+		fprintf(stderr, "[!]: Failed to modify lock byte, expected "
 		        "format is 'h'\n");
 		return 1;
 	}
 
 	if (sscanf(mo->operand, "0x%2X", &lockv) != 1) {
-		fprintf(stderr, "ERRO: Failed to parse lock value from %s!\n",
+		fprintf(stderr, "[e]: Failed to parse lock value from %s!\n",
 		        mo->operand);
 		return 1;
 	}

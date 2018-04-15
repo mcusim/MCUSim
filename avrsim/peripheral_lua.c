@@ -94,7 +94,7 @@ void MSIM_LoadLuaPeripherals(const char *file)
 
 	f = fopen(file, "r");
 	if (f == NULL) {
-		fprintf(stderr, "ERRO: Cannot load Lua peripherals "
+		fprintf(stderr, "[e]: Cannot load Lua peripherals "
 		        "from: %s\n", file);
 		return;
 	}
@@ -115,7 +115,7 @@ void MSIM_LoadLuaPeripherals(const char *file)
 		/* Load peripheral */
 		if (luaL_loadfile(MSIM_LuaStates[i], path) ||
 		                lua_pcall(MSIM_LuaStates[i], 0, 0, 0)) {
-			fprintf(stderr, "ERRO: Cannot load peripheral "
+			fprintf(stderr, "[e]: Cannot load peripheral "
 			        "file: %s, reason: %s\n", path,
 			        lua_tostring(MSIM_LuaStates[i], -1));
 			fclose(f);
@@ -156,7 +156,7 @@ void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu)
 		lua_getglobal(MSIM_LuaStates[i], "module_tick");
 		lua_pushlightuserdata(MSIM_LuaStates[i], mcu);
 		if (lua_pcall(MSIM_LuaStates[i], 1, 0, 0) != 0)
-			fprintf(stderr, "ERRO: Error running function "
+			fprintf(stderr, "[e]: Error running function "
 			        "module_tick(): %s\n",
 			        lua_tostring(MSIM_LuaStates[i], -1));
 	}

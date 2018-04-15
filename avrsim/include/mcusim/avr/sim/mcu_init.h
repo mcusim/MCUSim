@@ -41,7 +41,7 @@ unsigned short known_regsn = sizeof known_regs/sizeof known_regs[0];
 
 if (!mcu)
 {
-	fprintf(stderr, "MCU should not be NULL\n");
+	fprintf(stderr, "[e]: MCU should not be NULL\n");
 	return -1;
 }
 
@@ -85,8 +85,8 @@ mcu->io_regs = IO_REGS;
 pmsz = (mcu->flashend - mcu->flashstart) + 1;
 if (pm_size < pmsz)
 {
-	fprintf(stderr, "Program memory is limited by %lu bytes, %lu bytes "
-	        "is not enough\n", pmsz, pm_size);
+	fprintf(stderr, "[e]: Program memory is limited by %lu bytes, "
+	        "%lu bytes is not enough\n", pmsz, pm_size);
 	return -1;
 }
 mcu->pm = pm;
@@ -97,7 +97,7 @@ mcu->pm_size = pm_size;
 dmsz = mcu->regs + mcu->io_regs + mcu->ramsize;
 if (dm_size < dmsz)
 {
-	fprintf(stderr, "Data memory is limited by %lu bytes, %lu bytes "
+	fprintf(stderr, "[e]: Data memory is limited by %lu bytes, %lu bytes "
 	        "is not enough\n", dmsz, dm_size);
 	return -1;
 }

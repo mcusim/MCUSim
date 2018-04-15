@@ -189,7 +189,7 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	 * - (planned) Fast PWM Mode, WGM21:20 = 3;
 	 */
 	if (wgm > 0 && wgm != prev_wgm) {
-		fprintf(stderr, "WARN: Selected mode WGM21:20 = %u of "
+		fprintf(stderr, "[!]: Selected mode WGM21:20 = %u of "
 		        "Timer/Counter2 is not supported, normal mode "
 		        "will be used by default\n", wgm);
 		prev_wgm = wgm;
@@ -250,7 +250,7 @@ int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 
 	mcu = (struct MSIM_AVR *)m;
 	if (fuse_n > 1) {
-		fprintf(stderr, "WARN: Fuse #%u is not supported by %s\n",
+		fprintf(stderr, "[!]: Fuse #%u is not supported by %s\n",
 		        fuse_n, mcu->name);
 		return -1;
 	}

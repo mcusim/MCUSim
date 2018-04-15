@@ -35,11 +35,11 @@ include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Version
-set(MSIM_VERSION "0.1.51")
+set(MSIM_VERSION "0.1.52")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Set application name
-set(AVRSIM "avrsim")
+set(MCUSIM_AVR "mcusim-avr")
 
 # Set flags here
 if (CMAKE_BUILD_TYPE MATCHES Release)
@@ -69,7 +69,7 @@ else()
 endif()
 
 # Set sources here
-set(AVRSIM_SRC		avrsim/simcore.c
+set(MCUSIM_AVR_SRC	avrsim/simcore.c
 			avrsim/simm8a.c
 			avrsim/simm328p.c
 			avrsim/simm328.c
@@ -95,7 +95,7 @@ if (LUA_FOUND AND
 	message(STATUS "Support for Lua-based peripherals will be enabled")
 else()
 	message(STATUS "[!] Support for Lua-based peripherals will be disabled")
-	message(STATUS "Required Lua version is 5.2 or above")
+	message(STATUS "[!] Required Lua version is 5.2 or above")
 endif()
 
 #
@@ -155,8 +155,8 @@ if (LUA_FOUND)
 	include_directories(${LUA_INCLUDE_DIR})
 endif()
 
-add_executable(${AVRSIM} ${AVRSIM_SRC})
-target_link_libraries(${AVRSIM} ${TARGET_LIBS})
+add_executable(${MCUSIM_AVR} ${MCUSIM_AVR_SRC})
+target_link_libraries(${MCUSIM_AVR} ${TARGET_LIBS})
 
 add_custom_command(
 	OUTPUT handbook-createdir
@@ -177,5 +177,9 @@ add_custom_target(
 )
 
 # Install MCUSim and man pages
-install(TARGETS ${AVRSIM} DESTINATION bin)
-install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/avrsim/man/avrsim.1 DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
+install(TARGETS ${MCUSIM_AVR}
+	DESTINATION bin)
+#install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/avrsim/man/avrsim.1
+#	DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
+install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/mcusim-avr-board
+	DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
