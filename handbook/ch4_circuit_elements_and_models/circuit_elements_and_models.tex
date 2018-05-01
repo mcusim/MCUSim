@@ -1,0 +1,92 @@
+\chapter{Circuit Elements and Models} \label{chapter:circuit_elements_and_models}
+
+\section{Basic lines}
+
+\subsection{.TITLE line}
+\textnormal{Examples:}
+\begin{lstlisting}
+	Circuit based on ATmega8A
+	* additional lines following
+	*...
+
+	****************************
+	* additional lines following
+	*...
+	.TITLE Circuit based on ATmega328p
+	* additional lines following
+	*...
+\end{lstlisting}
+\textnormal{The title line can be the first line or a
+\lstinline|.TITLE <any title>| placed anywhere in the input file.}
+
+\subsection{.END line}
+\textnormal{Examples:}
+\begin{lstlisting}
+	.end
+\end{lstlisting}
+\textnormal{The \lstinline|.end| line must always be the last in the input
+file. Note that the period is the integral part of the name.}
+
+\subsection{Comments}
+\textnormal{General Form:}
+\begin{lstlisting}
+	* <any comment>
+\end{lstlisting}
+\textnormal{Examples:}
+\begin{lstlisting}
+	* OLED two-wire should be connected to PD4,PD5 of XU1
+	* Type of PWM can be selected using TCCR1A and
+	* TCCR1B registers
+\end{lstlisting}
+\textnormal{The asterisk in the first column indicates that this line is
+a comment line. Comment lines can be placed anywhere in the circuit
+description.}
+
+\subsection{End-of-line comments}
+\textnormal{General Form:}
+\begin{lstlisting}
+	<any command> $ <any comment>
+	<any command> //<any comment>
+\end{lstlisting}
+\textnormal{Examples:}
+\begin{lstlisting}
+	XQ1 3(1) 3(5) 0(8) 0(16) m8a $ Connect power and ground
+	.MODEL m8a ATMEGA8A_32A (freq=2meg) //Run at 2MHz
+\end{lstlisting}
+\textnormal{MCUSim supports comments that begin with double marks
+'\$ '(dollar plus space) or '//'. You should precede each comment character
+with a space for readability. Simulator will also accept a comment line
+started with the double marks '\$ '.}
+
+\section{.MODEL Device Models}
+\textnormal{General Form:}
+\begin{lstlisting}
+	.model mname type(pname1=pval1 pname2=pval2 ... )
+\end{lstlisting}
+\textnormal{Examples:}
+\begin{lstlisting}
+	.model m8a ATMEGA8A_32A(freq=2meg)
+	.model m328p ATMEGA328P_32A(freq=8meg efuse=0x3)
+\end{lstlisting}
+\textnormal{MCUSim has been created to provide complex device models to
+simulate microcontrollers. The models usually have a lot of parameters
+which can be adjusted. It is highly likely that the default values of
+the parameters won't let you run a simulation correctly. For this reason,
+a set of the device model parameters is defined in a separate
+\lstinline|.model line| and assigned a unique \lstinline|model name|.}
+
+\section{.SCR}
+\textnormal{General Form:}
+\begin{lstlisting}
+	.scr filename sname
+\end{lstlisting}
+\textnormal{Examples:}
+\begin{lstlisting}
+	.scr /users/mcusim/common/dht11.lua DHT11
+	.scr /users/mcusim/common/ssd1309.lua OLED12864
+\end{lstlisting}
+\textnormal{The \lstinline|.SCR| statement allows you to load a specifically
+structured script into MCUSim and use a device model defined there. Please,
+note that the model can be referenced using a unique \lstinline|sname|,
+configured and used the very similar way as the device models embedded into
+the simulator.}

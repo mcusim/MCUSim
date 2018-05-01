@@ -12,7 +12,7 @@ env:
 
 before_script:
         - sudo apt-get -qq update
-        - sudo apt-get install -y liblua5.1-0 liblua5.1-0-dev
+        - sudo apt-get install -y liblua5.2-0 liblua5.2-0-dev texlive
         - mkdir out
         - cd out
         - cmake ..

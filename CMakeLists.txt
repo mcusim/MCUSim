@@ -26,24 +26,26 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# MCUSim main CMake configuration file
+# MCUSim configuration file of the AVR simulator
 #
 cmake_minimum_required(VERSION 3.2)
-project(MCUSim C)
+project(mcusim C)
+
+# Version
+set(MSIM_VERSION "0.1.54")
+add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
+add_subdirectory(handbook)
+add_subdirectory(scripts)
 
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
-# Version
-set(MSIM_VERSION "0.1.53")
-add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
-
-# Set application name
-set(MCUSIM_AVR "mcusim-avr")
+# Simulator app name
+set(MCUSIM "mcusim")
 
 # Set flags here
 if (CMAKE_BUILD_TYPE MATCHES Release)
-	message(STATUS "Release version of MCUSim ${MSIM_VERSION} will be built.")
+	message(STATUS "Release version of mcusim ${MSIM_VERSION} will be built.")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 	    ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2")
@@ -54,7 +56,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wsign-compare")
 	endif()
 else()
-	message(STATUS "Debug version of MCUSim ${MSIM_VERSION} will be built by default.")
+	message(STATUS "Debug version of mcusim ${MSIM_VERSION} will be built by default.")
 	message(STATUS "Set CMAKE_BUILD_TYPE=Release to build a release version.")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDEBUG")
 	if (CMAKE_COMPILER_IS_GNUCC OR
@@ -69,18 +71,18 @@ else()
 endif()
 
 # Set sources here
-set(MCUSIM_AVR_SRC	avrsim/simcore.c
-			avrsim/simm8a.c
-			avrsim/simm328p.c
-			avrsim/simm328.c
-			avrsim/simm2560.c
-			avrsim/ihex.c
-			avrsim/getopt_long.c
-			avrsim/peripheral_lua.c
-			avrsim/decoder.c
-			avrsim/avrsim.c
-			avrsim/gdb_rsp.c
-			avrsim/vcd_dump.c)
+set(MCUSIM_SRC		simcore.c
+			simm8a.c
+			simm328p.c
+			simm328.c
+			simm2560.c
+			ihex.c
+			getopt_long.c
+			peripheral_lua.c
+			decoder.c
+			avrsim.c
+			gdb_rsp.c
+			vcd_dump.c)
 
 # Look for libraries, packages, etc.
 find_package(Lua)
@@ -150,36 +152,17 @@ endif()
 #
 
 # Define includes here
-include_directories("avrsim/include/")
+include_directories("include/")
 if (LUA_FOUND)
 	include_directories(${LUA_INCLUDE_DIR})
 endif()
 
-add_executable(${MCUSIM_AVR} ${MCUSIM_AVR_SRC})
-target_link_libraries(${MCUSIM_AVR} ${TARGET_LIBS})
+add_executable(${MCUSIM} ${MCUSIM_SRC})
+target_link_libraries(${MCUSIM} ${TARGET_LIBS})
 
-add_custom_command(
-	OUTPUT handbook-createdir
-	COMMAND rm -f ./mcusim-handbook.pdf
-	COMMAND rm -fr ${CMAKE_CURRENT_SOURCE_DIR}/handbook/build
-	COMMAND mkdir ${CMAKE_CURRENT_SOURCE_DIR}/handbook/build
-)
-add_custom_command(
-	OUTPUT handbook-commands
-	WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/handbook/build
-	COMMAND cmake ..
-	COMMAND make
-	COMMAND cp ./mcusim-handbook.pdf ${CMAKE_CURRENT_BINARY_DIR}/mcusim-handbook.pdf
-	VERBATIM
-)
-add_custom_target(
-	handbook DEPENDS handbook-createdir handbook-commands
-)
-
-# Install MCUSim and man pages
-install(TARGETS ${MCUSIM_AVR}
+# Install mcusim and manual pages
+install(TARGETS ${MCUSIM}
 	DESTINATION bin)
 #install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/avrsim/man/avrsim.1
 #	DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
-install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/scripts/mcusim-avr-board
-	DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+

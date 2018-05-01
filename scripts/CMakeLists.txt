@@ -26,24 +26,13 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# MCUSim handbook configuration file
+# MCUSim common scripts configuration file
 #
 cmake_minimum_required(VERSION 3.2)
-project(MCUSim-handbook NONE)
+project(mcusim-scripts NONE)
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake)
+# Version
+add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
-find_package(LATEX)
-if (LATEX_FOUND)
-	include(UseLATEX)
-	set(HANDBOOK_SRC	mcusim-handbook.tex
-				ch1_introduction/introduction.tex
-				ch2_compile_and_install/compile_and_install.tex
-				ch3_circuit_description/circuit_description.tex
-				ch4_circuit_elements_and_models/circuit_elements_and_models.tex)
-
-	add_latex_document(
-		mcusim-handbook.tex
-		INPUTS ${HANDBOOK_SRC}
-	)
-endif()
+install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/mcusim-config
+	DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

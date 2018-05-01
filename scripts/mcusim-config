@@ -1,0 +1,271 @@
+#!/bin/sh
+#
+# Copyright (c) 2017, 2018,
+# Dmitry Salychev <darkness.bsd@gmail.com>,
+# Alexander Salychev <ppsalex@rambler.ru> et al.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the <organization> nor the
+#       names of its contributors may be used to endorse or promote products
+#       derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
+# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
+# OF SUCH DAMAGE.
+#
+#
+# Interactive script to select and configure a specific model of a
+# microcontroller supported by the simulator, and save this configuration as a
+# script to run easily.
+#
+
+# Check programs available within operating system
+MSIM=$(which mcusim)
+if [ $? -ne 0 ]; then
+	printf "[!] mcusim-avr not installed. Unable to create a "
+	printf "configuration script.\n" >&2
+	exit 1
+fi
+
+
+# -------------- Default values for script-wide variables ---------------------
+HOME=`echo $HOME`
+if [ ! -d "$HOME" ]; then
+	echo "[!] It seems that \$HOME environment variable is not defined,"
+	echo "[!] trying to retrieve a home directory using \"getent\"..."
+	HOME=`getent passwd $USER | awk -F ':' '{print $6}'`
+fi
+MCU_FAMILY_DEFAULT="avr"
+CFG_DIR_DEFAULT="$HOME"
+MSIM_VERSION=`$MSIM --short-version`
+MCU_FAMILY=$MCU_FAMILY_DEFAULT
+# -----------END Default values for script-wide variables ---------------------
+
+
+# --------------- Directory to store a script ---------------------------------
+printf "Configuration script directory [ $CFG_DIR_DEFAULT ]: "
+read CFG_DIR
+if [ -z "$CFG_DIR" ]; then
+	CFG_DIR=$CFG_DIR_DEFAULT
+fi
+# Ask about a name for the script
+printf "Name of the script [ start-$MCU_FAMILY ]: "
+read CFG_NAME
+if [ -z "$CFG_NAME" ]; then
+	CFG_NAME="start-$MCU_FAMILY"
+fi
+# Check whether script already exists
+if [ -f $CFG_DIR/$CFG_NAME ]; then
+	echo "[!] file $CFG_DIR/$CFG_NAME already exists"
+else
+	break;
+fi
+while [ -f $CFG_DIR/$CFG_NAME ]; do
+	# Ask about a directory to store a script
+	printf "Configuration script directory [ $CFG_DIR_DEFAULT ]: "
+	read CFG_DIR
+	if [ -z "$CFG_DIR" ]; then
+		CFG_DIR=$CFG_DIR_DEFAULT
+	fi
+	# Ask about a name for the script
+	printf "Name of the script [ start-$MCU_FAMILY ]: "
+	read CFG_NAME
+	if [ -z "$CFG_NAME" ]; then
+		CFG_NAME="start-$MCU_FAMILY"
+	fi
+	# Check whether script already exists
+	if [ -f $CFG_DIR/$CFG_NAME ]; then
+		echo "[!] file $CFG_DIR/$CFG_NAME already exists"
+	else
+		break;
+	fi
+done
+# ------------END Directory to store a script ---------------------------------
+
+
+# ------------ Select an MCU model --------------------------------------------
+MCU_MODELS=`$MSIM -p ? | awk 'BEGIN{ORS=" "}; {print $1}'`
+while [ -z "$MCU_MODEL" ]; do
+	printf "Microcontroller [ $MCU_MODELS]: "
+	read MCU_MODEL
+	if [ -z "$MCU_MODEL" ]; then
+		printf "[!] model is necessary\n" >&2
+	else
+		break
+	fi
+done
+# ---------END Select an MCU model --------------------------------------------
+
+
+# --------------- Firmware/Bootloader -----------------------------------------
+FMW_PROVIDED=0
+while [ $FMW_PROVIDED -eq 0 ]; do
+	while [ 0 -eq 0 ]; do
+		printf "Full path to firmware "
+		printf "(Leave empty to skip): "
+		read FMW_PATH
+		if [ ! -z "$FMW_PATH" ]; then
+			if [ ! -f "$FMW_PATH" ]; then
+				printf "[!] firmware file $FMW_PATH "
+				echo "doesn't exist"
+				continue
+			else
+				FMW_PROVIDED=1
+				break;
+			fi
+		else
+			break;
+		fi
+	done
+	while [ 0 -eq 0 ]; do
+		printf "Full path to bootloader (Leave empty to skip): "
+		read BLD_PATH
+		if [ ! -z "$BLD_PATH" ]; then
+			if [ ! -f "$BLD_PATH" ]; then
+				printf "[!] firmware file $BLD_PATH "
+				echo "doesn't exist"
+				continue
+			else
+				FMW_PROVIDED=1
+				break;
+			fi
+		else
+			break;
+		fi
+	done
+	if [ $FMW_PROVIDED -eq 0 ]; then
+		printf "[!] it's necessary to specify at least one "
+		echo "firmware file"
+	fi
+done
+# ------------END Firmware/Bootloader -----------------------------------------
+
+
+# ---------------- Model configuration ----------------------------------------
+# Note: These fuse bytes and lock bits are for AVR only. I'll have to modify
+#       this part in order to support other models and provide additional
+#       parameters.
+printf "Lock bits byte (Leave empty for default): "
+read LOCK_BYTE
+printf "Extended fuse byte (Leave empty for default): "
+read EXT_FUSE
+printf "High fuse byte (Leave empty for default): "
+read HIGH_FUSE
+printf "Low fuse byte (Leave empty for default): "
+read LOW_FUSE
+# -------------END Model configuration ----------------------------------------
+
+
+# -------------- Verify a configuration ---------------------------------------
+echo "Please, verify this configuration:"
+echo ""
+echo "    Configuration: $CFG_DIR/$CFG_NAME"
+echo "    Model: $MCU_MODEL"
+echo "    Lock bits: $LOCK_BYTE"
+echo "    Fuses: EXT=$EXT_FUSE, HIGH=$HIGH_FUSE, LOW=$LOW_FUSE"
+echo ""
+printf "Is it correct? [y/N] "
+read VALID_CFG
+if [ "$VALID_CFG" != "y" ] && [ "$VALID_CFG" != "Y" ] ; then
+	echo "Configuration is incorrect, script won't be created."
+	exit 0
+else
+	printf "Configuration is correct, script will be created "
+	printf "at $CFG_DIR/$CFG_NAME."
+fi
+printf " Thanks!\n\n"
+# -----------END Verify a configuration ---------------------------------------
+
+
+# ----------------- Generate script -------------------------------------------
+if [ ! -d "$CFG_DIR" ]; then
+	mkdir -p $CFG_DIR
+fi
+touch $CFG_DIR/$CFG_NAME
+chmod +x $CFG_DIR/$CFG_NAME
+
+echo "#!/bin/sh" >> $CFG_DIR/$CFG_NAME
+echo "#" >> $CFG_DIR/$CFG_NAME
+echo "# NOTE: This script has been generated by mcusim-config. It is a good idea to" >> $CFG_DIR/$CFG_NAME
+echo "#       adjust it only if you know what you're doing." >> $CFG_DIR/$CFG_NAME
+echo "#" >> $CFG_DIR/$CFG_NAME
+echo "# Copyright (c) 2017, 2018," >> $CFG_DIR/$CFG_NAME
+echo "# Dmitry Salychev <darkness.bsd@gmail.com>," >> $CFG_DIR/$CFG_NAME
+echo "# Alexander Salychev <ppsalex@rambler.ru> et al." >> $CFG_DIR/$CFG_NAME
+echo "# All rights reserved." >> $CFG_DIR/$CFG_NAME
+echo "#" >> $CFG_DIR/$CFG_NAME
+echo "# Redistribution and use in source and binary forms, with or without" >> $CFG_DIR/$CFG_NAME
+echo "# modification, are permitted provided that the following conditions are met:" >> $CFG_DIR/$CFG_NAME
+echo "#     * Redistributions of source code must retain the above copyright" >> $CFG_DIR/$CFG_NAME
+echo "#       notice, this list of conditions and the following disclaimer." >> $CFG_DIR/$CFG_NAME
+echo "#     * Redistributions in binary form must reproduce the above copyright" >> $CFG_DIR/$CFG_NAME
+echo "#       notice, this list of conditions and the following disclaimer in the" >> $CFG_DIR/$CFG_NAME
+echo "#       documentation and/or other materials provided with the distribution." >> $CFG_DIR/$CFG_NAME
+echo "#     * Neither the name of the <organization> nor the" >> $CFG_DIR/$CFG_NAME
+echo "#       names of its contributors may be used to endorse or promote products" >> $CFG_DIR/$CFG_NAME
+echo "#       derived from this software without specific prior written permission." >> $CFG_DIR/$CFG_NAME
+echo "#" >> $CFG_DIR/$CFG_NAME
+echo "# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"" >> $CFG_DIR/$CFG_NAME
+echo "# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO," >> $CFG_DIR/$CFG_NAME
+echo "# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR" >> $CFG_DIR/$CFG_NAME
+echo "# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR" >> $CFG_DIR/$CFG_NAME
+echo "# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL" >> $CFG_DIR/$CFG_NAME
+echo "# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS" >> $CFG_DIR/$CFG_NAME
+echo "# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)" >> $CFG_DIR/$CFG_NAME
+echo "# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT," >> $CFG_DIR/$CFG_NAME
+echo "# STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN" >> $CFG_DIR/$CFG_NAME
+echo "# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY" >> $CFG_DIR/$CFG_NAME
+echo "# OF SUCH DAMAGE." >> $CFG_DIR/$CFG_NAME
+echo "#" >> $CFG_DIR/$CFG_NAME
+echo "# Site: www.mcusim.org" >> $CFG_DIR/$CFG_NAME
+echo "# Issue tracker: trac.mcusim.org" >> $CFG_DIR/$CFG_NAME
+echo "#" >> $CFG_DIR/$CFG_NAME
+echo "" >> $CFG_DIR/$CFG_NAME
+
+echo "# Append models to the list in order to load them during simulation." >> $CFG_DIR/$CFG_NAME
+echo "MODELS=\"./dht11.lua\n\"" >> $CFG_DIR/$CFG_NAME
+echo "MODELS=\"\$MODELS./io.lua\n\"" >> $CFG_DIR/$CFG_NAME
+echo "" >> $CFG_DIR/$CFG_NAME
+echo "# File to keep list of the models" >> $CFG_DIR/$CFG_NAME
+echo "MDL_LIST=\"./.$CFG_NAME.mdl\"" >> $CFG_DIR/$CFG_NAME
+echo "printf \$MODELS > \$MDL_LIST" >> $CFG_DIR/$CFG_NAME
+echo "" >> $CFG_DIR/$CFG_NAME
+
+MSIM_CMD="$MSIM -p $MCU_MODEL -r \$MDL_LIST"
+
+if [ -f "$FMW_PATH" ]; then
+	MSIM_CMD="$MSIM_CMD -U flash:w:$FMW_PATH"
+fi
+if [ -f "$BLD_PATH" ]; then
+	MSIM_CMD="$MSIM_CMD -U flash:w:$BLD_PATH"
+fi
+if [ ! -z "$LOCK_BYTE" ]; then
+	MSIM_CMD="$MSIM_CMD -U lock:w:$LOCK_BYTE:h"
+fi
+if [ ! -z "$EXT_FUSE" ]; then
+	MSIM_CMD="$MSIM_CMD -U efuse:w:$EXT_FUSE:h"
+fi
+if [ ! -z "$HIGH_FUSE" ]; then
+	MSIM_CMD="$MSIM_CMD -U hfuse:w:$HIGH_FUSE:h"
+fi
+if [ ! -z "$LOW_FUSE" ]; then
+	MSIM_CMD="$MSIM_CMD -U lfuse:w:$LOW_FUSE:h"
+fi
+echo "$MSIM_CMD" >> $CFG_DIR/$CFG_NAME
+echo "rm \$MDL_LIST" >> $CFG_DIR/$CFG_NAME
+# --------------END Generate script -------------------------------------------
