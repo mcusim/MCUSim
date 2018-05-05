@@ -36,32 +36,28 @@ extern "C" {
 
 #include "mcusim/avr/sim/sim.h"
 
-#define LUA_PERIPHERALS		256
+/* Maximum number of device models defined as Lua scripts to be loaded
+ * during a simulation. */
+#define LUA_PERIPHERALS				256
 
-#ifdef LUA_FOUND		/* Lua library is defined */
-
-/*
- * Configuration functions to work with peripherals written in Lua.
- */
+#ifdef LUA_FOUND
 
 /* Load peripherals written in Lua from a given list file. */
-void MSIM_LoadLuaPeripherals(const char *);
-
+int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *);
 /* Close previously created Lua states. */
 void MSIM_CleanLuaPeripherals(void);
-
+/* Call a "tick" function of the models during each cycle of simulation. */
 void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu);
-/*
- * END Configuration functions to work with peripherals written in Lua.
- */
 
-#else				/* Lua library is not defined */
+#else
 
-#define MSIM_LoadLuaPeripherals(file)
+/* Empty macros to replace function which cannot be implemented without
+ * Lua library. */
+#define MSIM_LoadLuaPeripherals(mcu, file)	1
 #define MSIM_CleanLuaPeripherals(void)
 #define MSIM_TickLuaPeripherals(mcu)
 
-#endif
+#endif /* LUA_FOUND */
 
 #ifdef __cplusplus
 }

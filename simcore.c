@@ -49,17 +49,16 @@
 #define CLK_FALL		1
 
 #ifndef ULLONG_MAX
-/*
- * For compilers without "unsigned long long" support
- *
+/* For compilers without "unsigned long long" support
  * NOTE: Amount of simulation time for VCD dump will be limited to
  * 134218 ms (MCU clock is 16 MHz) because of a limit of 32-bits
  * unsigned integer.
  */
 #	define TICKS_MAX	ULONG_MAX
+#	define ticks_t		unsigned long
 #else
-/* For compilers which support "unsigned long long" */
 #	define TICKS_MAX	ULLONG_MAX
+#	define ticks_t		unsigned long long
 #endif
 
 typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
@@ -86,18 +85,17 @@ static struct init_cell init_funcs[] = {
 static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 
 int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
-                     unsigned long addr)
+                     unsigned long addr, unsigned char firmware_test)
 {
-#ifndef ULLONG_MAX
-	unsigned long tick;	/* Number of rises and falls sinse start */
-#else
-	unsigned long long tick;
-#endif
+	ticks_t tick;		/* Number of rises and falls sinse start */
 	unsigned char tick_ovf;	/* Have we reached maximum number of ticks? */
 	FILE *vcd_f;		/* File to store VCD dump to */
+	int ret_code;		/* Code to return */
 
 	tick = tick_ovf = 0;
 	vcd_f = NULL;
+	ret_code = 0;
+
 	/* Do we have registers to dump? */
 	if (mcu->vcdd->bit[0].regi >= 0) {
 		vcd_f = MSIM_VCDOpenDump(mcu, "dump.vcd");
@@ -108,17 +106,17 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		}
 	}
 
-	/*
-	 * Main simulation loop.
-	 *
-	 * Each iteration represents both rise (R) and fall (F) of the
-	 * microcontroller's clock pulse. It's necessary to dump CLK_IO to the
-	 * timing diagram in a pulse-accurate way.
+	/* Force MCU to run in firmware test mode. */
+	if (firmware_test)
+		mcu->state = AVR_RUNNING;
+
+	/* Main simulation loop. Each iteration represents both rise (R) and
+	 * fall (F) of the microcontroller's clock pulse. It's necessary
+	 * to dump CLK_IO to the timing diagram in a pulse-accurate way.
 	 *
 	 *                          MAIN LOOP ITERATIONS
 	 *            R     F     R     F     R     F     R     F     R
 	 *           /     /     /     /     /     /     /     /     /
-	 *
 	 *          |           |           |           |           |
 	 *          |_____      |_____      |_____      |_____      |_____
 	 *          |     |     |     |     |     |     |     |     |     |
@@ -131,20 +129,24 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 	 *          |___________|           |___________|           |________
 	 *          |           |           |           |           |
 	 *          |           |           |           |           |
-	 *          |           |           |           |           |
 	 */
 	while (1) {
-		/*
-		 * Do we need to terminate simulation?
-		 * The main simulation loop can be terminated by setting
+		/* The main simulation loop can be terminated by setting
 		 * MCU state to AVR_MSIM_STOP. The primary (and maybe only)
 		 * source of this state setting is a command from debugger.
 		 */
-		if (!mcu->ic_left && (mcu->state == AVR_MSIM_STOP))
-			break;
+		if (!mcu->ic_left) {
+			if (mcu->state == AVR_MSIM_STOP) {
+				break;
+			} else if (mcu->state == AVR_MSIM_TESTFAIL) {
+				ret_code = 1;
+				break;
+			}
+		}
 
 		/* Wait for request from GDB in MCU stopped mode */
-		if (!mcu->ic_left && (mcu->state == AVR_STOPPED) &&
+		if (!firmware_test && !mcu->ic_left &&
+		                (mcu->state == AVR_STOPPED) &&
 		                MSIM_RSPHandle()) {
 			if (vcd_f)
 				fclose(vcd_f);
@@ -171,12 +173,10 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 			return 1;
 		}
 
-		/*
-		 * Decode next instruction.
-		 *
-		 * It's usually hard to say in which state the MCU registers
-		 * will be between neighbor cycles of a multi-cycle
-		 * instruction. This talk may be taken into account:
+		/* Decode next instruction. It's usually hard to say in
+		 * which state the MCU registers will be between neighbor
+		 * cycles of a multi-cycle instruction. This talk may be
+		 * taken into account:
 		 * https://electronics.stackexchange.com/questions/132171/
 		 * 	what-happens-to-avr-registers-during-multi-
 		 * 	cycle-instructions,
@@ -191,7 +191,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		 * here either. The only thing you may rely on is instruction
 		 * which will be completed _after all_ of these cycles.
 		 */
-		if ((mcu->state == AVR_RUNNING ||
+		if ((mcu->ic_left || mcu->state == AVR_RUNNING ||
 		                mcu->state == AVR_MSIM_STEP) &&
 		                MSIM_StepAVR(mcu)) {
 			if (vcd_f)
@@ -199,8 +199,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 			return 1;
 		}
 
-		/*
-		 * Provide IRQs (MCU-defined!) based on MCU flags and handle
+		/* Provide IRQs (MCU-defined!) based on MCU flags and handle
 		 * them if this is possible.
 		 *
 		 * It's important to understand an interrupt may occur during
@@ -222,15 +221,13 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		if (!mcu->ic_left && mcu->state == AVR_MSIM_STEP)
 			mcu->state = AVR_STOPPED;
 
-		/*
-		 * All cycles of a single instruction from a main program
+		/* All cycles of a single instruction from a main program
 		 * have to be performed.
 		 */
 		if (!mcu->ic_left)
 			mcu->intr->exec_main = 0;
 
-		/*
-		 * Increment ticks or print a warning message in case of
+		/* Increment ticks or print a warning message in case of
 		 * maximum amount of ticks reached (extremely unlikely
 		 * if compiler supports "unsigned long long" type).
 		 */
@@ -252,7 +249,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 
 	if (vcd_f)
 		fclose(vcd_f);
-	return 0;
+	return ret_code;
 }
 
 int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,

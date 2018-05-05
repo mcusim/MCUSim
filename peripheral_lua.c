@@ -26,123 +26,134 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
+ *
+ * Device models defined as Lua scripts can be used during a scheme
+ * simulation in order to substitute important parts (external RAM,
+ * displays, etc.) connected to the simulated microcontroller.
+ *
+ * This file provides basic functions to load, run and unload these models.
  */
 #include <stdio.h>
 #include <stdint.h>
-
 #include "mcusim/avr/sim/peripheral_lua.h"
-
-#ifdef LUA_FOUND		/* Lua library is defined */
-
+#include "mcusim/avr/sim/peripheral_luaapi.h"
+#ifdef LUA_FOUND
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
 
-static lua_State *MSIM_LuaStates[LUA_PERIPHERALS];
+static lua_State *lua_states[LUA_PERIPHERALS];
 
-/* AVRSim specific functions for peripherals. */
-
-/*
- * Copies the value of ch into each of the first count characters of the
- * data memory pointed to by mcu and offset.
- *
- * Lua parameters:
- *	struct MSIM_AVR *mcu;
- *	unsigned long offset;
- *	int ch;
- *	unsigned long count;
- */
-static int lua_avr_dmemset(lua_State *L);
-
-/*
- * Reads one byte of the data memory pointed to by mcu and offset.
- *
- * Lua parameters:
- * 	struct MSIM_AVR *mcu;
- * 	unsigned long offset;
- */
-static int lua_avr_dmemget(lua_State *L);
-
-/*
- * Tests a bit value of a byte at the given address.
- *
- * Lua parameters:
- * 	struct MSIM_AVR *mcu;
- * 	unsigned long offset;
- * 	unsigned char bit;
- */
-static int lua_avr_isset(lua_State *L);
-
-/*
- * Sets bit of a byte at the given address.
- *
- * Lua parameters:
- * 	struct MSIM_AVR *mcu;
- * 	unsigned long offset;
- * 	unsigned char bit;
- * 	unsigned char val;
- */
-static int lua_avr_setbit(lua_State *L);
-
-/* END AVRSim specific functions for peripherals. */
-
-void MSIM_LoadLuaPeripherals(const char *file)
+int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *file)
 {
 	static char path[4096];
-	unsigned int i, ci;
+	unsigned int i, j, ci, regs;
 	FILE *f;
 
 	f = fopen(file, "r");
 	if (f == NULL) {
 		fprintf(stderr, "[e]: Cannot load Lua peripherals "
 		        "from: %s\n", file);
-		return;
+		return 1;
 	}
 
 	i = 0;
 	while (fgets(path, sizeof path, f) != NULL) {
+		/* Skip comment lines */
+		if (path[0] == '#')
+			continue;
 		for (ci = 0; ci < 4096; ci++)
 			if (path[ci] == '\n') {
 				path[ci] = 0;
 				break;
 			}
 		/* Initialize Lua */
-		MSIM_LuaStates[i] = luaL_newstate();
+		lua_states[i] = luaL_newstate();
 
 		/* Load various Lua libraries */
-		luaL_openlibs(MSIM_LuaStates[i]);
+		luaL_openlibs(lua_states[i]);
 
 		/* Load peripheral */
-		if (luaL_loadfile(MSIM_LuaStates[i], path) ||
-		                lua_pcall(MSIM_LuaStates[i], 0, 0, 0)) {
-			fprintf(stderr, "[e]: Cannot load peripheral "
-			        "file: %s, reason: %s\n", path,
-			        lua_tostring(MSIM_LuaStates[i], -1));
+		if (luaL_loadfile(lua_states[i], path) ||
+		                lua_pcall(lua_states[i], 0, 0, 0)) {
+			fprintf(stderr, "[e]: Cannot load device model : %s, "
+			        "reason: %s\n", path,
+			        lua_tostring(lua_states[i], -1));
 			fclose(f);
-			return;
+			return 1;
 		}
 
-		/* Register AVRSim specific functions */
-		lua_pushcfunction(MSIM_LuaStates[i], lua_avr_dmemset);
-		lua_setglobal(MSIM_LuaStates[i], "msim_avr_dmemset");
-		lua_pushcfunction(MSIM_LuaStates[i], lua_avr_dmemget);
-		lua_setglobal(MSIM_LuaStates[i], "msim_avr_dmemget");
-		lua_pushcfunction(MSIM_LuaStates[i], lua_avr_isset);
-		lua_setglobal(MSIM_LuaStates[i], "msim_avr_isset");
-		lua_pushcfunction(MSIM_LuaStates[i], lua_avr_setbit);
-		lua_setglobal(MSIM_LuaStates[i], "msim_avr_setbit");
+		/* Register mcusim API functions */
+		lua_pushcfunction(lua_states[i], flua_AVR_IOBit);
+		lua_setglobal(lua_states[i], "AVR_IOBit");
+		lua_pushcfunction(lua_states[i], flua_AVR_ReadIO);
+		lua_setglobal(lua_states[i], "AVR_ReadIO");
+		lua_pushcfunction(lua_states[i], flua_AVR_ReadReg);
+		lua_setglobal(lua_states[i], "AVR_ReadReg");
+		lua_pushcfunction(lua_states[i], flua_AVR_RegBit);
+		lua_setglobal(lua_states[i], "AVR_RegBit");
+		lua_pushcfunction(lua_states[i], flua_AVR_SetIOBit);
+		lua_setglobal(lua_states[i], "AVR_SetIOBit");
+		lua_pushcfunction(lua_states[i], flua_AVR_SetRegBit);
+		lua_setglobal(lua_states[i], "AVR_SetRegBit");
+		lua_pushcfunction(lua_states[i], flua_AVR_WriteIO);
+		lua_setglobal(lua_states[i], "AVR_WriteIO");
+		lua_pushcfunction(lua_states[i], flua_AVR_WriteReg);
+		lua_setglobal(lua_states[i], "flua_AVR_WriteReg");
+		lua_pushcfunction(lua_states[i], flua_MSIM_SetState);
+		lua_setglobal(lua_states[i], "MSIM_SetState");
+		lua_pushcfunction(lua_states[i], flua_MSIM_Freq);
+		lua_setglobal(lua_states[i], "MSIM_Freq");
+
+		/* Add registers available for the current MCU model to
+		 * the Lua state. */
+		regs = sizeof mcu->vcdd->regs/sizeof mcu->vcdd->regs[0];
+		for (j = 0; j < regs; j++) {
+			if (mcu->vcdd->regs[j].name[0] == 0)
+				break;
+			if (mcu->vcdd->regs[j].off < 0)
+				continue;
+
+			lua_pushinteger(lua_states[i],
+			                (int)mcu->vcdd->regs[j].off);
+			lua_setglobal(lua_states[i], mcu->vcdd->regs[j].name);
+		}
+
+		/* Add available MCU states to the Lua state. */
+		lua_pushinteger(lua_states[i], AVR_RUNNING);
+		lua_setglobal(lua_states[i], "AVR_RUNNING");
+		lua_pushinteger(lua_states[i], AVR_STOPPED);
+		lua_setglobal(lua_states[i], "AVR_STOPPED");
+		lua_pushinteger(lua_states[i], AVR_SLEEPING);
+		lua_setglobal(lua_states[i], "AVR_SLEEPING");
+		lua_pushinteger(lua_states[i], AVR_MSIM_STEP);
+		lua_setglobal(lua_states[i], "AVR_MSIM_STEP");
+		lua_pushinteger(lua_states[i], AVR_MSIM_STOP);
+		lua_setglobal(lua_states[i], "AVR_MSIM_STOP");
+		lua_pushinteger(lua_states[i], AVR_MSIM_TESTFAIL);
+		lua_setglobal(lua_states[i], "AVR_MSIM_TESTFAIL");
+
+		/* Attempt to call configuration function of the
+		 * current model */
+		lua_getglobal(lua_states[i], "module_conf");
+		lua_pushlightuserdata(lua_states[i], mcu);
+		if (lua_pcall(lua_states[i], 1, 0, 0) != 0)
+			printf("[I]: Model %s doesn't provide configuration "
+			       "function: %s\n",
+			       path, lua_tostring(lua_states[i], -1));
 
 		i++;
 	}
 	fclose(f);
+	return 0;
 }
 
 void MSIM_CleanLuaPeripherals(void)
 {
 	unsigned int i;
 	for (i = 0; i < LUA_PERIPHERALS; i++)
-		if (MSIM_LuaStates[i] != NULL)
-			lua_close(MSIM_LuaStates[i]);
+		if (lua_states[i] != NULL)
+			lua_close(lua_states[i]);
 }
 
 void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu)
@@ -150,62 +161,15 @@ void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu)
 	unsigned int i;
 
 	for (i = 0; i < LUA_PERIPHERALS; i++) {
-		if (MSIM_LuaStates[i] == NULL)
+		if (lua_states[i] == NULL)
 			continue;
 
-		lua_getglobal(MSIM_LuaStates[i], "module_tick");
-		lua_pushlightuserdata(MSIM_LuaStates[i], mcu);
-		if (lua_pcall(MSIM_LuaStates[i], 1, 0, 0) != 0)
+		lua_getglobal(lua_states[i], "module_tick");
+		lua_pushlightuserdata(lua_states[i], mcu);
+		if (lua_pcall(lua_states[i], 1, 0, 0) != 0)
 			fprintf(stderr, "[e]: Error running function "
 			        "module_tick(): %s\n",
-			        lua_tostring(MSIM_LuaStates[i], -1));
+			        lua_tostring(lua_states[i], -1));
 	}
-}
-
-static int lua_avr_dmemset(lua_State *L)
-{
-	unsigned long i;
-
-	struct MSIM_AVR *mcu = (struct MSIM_AVR *)lua_touserdata(L, 1);
-	unsigned long off = (unsigned long)lua_tointeger(L, 2);
-	int ch = (int)lua_tointeger(L, 3);
-	unsigned long count = (unsigned long)lua_tointeger(L, 4);
-
-	for (i = off; i < off+count; i++)
-		mcu->dm[i] = (unsigned char)ch;
-	return 0;	/* Number of results */
-}
-
-static int lua_avr_dmemget(lua_State *L)
-{
-	struct MSIM_AVR *mcu = (struct MSIM_AVR *)lua_touserdata(L, 1);
-	unsigned long off = (unsigned long)lua_tointeger(L, 2);
-
-	lua_pushinteger(L, mcu->dm[off]);
-	return 1;	/* Number of results */
-}
-
-static int lua_avr_isset(lua_State *L)
-{
-	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
-	unsigned long off = (unsigned long)lua_tointeger(L, 2);
-	unsigned char b = (unsigned char)lua_tointeger(L, 3);
-
-	lua_pushboolean(L, mcu->dm[off]&(1<<b));
-	return 1;
-}
-
-static int lua_avr_setbit(lua_State *L)
-{
-	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
-	unsigned long off = (unsigned long)lua_tointeger(L, 2);
-	unsigned char b = (unsigned char)lua_tointeger(L, 3);
-	unsigned char v = (unsigned char)lua_tointeger(L, 4);
-
-	if (v)
-		mcu->dm[off] |= (unsigned char)(1 << b);
-	else
-		mcu->dm[off] &= (unsigned char)(~(1 << b));
-	return 0;
 }
 #endif /* LUA_FOUND */

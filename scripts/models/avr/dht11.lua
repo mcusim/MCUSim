@@ -25,35 +25,32 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Simulated DHT11 digital temperature and humidity sensor.
+These parameters of MCU and DHT11 are assumed:
+	Data pin: PORTB0 (to read from), PINB0 (to write to)
 --]]
 
--- Simulated DHT11 digital temperature and humidity sensor.
--- These parameters of MCU and DHT11 are assumed:
--- 	Part: ATmega8
--- 	MCU clock: 16 MHz
---	Data pin: PORTB0 (to read from), PINB0 (to write to)
-TICK_TIME = 0.0625			-- in us, depends on MCU clock
-DDR = 0x37				-- data direction register (DDRx)
-PORT_IN = 0x38				-- I/O register (PORTx)
-PORT_OUT = 0x36				-- I/O register (PINx)
-VERBOSE = false				-- Switch on to enable DHT11 output
+VERBOSE = true			-- Switch on to enable DHT11 output
+TICK_TIME = 0.0			-- clock period, in us
+DDR = 0				-- data direction register (DDRx)
+PORT_IN = 0			-- I/O register (PORTx)
+PORT_OUT = 0			-- I/O register (PINx)
 
 -- Timings constants
-INIT_TICKS = 1000000/TICK_TIME		-- unstable initial state, ~1s
-
-STSIG_LOW_TICKS = 18000/TICK_TIME	-- 18ms, MCU pulls down
-STSIG_LOW_LIM = 21000/TICK_TIME		-- 21ms, pull down limit
-STSIG_HIGH_TICKS = 25/TICK_TIME		-- 25us, MCU pulls up
-
-DHTSIG_LOW_TICKS = 80/TICK_TIME		-- 80us, DHT pulls down
-DHTSIG_HIGH_TICKS = 80/TICK_TIME	-- 80us, DHT pulls up
-DHT_DLOW_TICKS = 50/TICK_TIME		-- 50us, delay before "1" or "0"
-DHT_D0_TICKS = 27/TICK_TIME		-- 27us, logical "0"
-DHT_D1_TICKS = 70/TICK_TIME		-- 70us, logical "1"
+INIT_TICKS = 0			-- unstable initial state, ~1s
+STSIG_LOW_TICKS = 0		-- 18ms, MCU pulls down
+STSIG_LOW_LIM = 0		-- 21ms, pull down limit
+STSIG_HIGH_TICKS = 0		-- 25us, MCU pulls up
+DHTSIG_LOW_TICKS = 0		-- 80us, DHT pulls down
+DHTSIG_HIGH_TICKS = 0		-- 80us, DHT pulls up
+DHT_DLOW_TICKS = 0		-- 50us, delay before "1" or "0"
+DHT_D0_TICKS = 0		-- 27us, logical "0"
+DHT_D1_TICKS = 0		-- 70us, logical "1"
 -- END Timings constants
 
 -- Global variables
-state = "mcu-start-low"			-- DHT state
+state = "mcu-start-low"		-- DHT state
 init_ticks = 0
 ticks = 0
 mis_ticks = 0
@@ -61,11 +58,41 @@ data =	"11011110" ..
 	"10101101" ..
 	"10111110" ..
 	"11101111" ..
-	"00111000"
-ibit = 1				-- Index of a bit to send
-datalen = #data				-- Length of the data
+	"00111000"		-- 40 bits of the sensor's data
+ibit = 1			-- Index of a bit to send
+datalen = #data			-- Length of the data
 -- END Global variables
 
+-- This function will be called by the simulator only once to configure
+-- model before start of a simulation.
+function module_conf(mcu)
+	-- Re-calculate clock period, in us
+	TICK_TIME = (1.0/MSIM_Freq(mcu))*1000000.0
+	if VERBOSE then
+		print("[DHT11] MCU clock: " .. MSIM_Freq(mcu)/1000 .. "kHz")
+		print("[DHT11] MCU clock period: " .. TICK_TIME .. "us")
+	end
+
+	-- Set up I/O ports
+	DDR = DDRB
+	PORT_IN = PORTB
+	PORT_OUT = PINB
+
+	-- Re-calculate timing constants
+	INIT_TICKS = 1000000/TICK_TIME		-- unstable initial state, ~1s
+	STSIG_LOW_TICKS = 18000/TICK_TIME	-- 18ms, MCU pulls down
+	STSIG_LOW_LIM = 21000/TICK_TIME		-- 21ms, pull down limit
+	STSIG_HIGH_TICKS = 25/TICK_TIME		-- 25us, MCU pulls up
+	DHTSIG_LOW_TICKS = 80/TICK_TIME		-- 80us, DHT pulls down
+	DHTSIG_HIGH_TICKS = 80/TICK_TIME	-- 80us, DHT pulls up
+	DHT_DLOW_TICKS = 50/TICK_TIME		-- 50us, delay before "1", "0"
+	DHT_D0_TICKS = 27/TICK_TIME		-- 27us, logical "0"
+	DHT_D1_TICKS = 70/TICK_TIME		-- 70us, logical "1"
+end
+
+-- This function will be called by the simulator periodically according to the
+-- main simulation loop, i.e. time passed between two neighbor calls to the
+-- function is a period.
 function module_tick(mcu)
 	-- Initial (unstable) period of DHT
 	if init_ticks < INIT_TICKS then
@@ -76,17 +103,17 @@ function module_tick(mcu)
 	-- MCU should configure its pin to output
 	-- and ask DHT for data transmission
 	if state == "mcu-start-low" then
-		if ticks == 0 and msim_avr_isset(mcu, PORT_IN, 0) then
+		if ticks == 0 and AVR_IOBit(mcu, PORT_IN, 0) then
 			return
 		end
 		-- Check low level of MCU output pin
 		if ticks < STSIG_LOW_TICKS and
-		   not msim_avr_isset(mcu, PORT_IN, 0) then
+		                not AVR_IOBit(mcu, PORT_IN, 0) then
 			ticks = ticks + 1
 			return
 		end
 		if ticks < STSIG_LOW_TICKS and
-		   msim_avr_isset(mcu, PORT_IN, 0) then
+		   AVR_IOBit(mcu, PORT_IN, 0) then
 		   	if VERBOSE then
 			   	print("MCU start low: unexpected rise, " ..
 				      "ticks: " .. ticks)
@@ -96,7 +123,7 @@ function module_tick(mcu)
 			return
 		end
 		-- Check if MCU pulls up within a limited time
-		if msim_avr_isset(mcu, PORT_IN, 0) then
+		if AVR_IOBit(mcu, PORT_IN, 0) then
 			if VERBOSE then
 			   	print "MCU start low: rised"
 			end
@@ -117,7 +144,7 @@ function module_tick(mcu)
 	elseif state == "mcu-start-high" then
 		-- Check MCU keeping output pin pulled up
 		if ticks < STSIG_HIGH_TICKS and
-		   not msim_avr_isset(mcu, PORT_IN, 0) then
+		   not AVR_IOBit(mcu, PORT_IN, 0) then
 		   	if VERBOSE then
 			   	print("MCU start high: unexpected fall, " ..
 				      "ticks: " .. ticks)
@@ -127,7 +154,7 @@ function module_tick(mcu)
 			return
 		end
 		if ticks < STSIG_HIGH_TICKS and
-		   msim_avr_isset(mcu, PORT_IN, 0) then
+		   AVR_IOBit(mcu, PORT_IN, 0) then
 			ticks = ticks + 1
 		end
 		if ticks >= STSIG_HIGH_TICKS then
@@ -142,13 +169,13 @@ function module_tick(mcu)
 	-- and configure its pin to input
 	elseif state == "dht-start-low" then
 		-- Can we write to I/O register?
-		if msim_avr_isset(mcu, DDR, 0) then
+		if AVR_IOBit(mcu, DDR, 0) then
 			mis_ticks = mis_ticks + 1
 			return
 		end
 
 		if (mis_ticks+ticks) < DHTSIG_LOW_TICKS then
-			msim_avr_setbit(mcu, PORT_OUT, 0, 0)
+			AVR_SetIOBit(mcu, PORT_OUT, 0, 0)
 			ticks = ticks + 1
 			return
 		else
@@ -162,13 +189,13 @@ function module_tick(mcu)
 		end
 	elseif state == "dht-start-high" then
 		-- Can we write to I/O register?
-		if msim_avr_isset(mcu, DDR, 0) then
+		if AVR_IOBit(mcu, DDR, 0) then
 			mis_ticks = mis_ticks + 1
 			return
 		end
 
 		if (mis_ticks+ticks) < DHTSIG_HIGH_TICKS then
-			msim_avr_setbit(mcu, PORT_OUT, 0, 1)
+			AVR_SetIOBit(mcu, PORT_OUT, 0, 1)
 			ticks = ticks + 1
 			return
 		else
@@ -184,13 +211,13 @@ function module_tick(mcu)
 	-- DHT is ready to transmit 40-bits data
 	elseif state == "data-delay" then
 		-- Can we write to I/O register?
-		if msim_avr_isset(mcu, DDR, 0) then
+		if AVR_IOBit(mcu, DDR, 0) then
 			mis_ticks = mis_ticks + 1
 			return
 		end
 
 		if (mis_ticks+ticks) < DHT_DLOW_TICKS then
-			msim_avr_setbit(mcu, PORT_OUT, 0, 0)
+			AVR_SetIOBit(mcu, PORT_OUT, 0, 0)
 			ticks = ticks + 1
 			return
 		else
@@ -218,7 +245,7 @@ function module_tick(mcu)
 		end
 	elseif state == "data-send0" or state == "data-send1" then
 		-- Can we write to I/O register?
-		if msim_avr_isset(mcu, DDR, 0) then
+		if AVR_IOBit(mcu, DDR, 0) then
 			mis_ticks = mis_ticks + 1
 			return
 		end
@@ -228,7 +255,7 @@ function module_tick(mcu)
 			wt = DHT_D1_TICKS
 		end
 		if (mis_ticks+ticks) < wt then
-			msim_avr_setbit(mcu, PORT_OUT, 0, 1)
+			AVR_SetIOBit(mcu, PORT_OUT, 0, 1)
 			ticks = ticks + 1
 			return
 		else

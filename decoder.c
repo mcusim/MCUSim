@@ -52,7 +52,7 @@
  * 		instruction minus one)
  */
 #define SKIP_CYCLES(mcu, cond, cycl) do {				\
-	if (!mcu->in_mcinst && cond) {					\
+	if (!mcu->in_mcinst && (cond)) {				\
 		/* It is the first cycle of multi-cycle instruction */	\
 		mcu->in_mcinst = 1;					\
 		mcu->ic_left = cycl;					\

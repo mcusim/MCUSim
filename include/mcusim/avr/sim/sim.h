@@ -26,6 +26,10 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
+ *
+ * This is a main header file which contains declarations to describe the
+ * whole simulated microcontroller. You'd probably better to start
+ * from reading "struct MSIM_AVR" declared below.
  */
 #ifndef MSIM_AVR_SIM_H_
 #define MSIM_AVR_SIM_H_ 1
@@ -40,25 +44,39 @@ extern "C" {
 #include "mcusim/avr/sim/vcd_dump.h"
 #include "mcusim/avr/sim/interrupt.h"
 
-#define SIM_NAME		"avrsim"
-
+#define SIM_NAME		"mcusim"
 #define FUSE_LOW		0
 #define FUSE_HIGH		1
 #define FUSE_EXT		2
 
-/* Device-specific functions. */
+/* MCU-specific functions.
+ *
+ * Simulated microcontroller may provide its own implementations of the
+ * functions in order to support these features (fuses, locks, timers,
+ * IRQs, etc.). ATmega8A is a good example of MCU to understand how
+ * these functions can be declared (mcusim/avr/sim/simm8a.h) and
+ * implemented (simm8a.c).
+ */
 typedef int (*MSIM_SetFuse_f)(void *mcu,
                               unsigned int fuse_n, unsigned char fuse_v);
 typedef int (*MSIM_SetLock_f)(void *mcu, unsigned char lock_v);
 typedef int (*MSIM_TickTimers_f)(void *mcu);
 typedef int (*MSIM_ProvideIRQs_f)(void *mcu);
 
+/* State of a simulated AVR microcontroller. Some of these states are
+ * AVR-native, others - added by the simulator to manipulate a simulation
+ * process. */
 enum MSIM_AVRState {
 	AVR_RUNNING,
 	AVR_STOPPED,
 	AVR_SLEEPING,
-	AVR_MSIM_STEP,			/* Execute next instruction */
-	AVR_MSIM_STOP			/* Terminate simulation and exit */
+
+	/* Execute next instruction. */
+	AVR_MSIM_STEP,
+	/* Terminate simulation and exit. */
+	AVR_MSIM_STOP,
+	/* Terminate simulation because of test failure. */
+	AVR_MSIM_TESTFAIL
 };
 
 enum MSIM_AVRClkSource {

@@ -48,9 +48,12 @@ extern "C" {
  * (until the end of the program or first breakpoint appeared).
  * The infinite simulation could be interrupted by the execution process
  * reached the given address. Addresses within the program space are taken
- * into account, only.*/
+ * into account, only.
+ *
+ * Simulator can be started in firmware test mode, i.e. no debuggers or
+ * any external events are necessary to perform a simulation. */
 int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
-                     unsigned long addr);
+                     unsigned long addr, unsigned char firmware_test);
 
 /* Initializes an MCU into specific model determined by the given name.
  * It is, generally, a good idea to prepare specific MCU model using this

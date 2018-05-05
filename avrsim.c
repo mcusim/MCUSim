@@ -62,6 +62,7 @@
 #define TRAP_AT_ISR_OPT		7578
 #define SHORT_VERSION_OPT	7579
 #define PRINT_USAGE_OPT		7580
+#define FIRMWARE_TEST_OPT	7581
 
 /* Long command line options */
 static struct option longopts[] = {
@@ -70,7 +71,8 @@ static struct option longopts[] = {
 	{ "trap-at-isr", no_argument, NULL, TRAP_AT_ISR_OPT },
 	{ "version", no_argument, NULL, VERSION_OPT },
 	{ "short-version", no_argument, NULL, SHORT_VERSION_OPT },
-	{ "help", no_argument, NULL, PRINT_USAGE_OPT }
+	{ "help", no_argument, NULL, PRINT_USAGE_OPT },
+	{ "firmware-test", no_argument, NULL, FIRMWARE_TEST_OPT }
 };
 /* END Command line options */
 
@@ -111,19 +113,24 @@ int main(int argc, char *argv[])
 {
 	extern char *optarg;
 	FILE *fp;
-	int c, rsp_port;
+	int c, rsp_port, sim_retcode;
 	char *partno, *luap;
 	unsigned int i, j, regs;
-	unsigned int dump_regs;		/* Number of registers for VCD dump */
+	/* Number of registers for VCD dump. */
+	unsigned int dump_regs;
 	unsigned int freq;
-	unsigned char trap_at_isr;	/* Flag to trap debugger if interrupt
-					   generated */
+	/* Flag to trap debugger if interrupt generated. */
+	unsigned char trap_at_isr;
+	/* Start simulator without waiting for a debugger in order to test
+	 * firmware. */
+	unsigned char firmware_test;
 
 	partno = luap = NULL;
 	vcd_rn = print_regs = memops_num = 0;
 	rsp_port = GDB_RSP_PORT;
 	freq = 0;
 	trap_at_isr = 0;
+	firmware_test = 0;
 
 	while ((c = getopt_long(argc, argv, CLI_OPTIONS,
 	                        longopts, NULL)) != -1) {
@@ -168,29 +175,28 @@ int main(int argc, char *argv[])
 			break;
 		case VERSION_OPT:	/* Print version only */
 			print_version();
-			return 0;
+			return 2;
 		case SHORT_VERSION_OPT:
 			printf("%s\n", MSIM_VERSION);
-			return 0;
+			return 2;
 		case PRINT_USAGE_OPT:
 			print_usage();
-			return 0;
+			return 2;
+		case FIRMWARE_TEST_OPT:
+			firmware_test = 1;
+			break;
 		}
 	}
 
 	if (partno != NULL && (!strcmp(partno, "?"))) {
 		MSIM_PrintParts();
-		return 0;
+		return 2;
 	}
 	if (partno == NULL) {
 		/* MCU model is necessary! */
 		fprintf(stderr, "[e]: Please, specify MCU model\n");
-		return 0;
+		return 1;
 	}
-
-	/* Load Lua peripherals if it is required */
-	if (luap)
-		MSIM_LoadLuaPeripherals(luap);
 
 	/* Preparing file for program memory */
 	fp = NULL;
@@ -241,7 +247,7 @@ int main(int argc, char *argv[])
 			printf("%s (0x%2lX)\n",
 			       mcu.vcdd->regs[i].name, mcu.vcdd->regs[i].off);
 		}
-		return 0;
+		return 2;
 	}
 
 	/* Apply memory modifications */
@@ -290,25 +296,35 @@ int main(int argc, char *argv[])
 	else if (freq > 0)
 		mcu.freq = freq;
 
+	/* Load Lua peripherals if it is required */
+	if (luap && MSIM_LoadLuaPeripherals(&mcu, luap)) {
+		fprintf(stderr, "[e]: Cannot load Lua device models\n");
+		return 1;
+	}
+
 	/* Print MCU configuration */
 	print_config(&mcu);
-	printf("Listening for incoming GDB connections "
-	       "at localhost:%d...\n", rsp_port);
 
 	/* Prepare and run AVR simulation */
-	MSIM_RSPInit(&mcu, rsp_port);
-	MSIM_SimulateAVR(&mcu, 0, mcu.flashend+1);
+	if (!firmware_test) {
+		printf("Listening for incoming GDB connections at "
+		       "localhost:%d...\n", rsp_port);
+		MSIM_RSPInit(&mcu, rsp_port);
+	}
+	sim_retcode = MSIM_SimulateAVR(&mcu, 0, mcu.flashend+1, firmware_test);
 	MSIM_CleanLuaPeripherals();
-	MSIM_RSPClose();
-	return 0;
+	if (!firmware_test)
+		MSIM_RSPClose();
+
+	return sim_retcode;
 }
 
 static void print_usage(void)
 {
 	/* Print usage and options */
-	printf("mcusim-avr %s - Simulator for AVR microcontrollers "
+	printf("mcusim %s - Simulator for microcontrollers "
 	       "<http://www.mcusim.org>\n", MSIM_VERSION);
-	printf("Usage: mcusim-avr [options]\n"
+	printf("Usage: mcusim [options]\n"
 	       "Options:\n"
 	       "  -p <partno|?>              Specify AVR device "
 	       "(required).\n"
@@ -330,17 +346,17 @@ static void print_usage(void)
 
 	/* Print examples */
 	printf("Examples:\n"
-	       "  mcusim-avr -p m328p -U flash:w:./dhtc.hex -U "
+	       "  mcusim -p m328p -U flash:w:./dhtc.hex -U "
 	       "hfuse:w:0x57:h -r ./lua-modules --dump-regs=PORTB,PORTC\n"
-	       "  mcusim-avr -p m8a -U flash:w:./dhtc.hex "
+	       "  mcusim -p m8a -U flash:w:./dhtc.hex "
 	       "-r ./lua-modules -f 1000000\n\n");
 }
 
 static void print_version(void)
 {
-	printf("mcusim-avr %s - Simulator for AVR microcontrollers "
+	printf("mcusim %s - Simulator for microcontrollers "
 	       "<http://www.mcusim.org>\n", MSIM_VERSION);
-	printf("Usage: mcusim-avr --help\n");
+	printf("Usage: mcusim --help\n");
 }
 
 static void print_config(const struct MSIM_AVR *m)
@@ -367,12 +383,15 @@ static void print_config(const struct MSIM_AVR *m)
 	printf("PC: 0x%lX\n", m->pc >> 1);
 	printf("Reset address: 0x%lX\n", m->intr->reset_pc >> 1);
 	printf("Interrupt vectors table: 0x%lX\n", m->intr->ivt >> 1);
+
+	/* Notify user about a maximum number of CLK_IO ticks to be dumped.
+	 *
+	 * NOTE: If compiler doesn't support "unsigned long long", then
+	 * we'll be limited to 4,294,967,295 number of ticks which results
+	 * in ~268.44s of simulation time at 16MHz of CLK_IO.*/
 #ifndef ULLONG_MAX
-	printf("Maximum rises and falls of CLK_IO to dump: %lu\n",
+	printf("[!] Maximum ticks of CLK_IO to dump: %lu\n",
 	       ULONG_MAX);
-#else
-	printf("Maximum rises and falls of CLK_IO to dump: %llu\n",
-	       ULLONG_MAX);
 #endif
 }
 

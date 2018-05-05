@@ -30,8 +30,8 @@
 #ifndef MSIM_AVR_INTERRUPT_H_
 #define MSIM_AVR_INTERRUPT_H_ 1
 
-#define AVR_IRQ_NUM		64	/* AVR IRQ limit, i.e. maximum number
-					   of interrupt vectors */
+/* AVR IRQ limit, i.e. maximum number of interrupt vectors. */
+#define AVR_IRQ_NUM		64
 
 /*
  * Main structure to describe AVR interrupts within the simulated AVR

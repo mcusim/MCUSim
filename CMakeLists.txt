@@ -32,7 +32,8 @@ cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Version
-set(MSIM_VERSION "0.1.54")
+set(MSIM_VERSION "0.1.55")
+
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 add_subdirectory(handbook)
 add_subdirectory(scripts)
@@ -79,6 +80,7 @@ set(MCUSIM_SRC		simcore.c
 			ihex.c
 			getopt_long.c
 			peripheral_lua.c
+			peripheral_luaapi.c
 			decoder.c
 			avrsim.c
 			gdb_rsp.c

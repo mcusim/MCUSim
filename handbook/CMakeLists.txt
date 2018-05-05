@@ -29,7 +29,7 @@
 # MCUSim handbook configuration file
 #
 cmake_minimum_required(VERSION 3.2)
-project(MCUSim-handbook NONE)
+project(mcusim-handbook NONE)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/../cmake)
 
