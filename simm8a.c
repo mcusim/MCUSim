@@ -26,6 +26,10 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
+ *
+ * Atmel ATmega8A-specific functions implemented here. You may find it
+ * useful to take a look at the "simm8a.h" header first. Feel free to
+ * add missing features of the microcontroller or fix bugs.
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,30 +39,26 @@
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simm8a.h"
 
-#define EXT_CLK_NONE		0
-#define EXT_CLK_RISE		1
-#define EXT_CLK_FALL		2
-
 #define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
 #define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
 #define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
 
-static unsigned char init_pd;		/* Initial port D value to track
-					   T0/PD4 and T1/PD5. */
-static unsigned char init_pb;		/* Initial port B value to track
-					   TOSC1/PB6 and TOSC2/PB7. */
-
+/* Initial PORTD and PIND values and to track T0/PD4 and T1/PD5. */
+static unsigned char init_portd;
+static unsigned char init_pind;
+/* Initial PORTB and PINB value to track TOSC1/PB6 and TOSC2/PB7. */
+static unsigned char init_portb;
+static unsigned char init_pinb;
 
 static void tick_timer0(struct MSIM_AVR *mcu);
 static void tick_timer1(struct MSIM_AVR *mcu);
 static void tick_timer2(struct MSIM_AVR *mcu);
+static void update_watched_values(struct MSIM_AVR *mcu);
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
 #include "mcusim/avr/sim/mcu_init.h"
-	/* Keep initial port values */
-	init_pd = mcu->dm[PORTD];
-	init_pb = mcu->dm[PORTB];
+	update_watched_values(mcu);
 	return 0;
 }
 
@@ -70,10 +70,16 @@ int MSIM_M8ATickTimers(void *m)
 	tick_timer2(mcu);
 	tick_timer1(mcu);
 	tick_timer0(mcu);
-
-	init_pd = mcu->dm[PORTD];
-	init_pb = mcu->dm[PORTB];
+	update_watched_values(mcu);
 	return 0;
+}
+
+static void update_watched_values(struct MSIM_AVR *mcu)
+{
+	init_portd = mcu->dm[PORTD];
+	init_pind = mcu->dm[PIND];
+	init_portb = mcu->dm[PORTB];
+	init_pinb = mcu->dm[PINB];
 }
 
 static void tick_timer0(struct MSIM_AVR *mcu)
@@ -82,10 +88,8 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 	static unsigned int tc0_ticks;
 	unsigned char tccr0;		/* Timer/Counter0 control register */
 	unsigned int presc;		/* Prescaler value */
-	unsigned char extclk;		/* External clock source flag */
 
 	tccr0 = mcu->dm[TCCR0];
-	extclk = EXT_CLK_NONE;
 	presc = 0;
 
 	switch (tccr0) {
@@ -105,35 +109,39 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 		presc = 1024;		/* clk_io/1024 */
 		break;
 	case 0x6:			/* Ext. clock on T0/PD4 (fall) */
-		extclk = EXT_CLK_FALL;
+		if (IS_FALL(init_portd, mcu->dm[PORTD], PD4) ||
+		                IS_FALL(init_pind, mcu->dm[PIND], PD4)) {
+			if (mcu->dm[TCNT0] == 0xFF) {
+				/* Reset Timer/Counter0 */
+				mcu->dm[TCNT0] = 0;
+				/* Timer/Counter0 overflow */
+				mcu->dm[TIFR] |= (1<<TOV0);
+			} else {
+				mcu->dm[TCNT0]++;
+			}
+		}
 		tc0_presc = 0;
 		tc0_ticks = 0;
-		break;
+		return;
 	case 0x7:			/* Ext. clock on T0/PD4 (rise) */
-		extclk = EXT_CLK_RISE;
+		if (IS_RISE(init_portd, mcu->dm[PORTD], PD4) ||
+		                IS_RISE(init_pind, mcu->dm[PIND], PD4)) {
+			if (mcu->dm[TCNT0] == 0xFF) {
+				/* Reset Timer/Counter0 */
+				mcu->dm[TCNT0] = 0;
+				/* Timer/Counter0 overflow */
+				mcu->dm[TIFR] |= (1<<TOV0);
+			} else {
+				mcu->dm[TCNT0]++;
+			}
+		}
 		tc0_presc = 0;
 		tc0_ticks = 0;
-		break;
+		return;
 	case 0x0:			/* No clock source (stopped mode) */
 	default:			/* Should not happen! */
 		tc0_presc = 0;
 		tc0_ticks = 0;
-		return;
-	}
-
-	/* External clock */
-	if (extclk && (((extclk == EXT_CLK_FALL) &&
-	                IS_FALL(init_pd, mcu->dm[PORTD], PD4)) ||
-	                ((extclk == EXT_CLK_RISE) &&
-	                 IS_RISE(init_pd, mcu->dm[PORTD], PD4)))) {
-		if (mcu->dm[TCNT0] == 0xFF) {
-			/* Reset Timer/Counter0 */
-			mcu->dm[TCNT0] = 0;
-			/* Timer/Counter0 overflow occured */
-			mcu->dm[TIFR] |= (1<<TOV0);
-		} else {
-			mcu->dm[TCNT0]++;
-		}
 		return;
 	}
 
@@ -177,13 +185,10 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	cs = tccr2 & 0x7;
 	wgm = (((tccr2>>WGM21)<<1)&2) | ((tccr2>>WGM20)&1);
 
-	/*
-	 * There are several modes of operation available.
-	 *
+	/* There are several modes of operation available:
 	 * - (supported) The simplest mode is a normal one, when counter
-	 *   is incremented only and no counter clear is performed,
-	 *   WGM21:20 = 0;
-	 *
+	 *               is incremented only and no counter clear is performed,
+	 *               WGM21:20 = 0;
 	 * - (planned) Phase Correct PWM Mode, WGM21:20 = 1.
 	 * - (planned) Clear Timer on Compare Match (CTC) Mode, WGM21:20 = 2;
 	 * - (planned) Fast PWM Mode, WGM21:20 = 3;

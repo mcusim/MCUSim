@@ -262,9 +262,8 @@ echo "#MODELS=\"\$MODELS./dht11.lua\n\"" >> $CFG_DIR/$CFG_NAME
 echo "#MODELS=\"\$MODELS./io.lua\n\"" >> $CFG_DIR/$CFG_NAME
 echo "" >> $CFG_DIR/$CFG_NAME
 echo "# File to keep list of the models" >> $CFG_DIR/$CFG_NAME
-echo "MDL_LIST=\"./$CFG_NAME.mod.txt\"" >> $CFG_DIR/$CFG_NAME
-echo "rm -f ./$CFG_NAME.mod.txt" >> $CFG_DIR/$CFG_NAME
-echo "echo \"# DO NOT MODIFY IT MANUALLY! FILE WILL BE OVERWRITTEN!\" > \$MDL_LIST" >> $CFG_DIR/$CFG_NAME
+echo "MDL_LIST=\$(mktemp /tmp/mcusim-modlist.XXXXXXX)" >> $CFG_DIR/$CFG_NAME
+echo "echo \"# DO NOT MODIFY IT MANUALLY! FILE WILL BE REMOVED!\" > \$MDL_LIST" >> $CFG_DIR/$CFG_NAME
 echo "if [ ! -z \"\$MODELS\" ]; then" >> $CFG_DIR/$CFG_NAME
 echo "        printf \$MODELS >> \$MDL_LIST" >> $CFG_DIR/$CFG_NAME
 echo "fi" >> $CFG_DIR/$CFG_NAME
@@ -301,6 +300,6 @@ if [ ! -z "$LOW_FUSE" ]; then
 	MSIM_CMD="$MSIM_CMD -U lfuse:w:$LOW_FUSE:h"
 fi
 echo "$MSIM_CMD; rc=\$?" >> $CFG_DIR/$CFG_NAME
-echo "rm -f ./$CFG_NAME.mod.txt" >> $CFG_DIR/$CFG_NAME
+echo "rm \"\$MDL_LIST\"" >> $CFG_DIR/$CFG_NAME
 echo "exit \$rc" >> $CFG_DIR/$CFG_NAME
 # --------------END Generate script -------------------------------------------

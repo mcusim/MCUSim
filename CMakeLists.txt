@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Version
-set(MSIM_VERSION "0.1.55")
+set(MSIM_VERSION "0.1.56")
 
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 add_subdirectory(handbook)
@@ -50,7 +50,7 @@ if (CMAKE_BUILD_TYPE MATCHES Release)
 	if (CMAKE_COMPILER_IS_GNUCC OR
 	    ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2")
-		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wall -pedantic -std=iso9899:1990")
+		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wall -pedantic -std=iso9899:1999")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wshadow -Wpointer-arith -Wcast-qual")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wcast-align -Wstrict-prototypes")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wmissing-prototypes -Wconversion")
@@ -63,7 +63,7 @@ else()
 	if (CMAKE_COMPILER_IS_GNUCC OR
 	    ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=iso9899:1990")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=iso9899:1999")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wshadow -Wpointer-arith -Wcast-qual")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wcast-align -Wstrict-prototypes")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes -Wconversion")
@@ -102,9 +102,7 @@ else()
 	message(STATUS "[!] Required Lua version is 5.2 or above")
 endif()
 
-#
 # Check functions, include files here
-#
 if (NOT MSVC)
 	check_function_exists(fmax RESULT)
 	if (NOT RESULT)
@@ -149,9 +147,7 @@ else()
 		add_definitions(-DMSIM_POSIX_CYGWIN=1)
 	endif()
 endif()
-#
 # END Check functions, include files here
-#
 
 # Define includes here
 include_directories("include/")
@@ -165,6 +161,4 @@ target_link_libraries(${MCUSIM} ${TARGET_LIBS})
 # Install mcusim and manual pages
 install(TARGETS ${MCUSIM}
 	DESTINATION bin)
-#install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/avrsim/man/avrsim.1
-#	DESTINATION ${CMAKE_INSTALL_PREFIX}/share/man/man1)
 
