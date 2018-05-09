@@ -77,12 +77,6 @@ else
 	break;
 fi
 while [ -f $CFG_DIR/$CFG_NAME ]; do
-	# Ask about a directory to store a script
-	printf "Configuration script directory [ $CFG_DIR_DEFAULT ]: "
-	read CFG_DIR
-	if [ -z "$CFG_DIR" ]; then
-		CFG_DIR=$CFG_DIR_DEFAULT
-	fi
 	# Ask about a name for the script
 	printf "Name of the script [ start-$MCU_FAMILY ]: "
 	read CFG_NAME
@@ -117,7 +111,7 @@ done
 FMW_PROVIDED=0
 while [ $FMW_PROVIDED -eq 0 ]; do
 	while [ 0 -eq 0 ]; do
-		printf "Full path to firmware "
+		printf "Path to firmware "
 		printf "(Leave empty to skip): "
 		read FMW_PATH
 		if [ ! -z "$FMW_PATH" ]; then
@@ -134,7 +128,7 @@ while [ $FMW_PROVIDED -eq 0 ]; do
 		fi
 	done
 	while [ 0 -eq 0 ]; do
-		printf "Full path to bootloader (Leave empty to skip): "
+		printf "Path to bootloader (Leave empty to skip): "
 		read BLD_PATH
 		if [ ! -z "$BLD_PATH" ]; then
 			if [ ! -f "$BLD_PATH" ]; then
@@ -269,7 +263,7 @@ echo "        printf \$MODELS >> \$MDL_LIST" >> $CFG_DIR/$CFG_NAME
 echo "fi" >> $CFG_DIR/$CFG_NAME
 echo "" >> $CFG_DIR/$CFG_NAME
 
-MSIM_CMD="$MSIM -p $MCU_MODEL -r \$MDL_LIST"
+MSIM_CMD="-p $MCU_MODEL -r \$MDL_LIST"
 
 # Set frequency option
 if [ ! -z "$MCU_FREQ" ]; then
@@ -299,7 +293,12 @@ fi
 if [ ! -z "$LOW_FUSE" ]; then
 	MSIM_CMD="$MSIM_CMD -U lfuse:w:$LOW_FUSE:h"
 fi
-echo "$MSIM_CMD; rc=\$?" >> $CFG_DIR/$CFG_NAME
+
+echo "if [ -z \$1 ]; then" >> $CFG_DIR/$CFG_NAME
+echo "\`which mcusim\` $MSIM_CMD; rc=\$?" >> $CFG_DIR/$CFG_NAME
+echo "else" >> $CFG_DIR/$CFG_NAME
+echo "\$1 $MSIM_CMD; rc=\$?" >> $CFG_DIR/$CFG_NAME
+echo "fi" >> $CFG_DIR/$CFG_NAME
 echo "rm \"\$MDL_LIST\"" >> $CFG_DIR/$CFG_NAME
 echo "exit \$rc" >> $CFG_DIR/$CFG_NAME
 # --------------END Generate script -------------------------------------------

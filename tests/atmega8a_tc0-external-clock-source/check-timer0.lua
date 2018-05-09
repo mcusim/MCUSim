@@ -65,9 +65,11 @@ function module_tick(mcu)
 	elseif check_point == 2 and AVR_ReadIO(mcu, TCNT0) == 0 then
 		-- Test finished successfully
 		MSIM_SetState(mcu, AVR_MSIM_STOP)
+		print("[TC0 checker] ticks passed: " .. ticks_passed)
 	elseif ticks_passed > 100000 then
 		-- Test failed
 		MSIM_SetState(mcu, AVR_MSIM_TESTFAIL)
+		print("[TC0 checker] ticks passed: " .. ticks_passed)
 	end
 
 	ticks_passed = ticks_passed + 1

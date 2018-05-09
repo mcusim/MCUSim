@@ -32,11 +32,11 @@ cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Version
-set(MSIM_VERSION "0.1.56")
+set(MSIM_VERSION "0.1.57")
 
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
-add_subdirectory(handbook)
 add_subdirectory(scripts)
+add_subdirectory(tests)
 
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
@@ -161,4 +161,3 @@ target_link_libraries(${MCUSIM} ${TARGET_LIBS})
 # Install mcusim and manual pages
 install(TARGETS ${MCUSIM}
 	DESTINATION bin)
-
