@@ -99,7 +99,7 @@ int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *file)
 		lua_pushcfunction(lua_states[i], flua_AVR_WriteIO);
 		lua_setglobal(lua_states[i], "AVR_WriteIO");
 		lua_pushcfunction(lua_states[i], flua_AVR_WriteReg);
-		lua_setglobal(lua_states[i], "flua_AVR_WriteReg");
+		lua_setglobal(lua_states[i], "AVR_WriteReg");
 		lua_pushcfunction(lua_states[i], flua_MSIM_SetState);
 		lua_setglobal(lua_states[i], "MSIM_SetState");
 		lua_pushcfunction(lua_states[i], flua_MSIM_Freq);
