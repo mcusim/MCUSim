@@ -344,8 +344,7 @@ static int handle_irq(struct MSIM_AVR *mcu)
 {
 	unsigned int i;
 
-	/*
-	 * Look for the priority IRQ to process:
+	/* Let's try to find IRQ with the highest priority:
 	 * i == 0		highest priority
 	 * i == AVR_IRQ_NUM-1	lowest priority
 	 */
