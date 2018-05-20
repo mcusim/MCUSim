@@ -49,6 +49,12 @@ extern "C" {
 #define FUSE_HIGH		1
 #define FUSE_EXT		2
 
+#define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
+#define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
+#define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
+#define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
+#define SET(byte, bit)		((byte)|=(1<<(bit)))
+
 /* MCU-specific functions.
  *
  * Simulated microcontroller may provide its own implementations of the

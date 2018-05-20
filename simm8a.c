@@ -39,11 +39,8 @@
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simm8a.h"
 
-#define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
-#define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
-#define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
-#define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
-#define SET(byte, bit)		((byte)|=(1<<(bit)))
+#define COMPARE_MATCH		75
+#define SET_TO_BOTTOM		76
 
 /* Initial PORTD and PIND values and to track T0/PD4 and T1/PD5. */
 static unsigned char init_portd;
@@ -55,6 +52,7 @@ static unsigned char init_pinb;
 static void tick_timer0(struct MSIM_AVR *mcu);
 static void tick_timer1(struct MSIM_AVR *mcu);
 static void tick_timer2(struct MSIM_AVR *mcu);
+static void update_watched_values(struct MSIM_AVR *mcu);
 
 /* Timer/Counter2 modes of operation */
 static void timer2_normal(struct MSIM_AVR *mcu,
@@ -63,17 +61,17 @@ static void timer2_normal(struct MSIM_AVR *mcu,
 static void timer2_ctc(struct MSIM_AVR *mcu,
                        unsigned int presc, unsigned int *ticks,
                        unsigned char wgm2, unsigned char com2);
-/*
 static void timer2_fastpwm(struct MSIM_AVR *mcu,
-                           unsigned int *presc, unsigned int *ticks,
-                           unsigned char *wgm2, unsigned char *com2);
+                           unsigned int presc, unsigned int *ticks,
+                           unsigned char wgm2, unsigned char com2);
+/*
 static void timer2_pcpwm(struct MSIM_AVR *mcu,
                          unsigned int *presc, unsigned int *ticks,
                          unsigned char *wgm2, unsigned char *com2);
  */
 static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, unsigned char com2);
-
-static void update_watched_values(struct MSIM_AVR *mcu);
+static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, unsigned char com2,
+                               unsigned char state);
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
@@ -114,7 +112,7 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 
 	switch (tccr0) {
 	case 0x1:
-		presc = 0;		/* No prescaling, clk_io */
+		presc = 1;		/* No prescaling, clk_io */
 		break;
 	case 0x2:
 		presc = 8;		/* clk_io/8 */
@@ -197,8 +195,8 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	 *               is incremented only and no counter clear is performed,
 	 *               WGM21:0 = 0;
 	 * - (supported) Clear Timer on Compare Match (CTC) Mode, WGM21:0 = 2;
-	 * - (planned) Phase Correct PWM Mode, WGM21:0 = 1.
-	 * - (planned) Fast PWM Mode, WGM21:0 = 3;
+	 * - (supported) Fast PWM Mode, WGM21:0 = 3.
+	 * - (planned) Phase Correct PWM Mode, WGM21:0 = 1;
 	 */
 	static unsigned int tc2_presc;
 	static unsigned int tc2_ticks;
@@ -214,7 +212,7 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 
 	switch (cs2) {
 	case 0x1:
-		presc = 0;		/* No prescaling, clk_io */
+		presc = 1;		/* No prescaling, clk_io */
 		break;
 	case 0x2:
 		presc = 8;		/* clk_io/8 */
@@ -243,7 +241,7 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 
 	if (presc != tc2_presc) {
 		tc2_presc = presc;
-		/* Should I clean these ticks? */
+		/* Should we really clean these ticks? */
 		tc2_ticks = 0;
 	}
 
@@ -254,10 +252,10 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	case 2:
 		timer2_ctc(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
 		return;
-	/*
 	case 3:
 		timer2_fastpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
 		return;
+	/*
 	case 1:
 		timer2_pcpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
 		return;
@@ -279,7 +277,7 @@ static void timer2_normal(struct MSIM_AVR *mcu,
                           unsigned int presc, unsigned int *ticks,
                           unsigned char wgm2, unsigned char com2)
 {
-	if (*ticks != (presc-1)) {
+	if (*ticks == (presc-1)) {
 		if (mcu->dm[TCNT2] == 0xFF) {
 			/* Reset Timer/Counter2 */
 			mcu->dm[TCNT2] = 0;
@@ -291,16 +289,20 @@ static void timer2_normal(struct MSIM_AVR *mcu,
 			mcu->dm[TCNT2]++;
 		}
 		*ticks = 0;
-	} else {
-		(*ticks)++;
+		return;
 	}
+	(*ticks)++;
 }
 
 static void timer2_ctc(struct MSIM_AVR *mcu,
                        unsigned int presc, unsigned int *ticks,
                        unsigned char wgm2, unsigned char com2)
 {
-	if (*ticks != (presc-1)) {
+	/* NOTE: We're able to generate a waveform output in this mode with a
+	 * frequency which is controlled by the value in OCR2 register
+	 * (top border of the timer/counter). */
+
+	if ((*ticks) == (presc-1)) {
 		if (mcu->dm[TCNT2] == mcu->dm[OCR2]) {
 			/* Reset Timer/Counter2 */
 			mcu->dm[TCNT2] = 0;
@@ -312,19 +314,43 @@ static void timer2_ctc(struct MSIM_AVR *mcu,
 			mcu->dm[TCNT2]++;
 		}
 		*ticks = 0;
-	} else {
-		(*ticks)++;
+		return;
 	}
+	(*ticks)++;
+}
+
+static void timer2_fastpwm(struct MSIM_AVR *mcu,
+                           unsigned int presc, unsigned int *ticks,
+                           unsigned char wgm2, unsigned char com2)
+{
+	/* NOTE: This mode allows PWM to be generated. Duty cycle can be
+	 * controlled by the value in OCR2 register. */
+
+	if ((*ticks) == (presc-1)) {
+		if (mcu->dm[TCNT2] == 0xFF) {
+			/* Single-slope operation means counting
+			 * from BOTTOM(0) to MAX(255), reset back to BOTTOM
+			 * in the following clock cycle and start again. */
+			mcu->dm[TCNT2] = 0;
+			timer2_oc2_fastpwm(mcu, com2, SET_TO_BOTTOM);
+			mcu->dm[TIFR] |= (1<<TOV2);
+		} else if (mcu->dm[TCNT2] == mcu->dm[OCR2]) {
+			/* We're able to generate PWM waveform here
+			 * using OCR2. */
+			mcu->dm[TIFR] |= (1<<OCF2);
+			timer2_oc2_fastpwm(mcu, com2, COMPARE_MATCH);
+			mcu->dm[TCNT2]++;
+		} else {
+			mcu->dm[TCNT2]++;
+		}
+		*ticks = 0;
+		return;
+	}
+	(*ticks)++;
 }
 
 /* To be implemented:
  *
-static void timer2_fastpwm(struct MSIM_AVR *mcu,
-                           unsigned int *presc, unsigned int *ticks,
-                           unsigned char *wgm2, unsigned char *com2)
-{
-}
-
 static void timer2_pcpwm(struct MSIM_AVR *mcu,
                          unsigned int *presc, unsigned int *ticks,
                          unsigned char *wgm2, unsigned char *com2)
@@ -352,6 +378,42 @@ static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, unsigned char com2)
 		break;
 	case 3:
 		SET(mcu->dm[PORTB], PB3);
+		break;
+	case 0:
+	default:
+		/* OC2 disconnected, do nothing */
+		break;
+	}
+}
+
+static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, unsigned char com2,
+                               unsigned char state)
+{
+	/* Check Data Direction Register first. DDRB3 should be set to
+	 * enable the output driver (according to a datasheet).*/
+	if (!IS_SET(mcu->dm[DDRB], PB3))
+		return;
+
+	/* Update Output Compare pin (OC2) */
+	switch (com2) {
+	case 1:
+		fprintf(stderr, "[!] COM21:0=1 is a special case and not "
+		        "supported in the fast PWM mode at the moment\n"
+		        "You may find additional information in "
+		        "22.7.3 Fast PWM Mode in ATMEGA8A datasheet, "
+		        "create and share your patch!");
+		break;
+	case 2:		/* Non-inverting compare output mode */
+		if (state == COMPARE_MATCH)
+			CLEAR(mcu->dm[PORTB], PB3);
+		else
+			SET(mcu->dm[PORTB], PB3);
+		break;
+	case 3:		/* Inverting compare output mode */
+		if (state == COMPARE_MATCH)
+			SET(mcu->dm[PORTB], PB3);
+		else
+			CLEAR(mcu->dm[PORTB], PB3);
 		break;
 	case 0:
 	default:

@@ -91,6 +91,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 	unsigned char tick_ovf;	/* Have we reached maximum number of ticks? */
 	FILE *vcd_f;		/* File to store VCD dump to */
 	int ret_code;		/* Code to return */
+	char dump_name[256];
 
 	tick = tick_ovf = 0;
 	vcd_f = NULL;
@@ -98,7 +99,9 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 
 	/* Do we have registers to dump? */
 	if (mcu->vcdd->bit[0].regi >= 0) {
-		vcd_f = MSIM_VCDOpenDump(mcu, "dump.vcd");
+		snprintf(&dump_name[0], sizeof dump_name, "%s-trace.vcd",
+		         mcu->name);
+		vcd_f = MSIM_VCDOpenDump(mcu, dump_name);
 		if (!vcd_f) {
 			fprintf(stderr, "[e]: Failed to open dump file: "
 			        "dump.vcd\n");

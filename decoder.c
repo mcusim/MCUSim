@@ -2293,8 +2293,8 @@ static void exec_lds(struct MSIM_AVR *mcu, unsigned int inst)
 	if (!mcu->xmega)
 		SKIP_CYCLES(mcu, 1, 1);
 
-	i2 = mcu->dm[mcu->pc+2];
-	i3 = mcu->dm[mcu->pc+3];
+	i2 = mcu->pm[mcu->pc+2];
+	i3 = mcu->pm[mcu->pc+3];
 	addr = (unsigned short)(((i3<<8)&0xFF00) | (i2&0xFF));
 
 	if (mcu->xmega)

@@ -1,0 +1,113 @@
+
+/home/dsl/git/atmega8a-tc2-fastpwm-mode/out/firmware.hex:     file format ihex
+
+
+Disassembly of section .sec1:
+
+00000000 <.sec1>:
+   0:	12 c0       	rjmp	.+36     	;  0x26
+   2:	21 c0       	rjmp	.+66     	;  0x46
+   4:	20 c0       	rjmp	.+64     	;  0x46
+   6:	1f c0       	rjmp	.+62     	;  0x46
+   8:	3d c0       	rjmp	.+122    	;  0x84
+   a:	1d c0       	rjmp	.+58     	;  0x46
+   c:	1c c0       	rjmp	.+56     	;  0x46
+   e:	1b c0       	rjmp	.+54     	;  0x46
+  10:	1a c0       	rjmp	.+52     	;  0x46
+  12:	19 c0       	rjmp	.+50     	;  0x46
+  14:	18 c0       	rjmp	.+48     	;  0x46
+  16:	17 c0       	rjmp	.+46     	;  0x46
+  18:	16 c0       	rjmp	.+44     	;  0x46
+  1a:	15 c0       	rjmp	.+42     	;  0x46
+  1c:	14 c0       	rjmp	.+40     	;  0x46
+  1e:	13 c0       	rjmp	.+38     	;  0x46
+  20:	12 c0       	rjmp	.+36     	;  0x46
+  22:	11 c0       	rjmp	.+34     	;  0x46
+  24:	10 c0       	rjmp	.+32     	;  0x46
+  26:	11 24       	eor	r1, r1
+  28:	1f be       	out	0x3f, r1	; 63
+  2a:	cf e5       	ldi	r28, 0x5F	; 95
+  2c:	d4 e0       	ldi	r29, 0x04	; 4
+  2e:	de bf       	out	0x3e, r29	; 62
+  30:	cd bf       	out	0x3d, r28	; 61
+  32:	20 e0       	ldi	r18, 0x00	; 0
+  34:	a0 e6       	ldi	r26, 0x60	; 96
+  36:	b0 e0       	ldi	r27, 0x00	; 0
+  38:	01 c0       	rjmp	.+2      	;  0x3c
+  3a:	1d 92       	st	X+, r1
+  3c:	a2 36       	cpi	r26, 0x62	; 98
+  3e:	b2 07       	cpc	r27, r18
+  40:	e1 f7       	brne	.-8      	;  0x3a
+  42:	4b d0       	rcall	.+150    	;  0xda
+  44:	4d c0       	rjmp	.+154    	;  0xe0
+  46:	dc cf       	rjmp	.-72     	;  0x0
+  48:	85 b5       	in	r24, 0x25	; 37
+  4a:	80 62       	ori	r24, 0x20	; 32
+  4c:	85 bd       	out	0x25, r24	; 37
+  4e:	85 b5       	in	r24, 0x25	; 37
+  50:	8f 7e       	andi	r24, 0xEF	; 239
+  52:	85 bd       	out	0x25, r24	; 37
+  54:	85 b5       	in	r24, 0x25	; 37
+  56:	88 64       	ori	r24, 0x48	; 72
+  58:	85 bd       	out	0x25, r24	; 37
+  5a:	bb 9a       	sbi	0x17, 3	; 23
+  5c:	14 bc       	out	0x24, r1	; 36
+  5e:	8f ef       	ldi	r24, 0xFF	; 255
+  60:	83 bd       	out	0x23, r24	; 35
+  62:	10 92 61 00 	sts	0x0061, r1	;  0x800061
+  66:	10 92 60 00 	sts	0x0060, r1	;  0x800060
+  6a:	89 b7       	in	r24, 0x39	; 57
+  6c:	80 64       	ori	r24, 0x40	; 64
+  6e:	89 bf       	out	0x39, r24	; 57
+  70:	85 b5       	in	r24, 0x25	; 37
+  72:	8b 7f       	andi	r24, 0xFB	; 251
+  74:	85 bd       	out	0x25, r24	; 37
+  76:	85 b5       	in	r24, 0x25	; 37
+  78:	82 60       	ori	r24, 0x02	; 2
+  7a:	85 bd       	out	0x25, r24	; 37
+  7c:	85 b5       	in	r24, 0x25	; 37
+  7e:	8e 7f       	andi	r24, 0xFE	; 254
+  80:	85 bd       	out	0x25, r24	; 37
+  82:	08 95       	ret
+  84:	1f 92       	push	r1
+  86:	0f 92       	push	r0
+  88:	0f b6       	in	r0, 0x3f	; 63
+  8a:	0f 92       	push	r0
+  8c:	11 24       	eor	r1, r1
+  8e:	8f 93       	push	r24
+  90:	9f 93       	push	r25
+  92:	80 91 60 00 	lds	r24, 0x0060	;  0x800060
+  96:	90 91 61 00 	lds	r25, 0x0061	;  0x800061
+  9a:	89 2b       	or	r24, r25
+  9c:	59 f0       	breq	.+22     	;  0xb4
+  9e:	83 b5       	in	r24, 0x23	; 35
+  a0:	8b 5f       	subi	r24, 0xFB	; 251
+  a2:	83 bd       	out	0x23, r24	; 35
+  a4:	83 b5       	in	r24, 0x23	; 35
+  a6:	8f 3f       	cpi	r24, 0xFF	; 255
+  a8:	89 f4       	brne	.+34     	;  0xcc
+  aa:	10 92 61 00 	sts	0x0061, r1	;  0x800061
+  ae:	10 92 60 00 	sts	0x0060, r1	;  0x800060
+  b2:	0c c0       	rjmp	.+24     	;  0xcc
+  b4:	83 b5       	in	r24, 0x23	; 35
+  b6:	85 50       	subi	r24, 0x05	; 5
+  b8:	83 bd       	out	0x23, r24	; 35
+  ba:	83 b5       	in	r24, 0x23	; 35
+  bc:	81 11       	cpse	r24, r1
+  be:	06 c0       	rjmp	.+12     	;  0xcc
+  c0:	81 e0       	ldi	r24, 0x01	; 1
+  c2:	90 e0       	ldi	r25, 0x00	; 0
+  c4:	90 93 61 00 	sts	0x0061, r25	;  0x800061
+  c8:	80 93 60 00 	sts	0x0060, r24	;  0x800060
+  cc:	9f 91       	pop	r25
+  ce:	8f 91       	pop	r24
+  d0:	0f 90       	pop	r0
+  d2:	0f be       	out	0x3f, r0	; 63
+  d4:	0f 90       	pop	r0
+  d6:	1f 90       	pop	r1
+  d8:	18 95       	reti
+  da:	b6 df       	rcall	.-148    	;  0x48
+  dc:	78 94       	sei
+  de:	ff cf       	rjmp	.-2      	;  0xde
+  e0:	f8 94       	cli
+  e2:	ff cf       	rjmp	.-2      	;  0xe2
