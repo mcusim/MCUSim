@@ -59,7 +59,7 @@ FIRMWARE_TEST="n"
 
 
 # --------------- Directory to store a script ---------------------------------
-printf "Configuration script directory [ $CFG_DIR_DEFAULT ]: "
+printf "Directory to save configuration script in [ $CFG_DIR_DEFAULT ]: "
 read CFG_DIR
 if [ -z "$CFG_DIR" ]; then
 	CFG_DIR=$CFG_DIR_DEFAULT
@@ -115,14 +115,8 @@ while [ $FMW_PROVIDED -eq 0 ]; do
 		printf "(Leave empty to skip): "
 		read FMW_PATH
 		if [ ! -z "$FMW_PATH" ]; then
-			if [ ! -f "$FMW_PATH" ]; then
-				printf "[!] firmware file $FMW_PATH "
-				echo "doesn't exist"
-				continue
-			else
-				FMW_PROVIDED=1
-				break;
-			fi
+			FMW_PROVIDED=1
+			break;
 		else
 			break;
 		fi
@@ -131,14 +125,8 @@ while [ $FMW_PROVIDED -eq 0 ]; do
 		printf "Path to bootloader (Leave empty to skip): "
 		read BLD_PATH
 		if [ ! -z "$BLD_PATH" ]; then
-			if [ ! -f "$BLD_PATH" ]; then
-				printf "[!] firmware file $BLD_PATH "
-				echo "doesn't exist"
-				continue
-			else
-				FMW_PROVIDED=1
-				break;
-			fi
+			FMW_PROVIDED=1
+			break;
 		else
 			break;
 		fi
