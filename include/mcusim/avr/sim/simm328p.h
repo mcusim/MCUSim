@@ -62,6 +62,12 @@
 #define E2START		0x0000
 #define E2SIZE		1024
 
+#define SET_FUSE_F	MSIM_M328PSetFuse
+#define SET_LOCK_F	MSIM_M328PSetLock
+
+int MSIM_M328PSetFuse(void *mcu, unsigned int fuse_n, unsigned char fuse_v);
+int MSIM_M328PSetLock(void *mcu, unsigned char lock_v);
+
 #define SREG		_SFR_IO8(0x3F)
 #define SPH		_SFR_IO8(0x3E)
 #define SPL		_SFR_IO8(0x3D)
