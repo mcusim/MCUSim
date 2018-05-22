@@ -33,3 +33,10 @@ addons:
     build_command_prepend: "make clean"
     build_command:   "make"
     branch_pattern: master
+
+notifications:
+  email:
+    recipients:
+      - mcusim-dev@mcusim.org
+    on_success: always # default: always
+    on_failure: always # default: always
