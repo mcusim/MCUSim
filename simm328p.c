@@ -45,10 +45,10 @@ int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 {
 	struct MSIM_AVR *mcu;
-	unsigned char cksel, bootsz, ckopt;
+	unsigned char cksel, bootsz; //ckopt;
 
 	mcu = (struct MSIM_AVR *)m;
-	if (fuse_n > 1) {
+	if (fuse_n > 2) {
 		fprintf(stderr, "[!]: Fuse #%u is not supported by %s\n",
 		        fuse_n, mcu->name);
 		return -1;
@@ -56,7 +56,7 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 
 	mcu->fuse[fuse_n] = fuse_v;
 	cksel = mcu->fuse[0]&0xF;
-	ckopt = (mcu->fuse[1]>>4)&0x1;
+	//ckopt = (mcu->fuse[1]>>4)&0x1;
 
 	switch (fuse_n) {
 	case FUSE_LOW:
@@ -64,104 +64,52 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 		/* 2 - Reserved */ 
 		if (cksel == 0) {
 			mcu->clk_source = AVR_EXT_CLK;
+		} else if (cksel == 1) {
+			printf("[!]: Fuse #%u is reserved on %s\n",
+				   fuse_v, mcu->name)
+			return -1;
 		} else if (cksel == 2) {
-			mcu->clk_source = AVR_RESERVED_CLK; 
-			switch (cksel) {
-			case 1:
-				mcu->freq = 1000000;	/* 1 MHz */
-				break;
-			case 2:
-				mcu->freq = 2000000;	/* 2 MHz */
-				break;
-			case 3:
-				mcu->freq = 4000000;	/* 4 MHz */
-				break;
-			case 4:
-				mcu->freq = 8000000;	/* 8 MHz */
-				break;
-			}
-		} else if (cksel >= 5 && cksel <= 8) {
-			mcu->clk_source = AVR_EXT_RC_CLK;
-			switch (cksel) {
-			case 5:
-				mcu->freq = 900000;	/* max 0.9 MHz */
-				break;
-			case 6:
-				mcu->freq = 3000000;	/* max 3 MHz */
-				break;
-			case 7:
-				mcu->freq = 8000000;	/* max 4 MHz */
-				break;
-			case 8:
-				mcu->freq = 12000000;	/* max 12 MHz */
-				break;
-			}
-		} else if (cksel == 9) {
+			mcu->clk_source = AVR_INT_CAL_RC_CLK; 
+			mcu->freq = 8000000;	/* max 8 MHz */
+		} else if (cksel == 3) {
+			mcu->clk_source = AVR_INT_128K_RC_CLK;
+			mcu->freq = 128000000;	/* max 128 kHz */
+		}  else if (cksel == 4 || cksel == 5) {
 			mcu->clk_source = AVR_EXT_LOWF_CRYSTAL_CLK;
-			mcu->freq = 32768;		/* 32.768 kHz */
-		} else if (cksel >= 10 && cksel <= 15) {
-			mcu->clk_source = AVR_EXT_CRYSTAL;
-			cksel = (cksel>>1)&0x7;
 			switch (cksel) {
-			case 5:
-				mcu->freq = 900000;	/* max 0.9 MHz */
-				break;
-			case 6:
-				mcu->freq = 3000000;	/* max 3 MHz */
-				break;
-			case 7:
-				mcu->freq = 8000000;	/* max 8 MHz */
-				break;
+				case 4:
+					mcu->freq = 1000000;	/* max 1 MHz */
+					break;
+				case 5:
+					mcu->freq = 32768;	/* max 32,768 kHz */
+					break;
 			}
-			if (!ckopt)
-				mcu->freq = 16000000;	/* max 16 MHz */
+		} else if (cksel == 6 || cksel == 7) {
+			mcu->clk_source = AVR_FULLSWING_CRYSTAL_CLK;	
+			mcu->freq = 20000000; /* max 20 MHz */	
+		} else if	(cksel => 8 && cksel <= 15) {
+			mcu->clk_source = AVR_LOWP_CRYSTAL_CLK;
+			cksel = cksel&0x1; 
+			switch (cksel) {
+				case 8:
+					mcu->freq = 900000;	/* max 0.9 MHz */
+					break;
+				case 10:
+					mcu->freq = 3000000; /* max 3 MHz */
+					break;
+				case 12:
+					mcu->freq = 8000000; /* max 8MHz */
+					break;
+				case 14:
+					mcu->freq = 16000000; /* max 16 MHz */	
+			}			
 		}
 		break;
 	case FUSE_HIGH:
-		bootsz = (fuse_v>>1)&0x3;
-		ckopt = (fuse_v>>4)&0x1;
-		switch (bootsz) {
-		case 3:
-			mcu->bls->start = 0x1F00;
-			mcu->bls->end = 0x1FFF;
-			mcu->bls->size = 256;
-			break;
-		case 2:
-			mcu->bls->start = 0x1E00;
-			mcu->bls->end = 0x1FFF;
-			mcu->bls->size = 512;
-			break;
-		case 1:
-			mcu->bls->start = 0x1C00;
-			mcu->bls->end = 0x1FFF;
-			mcu->bls->size = 1024;
-			break;
-		case 0:
-			mcu->bls->start = 0x1800;
-			mcu->bls->end = 0x1FFF;
-			mcu->bls->size = 2048;
-			break;
-		}
-
-		if (fuse_v&0x1)		/* BOOTRST is 1(unprogrammed) */
-			mcu->intr->reset_pc = mcu->pc = 0x0000;
-		else			/* BOOTRST is 0(programmed) */
-			mcu->intr->reset_pc = mcu->pc = mcu->bls->start;
-
-		switch (cksel) {
-		case 5:
-			mcu->freq = 900000;	/* max 0.9 MHz */
-			break;
-		case 6:
-			mcu->freq = 3000000;	/* max 3 MHz */
-			break;
-		case 7:
-			mcu->freq = 8000000;	/* max 8 MHz */
-			break;
-		}
-		if (!ckopt)
-			mcu->freq = 16000000;	/* max 16 MHz */
-
+		
+		break;
+	case FUSE_EXTENDED:
+		
 		break;
 	default:			/* Should not happen */
 		return -1;
