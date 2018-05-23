@@ -41,6 +41,8 @@
 
 #define COMPARE_MATCH		75
 #define SET_TO_BOTTOM		76
+#define COMP_MATCH_UPCNT	77
+#define COMP_MATCH_DOWNCNT	78
 
 /* Initial PORTD and PIND values and to track T0/PD4 and T1/PD5. */
 static unsigned char init_portd;
@@ -53,6 +55,9 @@ static unsigned char init_pinb;
  * the PWM modes and updated during either TOP or BOTTOM of the counting
  * sequence. */
 static unsigned char ocr2_buf;
+/* Timer may start counting from a value higher then the one on OCR2 and
+ * for that reason misses the Compare Match. This flag is set in this case. */
+static unsigned char missed_cm = 0;
 
 static void tick_timer0(struct MSIM_AVR *mcu);
 static void tick_timer1(struct MSIM_AVR *mcu);
@@ -69,19 +74,25 @@ static void timer2_ctc(struct MSIM_AVR *mcu,
 static void timer2_fastpwm(struct MSIM_AVR *mcu,
                            unsigned int presc, unsigned int *ticks,
                            unsigned char wgm2, unsigned char com2);
-/*
 static void timer2_pcpwm(struct MSIM_AVR *mcu,
-                         unsigned int *presc, unsigned int *ticks,
-                         unsigned char *wgm2, unsigned char *com2);
- */
+                         unsigned int presc, unsigned int *ticks,
+                         unsigned char wgm2, unsigned char com2);
+
 static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, unsigned char com2);
 static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, unsigned char com2,
                                unsigned char state);
+static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, unsigned char com2,
+                             unsigned char state);
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
 #include "mcusim/avr/sim/mcu_init.h"
+
 	update_watched_values(mcu);
+	/* I/O ports have internal pull-up resistors (selected for each bit) */
+	mcu->dm[PORTB] = 0xFF;
+	mcu->dm[PORTC] = 0xFF;
+	mcu->dm[PORTD] = 0xFF;
 	return 0;
 }
 
@@ -201,7 +212,7 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	 *               WGM21:0 = 0;
 	 * - (supported) Clear Timer on Compare Match (CTC) Mode, WGM21:0 = 2;
 	 * - (supported) Fast PWM Mode, WGM21:0 = 3.
-	 * - (planned) Phase Correct PWM Mode, WGM21:0 = 1;
+	 * - (supported) Phase Correct PWM Mode, WGM21:0 = 1;
 	 */
 	static unsigned int tc2_presc;
 	static unsigned int tc2_ticks;
@@ -245,9 +256,15 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	}
 
 	if (presc != tc2_presc) {
+		/* We may have TC2 enabled with Compare Match missed. */
+		if (tc2_presc == 0 && mcu->dm[TCNT2] > mcu->dm[OCR2])
+			missed_cm = 1;
+
 		tc2_presc = presc;
 		/* Should we really clean these ticks? */
 		tc2_ticks = 0;
+	} else if (missed_cm) {
+		missed_cm = 0;
 	}
 
 	switch (wgm2) {
@@ -260,12 +277,10 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	case 3:
 		timer2_fastpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
 		return;
-	/*
 	case 1:
 		timer2_pcpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
 		return;
-	 */
-	default:
+	default:			/* Should not happen! */
 		if (wgm2 != old_wgm2) {
 			fprintf(stderr, "[!]: Selected mode WGM21:20 = %u "
 			        "of the Timer/Counter2 is not supported\n",
@@ -328,21 +343,20 @@ static void timer2_fastpwm(struct MSIM_AVR *mcu,
                            unsigned int presc, unsigned int *ticks,
                            unsigned char wgm2, unsigned char com2)
 {
-	/* NOTE: This mode allows PWM to be generated. Duty cycle can be
-	 * controlled by the value in OCR2 register. */
+	/* NOTE: This mode allows PWM to be generated using single-slope
+	 * operation. Duty cycle can be controlled by the value in
+	 * OCR2 register. */
 
+	/* Single-slope operation means counting from BOTTOM(0) to MAX(255),
+	 * reset back to BOTTOM in the following clock cycle and
+	 * start again. */
 	if ((*ticks) == (presc-1)) {
 		if (mcu->dm[TCNT2] == 0xFF) {
-			/* Single-slope operation means counting
-			 * from BOTTOM(0) to MAX(255), reset back to BOTTOM
-			 * in the following clock cycle and start again. */
 			mcu->dm[TCNT2] = 0;
 			ocr2_buf = mcu->dm[OCR2];
 			timer2_oc2_fastpwm(mcu, com2, SET_TO_BOTTOM);
 			mcu->dm[TIFR] |= (1<<TOV2);
 		} else if (mcu->dm[TCNT2] == ocr2_buf) {
-			/* We're able to generate PWM waveform here
-			 * using OCR2. */
 			mcu->dm[TIFR] |= (1<<OCF2);
 			timer2_oc2_fastpwm(mcu, com2, COMPARE_MATCH);
 			mcu->dm[TCNT2]++;
@@ -355,14 +369,52 @@ static void timer2_fastpwm(struct MSIM_AVR *mcu,
 	(*ticks)++;
 }
 
-/* To be implemented:
- *
 static void timer2_pcpwm(struct MSIM_AVR *mcu,
-                         unsigned int *presc, unsigned int *ticks,
-                         unsigned char *wgm2, unsigned char *com2)
+                         unsigned int presc, unsigned int *ticks,
+                         unsigned char wgm2, unsigned char com2)
 {
+	/* NOTE: This mode allows PWM to be generated using dual-slope
+	 * operation (preferred for motor control applications). Duty cycle
+	 * can be controlled by the value in OCR2 register. */
+	static unsigned char cnt_down = 0;
+
+	/* Dual-slope operation means counting from BOTTOM(0) to MAX(255),
+	 * then from MAX back to the BOTTOM and start again. */
+	if ((*ticks) == (presc-1)) {
+		if (mcu->dm[TCNT2] == 0xFF) {
+			if (ocr2_buf == 0xFF)
+				mcu->dm[TIFR] |= (1<<OCF2);
+			if (missed_cm || (ocr2_buf == 0xFF &&
+			                  mcu->dm[OCR2] < 0xFF))
+				timer2_oc2_pcpwm(mcu, com2, COMP_MATCH_UPCNT);
+
+			cnt_down = 1;
+			ocr2_buf = mcu->dm[OCR2];
+			mcu->dm[TCNT2]--;
+		} else if (mcu->dm[TCNT2] == 0) {
+			cnt_down = 0;
+			mcu->dm[TIFR] |= (1<<TOV2);
+			mcu->dm[TCNT2]++;
+		} else if (mcu->dm[TCNT2] == ocr2_buf) {
+			mcu->dm[TIFR] |= (1<<OCF2);
+			timer2_oc2_pcpwm(mcu, com2, cnt_down
+			                 ? COMP_MATCH_DOWNCNT
+			                 : COMP_MATCH_UPCNT);
+			if (!cnt_down)
+				mcu->dm[TCNT2]++;
+			else
+				mcu->dm[TCNT2]--;
+		} else {
+			if (!cnt_down)
+				mcu->dm[TCNT2]++;
+			else
+				mcu->dm[TCNT2]--;
+		}
+		*ticks = 0;
+		return;
+	}
+	(*ticks)++;
 }
- */
 
 static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, unsigned char com2)
 {
@@ -417,6 +469,39 @@ static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, unsigned char com2,
 		break;
 	case 3:		/* Inverting compare output mode */
 		if (state == COMPARE_MATCH)
+			SET(mcu->dm[PORTB], PB3);
+		else
+			CLEAR(mcu->dm[PORTB], PB3);
+		break;
+	case 0:
+	default:
+		/* OC2 disconnected, do nothing */
+		break;
+	}
+}
+
+static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, unsigned char com2,
+                             unsigned char state)
+{
+	/* Check Data Direction Register first. DDRB3 should be set to
+	 * enable the output driver (according to a datasheet).*/
+	if (!IS_SET(mcu->dm[DDRB], PB3))
+		return;
+
+	/* Update Output Compare pin (OC2) */
+	switch (com2) {
+	case 1:
+		fprintf(stderr, "[!] COM21:0=1 is reserved in the phase "
+		        "correct PWM mode\n");
+		break;
+	case 2:		/* Non-inverting compare output mode */
+		if (state == COMP_MATCH_UPCNT)
+			CLEAR(mcu->dm[PORTB], PB3);
+		else
+			SET(mcu->dm[PORTB], PB3);
+		break;
+	case 3:		/* Inverting compare output mode */
+		if (state == COMP_MATCH_UPCNT)
 			SET(mcu->dm[PORTB], PB3);
 		else
 			CLEAR(mcu->dm[PORTB], PB3);
