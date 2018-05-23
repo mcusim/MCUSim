@@ -28,8 +28,8 @@ addons:
   coverity_scan:
     project:
       name: "dsalychev/mcusim"
-      description: "Simulator for microcontrollers (via Travis CI)"
-    notification_email: darkness.bsd@gmail.com
+      description: "Simulator for MCU-based circuits (via Travis CI)"
+    notification_email: mcusim-dev@mcusim.org
     build_command_prepend: "make clean"
     build_command:   "make"
     branch_pattern: master
