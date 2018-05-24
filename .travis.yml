@@ -29,7 +29,7 @@ addons:
     project:
       name: "dsalychev/mcusim"
       description: "Simulator for MCU-based circuits (via Travis CI)"
-    notification_email: mcusim-dev@mcusim.org
+    notification_email: darkness.bsd@gmail.com
     build_command_prepend: "make clean"
     build_command:   "make"
     branch_pattern: master
@@ -37,6 +37,6 @@ addons:
 notifications:
   email:
     recipients:
-      - mcusim-dev@mcusim.org
+      - darkness.bsd@gmail.com
     on_success: always # default: always
     on_failure: always # default: always
