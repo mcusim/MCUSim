@@ -390,6 +390,9 @@ static void timer2_pcpwm(struct MSIM_AVR *mcu,
 
 			cnt_down = 1;
 			ocr2_buf = mcu->dm[OCR2];
+			if (ocr2_buf == 0xFF)
+				timer2_oc2_pcpwm(mcu, com2,
+				                 COMP_MATCH_DOWNCNT);
 			mcu->dm[TCNT2]--;
 		} else if (mcu->dm[TCNT2] == 0) {
 			cnt_down = 0;
