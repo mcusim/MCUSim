@@ -458,11 +458,12 @@ static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, unsigned char com2,
 	/* Update Output Compare pin (OC2) */
 	switch (com2) {
 	case 1:
-		fprintf(stderr, "[!] COM21:0=1 is a special case and not "
-		        "supported in the fast PWM mode at the moment\n"
-		        "You may find additional information in "
-		        "22.7.3 Fast PWM Mode in ATMEGA8A datasheet, "
-		        "create and share your patch!");
+		if (state == COMPARE_MATCH) {
+			if (IS_SET(mcu->dm[PORTB], PB3))
+				CLEAR(mcu->dm[PORTB], PB3);
+			else
+				SET(mcu->dm[PORTB], PB3);
+		}
 		break;
 	case 2:		/* Non-inverting compare output mode */
 		if (state == COMPARE_MATCH)
