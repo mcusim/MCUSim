@@ -49,6 +49,11 @@ static unsigned char init_pind;
 static unsigned char init_portb;
 static unsigned char init_pinb;
 
+/* The OCR2 Compare Register is double buffered when using any of
+ * the PWM modes and updated during either TOP or BOTTOM of the counting
+ * sequence. */
+static unsigned char ocr2_buf;
+
 static void tick_timer0(struct MSIM_AVR *mcu);
 static void tick_timer1(struct MSIM_AVR *mcu);
 static void tick_timer2(struct MSIM_AVR *mcu);
@@ -332,9 +337,10 @@ static void timer2_fastpwm(struct MSIM_AVR *mcu,
 			 * from BOTTOM(0) to MAX(255), reset back to BOTTOM
 			 * in the following clock cycle and start again. */
 			mcu->dm[TCNT2] = 0;
+			ocr2_buf = mcu->dm[OCR2];
 			timer2_oc2_fastpwm(mcu, com2, SET_TO_BOTTOM);
 			mcu->dm[TIFR] |= (1<<TOV2);
-		} else if (mcu->dm[TCNT2] == mcu->dm[OCR2]) {
+		} else if (mcu->dm[TCNT2] == ocr2_buf) {
 			/* We're able to generate PWM waveform here
 			 * using OCR2. */
 			mcu->dm[TIFR] |= (1<<OCF2);
