@@ -32,10 +32,7 @@
 #include <string.h>
 #include <time.h>
 
-#define AVR_ATMEGA328P
 #include "mcusim/avr/sim/simm328p.h"
-#include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/sim.c"
 
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
@@ -46,9 +43,10 @@ int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 {
 	struct MSIM_AVR *mcu;
-	unsigned char cksel, bootsz; //ckopt;
+	unsigned char cksel, bootsz; 
 
 	mcu = (struct MSIM_AVR *)m;
+
 	if (fuse_n > 2) {
 		fprintf(stderr, "[!]: Fuse #%u is not supported by %s\n",
 		        fuse_n, mcu->name);
@@ -57,7 +55,6 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 
 	mcu->fuse[fuse_n] = fuse_v;
 	cksel = mcu->fuse[0]&0xF;
-	//ckopt = (mcu->fuse[1]>>4)&0x1;
 
 	switch (fuse_n) {
 	case FUSE_LOW:
@@ -67,7 +64,7 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 			mcu->clk_source = AVR_EXT_CLK;
 		} else if (cksel == 1) {
 			printf("[!]: Fuse #%u is reserved on %s\n",
-			       fuse_v, mcu->name)
+			       fuse_v, mcu->name);
 			return -1;
 		} else if (cksel == 2) {
 			mcu->clk_source = AVR_INT_CAL_RC_CLK;
@@ -88,7 +85,7 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 		} else if (cksel == 6 || cksel == 7) {
 			mcu->clk_source = AVR_FULLSWING_CRYSTAL_CLK;
 			mcu->freq = 20000000; /* max 20 MHz */
-		} else if	(cksel => 8 && cksel <= 15) {
+		} else if	(cksel >= 8 && cksel <= 15) {
 			mcu->clk_source = AVR_LOWP_CRYSTAL_CLK;
 			cksel = cksel&0x1;
 			switch (cksel) {
@@ -107,14 +104,43 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 		}
 		break;
 	case FUSE_HIGH:
+		bootsz = (fuse_v>>1)&0x3;
+		switch (bootsz) {
+		case 3:
+			mcu->bls->start = 0x3F00;
+			mcu->bls->end = 0x3FFF;
+			mcu->bls->size = 256;
+			break;
+		case 2:
+			mcu->bls->start = 0x3E00;
+			mcu->bls->end = 0x3FFF;
+			mcu->bls->size = 512;
+			break;
+		case 1:
+			mcu->bls->start = 0x3C00;
+			mcu->bls->end = 0x3FFF;
+			mcu->bls->size = 1024;
+			break;
+		case 0:
+			mcu->bls->start = 0x3800;
+			mcu->bls->end = 0x3FFF;
+			mcu->bls->size = 2048;
+			break;
+		}
+
+		if(fuse_v&0x1)
+			mcu->intr->reset_pc = mcu->pc = 0x0000;
+		else 
+			mcu->intr->reset_pc = mcu->pc = mcu->bls->start;
 
 		break;
-	case FUSE_EXTENDED:
+	case FUSE_EXT:
 
-		break;
-	default:			/* Should not happen */
+		break; 
+	default:		/* Should not happen */
 		return -1;
 	}
+
 	return 0;
 }
 
