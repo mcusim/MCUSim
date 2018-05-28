@@ -49,7 +49,7 @@ fi
 if [ -z $1 ]; then
 `which mcusim` -p m8a -r $MDL_LIST -f 16000000 --firmware-test -U flash:w:firmware.hex -U hfuse:w:0xC9:h -U lfuse:w:0xEF:h --dump-regs=TCNT2,OCR2,TIFR6,PORTB3; rc=$?
 else
-$1 -p m8a -r $MDL_LIST -f 16000000 --firmware-test -U flash:w:firmware.hex -U hfuse:w:0xC9:h -U lfuse:w:0xEF:h --dump-regs=TCNT2,PORTB3; rc=$?
+$1 -p m8a -r $MDL_LIST -f 16000000 --firmware-test -U flash:w:firmware.hex -U hfuse:w:0xC9:h -U lfuse:w:0xEF:h --dump-regs=TCNT2,OCR2,TIFR6,PORTB3; rc=$?
 fi
 rm "$MDL_LIST"
 exit $rc
