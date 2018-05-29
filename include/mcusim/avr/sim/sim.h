@@ -28,8 +28,12 @@
  * OF SUCH DAMAGE.
  *
  * This is a main header file which contains declarations to describe the
- * whole simulated microcontroller. You'd probably better to start
- * from reading "struct MSIM_AVR" declared below.
+ * whole simulated microcontroller, and it's supposed to be AVR-agnostic.
+ * It means that each declaration should be suitable for every available AVR
+ * model.
+ *
+ * You'd probably better to start from reading "struct MSIM_AVR" declared
+ * below.
  */
 #ifndef MSIM_AVR_SIM_H_
 #define MSIM_AVR_SIM_H_ 1

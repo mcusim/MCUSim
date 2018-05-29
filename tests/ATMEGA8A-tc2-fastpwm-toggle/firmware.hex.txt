@@ -1,0 +1,80 @@
+
+/home/dsl/git/atmega8a-tc2-fastpwm-toggle/out/firmware.hex:     file format ihex
+
+
+Disassembly of section .sec1:
+
+00000000 <.sec1>:
+   0:	12 c0       	rjmp	.+36     	;  0x26
+   2:	19 c0       	rjmp	.+50     	;  0x36
+   4:	18 c0       	rjmp	.+48     	;  0x36
+   6:	17 c0       	rjmp	.+46     	;  0x36
+   8:	31 c0       	rjmp	.+98     	;  0x6c
+   a:	15 c0       	rjmp	.+42     	;  0x36
+   c:	14 c0       	rjmp	.+40     	;  0x36
+   e:	13 c0       	rjmp	.+38     	;  0x36
+  10:	12 c0       	rjmp	.+36     	;  0x36
+  12:	11 c0       	rjmp	.+34     	;  0x36
+  14:	10 c0       	rjmp	.+32     	;  0x36
+  16:	0f c0       	rjmp	.+30     	;  0x36
+  18:	0e c0       	rjmp	.+28     	;  0x36
+  1a:	0d c0       	rjmp	.+26     	;  0x36
+  1c:	0c c0       	rjmp	.+24     	;  0x36
+  1e:	0b c0       	rjmp	.+22     	;  0x36
+  20:	0a c0       	rjmp	.+20     	;  0x36
+  22:	09 c0       	rjmp	.+18     	;  0x36
+  24:	08 c0       	rjmp	.+16     	;  0x36
+  26:	11 24       	eor	r1, r1
+  28:	1f be       	out	0x3f, r1	; 63
+  2a:	cf e5       	ldi	r28, 0x5F	; 95
+  2c:	d4 e0       	ldi	r29, 0x04	; 4
+  2e:	de bf       	out	0x3e, r29	; 62
+  30:	cd bf       	out	0x3d, r28	; 61
+  32:	2a d0       	rcall	.+84     	;  0x88
+  34:	2c c0       	rjmp	.+88     	;  0x8e
+  36:	e4 cf       	rjmp	.-56     	;  0x0
+  38:	85 b5       	in	r24, 0x25	; 37
+  3a:	8f 7d       	andi	r24, 0xDF	; 223
+  3c:	85 bd       	out	0x25, r24	; 37
+  3e:	85 b5       	in	r24, 0x25	; 37
+  40:	80 61       	ori	r24, 0x10	; 16
+  42:	85 bd       	out	0x25, r24	; 37
+  44:	85 b5       	in	r24, 0x25	; 37
+  46:	88 64       	ori	r24, 0x48	; 72
+  48:	85 bd       	out	0x25, r24	; 37
+  4a:	bb 9a       	sbi	0x17, 3	; 23
+  4c:	14 bc       	out	0x24, r1	; 36
+  4e:	8c e3       	ldi	r24, 0x3C	; 60
+  50:	83 bd       	out	0x23, r24	; 35
+  52:	89 b7       	in	r24, 0x39	; 57
+  54:	80 64       	ori	r24, 0x40	; 64
+  56:	89 bf       	out	0x39, r24	; 57
+  58:	85 b5       	in	r24, 0x25	; 37
+  5a:	8b 7f       	andi	r24, 0xFB	; 251
+  5c:	85 bd       	out	0x25, r24	; 37
+  5e:	85 b5       	in	r24, 0x25	; 37
+  60:	82 60       	ori	r24, 0x02	; 2
+  62:	85 bd       	out	0x25, r24	; 37
+  64:	85 b5       	in	r24, 0x25	; 37
+  66:	8e 7f       	andi	r24, 0xFE	; 254
+  68:	85 bd       	out	0x25, r24	; 37
+  6a:	08 95       	ret
+  6c:	1f 92       	push	r1
+  6e:	0f 92       	push	r0
+  70:	0f b6       	in	r0, 0x3f	; 63
+  72:	0f 92       	push	r0
+  74:	11 24       	eor	r1, r1
+  76:	8f 93       	push	r24
+  78:	8c e3       	ldi	r24, 0x3C	; 60
+  7a:	83 bd       	out	0x23, r24	; 35
+  7c:	8f 91       	pop	r24
+  7e:	0f 90       	pop	r0
+  80:	0f be       	out	0x3f, r0	; 63
+  82:	0f 90       	pop	r0
+  84:	1f 90       	pop	r1
+  86:	18 95       	reti
+  88:	d7 df       	rcall	.-82     	;  0x38
+  8a:	78 94       	sei
+  8c:	ff cf       	rjmp	.-2      	;  0x8c
+  8e:	f8 94       	cli
+  90:	ff cf       	rjmp	.-2      	;  0x90

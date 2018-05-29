@@ -98,6 +98,7 @@ static struct MSIM_MemOp memops[MAX_MEMOPS];
 static unsigned short memops_num;
 
 static void print_usage(void);
+static void print_short_usage(void);
 static void print_config(const struct MSIM_AVR *m);
 static void print_version(void);
 static void parse_dump(char *cmd);
@@ -116,14 +117,15 @@ int main(int argc, char *argv[])
 	int c, rsp_port, sim_retcode;
 	char *partno, *luap;
 	unsigned int i, j, regs;
-	/* Number of registers for VCD dump. */
-	unsigned int dump_regs;
+	unsigned int dump_regs;		/* (1) */
 	unsigned int freq;
-	/* Flag to trap debugger if interrupt generated. */
-	unsigned char trap_at_isr;
-	/* Start simulator without waiting for a debugger in order to test
-	 * firmware. */
-	unsigned char firmware_test;
+	unsigned char trap_at_isr;	/* (2) */
+	unsigned char firmware_test;	/* (3) */
+	/* 1. Number of registers to store in VCD dump.
+	 * 2. Flag to trap debugger right before interrupt service
+	 *    routine execution.
+	 * 3. Start simulator without waiting for a debugger in order to test
+	 *    firmware. */
 
 	partno = luap = NULL;
 	vcd_rn = print_regs = memops_num = 0;
@@ -175,6 +177,7 @@ int main(int argc, char *argv[])
 			break;
 		case VERSION_OPT:	/* Print version only */
 			print_version();
+			print_short_usage();
 			return 2;
 		case SHORT_VERSION_OPT:
 			printf("%s\n", MSIM_VERSION);
@@ -188,6 +191,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	print_version();
 	if (partno != NULL && (!strcmp(partno, "?"))) {
 		MSIM_PrintParts();
 		return 2;
@@ -322,8 +326,7 @@ int main(int argc, char *argv[])
 static void print_usage(void)
 {
 	/* Print usage and options */
-	printf("mcusim %s - Simulator for microcontrollers "
-	       "<http://www.mcusim.org>\n", MSIM_VERSION);
+	print_version();
 	printf("Usage: mcusim [options]\n"
 	       "Options:\n"
 	       "  -p <partno|?>              Specify AVR device "
@@ -352,15 +355,20 @@ static void print_usage(void)
 	       "-r ./lua-modules -f 1000000\n\n");
 }
 
+static void print_short_usage(void)
+{
+	printf("Usage: mcusim --help\n");
+}
+
 static void print_version(void)
 {
-	printf("mcusim %s - Simulator for microcontrollers "
-	       "<http://www.mcusim.org>\n", MSIM_VERSION);
-	printf("Usage: mcusim --help\n");
+	printf("mcusim %s - microcontroller-based circuit simulator "
+	       "<https://trac.mcusim.org>\n", MSIM_VERSION);
 }
 
 static void print_config(const struct MSIM_AVR *m)
 {
+	static const int max_wid = 23;
 	/*
 	 * AVR memory is organized as array of bytes in the simulator, but
 	 * it's natural to measure program memory in words because
@@ -369,20 +377,24 @@ static void print_config(const struct MSIM_AVR *m)
 	 * It's why all program memory addresses are divided by two before
 	 * printing.
 	 */
-	printf("Model: %s\n", m->name);
-	printf("Signature: 0x%X%2X%2X\n",
-	       m->signature[2], m->signature[1], m->signature[0]);
-	printf("Clock frequency: %lu.%lu kHz\n",
+	printf("%*s: %s\n", max_wid, "Model", m->name);
+	printf("%*s: %X%X%X\n", max_wid, "Signature",
+	       m->signature[0], m->signature[1], m->signature[2]);
+	printf("%*s: %lu.%lu kHz\n", max_wid, "Clock frequency",
 	       m->freq/1000, m->freq%1000);
-	printf("Program memory: 0x%lX-0x%lX\n",
+	printf("%*s: 0x%lX-0x%lX words\n", max_wid, "Program memory",
 	       m->flashstart >> 1, m->flashend >> 1);
-	printf("Bootloader section: 0x%lX-0x%lX\n",
+	printf("%*s: 0x%lX-0x%lX words\n", max_wid, "Bootloader section",
 	       m->bls->start >> 1, m->bls->end >> 1);
-	printf("Data memory: 0x%lX-0x%lX\n", m->ramstart, m->ramend);
-	printf("EEPROM: 0x%X-0x%X\n", m->e2start, m->e2end);
-	printf("PC: 0x%lX\n", m->pc >> 1);
-	printf("Reset address: 0x%lX\n", m->intr->reset_pc >> 1);
-	printf("Interrupt vectors table: 0x%lX\n", m->intr->ivt >> 1);
+	printf("%*s: 0x%lX-0x%lX bytes\n", max_wid, "Data memory",
+	       m->ramstart, m->ramend);
+	printf("%*s: 0x%X-0x%X bytes\n", max_wid, "EEPROM",
+	       m->e2start, m->e2end);
+	printf("%*s: 0x%lX word\n", max_wid, "PC", m->pc >> 1);
+	printf("%*s: 0x%lX word\n", max_wid, "Reset address",
+	       m->intr->reset_pc >> 1);
+	printf("%*s: 0x%lX word\n", max_wid, "Interrupt vectors table",
+	       m->intr->ivt >> 1);
 
 	/* Notify user about a maximum number of CLK_IO ticks to be dumped.
 	 *
