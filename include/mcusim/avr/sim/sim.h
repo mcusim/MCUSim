@@ -97,6 +97,7 @@ enum MSIM_AVRClkSource {
 	AVR_LOWFREQ_CRYSTAL_CLK,	/* Low frequency crystal */
 	AVR_EXT_LOWF_CRYSTAL_CLK,	/* External low-freq crystal */
 	AVR_INT_CAL_RC_CLK,		/* Internal calibrated RC */
+	AVR_INT_128K_RC_CLK,	/* Internal 128kHz RC Oscillator*/
 	AVR_EXT_RC_CLK,			/* External RC */
 	AVR_EXT_CRYSTAL			/* External crystal/ceramic resonator*/
 };
@@ -111,7 +112,6 @@ enum MSIM_AVRSREGFlag {
 	AVR_SREG_T_BIT,
 	AVR_SREG_GLOB_INT
 };
-
 /* Instance of the AVR microcontroller. */
 struct MSIM_AVR {
 	char name[20];			/* Name of the MCU */
