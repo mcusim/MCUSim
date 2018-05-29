@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Version
-set(MSIM_VERSION "0.1.67")
+set(MSIM_VERSION "0.1.68")
 
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 add_subdirectory(scripts)
