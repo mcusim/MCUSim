@@ -144,4 +144,9 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 	return 0;
 }
 
+int MSIM_M328PSetLock(void *mcu, unsigned char lock_v)
+{
+	/* It's waiting to be implemented. */
+	return 0;
+}
 
