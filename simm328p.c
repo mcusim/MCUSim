@@ -43,7 +43,7 @@ int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 {
 	struct MSIM_AVR *mcu;
-	unsigned char cksel, bootsz; 
+	unsigned char cksel, bootsz;
 
 	mcu = (struct MSIM_AVR *)m;
 
@@ -128,15 +128,15 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 			break;
 		}
 
-		if(fuse_v&0x1)
+		if (fuse_v&0x1)
 			mcu->intr->reset_pc = mcu->pc = 0x0000;
-		else 
+		else
 			mcu->intr->reset_pc = mcu->pc = mcu->bls->start;
 
 		break;
 	case FUSE_EXT:
 
-		break; 
+		break;
 	default:		/* Should not happen */
 		return -1;
 	}
@@ -144,4 +144,9 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 	return 0;
 }
 
+int MSIM_M328PSetLock(void *mcu, unsigned char lock_v)
+{
+	/* It's waiting to be implemented. */
+	return 0;
+}
 

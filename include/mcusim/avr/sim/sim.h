@@ -99,7 +99,8 @@ enum MSIM_AVRClkSource {
 	AVR_INT_CAL_RC_CLK,		/* Internal calibrated RC */
 	AVR_INT_128K_RC_CLK,	/* Internal 128kHz RC Oscillator*/
 	AVR_EXT_RC_CLK,			/* External RC */
-	AVR_EXT_CRYSTAL			/* External crystal/ceramic resonator*/
+	AVR_EXT_CRYSTAL,		/* External crystal/ceramic resonator*/
+	AVR_INT_128K_RC_CLK		/* Internal 128kHz RC Oscillator*/
 };
 
 enum MSIM_AVRSREGFlag {
