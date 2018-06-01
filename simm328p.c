@@ -85,21 +85,27 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 		} else if (cksel == 6 || cksel == 7) {
 			mcu->clk_source = AVR_FULLSWING_CRYSTAL_CLK;
 			mcu->freq = 20000000; /* max 20 MHz */
-		} else if	(cksel >= 8 && cksel <= 15) {
+		} else if (cksel >= 8 && cksel <= 15) {
 			mcu->clk_source = AVR_LOWP_CRYSTAL_CLK;
-			cksel = cksel&0x1;
+
+			/* CKSEL0 can be used to adjust start-up time and
+			 * additional delay from MCU reset. */
+
+			/* CKSEL3...1 sets frequency range in this case. */
+			cksel = cksel&0xE;
 			switch (cksel) {
 			case 8:
 				mcu->freq = 900000;	/* max 0.9 MHz */
 				break;
 			case 10:
-				mcu->freq = 3000000; /* max 3 MHz */
+				mcu->freq = 3000000;	/* max 3 MHz */
 				break;
 			case 12:
-				mcu->freq = 8000000; /* max 8MHz */
+				mcu->freq = 8000000;	/* max 8MHz */
 				break;
 			case 14:
-				mcu->freq = 16000000; /* max 16 MHz */
+				mcu->freq = 16000000;	/* max 16 MHz */
+				break;
 			}
 		}
 		break;
