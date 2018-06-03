@@ -34,9 +34,20 @@
 
 #include "mcusim/avr/sim/simm328p.h"
 
+
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
 #include "mcusim/avr/sim/mcu_init.h"
+	return 0;
+}
+
+int MSIM_M328PTickTimers(void *m)
+{
+	struct MSIM_AVR *mcu;
+
+	mcu = (struct MSIM_AVR *)m;
+	//Timers
+
 	return 0;
 }
 
