@@ -68,10 +68,10 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 			return -1;
 		} else if (cksel == 2) {
 			mcu->clk_source = AVR_INT_CAL_RC_CLK;
-			mcu->freq = 8000000;	/* max 8 MHz */
+			mcu->freq = 8000000;		/* max 8 MHz */
 		} else if (cksel == 3) {
 			mcu->clk_source = AVR_INT_128K_RC_CLK;
-			mcu->freq = 128000000;	/* max 128 kHz */
+			mcu->freq = 128000;		/* max 128 kHz */
 		}  else if (cksel == 4 || cksel == 5) {
 			mcu->clk_source = AVR_EXT_LOWF_CRYSTAL_CLK;
 			switch (cksel) {
@@ -113,24 +113,24 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 		bootsz = (fuse_v>>1)&0x3;
 		switch (bootsz) {
 		case 3:
-			mcu->bls->start = 0x3F00;
-			mcu->bls->end = 0x3FFF;
-			mcu->bls->size = 256;
+			mcu->bls->start = 0x7E00;	/* first byte */
+			mcu->bls->end = 0x7FFF;		/* last byte */
+			mcu->bls->size = 512;		/* bytes! */
 			break;
 		case 2:
-			mcu->bls->start = 0x3E00;
-			mcu->bls->end = 0x3FFF;
-			mcu->bls->size = 512;
+			mcu->bls->start = 0x7C00;
+			mcu->bls->end = 0x7FFF;
+			mcu->bls->size = 1024;		/* bytes! */
 			break;
 		case 1:
-			mcu->bls->start = 0x3C00;
-			mcu->bls->end = 0x3FFF;
-			mcu->bls->size = 1024;
+			mcu->bls->start = 0x7800;
+			mcu->bls->end = 0x7FFF;
+			mcu->bls->size = 2048;		/* bytes! */
 			break;
 		case 0:
-			mcu->bls->start = 0x3800;
-			mcu->bls->end = 0x3FFF;
-			mcu->bls->size = 2048;
+			mcu->bls->start = 0x7000;
+			mcu->bls->end = 0x7FFF;
+			mcu->bls->size = 4096;		/* bytes! */
 			break;
 		}
 
