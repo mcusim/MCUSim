@@ -902,20 +902,28 @@ static void exec_st(struct MSIM_AVR *mcu, unsigned int inst,
 	regr = (unsigned char)((inst & 0x01F0) >> 4);
 
 	switch (inst & 0x03) {
-	case 0x02:	/*	X ← X-1, (X) ← Rr	X: Pre decremented */
-		addr--;
-		*addr_low = (unsigned char) (addr & 0xFF);
-		*addr_high = (unsigned char) (addr >> 8);
-		mcu->dm[addr] = mcu->dm[regr];
-		break;
 	case 0x00:	/*	(X) ← Rr		X: Unchanged */
+		if (!mcu->xmega && !mcu->reduced_core)
+			SKIP_CYCLES(mcu, 1, 1);
+
 		mcu->dm[addr] = mcu->dm[regr];
 		break;
 	case 0x01:	/*	(X) ← Rr, X ← X+1	X: Post incremented */
+		if (!mcu->xmega && !mcu->reduced_core)
+			SKIP_CYCLES(mcu, 1, 1);
+
 		mcu->dm[addr] = mcu->dm[regr];
 		addr++;
 		*addr_low = (unsigned char) (addr & 0xFF);
 		*addr_high = (unsigned char) (addr >> 8);
+		break;
+	case 0x02:	/*	X ← X-1, (X) ← Rr	X: Pre decremented */
+		SKIP_CYCLES(mcu, 1, 1);
+
+		addr--;
+		*addr_low = (unsigned char) (addr & 0xFF);
+		*addr_high = (unsigned char) (addr >> 8);
+		mcu->dm[addr] = mcu->dm[regr];
 		break;
 	}
 	mcu->pc += 2;
@@ -926,6 +934,8 @@ static void exec_st_ydisp(struct MSIM_AVR *mcu, unsigned int inst)
 	/* ST (STD) – Store Indirect using Index Y */
 	unsigned int addr;
 	unsigned char regr, *y_low, *y_high, disp;
+
+	SKIP_CYCLES(mcu, 1, 1);
 
 	y_low = &mcu->dm[28];
 	y_high = &mcu->dm[29];
@@ -941,9 +951,11 @@ static void exec_st_ydisp(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_st_zdisp(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/* ST (STD) – Store Indirect using Index Z*/
+	/* ST (STD) – Store Indirect using Index Z */
 	unsigned int addr;
 	unsigned char regr, *z_low, *z_high, disp;
+
+	SKIP_CYCLES(mcu, 1, 1);
 
 	z_low = &mcu->dm[30];
 	z_high = &mcu->dm[31];
@@ -1139,9 +1151,7 @@ static void exec_mov(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_ld_x(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * LD – Load Indirect from Data Space to Register using Index X
-	 */
+	/* LD – Load Indirect from Data Space to Register using Index X */
 	unsigned char regd, *x_low, *x_high;
 
 	x_low = &mcu->dm[26];
@@ -1152,9 +1162,7 @@ static void exec_ld_x(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_ld_y(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * LD – Load Indirect from Data Space to Register using Index Y
-	 */
+	/* LD – Load Indirect from Data Space to Register using Index Y */
 	unsigned char regd, *y_low, *y_high;
 
 	y_low = &mcu->dm[28];
@@ -1165,9 +1173,7 @@ static void exec_ld_y(struct MSIM_AVR *mcu, unsigned int inst)
 
 static void exec_ld_z(struct MSIM_AVR *mcu, unsigned int inst)
 {
-	/*
-	 * LD – Load Indirect from Data Space to Register using Index Z
-	 */
+	/* LD – Load Indirect from Data Space to Register using Index Z */
 	unsigned char regd, *z_low, *z_high;
 
 	z_low = &mcu->dm[30];
@@ -1185,20 +1191,35 @@ static void exec_ld(struct MSIM_AVR *mcu, unsigned int inst,
 	unsigned int addr = (unsigned int) (*addr_low | (*addr_high << 8));
 
 	switch (inst & 0x03) {
-	case 0x02:	/*	X ← X-1, Rd ← (X)	X: Pre decremented */
-		addr--;
-		*addr_low = (unsigned char) (addr & 0xFF);
-		*addr_high = (unsigned char) (addr >> 8);
-		mcu->dm[regd] = mcu->dm[addr];
-		break;
 	case 0x00:	/*	Rd ← (X)		X: Unchanged */
+		if (mcu->xmega && addr <= mcu->ramend && addr >= mcu->ramstart)
+			SKIP_CYCLES(mcu, 1, 1);
+
 		mcu->dm[regd] = mcu->dm[addr];
 		break;
 	case 0x01:	/*	Rd ← (X), X ← X+1	X: Post incremented */
+		if (!mcu->xmega)
+			SKIP_CYCLES(mcu, 1, 1);
+		else if (addr <= mcu->ramend && addr >= mcu->ramstart)
+			SKIP_CYCLES(mcu, 1, 1);
+
 		mcu->dm[regd] = mcu->dm[addr];
 		addr++;
 		*addr_low = (unsigned char) (addr & 0xFF);
 		*addr_high = (unsigned char) (addr >> 8);
+		break;
+	case 0x02:	/*	X ← X-1, Rd ← (X)	X: Pre decremented */
+		if (!mcu->xmega)
+			SKIP_CYCLES(mcu, 1, 2);
+		else if (addr <= mcu->ramend && addr >= mcu->ramstart)
+			SKIP_CYCLES(mcu, 1, 2);
+		else if (addr > mcu->ramend && addr < mcu->ramstart)
+			SKIP_CYCLES(mcu, 1, 1);
+
+		addr--;
+		*addr_low = (unsigned char) (addr & 0xFF);
+		*addr_high = (unsigned char) (addr >> 8);
+		mcu->dm[regd] = mcu->dm[addr];
 		break;
 	}
 	mcu->pc += 2;
@@ -1213,6 +1234,14 @@ static void exec_ld_ydisp(struct MSIM_AVR *mcu, unsigned int inst)
 	y_low = &mcu->dm[28];
 	y_high = &mcu->dm[29];
 	addr = (unsigned int) *y_low | (unsigned int) (*y_high << 8);
+
+	if (!mcu->xmega)
+		SKIP_CYCLES(mcu, 1, 1);
+	else if (addr <= mcu->ramend && addr >= mcu->ramstart)
+		SKIP_CYCLES(mcu, 1, 2);
+	else if (addr > mcu->ramend && addr < mcu->ramstart)
+		SKIP_CYCLES(mcu, 1, 1);
+
 	regd = (unsigned char)((inst & 0x01F0) >> 4);
 	disp = (unsigned char)((inst & 0x07) |
 	                       ((inst & 0x0C00) >> 7) |
@@ -1231,6 +1260,14 @@ static void exec_ld_zdisp(struct MSIM_AVR *mcu, unsigned int inst)
 	z_low = &mcu->dm[30];
 	z_high = &mcu->dm[31];
 	addr = (unsigned int) *z_low | (unsigned int) (*z_high << 8);
+
+	if (!mcu->xmega)
+		SKIP_CYCLES(mcu, 1, 1);
+	else if (addr <= mcu->ramend && addr >= mcu->ramstart)
+		SKIP_CYCLES(mcu, 1, 2);
+	else if (addr > mcu->ramend && addr < mcu->ramstart)
+		SKIP_CYCLES(mcu, 1, 1);
+
 	regd = (unsigned char)((inst & 0x01F0) >> 4);
 	disp = (unsigned char)((inst & 0x07) |
 	                       ((inst & 0x0C00) >> 7) |
@@ -2290,14 +2327,13 @@ static void exec_lds(struct MSIM_AVR *mcu, unsigned int inst)
 	unsigned short rd_addr, addr;
 	unsigned char i2, i3;
 
-	if (!mcu->xmega)
-		SKIP_CYCLES(mcu, 1, 1);
-
 	i2 = mcu->pm[mcu->pc+2];
 	i3 = mcu->pm[mcu->pc+3];
 	addr = (unsigned short)(((i3<<8)&0xFF00) | (i2&0xFF));
 
-	if (mcu->xmega)
+	if (!mcu->xmega)
+		SKIP_CYCLES(mcu, 1, 1);
+	else
 		SKIP_CYCLES(mcu, 1, ((addr <= mcu->ramend &&
 		                      addr >= mcu->ramstart) ? 2 : 1));
 
