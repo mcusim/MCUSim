@@ -140,7 +140,7 @@ done
 
 printf "Do you want to perform additional configuration? [y/N]: "
 read ADDITIONAL_CONF
-if [ "$ADDITIONAL_CONF" == "y" ] && [ "$ADDITIONAL_CONF" != "Y" ] ; then
+if [ "$ADDITIONAL_CONF" == "y" ] || [ "$ADDITIONAL_CONF" == "Y" ] ; then
 	# ---------------- Model configuration --------------------------------
 	# Note: These fuse bytes and lock bits are for AVR only. I'll have to
 	#       modify this part in order to support other models and provide
@@ -157,6 +157,14 @@ if [ "$ADDITIONAL_CONF" == "y" ] && [ "$ADDITIONAL_CONF" != "Y" ] ; then
 	read LOW_FUSE
 	# -------------END Model configuration --------------------------------
 
+	# ---------------- Registers to dump ----------------------------------
+	printf "Do you want I/O registers to be dumped? [y/N]: "
+	read DUMP_REGS
+	if [ "$DUMP_REGS" == "y" ] || [ "$DUMP_REGS" == "Y" ] ; then
+		printf "Registers (TCNT2,PORTD,PINB1,...): "
+		read DUMP_REGS_LIST
+	fi
+	# -------------END Registers to dump ----------------------------------
 
 	# ---------------- Simulator configuration ----------------------------
 	printf "Do you want to set up a firmware test? [y/N]: "
@@ -172,13 +180,14 @@ fi
 # -------------- Verify a configuration ---------------------------------------
 echo "Please, verify this configuration:"
 echo ""
-echo "    Configuration: $CFG_DIR/$CFG_NAME"
+echo "    Configuration script: $CFG_DIR/$CFG_NAME"
+echo "    Firmware: $FMW_PATH"
+echo "    Bootloader: $BLD_PATH"
 echo "    Model: $MCU_MODEL"
 echo "    Frequency: $MCU_FREQ Hz"
 echo "    Lock bits: $LOCK_BYTE"
-echo "    Fuses: EXT=$EXT_FUSE,"
-echo "           HIGH=$HIGH_FUSE,"
-echo "           LOW=$LOW_FUSE"
+echo "    Fuses: E:$EXT_FUSE, H:$HIGH_FUSE, L:$LOW_FUSE"
+echo "    I/O registers to dump: $DUMP_REGS_LIST"
 echo "    Firmware test: $FIRMWARE_TEST"
 echo ""
 printf "Is it correct? [y/N] "
@@ -240,8 +249,8 @@ echo "#" >> $CFG_DIR/$CFG_NAME
 echo "" >> $CFG_DIR/$CFG_NAME
 
 echo "# Append models to the list in order to load them during simulation." >> $CFG_DIR/$CFG_NAME
-echo "#MODELS=\"\$MODELS./dht11.lua\n\"" >> $CFG_DIR/$CFG_NAME
-echo "#MODELS=\"\$MODELS./io.lua\n\"" >> $CFG_DIR/$CFG_NAME
+echo "#MODELS=\"\$MODELS./dht11.lua\"" >> $CFG_DIR/$CFG_NAME
+echo "#MODELS=\"\$MODELS./io.lua\"" >> $CFG_DIR/$CFG_NAME
 echo "" >> $CFG_DIR/$CFG_NAME
 echo "# File to keep list of the models" >> $CFG_DIR/$CFG_NAME
 echo "MDL_LIST=\$(mktemp /tmp/mcusim-modlist.XXXXXXX)" >> $CFG_DIR/$CFG_NAME
@@ -263,10 +272,10 @@ if [ "$FIRMWARE_TEST" == "yes" ]; then
 	MSIM_CMD="$MSIM_CMD --firmware-test"
 fi
 
-if [ -f "$FMW_PATH" ]; then
+if [ ! -z "$FMW_PATH" ]; then
 	MSIM_CMD="$MSIM_CMD -U flash:w:$FMW_PATH"
 fi
-if [ -f "$BLD_PATH" ]; then
+if [ ! -z "$BLD_PATH" ]; then
 	MSIM_CMD="$MSIM_CMD -U flash:w:$BLD_PATH"
 fi
 if [ ! -z "$LOCK_BYTE" ]; then
@@ -280,6 +289,9 @@ if [ ! -z "$HIGH_FUSE" ]; then
 fi
 if [ ! -z "$LOW_FUSE" ]; then
 	MSIM_CMD="$MSIM_CMD -U lfuse:w:$LOW_FUSE:h"
+fi
+if [ ! -z "$DUMP_REGS_LIST" ]; then
+	MSIM_CMD="$MSIM_CMD --dump-regs=$DUMP_REGS_LIST"
 fi
 
 echo "if [ -z \$1 ]; then" >> $CFG_DIR/$CFG_NAME

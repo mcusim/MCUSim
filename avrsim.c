@@ -191,11 +191,11 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	print_version();
 	if (partno != NULL && (!strcmp(partno, "?"))) {
 		MSIM_PrintParts();
 		return 2;
 	}
+	print_version();
 	if (partno == NULL) {
 		/* MCU model is necessary! */
 		fprintf(stderr, "[e]: Please, specify MCU model\n");
