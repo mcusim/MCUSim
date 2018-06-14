@@ -192,7 +192,8 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		 *
 		 * Simulator doesn't guarantee anything special
 		 * here either. The only thing you may rely on is instruction
-		 * which will be completed _after all_ of these cycles.
+		 * which will be completed _after all_ of these cycles
+		 * required to finish instruction itself.
 		 */
 		if ((mcu->ic_left || mcu->state == AVR_RUNNING ||
 		                mcu->state == AVR_MSIM_STEP) &&
@@ -361,7 +362,8 @@ static int handle_irq(struct MSIM_AVR *mcu)
 		/* Clear selected IRQ */
 		mcu->intr->irq[i] = 0;
 
-		/* Disable interrupts globally (doesn't work for AVR XMEGA) */
+		/* Disable interrupts globally.
+		 * NOTE: It isn't applicable for AVR XMEGA cores. */
 		if (!mcu->xmega)
 			MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
 
@@ -375,7 +377,7 @@ static int handle_irq(struct MSIM_AVR *mcu)
 		/* Load interrupt vector to PC */
 		mcu->pc = mcu->intr->ivt+(i*2);
 
-		/* Switch MCU to step mode to notify user about interrupt */
+		/* Switch MCU to step mode if it's necessary */
 		if (mcu->intr->trap_at_isr && mcu->state == AVR_RUNNING)
 			mcu->state = AVR_MSIM_STEP;
 

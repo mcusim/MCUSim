@@ -39,8 +39,8 @@
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
 
-/*
- * Macro to help opcode function to skip required number of clock cycles.
+/* Macro to help opcode function to skip required number of clock cycles
+ * required to execute instruction on a real hardware.
  *
  * This is necessary to perform a cycle-accurate simulation because each
  * instruction should be finished within required number of cycles in spite
