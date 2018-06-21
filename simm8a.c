@@ -257,9 +257,11 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 		presc = 1024;		/* clk_io/1024 */
 		break;
 	case 0x6:			/* Ext. clock on T1/PD5 (fall) */
-		break;
+	/* External clock isn't supported at the moment. */
+	/* break; */
 	case 0x7:			/* Ext. clock on T1/PD5 (rise) */
-		break;
+	/* External clock isn't supported at the moment. */
+	/* break; */
 	case 0x0:			/* No clock source (stopped mode) */
 	default:			/* Should not happen! */
 		tc1_presc = 0;
