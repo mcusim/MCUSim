@@ -26,21 +26,25 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# MCUSim tests configuration file
+# MCUSim configuration file to check code to be compliant
+# with MISRA C:2012 rules.
 #
 cmake_minimum_required(VERSION 3.2)
-project(mcusim-tests NONE)
+project(mcusim-misra C)
 
 # Version
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
+# Load modules from our source tree too
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../cmake")
+
 configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/tests.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/tests.cmake
+	${CMAKE_CURRENT_SOURCE_DIR}/misra.cmake.in
+	${CMAKE_CURRENT_BINARY_DIR}/misra.cmake
 	@ONLY
 )
 add_custom_command(
-	OUTPUT TESTS
-	COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake
+	OUTPUT MISRA
+	COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/misra.cmake
 )
-add_custom_target(tests DEPENDS TESTS)
+add_custom_target(misra DEPENDS MISRA)

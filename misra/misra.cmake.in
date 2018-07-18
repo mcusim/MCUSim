@@ -26,21 +26,53 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# MCUSim tests configuration file
+# CMake script to check MISRA C:2012 rules by "make misra" command
 #
-cmake_minimum_required(VERSION 3.2)
-project(mcusim-tests NONE)
+file(GLOB C_FILES "@CMAKE_CURRENT_SOURCE_DIR@/../*.c")
+#file(GLOB_RECURSE C_FILES "@CMAKE_CURRENT_SOURCE_DIR@/../tests/*.c")
 
-# Version
-add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
+# Load modules from our source tree too
+set(CMAKE_MODULE_PATH "@CMAKE_CURRENT_SOURCE_DIR@/../cmake")
 
-configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/tests.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/tests.cmake
-	@ONLY
-)
-add_custom_command(
-	OUTPUT TESTS
-	COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake
-)
-add_custom_target(tests DEPENDS TESTS)
+# Look for libraries, packages, etc.
+find_package(cppcheck REQUIRED)
+find_package(PythonInterp REQUIRED)
+
+if (CPPCHECK_FOUND AND PYTHONINTERP_FOUND)
+	message(STATUS "cppcheck executable: ${CPPCHECK_EXECUTABLE}")
+	message(STATUS "cppcheck version: ${CPPCHECK_VERSION}")
+	message(STATUS "python executable: ${PYTHON_EXECUTABLE}")
+	message(STATUS "python version: ${PYTHON_VERSION_STRING}")
+
+	foreach(C_FILE ${C_FILES})
+		message(STATUS "[FILE]: ${C_FILE}")
+
+		# Create dump for a file
+		get_filename_component(WORKING_DIR ${C_FILE} DIRECTORY)
+		execute_process(
+			COMMAND ${CPPCHECK_EXECUTABLE} --dump ${C_FILE}
+			RESULT_VARIABLE res
+			WORKING_DIRECTORY ${WORKING_DIR}
+		)
+
+		# Run cppcheck addon to check MISRA C rules
+		if (EXISTS "@CMAKE_CURRENT_SOURCE_DIR@/MISRA_C_2012.txt")
+			execute_process(
+				COMMAND ${PYTHON_EXECUTABLE} @CMAKE_CURRENT_SOURCE_DIR@/misra.py --rule-texts=@CMAKE_CURRENT_SOURCE_DIR@/MISRA_C_2012.txt ${C_FILE}.dump
+				RESULT_VARIABLE res
+				WORKING_DIRECTORY ${WORKING_DIR}
+			)
+		else()
+			execute_process(
+				COMMAND ${PYTHON_EXECUTABLE} @CMAKE_CURRENT_SOURCE_DIR@/misra.py ${C_FILE}.dump
+				RESULT_VARIABLE res
+				WORKING_DIRECTORY ${WORKING_DIR}
+			)
+		endif()
+
+		# Remove dump
+		if (EXISTS ${C_FILE}.dump)
+			file(REMOVE ${C_FILE}.dump)
+		endif()
+	endforeach()
+endif()

@@ -54,11 +54,11 @@
  * 134218 ms (MCU clock is 16 MHz) because of a limit of 32-bits
  * unsigned integer.
  */
-#	define TICKS_MAX	ULONG_MAX
-#	define ticks_t		unsigned long
+#define TICKS_MAX	ULONG_MAX
+#define ticks_t		unsigned long
 #else
-#	define TICKS_MAX	ULLONG_MAX
-#	define ticks_t		unsigned long long
+#define TICKS_MAX	ULLONG_MAX
+#define ticks_t		unsigned long long
 #endif
 
 typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);

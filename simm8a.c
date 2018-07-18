@@ -31,10 +31,9 @@
  * useful to take a look at the "simm8a.h" header first. Feel free to
  * add missing features of the microcontroller or fix bugs.
  */
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
-#include <time.h>
 
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simm8a.h"
@@ -50,19 +49,19 @@
 #define DM(v)			(mcu->dm[v])
 
 /* Initial PORTD and PIND values and to track T0/PD4 and T1/PD5. */
-static unsigned char init_portd;
-static unsigned char init_pind;
+static uint8_t init_portd;
+static uint8_t init_pind;
 /* Initial PORTB and PINB value to track TOSC1/PB6 and TOSC2/PB7. */
-static unsigned char init_portb;
-static unsigned char init_pinb;
+static uint8_t init_portb;
+static uint8_t init_pinb;
 
 /* The OCR2 Compare Register is double buffered when using any of
  * the PWM modes and updated during either TOP or BOTTOM of the counting
  * sequence. */
-static unsigned char ocr2_buf;
+static uint8_t ocr2_buf;
 /* Timer may start counting from a value higher then the one on OCR2 and
  * for that reason misses the Compare Match. This flag is set in this case. */
-static unsigned char missed_cm = 0;
+static uint8_t missed_cm = 0;
 
 static void tick_timer0(struct MSIM_AVR *mcu);
 static void tick_timer1(struct MSIM_AVR *mcu);
@@ -70,33 +69,32 @@ static void tick_timer2(struct MSIM_AVR *mcu);
 static void update_watched_values(struct MSIM_AVR *mcu);
 
 /* Timer/Counter1 modes of operation */
-static void timer1_normal(struct MSIM_AVR *mcu,
-                          unsigned int presc, unsigned int *ticks,
-                          unsigned char wgm1, unsigned char com1a,
-                          unsigned char com1b);
+static void timer1_normal(struct MSIM_AVR *mcu, uint32_t presc,
+                          uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
+                          uint8_t com1b);
 
-static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, unsigned char com1a,
-                              unsigned char com1b, unsigned char chan);
+static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
+                              uint8_t com1b, uint8_t chan);
 
 /* Timer/Counter2 modes of operation */
 static void timer2_normal(struct MSIM_AVR *mcu,
-                          unsigned int presc, unsigned int *ticks,
-                          unsigned char wgm2, unsigned char com2);
+                          uint32_t presc, uint32_t *ticks,
+                          uint8_t wgm2, uint8_t com2);
 static void timer2_ctc(struct MSIM_AVR *mcu,
-                       unsigned int presc, unsigned int *ticks,
-                       unsigned char wgm2, unsigned char com2);
+                       uint32_t presc, uint32_t *ticks,
+                       uint8_t wgm2, uint8_t com2);
 static void timer2_fastpwm(struct MSIM_AVR *mcu,
-                           unsigned int presc, unsigned int *ticks,
-                           unsigned char wgm2, unsigned char com2);
+                           uint32_t presc, uint32_t *ticks,
+                           uint8_t wgm2, uint8_t com2);
 static void timer2_pcpwm(struct MSIM_AVR *mcu,
-                         unsigned int presc, unsigned int *ticks,
-                         unsigned char wgm2, unsigned char com2);
+                         uint32_t presc, uint32_t *ticks,
+                         uint8_t wgm2, uint8_t com2);
 
-static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, unsigned char com2);
-static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, unsigned char com2,
-                               unsigned char state);
-static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, unsigned char com2,
-                             unsigned char state);
+static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, uint8_t com2);
+static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, uint8_t com2,
+                               uint8_t state);
+static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, uint8_t com2,
+                             uint8_t state);
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
@@ -132,10 +130,10 @@ static void update_watched_values(struct MSIM_AVR *mcu)
 
 static void tick_timer0(struct MSIM_AVR *mcu)
 {
-	static unsigned int tc0_presc;
-	static unsigned int tc0_ticks;
-	unsigned char tccr0;		/* Timer/Counter0 control register */
-	unsigned int presc;		/* Prescaler value */
+	static uint32_t tc0_presc;
+	static uint32_t tc0_ticks;
+	uint8_t tccr0;			/* Timer/Counter0 control register */
+	uint32_t presc;			/* Prescaler value */
 
 	tccr0 = mcu->dm[TCCR0];
 	presc = 0;
@@ -225,14 +223,14 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 	 * - (planned) Phase Correct PWM Mode, WGM13:0 = 1, 2, 3, 10 or 11
 	 * - (planned) Phase and Frequency Correct PWM Mode, WGM13:0 = 8 or 9
 	 */
-	static unsigned int tc1_presc;
-	static unsigned int tc1_ticks;
-	static unsigned char old_wgm1;
-	unsigned char cs1;		/* Clock select bits CS12:0 */
-	unsigned char wgm1;		/* Waveform Generation WGM13:0 */
-	unsigned char com1a;		/* Compare Output mode COM1A1:0 */
-	unsigned char com1b;		/* Compare Output mode COM1B1:0 */
-	unsigned int presc;		/* Prescaler */
+	static uint32_t tc1_presc;
+	static uint32_t tc1_ticks;
+	static uint8_t old_wgm1;
+	uint8_t cs1;		/* Clock select bits CS12:0 */
+	uint8_t wgm1;		/* Waveform Generation WGM13:0 */
+	uint8_t com1a;		/* Compare Output mode COM1A1:0 */
+	uint8_t com1b;		/* Compare Output mode COM1B1:0 */
+	uint32_t presc;		/* Prescaler */
 
 	cs1 = DM(TCCR1B)&0x7;
 	wgm1 = ((DM(TCCR1B)>>4)&1) | ((DM(TCCR1B)>>3)&1) |
@@ -281,13 +279,13 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 		timer1_normal(mcu, tc1_presc, &tc1_ticks, wgm1, com1a, com1b);
 		return;
 	case 2:
-		/* timer2_ctc(mcu, tc2_presc, &tc2_ticks, wgm2, com2); */
+		/* timer1_ctc(mcu, tc2_presc, &tc2_ticks, wgm2, com2); */
 		return;
 	case 3:
-		/* timer2_fastpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2); */
+		/* timer1_fastpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2); */
 		return;
 	case 1:
-		/* timer2_pcpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2); */
+		/* timer1_pcpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2); */
 		return;
 	default:			/* Should not happen! */
 		if (wgm1 != old_wgm1) {
@@ -314,13 +312,13 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	 * - (supported) Fast PWM Mode, WGM21:0 = 3.
 	 * - (supported) Phase Correct PWM Mode, WGM21:0 = 1;
 	 */
-	static unsigned int tc2_presc;
-	static unsigned int tc2_ticks;
-	static unsigned char old_wgm2;
-	unsigned char cs2;		/* Clock Select bits CS22:0 */
-	unsigned char wgm2;		/* Waveform Generation WGM21:0 */
-	unsigned char com2;		/* Compare Output mode COM21:0 */
-	unsigned int presc;		/* Prescaler */
+	static uint32_t tc2_presc;
+	static uint32_t tc2_ticks;
+	static uint8_t old_wgm2;
+	uint8_t cs2;		/* Clock Select bits CS22:0 */
+	uint8_t wgm2;		/* Waveform Generation WGM21:0 */
+	uint8_t com2;		/* Compare Output mode COM21:0 */
+	uint32_t presc;		/* Prescaler */
 
 	cs2 = mcu->dm[TCCR2]&0x7;
 	wgm2 = (((mcu->dm[TCCR2]>>WGM21)<<1)&2) | ((mcu->dm[TCCR2]>>WGM20)&1);
@@ -394,12 +392,11 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 }
 
 static void timer1_normal(struct MSIM_AVR *mcu,
-                          unsigned int presc, unsigned int *ticks,
-                          unsigned char wgm1, unsigned char com1a,
-                          unsigned char com1b)
+                          uint32_t presc, uint32_t *ticks,
+                          uint8_t wgm1, uint8_t com1a, uint8_t com1b)
 {
-	unsigned int tcnt1;
-	unsigned int ocr1a, ocr1b;
+	uint32_t tcnt1;
+	uint32_t ocr1a, ocr1b;
 
 	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00) | (DM(TCNT1L));
 	ocr1a = ((DM(OCR1AH)<<8)&0xFF00) | (DM(OCR1AL));
@@ -430,11 +427,10 @@ static void timer1_normal(struct MSIM_AVR *mcu,
 	(*ticks)++;
 }
 
-static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, unsigned char com1a,
-                              unsigned char com1b, unsigned char chan)
+static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
+                              uint8_t com1b, uint8_t chan)
 {
-	unsigned char pin;
-	unsigned char com;
+	uint8_t pin, com;
 
 	/* Check Data Direction Register first. DDRB3 should be set to
 	 * enable the output driver (according to a datasheet).*/
@@ -475,8 +471,8 @@ static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, unsigned char com1a,
 }
 
 static void timer2_normal(struct MSIM_AVR *mcu,
-                          unsigned int presc, unsigned int *ticks,
-                          unsigned char wgm2, unsigned char com2)
+                          uint32_t presc, uint32_t *ticks,
+                          uint8_t wgm2, uint8_t com2)
 {
 	if (*ticks == (presc-1)) {
 		if (mcu->dm[TCNT2] == 0xFF) {
@@ -497,9 +493,8 @@ static void timer2_normal(struct MSIM_AVR *mcu,
 	(*ticks)++;
 }
 
-static void timer2_ctc(struct MSIM_AVR *mcu,
-                       unsigned int presc, unsigned int *ticks,
-                       unsigned char wgm2, unsigned char com2)
+static void timer2_ctc(struct MSIM_AVR *mcu, uint32_t presc, uint32_t *ticks,
+                       uint8_t wgm2, uint8_t com2)
 {
 	/* NOTE: We're able to generate a waveform output in this mode with a
 	 * frequency which is controlled by the value in OCR2 register
@@ -523,8 +518,8 @@ static void timer2_ctc(struct MSIM_AVR *mcu,
 }
 
 static void timer2_fastpwm(struct MSIM_AVR *mcu,
-                           unsigned int presc, unsigned int *ticks,
-                           unsigned char wgm2, unsigned char com2)
+                           uint32_t presc, uint32_t *ticks,
+                           uint8_t wgm2, uint8_t com2)
 {
 	/* NOTE: This mode allows PWM to be generated using single-slope
 	 * operation. Duty cycle can be controlled by the value in
@@ -553,13 +548,13 @@ static void timer2_fastpwm(struct MSIM_AVR *mcu,
 }
 
 static void timer2_pcpwm(struct MSIM_AVR *mcu,
-                         unsigned int presc, unsigned int *ticks,
-                         unsigned char wgm2, unsigned char com2)
+                         uint32_t presc, uint32_t *ticks,
+                         uint8_t wgm2, uint8_t com2)
 {
 	/* NOTE: This mode allows PWM to be generated using dual-slope
 	 * operation (preferred for motor control applications). Duty cycle
 	 * can be controlled by the value in OCR2 register. */
-	static unsigned char cnt_down = 0;
+	static uint8_t cnt_down = 0;
 
 	/* Dual-slope operation means counting from BOTTOM(0) to MAX(255),
 	 * then from MAX back to the BOTTOM and start again. */
@@ -602,7 +597,7 @@ static void timer2_pcpwm(struct MSIM_AVR *mcu,
 	(*ticks)++;
 }
 
-static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, unsigned char com2)
+static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, uint8_t com2)
 {
 	/* Check Data Direction Register first. DDRB3 should be set to
 	 * enable the output driver (according to a datasheet).*/
@@ -630,8 +625,8 @@ static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, unsigned char com2)
 	}
 }
 
-static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, unsigned char com2,
-                               unsigned char state)
+static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, uint8_t com2,
+                               uint8_t state)
 {
 	/* Check Data Direction Register first. DDRB3 should be set to
 	 * enable the output driver (according to a datasheet).*/
@@ -667,8 +662,8 @@ static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, unsigned char com2,
 	}
 }
 
-static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, unsigned char com2,
-                             unsigned char state)
+static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, uint8_t com2,
+                             uint8_t state)
 {
 	/* Check Data Direction Register first. DDRB3 should be set to
 	 * enable the output driver (according to a datasheet).*/
@@ -700,10 +695,10 @@ static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, unsigned char com2,
 	}
 }
 
-int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
+int MSIM_M8ASetFuse(void *m, uint32_t fuse_n, uint8_t fuse_v)
 {
 	struct MSIM_AVR *mcu;
-	unsigned char cksel, bootsz, ckopt;
+	uint8_t cksel, bootsz, ckopt;
 
 	mcu = (struct MSIM_AVR *)m;
 	if (fuse_n > 1) {
@@ -826,7 +821,7 @@ int MSIM_M8ASetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 	return 0;
 }
 
-int MSIM_M8ASetLock(void *m, unsigned char lock_v)
+int MSIM_M8ASetLock(void *m, uint8_t lock_v)
 {
 	/* Waiting to be implemented */
 	return 0;
@@ -835,7 +830,7 @@ int MSIM_M8ASetLock(void *m, unsigned char lock_v)
 int MSIM_M8AProvideIRQs(void *m)
 {
 	struct MSIM_AVR *mcu;
-	unsigned char timsk, tifr;
+	uint8_t timsk, tifr;
 
 	mcu = (struct MSIM_AVR *)m;
 	timsk = mcu->dm[TIMSK];

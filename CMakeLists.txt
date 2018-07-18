@@ -26,22 +26,26 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# MCUSim configuration file of the AVR simulator
+# MCUSim build configuration file
 #
 cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Version
-set(MSIM_VERSION "0.1.77")
-
+set(MSIM_VERSION "0.1.78")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
+
+# Load modules from our source tree too
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
 add_subdirectory(scripts)
 add_subdirectory(tests)
+add_subdirectory(misra)
 
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
-# Simulator app name
+# Simulator program name
 set(MCUSIM "mcusim")
 
 # Set flags here
@@ -94,7 +98,7 @@ set(TARGET_LIBS "")
 if (LUA_FOUND AND
     ((LUA_VERSION_MAJOR EQUAL 5) OR (LUA_VERSION_MAJOR GREATER 5)) AND
     ((LUA_VERSION_MINOR EQUAL 2) OR (LUA_VERSION_MINOR GREATER 2)))
-	add_definitions(-DLUA_FOUND=1 -DLUA_C89_NUMBERS)
+	add_definitions(-DLUA_FOUND=1)
 	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
 	message(STATUS "Support for Lua-based peripherals will be enabled")
 else()
@@ -147,9 +151,8 @@ else()
 		add_definitions(-DMSIM_POSIX_CYGWIN=1)
 	endif()
 endif()
-# END Check functions, include files here
 
-# Define includes here
+# Define include files and directories here
 include_directories("include/")
 if (LUA_FOUND)
 	include_directories(${LUA_INCLUDE_DIR})
@@ -158,6 +161,6 @@ endif()
 add_executable(${MCUSIM} ${MCUSIM_SRC})
 target_link_libraries(${MCUSIM} ${TARGET_LIBS})
 
-# Install mcusim and manual pages
+# Install mcusim
 install(TARGETS ${MCUSIM}
 	DESTINATION bin)

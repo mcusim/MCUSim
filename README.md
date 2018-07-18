@@ -25,9 +25,11 @@ AVR® (Atmel, Microchip), PIC® (Microchip), etc. It requires:
 * CMake 3.2+ (to generate build files)
 * Lua 5.2+ (to mimic external devices)
 * astyle (to check code style in pre-commit hook)
+* Python 2.7+ (optional, to check MISRA C compliance)
+* cppcheck 1.83+ (optional, to check MISRA C compliance)
 
 ### macOS
-Debug version of the suite can be compiled and installed using package
+Release version of the suite can be compiled and installed using package
 manager `brew` to solve dependencies:
 
 	# brew install cmake lua astyle
@@ -36,11 +38,11 @@ manager `brew` to solve dependencies:
 	# cmake ..
 	# make install clean
 
-Release version can be compiled the very similar way. You'll have to call
-`cmake -DCMAKE_BUILD_TYPE=Release ..`.
+Debug version can be compiled the very similar way. You'll have to call
+`cmake -DCMAKE_BUILD_TYPE=Debug ..`.
 
 ### FreeBSD
-Debug version of the suite can be compiled and installed using package
+Release version of the suite can be compiled and installed using package
 manager `pkg` (FreeBSD 10 and above) or via collection of ports to solve
 dependencies:
 
@@ -51,8 +53,8 @@ dependencies:
 	# make install clean
 
 It's highly likely that you'll need super user rights to perform
-the last command. Release version can be compiled the very similar way.
-You'll have to call `cmake -DCMAKE_BUILD_TYPE=Release ..`.
+the last command. Debug version can be compiled the very similar way.
+You'll have to call `cmake -DCMAKE_BUILD_TYPE=Debug ..`.
 
 Availability matrix
 -------------------
@@ -65,7 +67,7 @@ How to contribute
 If you're feeling ready to make any changes, please, read a
 [Contribution Guide](https://github.com/dsalychev/mcusim/blob/master/CONTRIBUTING.md).
 
-Third-party projects and libraries
+Copyright notes
 ----------------------------------
 I'd like to thank all contributors to the projects listed below because their
 code gave me some ideas or helped a lot.
@@ -86,3 +88,31 @@ code gave me some ideas or helped a lot.
 	Copyright (c) 2000 The NetBSD Foundation, Inc.
 	2-clause BSD license,
 	http://netbsd.org
+
+        Findcppcheck.cmake and Findcppcheck.cpp
+	2009-2010 Ryan Pavlik <rpavlik@iastate.edu> <abiryan@ryand.net>
+	http://academic.cleardefinition.com
+	Iowa State University HCI Graduate Program/VRAC
+	Copyright Iowa State University 2009-2010.
+	Distributed under the Boost Software License, Version 1.0.
+	(See accompanying file LICENSE_1_0.txt or copy at
+	http://www.boost.org/LICENSE_1_0.txt)
+
+	misra.py and cppcheckdata.py
+	Cppcheck - A tool for static C/C++ code analysis
+	Copyright (C) 2007-2018 Cppcheck team.
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+	You should have received a copy of the GNU General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+`misra.py` and `cppcheckdata.py` are covered by GNU GPL License which isn't
+compatible with Modified BSD License used by MCUSim. However, these files
+used during the MCUSim build process and are not included into the simulator
+itself in any way.
