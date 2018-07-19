@@ -109,8 +109,7 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 				break;
 			}
 		} else {
-			fprintf(stderr, "[e]: CKSEL = %" PRIu8 ", but it "
-			        "should be in [0, 15] inclusively!\n", cksel);
+			/* Nothing */;
 		}
 		break;
 	case FUSE_HIGH:

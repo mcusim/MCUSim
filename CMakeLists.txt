@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Version
-set(MSIM_VERSION "0.1.79")
+set(MSIM_VERSION "0.1.80")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Load modules from our source tree too

@@ -789,8 +789,7 @@ int MSIM_M8ASetFuse(void *m, uint32_t fuse_n, uint8_t fuse_v)
 				mcu->freq = 16000000;	/* max 16 MHz */
 			}
 		} else {
-			fprintf(stderr, "[e]: CKSEL = %" PRIu8 ", but it "
-			        "should be in [0, 15] inclusively!\n", cksel);
+			/* Nothing */;
 		}
 		break;
 	case FUSE_HIGH:
