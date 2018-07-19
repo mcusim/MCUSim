@@ -60,13 +60,15 @@ int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *file)
 	i = 0;
 	while (fgets(path, sizeof path, f) != NULL) {
 		/* Skip comment lines */
-		if (path[0] == '#')
+		if (path[0] == '#') {
 			continue;
-		for (ci = 0; ci < 4096; ci++)
+		}
+		for (ci = 0; ci < 4096; ci++) {
 			if (path[ci] == '\n') {
 				path[ci] = 0;
 				break;
 			}
+		}
 		/* Initialize Lua */
 		lua_states[i] = luaL_newstate();
 
@@ -109,10 +111,12 @@ int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *file)
 		 * the Lua state. */
 		regs = sizeof mcu->vcdd->regs/sizeof mcu->vcdd->regs[0];
 		for (j = 0; j < regs; j++) {
-			if (mcu->vcdd->regs[j].name[0] == 0)
+			if (mcu->vcdd->regs[j].name[0] == 0) {
 				break;
-			if (mcu->vcdd->regs[j].off < 0)
+			}
+			if (mcu->vcdd->regs[j].off < 0) {
 				continue;
+			}
 
 			lua_pushinteger(lua_states[i],
 			                (int)mcu->vcdd->regs[j].off);
@@ -137,10 +141,11 @@ int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *file)
 		 * current model */
 		lua_getglobal(lua_states[i], "module_conf");
 		lua_pushlightuserdata(lua_states[i], mcu);
-		if (lua_pcall(lua_states[i], 1, 0, 0) != 0)
+		if (lua_pcall(lua_states[i], 1, 0, 0) != 0) {
 			printf("[I]: Model %s doesn't provide configuration "
 			       "function: %s\n",
 			       path, lua_tostring(lua_states[i], -1));
+		}
 
 		i++;
 	}
@@ -151,9 +156,11 @@ int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *file)
 void MSIM_CleanLuaPeripherals(void)
 {
 	unsigned int i;
-	for (i = 0; i < LUA_PERIPHERALS; i++)
-		if (lua_states[i] != NULL)
+	for (i = 0; i < LUA_PERIPHERALS; i++) {
+		if (lua_states[i] != NULL) {
 			lua_close(lua_states[i]);
+		}
+	}
 }
 
 void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu)
@@ -161,15 +168,17 @@ void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu)
 	unsigned int i;
 
 	for (i = 0; i < LUA_PERIPHERALS; i++) {
-		if (lua_states[i] == NULL)
+		if (lua_states[i] == NULL) {
 			continue;
+		}
 
 		lua_getglobal(lua_states[i], "module_tick");
 		lua_pushlightuserdata(lua_states[i], mcu);
-		if (lua_pcall(lua_states[i], 1, 0, 0) != 0)
+		if (lua_pcall(lua_states[i], 1, 0, 0) != 0) {
 			fprintf(stderr, "[e]: Error running function "
 			        "module_tick(): %s\n",
 			        lua_tostring(lua_states[i], -1));
+		}
 	}
 }
 #endif /* LUA_FOUND */

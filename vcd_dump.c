@@ -27,7 +27,6 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
-#include <stdio.h>
 #include <stdint.h>
 #include <time.h>
 #include "mcusim/avr/sim/sim.h"
@@ -54,8 +53,9 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 	regs = sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0];
 
 	f = fopen(dumpname, "w");
-	if (!f)
+	if (!f) {
 		return NULL;
+	}
 
 	time(&timer);
 	tm_info = localtime(&timer);
@@ -72,18 +72,20 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 	/* Declare VCD variables to dump */
 	fprintf(f, "$var reg 1 CLK_IO CLK_IO $end\n");
 	for (i = 0; i < regs; i++) {
-		if (mcu->vcdd->bit[i].regi < 0)
+		if (mcu->vcdd->bit[i].regi < 0) {
 			break;
+		}
 		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
 
 		/* Are we going to dump a register bit only? */
-		if (mcu->vcdd->bit[i].n < 0)
+		if (mcu->vcdd->bit[i].n < 0) {
 			fprintf(f, "$var reg 8 %s %s $end\n",
 			        reg->name, reg->name);
-		else
+		} else {
 			fprintf(f, "$var reg 1 %s%d %s%d $end\n",
 			        reg->name, mcu->vcdd->bit[i].n,
 			        reg->name, mcu->vcdd->bit[i].n);
+		}
 	}
 	fprintf(f, "$upscope $end\n");
 	fprintf(f, "$enddefinitions $end\n");
@@ -92,8 +94,9 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 	fprintf(f, "$dumpvars\n");
 	fprintf(f, "b0 CLK_IO\n");
 	for (i = 0; i < regs; i++) {
-		if (mcu->vcdd->bit[i].regi < 0)
+		if (mcu->vcdd->bit[i].regi < 0) {
 			break;
+		}
 
 		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
 		if (!reg->addr) {
@@ -137,11 +140,13 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 		short n;			/* Bit index of a register */
 
 		/* No register changes on fall should be */
-		if (fall)
+		if (fall) {
 			break;
+		}
 		/* First N registers to be dumped only */
-		if (mcu->vcdd->bit[i].regi < 0)
+		if (mcu->vcdd->bit[i].regi < 0) {
 			break;
+		}
 		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
 
 		/* Has register value been changed? */
@@ -162,12 +167,14 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 	 * clock pulse in this case?
 	 */
 	if (!new_value) {
-		if (!clk_prints_left)
+		if (!clk_prints_left) {
 			return;
+		}
 		fprintf(f, "#%lu\n", tick);
 		fprintf(f, "b%d CLK_IO\n", !fall ? 1 : 0);
-		if (fall)
+		if (fall) {
 			clk_prints_left--;
+		}
 		return;
 	}
 
@@ -177,13 +184,15 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 	 */
 	for (i = 0; i < regs; i++) {
 		/* First N registers to be dumped only */
-		if (mcu->vcdd->bit[i].regi < 0)
+		if (mcu->vcdd->bit[i].regi < 0) {
 			break;
+		}
 
 		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
 		/* Hasn't it been changed? */
-		if (*reg->addr == reg->oldv)
+		if (*reg->addr == reg->oldv) {
 			continue;
+		}
 
 		/* Print current tick and main clock only once */
 		if (print_tick) {
@@ -217,10 +226,11 @@ static void print_reg(char *buf, unsigned int len, unsigned char r)
 		return;
 	}
 	for (i = 0; i < rbits; i++) {
-		if ((r >> (rbits-1-i)) & 1)
+		if ((r >> (rbits-1-i)) & 1) {
 			buf[j++] = '1';
-		else
+		} else {
 			buf[j++] = '0';
+		}
 	}
 	buf[j] = 0;
 }

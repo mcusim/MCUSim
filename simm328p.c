@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <inttypes.h>
 
 #include "mcusim/avr/sim/simm328p.h"
 
@@ -43,7 +44,7 @@ int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 {
 	struct MSIM_AVR *mcu;
-	unsigned char cksel, bootsz;
+	uint8_t cksel, bootsz;
 
 	mcu = (struct MSIM_AVR *)m;
 
@@ -59,7 +60,7 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 	switch (fuse_n) {
 	case FUSE_LOW:
 		cksel = fuse_v&0xF;
-		/* 2 - Reserved */
+
 		if (cksel == 0) {
 			mcu->clk_source = AVR_EXT_CLK;
 		} else if (cksel == 1) {
@@ -107,6 +108,9 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 				mcu->freq = 16000000;	/* max 16 MHz */
 				break;
 			}
+		} else {
+			fprintf(stderr, "[e]: CKSEL = %" PRIu8 ", but it "
+			        "should be in [0, 15] inclusively!\n", cksel);
 		}
 		break;
 	case FUSE_HIGH:
@@ -134,10 +138,11 @@ int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
 			break;
 		}
 
-		if (fuse_v&0x1)
+		if (fuse_v&0x1) {
 			mcu->intr->reset_pc = mcu->pc = 0x0000;
-		else
+		} else {
 			mcu->intr->reset_pc = mcu->pc = mcu->bls->start;
+		}
 
 		break;
 	case FUSE_EXT:

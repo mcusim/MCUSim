@@ -29,7 +29,6 @@
  */
 #include <stdint.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <string.h>
 
 #include "mcusim/avr/sim/sim.h"
@@ -53,15 +52,16 @@
  */
 #define SKIP_CYCLES(mcu, cond, cycl) do {				\
 	if (!mcu->in_mcinst && (cond)) {				\
-		/* It is the first cycle of multi-cycle instruction */	\
+		/* It is the first cycle of a multi-cycle instruction */\
 		mcu->in_mcinst = 1;					\
 		mcu->ic_left = cycl;					\
 		return;							\
 	}								\
 	if (mcu->in_mcinst && mcu->ic_left) {				\
 		/* Skip intermediate cycles */				\
-		if (--mcu->ic_left)					\
+		if (--mcu->ic_left) {					\
 			return;						\
+		}							\
 	}								\
 	mcu->in_mcinst = 0;						\
 } while(0)
@@ -235,6 +235,8 @@ int MSIM_Is32(unsigned int inst)
 
 static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 {
+	uint8_t done = 0;
+
 	switch (inst & 0xF000) {
 	case 0x0000:
 		if ((inst&0xFF00) == 0x0200) {
@@ -262,14 +264,21 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 			switch (inst & 0xFC00) {
 			case 0x0400:
 				exec_cpc(mcu, inst);
-				goto exit;
+				done = 1;
+				break;
 			case 0x0800:
 				exec_sbc(mcu, inst);
-				goto exit;
+				done = 1;
+				break;
 			case 0x0C00:
 				exec_add_lsl(mcu, inst);
-				goto exit;
+				done = 1;
+				break;
 			default:
+				break;
+			}
+
+			if (done != 0) {
 				break;
 			}
 
@@ -338,16 +347,24 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 		switch (inst & 0xD208) {
 		case 0x8000:
 			exec_ld_zdisp(mcu, inst);
-			goto exit;
+			done = 1;
+			break;
 		case 0x8008:
 			exec_ld_ydisp(mcu, inst);
-			goto exit;
+			done = 1;
+			break;
 		case 0x8200:
 			exec_st_zdisp(mcu, inst);
-			goto exit;
+			done = 1;
+			break;
 		case 0x8208:
 			exec_st_ydisp(mcu, inst);
-			goto exit;
+			done = 1;
+			break;
+		}
+
+		if (done != 0) {
+			break;
 		}
 
 		switch (inst & 0xFE0F) {
@@ -784,8 +801,9 @@ static void exec_cpc(struct MSIM_AVR *mcu, unsigned int inst)
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
 	                    MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 	                    MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
-	if (r)
+	if (r) {
 		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
+	}
 }
 
 static void exec_cp(struct MSIM_AVR *mcu, unsigned int inst)
@@ -836,8 +854,9 @@ static void exec_rjmp(struct MSIM_AVR *mcu, unsigned int inst)
 	SKIP_CYCLES(mcu, 1, 1);
 
 	c = inst & 0x0FFF;
-	if (c >= 2048)
+	if (c >= 2048) {
 		c -= 4096;
+	}
 	mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
 }
 
@@ -899,20 +918,22 @@ static void exec_st(struct MSIM_AVR *mcu, unsigned int inst,
 	/* ST – Store Indirect From Register to Data Space
 	 *	using Index X, Y or Z */
 	unsigned int addr = (unsigned int)(*addr_low | (*addr_high << 8));
-	regr = (unsigned char)((inst & 0x01F0) >> 4);
+	uint8_t r = (unsigned char)((inst & 0x01F0) >> 4);
 
 	switch (inst & 0x03) {
 	case 0x00:	/*	(X) ← Rr		X: Unchanged */
-		if (!mcu->xmega && !mcu->reduced_core)
+		if (!mcu->xmega && !mcu->reduced_core) {
 			SKIP_CYCLES(mcu, 1, 1);
+		}
 
-		mcu->dm[addr] = mcu->dm[regr];
+		mcu->dm[addr] = mcu->dm[r];
 		break;
 	case 0x01:	/*	(X) ← Rr, X ← X+1	X: Post incremented */
-		if (!mcu->xmega && !mcu->reduced_core)
+		if (!mcu->xmega && !mcu->reduced_core) {
 			SKIP_CYCLES(mcu, 1, 1);
+		}
 
-		mcu->dm[addr] = mcu->dm[regr];
+		mcu->dm[addr] = mcu->dm[r];
 		addr++;
 		*addr_low = (unsigned char) (addr & 0xFF);
 		*addr_high = (unsigned char) (addr >> 8);
@@ -923,7 +944,7 @@ static void exec_st(struct MSIM_AVR *mcu, unsigned int inst,
 		addr--;
 		*addr_low = (unsigned char) (addr & 0xFF);
 		*addr_high = (unsigned char) (addr >> 8);
-		mcu->dm[addr] = mcu->dm[regr];
+		mcu->dm[addr] = mcu->dm[r];
 		break;
 	}
 	mcu->pc += 2;
@@ -975,22 +996,25 @@ static void exec_rcall(struct MSIM_AVR *mcu, unsigned int inst)
 	int c;
 	unsigned long pc;
 
-	if (!mcu->reduced_core && mcu->xmega)
+	if (!mcu->reduced_core && mcu->xmega) {
 		SKIP_CYCLES(mcu, 1, mcu->pc_bits > 16 ? 2 : 1);
-	else if (!mcu->reduced_core && !mcu->xmega)
+	} else if (!mcu->reduced_core && !mcu->xmega) {
 		SKIP_CYCLES(mcu, 1, mcu->pc_bits > 16 ? 3 : 2);
-	else
+	} else {
 		SKIP_CYCLES(mcu, 1, 3);
+	}
 
 	pc = mcu->pc+2;
 	c = inst&0x0FFF;
-	if (c >= 2048)
+	if (c >= 2048) {
 		c -= 4096;
+	}
 
 	MSIM_StackPush(mcu, (unsigned char)(pc&0xFF));
 	MSIM_StackPush(mcu, (unsigned char)((pc>>8)&0xFF));
-	if (mcu->pc_bits > 16)			/* for 22-bit PC or above */
+	if (mcu->pc_bits > 16) {		/* for 22-bit PC or above */
 		MSIM_StackPush(mcu, (unsigned char)((pc>>16)&0xFF));
+	}
 	mcu->pc = (unsigned long) (((long) mcu->pc) + (c + 1) * 2);
 }
 
@@ -1019,8 +1043,9 @@ static void exec_ret(struct MSIM_AVR *mcu)
 	SKIP_CYCLES(mcu, 1, mcu->pc_bits > 16 ? 4 : 3);
 
 	ae = ah = al = 0;
-	if (mcu->pc_bits > 16)
+	if (mcu->pc_bits > 16) {
 		ae = MSIM_StackPop(mcu);
+	}
 	ah = MSIM_StackPop(mcu);
 	al = MSIM_StackPop(mcu);
 	mcu->pc = (unsigned int)((ae<<16) | (ah<<8) | al);
@@ -1052,15 +1077,17 @@ static void exec_sbi_cbi(struct MSIM_AVR *mcu, unsigned int inst,
 	 * CBI – Clear Bit in I/O Register */
 	unsigned char reg, b;
 
-	if (!mcu->reduced_core && !mcu->xmega)
+	if (!mcu->reduced_core && !mcu->xmega) {
 		SKIP_CYCLES(mcu, 1, 1);
+	}
 
 	reg = (unsigned char)((inst & 0x00F8) >> 3);
 	b = inst & 0x07;
-	if (set_bit)
+	if (set_bit) {
 		mcu->dm[reg+0x20] |= (unsigned char)(1 << b);
-	else
+	} else {
 		mcu->dm[reg+0x20] &= (unsigned char)(~(1 << b));
+	}
 
 	mcu->pc += 2;
 }
@@ -1085,20 +1112,23 @@ static void exec_sbis_sbic(struct MSIM_AVR *mcu, unsigned int inst,
 	is32 = MSIM_Is32(ni);
 
 	if (set_bit && (mcu->dm[reg] & (1 << b))) {
-		if (mcu->xmega)
+		if (mcu->xmega) {
 			SKIP_CYCLES(mcu, 1, is32 ? 3 : 2);
-		else
+		} else {
 			SKIP_CYCLES(mcu, 1, is32 ? 2 : 1);
+		}
 		pc_delta = is32 ? 6 : 4;
 	} else if (!set_bit && (mcu->dm[reg] ^ (1 << b))) {
-		if (mcu->xmega)
+		if (mcu->xmega) {
 			SKIP_CYCLES(mcu, 1, is32 ? 3 : 2);
-		else
+		} else {
 			SKIP_CYCLES(mcu, 1, is32 ? 2 : 1);
+		}
 		pc_delta = is32 ? 6 : 4;
 	} else {
-		if (mcu->xmega)
+		if (mcu->xmega) {
 			SKIP_CYCLES(mcu, 1, 1);
+		}
 	}
 
 	mcu->pc += pc_delta;
@@ -1115,8 +1145,9 @@ static void exec_push_pop(struct MSIM_AVR *mcu, unsigned int inst,
 
 	reg = (inst >> 4) & 0x1F;
 	if (push) {
-		if (!mcu->xmega)
+		if (!mcu->xmega) {
 			SKIP_CYCLES(mcu, 1, 1);
+		}
 		MSIM_StackPush(mcu, mcu->dm[reg]);
 	} else {
 		SKIP_CYCLES(mcu, 1, 1);
@@ -1192,16 +1223,21 @@ static void exec_ld(struct MSIM_AVR *mcu, unsigned int inst,
 
 	switch (inst & 0x03) {
 	case 0x00:	/*	Rd ← (X)		X: Unchanged */
-		if (mcu->xmega && addr <= mcu->ramend && addr >= mcu->ramstart)
+		if ((mcu->xmega) && (addr <= mcu->ramend) &&
+		                (addr >= mcu->ramstart)) {
 			SKIP_CYCLES(mcu, 1, 1);
+		}
 
 		mcu->dm[regd] = mcu->dm[addr];
 		break;
 	case 0x01:	/*	Rd ← (X), X ← X+1	X: Post incremented */
-		if (!mcu->xmega)
+		if (!mcu->xmega) {
 			SKIP_CYCLES(mcu, 1, 1);
-		else if (addr <= mcu->ramend && addr >= mcu->ramstart)
+		} else if (addr <= mcu->ramend && addr >= mcu->ramstart) {
 			SKIP_CYCLES(mcu, 1, 1);
+		} else {
+			/* Do not skip any cycles */;
+		}
 
 		mcu->dm[regd] = mcu->dm[addr];
 		addr++;
@@ -1209,12 +1245,15 @@ static void exec_ld(struct MSIM_AVR *mcu, unsigned int inst,
 		*addr_high = (unsigned char) (addr >> 8);
 		break;
 	case 0x02:	/*	X ← X-1, Rd ← (X)	X: Pre decremented */
-		if (!mcu->xmega)
+		if (!mcu->xmega) {
 			SKIP_CYCLES(mcu, 1, 2);
-		else if (addr <= mcu->ramend && addr >= mcu->ramstart)
+		} else if (addr <= mcu->ramend && addr >= mcu->ramstart) {
 			SKIP_CYCLES(mcu, 1, 2);
-		else if (addr > mcu->ramend && addr < mcu->ramstart)
+		} else if (addr > mcu->ramend && addr < mcu->ramstart) {
 			SKIP_CYCLES(mcu, 1, 1);
+		} else {
+			/* Do not skip any cycles */;
+		}
 
 		addr--;
 		*addr_low = (unsigned char) (addr & 0xFF);
@@ -1235,12 +1274,15 @@ static void exec_ld_ydisp(struct MSIM_AVR *mcu, unsigned int inst)
 	y_high = &mcu->dm[29];
 	addr = (unsigned int) *y_low | (unsigned int) (*y_high << 8);
 
-	if (!mcu->xmega)
+	if (!mcu->xmega) {
 		SKIP_CYCLES(mcu, 1, 1);
-	else if (addr <= mcu->ramend && addr >= mcu->ramstart)
+	} else if (addr <= mcu->ramend && addr >= mcu->ramstart) {
 		SKIP_CYCLES(mcu, 1, 2);
-	else if (addr > mcu->ramend && addr < mcu->ramstart)
+	} else if (addr > mcu->ramend && addr < mcu->ramstart) {
 		SKIP_CYCLES(mcu, 1, 1);
+	} else {
+		/* Do not skip any cycles */;
+	}
 
 	regd = (unsigned char)((inst & 0x01F0) >> 4);
 	disp = (unsigned char)((inst & 0x07) |
@@ -1261,12 +1303,15 @@ static void exec_ld_zdisp(struct MSIM_AVR *mcu, unsigned int inst)
 	z_high = &mcu->dm[31];
 	addr = (unsigned int) *z_low | (unsigned int) (*z_high << 8);
 
-	if (!mcu->xmega)
+	if (!mcu->xmega) {
 		SKIP_CYCLES(mcu, 1, 1);
-	else if (addr <= mcu->ramend && addr >= mcu->ramstart)
+	} else if (addr <= mcu->ramend && addr >= mcu->ramstart) {
 		SKIP_CYCLES(mcu, 1, 2);
-	else if (addr > mcu->ramend && addr < mcu->ramstart)
+	} else if (addr > mcu->ramend && addr < mcu->ramstart) {
 		SKIP_CYCLES(mcu, 1, 1);
+	} else {
+		/* Do not skip any cycles */;
+	}
 
 	regd = (unsigned char)((inst & 0x01F0) >> 4);
 	disp = (unsigned char)((inst & 0x07) |
@@ -1287,9 +1332,9 @@ static void exec_sbci(struct MSIM_AVR *mcu, unsigned int inst)
 	c = (unsigned char)(((inst & 0xF00) >> 4) | (inst & 0x0F));
 
 	rd = mcu->dm[rd_addr];
-	r = mcu->dm[rd_addr] = (unsigned char)
-	                       (mcu->dm[rd_addr] - c -
-	                        MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY));
+	r = (unsigned char)(mcu->dm[rd_addr] - c -
+	                    MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY));
+	mcu->dm[rd_addr] = r;
 	mcu->pc += 2;
 
 	buf = (~rd & c) | (c & r) | (r & ~rd);
@@ -1313,14 +1358,16 @@ static void exec_brlt(struct MSIM_AVR *mcu, unsigned int inst)
 	cond = MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 	       MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF);
 	c = (inst >> 3) & 0x7F;
-	if (c > 63)
+	if (c > 63) {
 		c -= 128;
+	}
 
 	SKIP_CYCLES(mcu, cond, 1);
-	if (cond)
+	if (cond) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brge(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1332,14 +1379,16 @@ static void exec_brge(struct MSIM_AVR *mcu, unsigned int inst)
 	cond = MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
 	       MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF);
 	c = (inst >> 3) & 0x7F;
-	if (c > 63)
+	if (c > 63) {
 		c -= 128;
+	}
 
 	SKIP_CYCLES(mcu, !cond, 1);
-	if (!cond)
+	if (!cond) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_andi_cbr(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1418,14 +1467,16 @@ static void exec_brcc_brsh(struct MSIM_AVR *mcu, unsigned int inst)
 
 	cond = MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY);
 	c = (inst >> 3) & 0x7F;
-	if (c > 63)
+	if (c > 63) {
 		c -= 128;
+	}
 
 	SKIP_CYCLES(mcu, !cond, 1);
-	if (!cond)
+	if (!cond) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brcs_brlo(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1436,14 +1487,16 @@ static void exec_brcs_brlo(struct MSIM_AVR *mcu, unsigned int inst)
 
 	cond = MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY);
 	c = (inst >> 3) & 0x7F;
-	if (c > 63)
+	if (c > 63) {
 		c -= 128;
+	}
 
 	SKIP_CYCLES(mcu, cond, 1);
-	if (cond)
+	if (cond) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_sub(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1519,8 +1572,9 @@ static void exec_sbc(struct MSIM_AVR *mcu, unsigned int inst)
 	buf = (~rd & rr) | (rr & r) | (r & ~rd);
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (buf>>7)&1);
-	if (r)
+	if (r) {
 		MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, 0);
+	}
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (r>>7)&1);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF,
 	                    (((rd & ~rr & ~r) | (~rd & rr & r)) >> 7) & 1);
@@ -1628,10 +1682,11 @@ static void exec_asr(struct MSIM_AVR *mcu, unsigned int inst)
 	lsb_orig = rd & 1;
 
 	r = rd >> 1;
-	if (msb_orig)
+	if (msb_orig) {
 		r |= 1<<7;
-	else
+	} else {
 		r &= (unsigned char)(~(1<<7));
+	}
 	mcu->dm[rd_addr] = r;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, lsb_orig);
@@ -1664,10 +1719,11 @@ static void exec_bld(struct MSIM_AVR *mcu, unsigned int inst)
 	rd_addr = (unsigned char)((inst & 0x1F0) >> 4);
 	bit = inst & 0x07;
 	t = MSIM_ReadSREGFlag(mcu, AVR_SREG_T_BIT);
-	if (t)
+	if (t) {
 		mcu->dm[rd_addr] |= (unsigned char)((1<<bit)&0xFF);
-	else
+	} else {
 		mcu->dm[rd_addr] &= (unsigned char)(~((1<<bit)&0xFF));
+	}
 	mcu->pc += 2;
 }
 
@@ -1679,14 +1735,16 @@ static void exec_brbc(struct MSIM_AVR *mcu, unsigned int inst)
 
 	cond = (*mcu->sreg >> (inst & 0x07)) & 1;
 	c = (inst >> 3) & 0x7F;
-	if (c > 63)
+	if (c > 63) {
 		c -= 128;
+	}
 
 	SKIP_CYCLES(mcu, !cond, 1);
-	if (!cond)
+	if (!cond) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brbs(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1697,14 +1755,16 @@ static void exec_brbs(struct MSIM_AVR *mcu, unsigned int inst)
 
 	cond = (*mcu->sreg >> (inst & 0x07)) & 1;
 	c = (inst >> 3) & 0x7F;
-	if (c > 63)
+	if (c > 63) {
 		c -= 128;
+	}
 
 	SKIP_CYCLES(mcu, cond, 1);
-	if (cond)
+	if (cond) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_break(struct MSIM_AVR *mcu)
@@ -1725,10 +1785,11 @@ static void exec_breq(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	SKIP_CYCLES(mcu, f, 1);
-	if (f)
+	if (f) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brhc(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1742,10 +1803,11 @@ static void exec_brhc(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	SKIP_CYCLES(mcu, !f, 1);
-	if (!f)
+	if (!f) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brhs(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1759,10 +1821,11 @@ static void exec_brhs(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	SKIP_CYCLES(mcu, f, 1);
-	if (f)
+	if (f) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brid(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1776,10 +1839,11 @@ static void exec_brid(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	SKIP_CYCLES(mcu, !f, 1);
-	if (!f)
+	if (!f) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brie(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1793,10 +1857,11 @@ static void exec_brie(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	SKIP_CYCLES(mcu, f, 1);
-	if (f)
+	if (f) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brmi(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1810,11 +1875,11 @@ static void exec_brmi(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	SKIP_CYCLES(mcu, f, 1);
-	if (f)
+	if (f) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
-
+	}
 }
 
 static void exec_brpl(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1828,10 +1893,11 @@ static void exec_brpl(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	SKIP_CYCLES(mcu, !f, 1);
-	if (!f)
+	if (!f) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brtc(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1845,10 +1911,11 @@ static void exec_brtc(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	SKIP_CYCLES(mcu, !f, 1);
-	if (!f)
+	if (!f) {
 		mcu->pc = (unsigned long)(((long) mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brts(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1862,10 +1929,11 @@ static void exec_brts(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	SKIP_CYCLES(mcu, f, 1);
-	if (f)
+	if (f) {
 		mcu->pc = (unsigned long)(((long)mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brvc(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1879,10 +1947,11 @@ static void exec_brvc(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	SKIP_CYCLES(mcu, !f, 1);
-	if (!f)
+	if (!f) {
 		mcu->pc = (unsigned long)(((long)mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_brvs(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1896,10 +1965,11 @@ static void exec_brvs(struct MSIM_AVR *mcu, unsigned int inst)
 	c = c > 63 ? c-128 : c;
 
 	SKIP_CYCLES(mcu, f, 1);
-	if (f)
+	if (f) {
 		mcu->pc = (unsigned long)(((long)mcu->pc) + (c + 1) * 2);
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_bset(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1936,16 +2006,18 @@ static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_lsb)
 	if (!mcu->in_mcinst) {
 		/* It is the first cycle of multi-cycle instruction */
 		mcu->in_mcinst = 1;
-		if (!mcu->xmega)
+		if (!mcu->xmega) {
 			mcu->ic_left = mcu->pc_bits > 16 ? 4 : 3;
-		else
+		} else {
 			mcu->ic_left = mcu->pc_bits > 16 ? 3 : 2;
+		}
 
 		return;
 	} else if (mcu->ic_left) {
 		/* Skip intermediate cycles */
-		if (--mcu->ic_left)
+		if (--mcu->ic_left) {
 			return;
+		}
 	}
 	mcu->in_mcinst = 0;
 
@@ -1961,8 +2033,9 @@ static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_lsb)
 
 	MSIM_StackPush(mcu, (unsigned char)(pc&0xFF));
 	MSIM_StackPush(mcu, (unsigned char)((pc>>8)&0xFF));
-	if (mcu->pc_bits > 16)			/* for 22-bit PC or above */
+	if (mcu->pc_bits > 16) {		/* for 22-bit PC or above */
 		MSIM_StackPush(mcu, (unsigned char)((pc>>16)&0xFF));
+	}
 	mcu->pc = c;
 }
 
@@ -2108,10 +2181,11 @@ static void exec_cpse(struct MSIM_AVR *mcu, unsigned int inst)
 	f = (mcu->dm[rd_addr] == mcu->dm[rr_addr]);
 
 	SKIP_CYCLES(mcu, f, (is32 ? 2 : 1));
-	if (f)
+	if (f) {
 		mcu->pc += is32 ? 6 : 4;
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_dec(struct MSIM_AVR *mcu, unsigned int inst)
@@ -2201,10 +2275,11 @@ static void exec_icall(struct MSIM_AVR *mcu)
 	unsigned long pc;
 	unsigned char zh, zl;
 
-	if (mcu->xmega)
+	if (mcu->xmega) {
 		SKIP_CYCLES(mcu, 1, mcu->pc_bits > 16 ? 2 : 1);
-	else
+	} else {
 		SKIP_CYCLES(mcu, 1, mcu->pc_bits > 16 ? 3 : 2);
+	}
 
 	pc = mcu->pc + 2;
 	zh = mcu->dm[REG_ZH];
@@ -2212,8 +2287,9 @@ static void exec_icall(struct MSIM_AVR *mcu)
 
 	MSIM_StackPush(mcu, (unsigned char)(pc&0xFF));
 	MSIM_StackPush(mcu, (unsigned char)((pc>>8) & 0xFF));
-	if (mcu->pc_bits > 16)		/* for 22-bit PC or above */
+	if (mcu->pc_bits > 16) {	/* for 22-bit PC or above */
 		MSIM_StackPush(mcu, (unsigned char)((pc>>16) & 0xFF));
+	}
 	mcu->pc = (unsigned long)(((zh<<8)&0xFF00) | (zl&0xFF));
 }
 
@@ -2239,7 +2315,8 @@ static void exec_inc(struct MSIM_AVR *mcu, unsigned int inst)
 	rd = mcu->dm[rd_addr];
 	val = mcu->dm[rd_addr];
 	val += 1U;
-	r = mcu->dm[rd_addr] = (unsigned char)val;
+	r = (unsigned char)val;
+	mcu->dm[rd_addr] = r;
 	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
@@ -2331,11 +2408,12 @@ static void exec_lds(struct MSIM_AVR *mcu, unsigned int inst)
 	i3 = mcu->pm[mcu->pc+3];
 	addr = (unsigned short)(((i3<<8)&0xFF00) | (i2&0xFF));
 
-	if (!mcu->xmega)
+	if (!mcu->xmega) {
 		SKIP_CYCLES(mcu, 1, 1);
-	else
+	} else {
 		SKIP_CYCLES(mcu, 1, ((addr <= mcu->ramend &&
 		                      addr >= mcu->ramstart) ? 2 : 1));
+	}
 
 	rd_addr = (inst>>4)&0x1F;
 	mcu->dm[rd_addr] = mcu->dm[addr];
@@ -2392,7 +2470,8 @@ static void exec_lsr(struct MSIM_AVR *mcu, unsigned int inst)
 
 	rd_addr = (inst>>4)&0x1F;
 	rd = mcu->dm[rd_addr];
-	r = mcu->dm[rd_addr] = (rd>>1)&0xFF;
+	r = (rd>>1)&0xFF;
+	mcu->dm[rd_addr] = r;
 	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, rd&1);
@@ -2417,10 +2496,11 @@ static void exec_sbrc(struct MSIM_AVR *mcu, unsigned int inst)
 	r = (mcu->dm[rr_addr]>>bit)&1;
 
 	SKIP_CYCLES(mcu, !r, MSIM_Is32(mcu->pm[mcu->pc+2]) ? 2 : 1);
-	if (!r)
+	if (!r) {
 		mcu->pc += MSIM_Is32(mcu->pm[mcu->pc+2]) ? 6 : 4;
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_sbrs(struct MSIM_AVR *mcu, unsigned int inst)
@@ -2434,10 +2514,11 @@ static void exec_sbrs(struct MSIM_AVR *mcu, unsigned int inst)
 	r = (mcu->dm[rr_addr]>>bit)&1;
 
 	SKIP_CYCLES(mcu, r, MSIM_Is32(mcu->pm[mcu->pc+2]) ? 2 : 1);
-	if (r)
+	if (r) {
 		mcu->pc += MSIM_Is32(mcu->pm[mcu->pc+2]) ? 6 : 4;
-	else
+	} else {
 		mcu->pc += 2;
+	}
 }
 
 static void exec_eicall(struct MSIM_AVR *mcu)
@@ -2445,51 +2526,67 @@ static void exec_eicall(struct MSIM_AVR *mcu)
 	/* EICALL - Extended Indirect Call to Subroutine */
 	unsigned char zh, zl, eind;
 	unsigned long pc;
+	uint8_t err;
 
+	err = 0;
 	if (!mcu->eind) {
 		fprintf(stderr, "[e]: EICALL instruction is not supported "
-		        "on devices without EIND register\n");
-		exit(1);
+		        "on the devices without EIND register\n");
+		err = 1;
 	}
 	if (mcu->pc_bits < 22) {
-		fprintf(stderr, "[e]: EICALL is implemented in devices "
+		fprintf(stderr, "[e]: EICALL is implemented in the devices "
 		        "with 22-bit PC only\n");
-		exit(1);
+		err = 1;
 	}
 
-	SKIP_CYCLES(mcu, 1, mcu->xmega ? 2 : 3);
+	if (err == 0) {
+		SKIP_CYCLES(mcu, 1, mcu->xmega ? 2 : 3);
 
-	zh = mcu->dm[REG_ZH];
-	zl = mcu->dm[REG_ZL];
-	eind = *mcu->eind;
-	pc = mcu->pc + 2;
-	MSIM_StackPush(mcu, (unsigned char)(pc & 0xFF));
-	MSIM_StackPush(mcu, (unsigned char)((pc >> 8) & 0xFF));
-	MSIM_StackPush(mcu, (unsigned char)((pc >> 16) & 0xFF));
+		zh = mcu->dm[REG_ZH];
+		zl = mcu->dm[REG_ZL];
+		eind = *mcu->eind;
+		pc = mcu->pc + 2;
+		MSIM_StackPush(mcu, (unsigned char)(pc & 0xFF));
+		MSIM_StackPush(mcu, (unsigned char)((pc >> 8) & 0xFF));
+		MSIM_StackPush(mcu, (unsigned char)((pc >> 16) & 0xFF));
 
-	pc = (unsigned long)(((eind<<16)&0xFF0000) |
-	                     ((zh<<8)&0xFF00) | (zl&0xFF));
-	mcu->pc = pc;
+		pc = (unsigned long)(((eind<<16)&0xFF0000) |
+		                     ((zh<<8)&0xFF00) | (zl&0xFF));
+		mcu->pc = pc;
+	} else {
+		/* There was an attempt to execute an illegal instruction.
+		 * We'll have to terminate simulation with error code set. */
+		mcu->state = AVR_MSIM_TESTFAIL;
+	}
 }
 
 static void exec_eijmp(struct MSIM_AVR *mcu)
 {
 	/* EIJMP - Extended Indirect Jump */
 	unsigned char zh, zl, eind;
+	uint8_t err;
 
+	err = 0;
 	if (!mcu->eind) {
 		fprintf(stderr, "[e]: EIJMP instruction is not supported on "
-		        "devices without EIND register\n");
-		exit(1);
+		        "the devices without EIND register\n");
+		err = 1;
 	}
 
-	SKIP_CYCLES(mcu, 1, 1);
+	if (err == 0) {
+		SKIP_CYCLES(mcu, 1, 1);
 
-	zh = mcu->dm[REG_ZH];
-	zl = mcu->dm[REG_ZL];
-	eind = *mcu->eind;
-	mcu->pc = (unsigned long)(((eind<<16)&0xFF0000) |
-	                          ((zh<<8)&0xFF00) | (zl&0xFF));
+		zh = mcu->dm[REG_ZH];
+		zl = mcu->dm[REG_ZL];
+		eind = *mcu->eind;
+		mcu->pc = (unsigned long)(((eind<<16)&0xFF0000) |
+		                          ((zh<<8)&0xFF00) | (zl&0xFF));
+	} else {
+		/* There was an attempt to execute an illegal instruction.
+		 * We'll have to terminate simulation with error code set. */
+		mcu->state = AVR_MSIM_TESTFAIL;
+	}
 }
 
 static void exec_xch(struct MSIM_AVR *mcu, unsigned int inst)
@@ -2520,8 +2617,8 @@ static void exec_ror(struct MSIM_AVR *mcu, unsigned int inst)
 	c = MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY);
 	rd_addr = (inst>>4)&0x1F;
 	rd = mcu->dm[rd_addr];
-	mcu->dm[rd_addr] = r = (unsigned char)(((rd>>1)&0x7F) |
-	                                       ((c<<7)&0x80));
+	r = (unsigned char)(((rd>>1)&0x7F) | ((c<<7)&0x80));
+	mcu->dm[rd_addr] = r;
 	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, rd&1);
@@ -2541,19 +2638,21 @@ static void exec_reti(struct MSIM_AVR *mcu)
 	/* RETI – Return from Interrupt */
 	SKIP_CYCLES(mcu, 1, mcu->pc_bits > 16 ? 4 : 3);
 
-	if (mcu->pc_bits > 16)
+	if (mcu->pc_bits > 16) {
 		mcu->pc = (unsigned long)
 		          (((MSIM_StackPop(mcu)<<16)&0xFF0000) |
 		           ((MSIM_StackPop(mcu)<<8)&0xFF00) |
 		           (MSIM_StackPop(mcu)&0xFF));
-	else
+	} else {
 		mcu->pc = (unsigned long)
 		          (((MSIM_StackPop(mcu)<<8)&0xFF00) |
 		           (MSIM_StackPop(mcu)&0xFF));
+	}
 
 	/* Enable interrupts globally (doesn't work for AVR XMEGA) */
-	if (!mcu->xmega)
+	if (!mcu->xmega) {
 		MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 1);
+	}
 	/*
 	 * Execute one more instruction from the main program
 	 * after an exit from interrupt service routine.
@@ -2583,7 +2682,8 @@ static void exec_or(struct MSIM_AVR *mcu, unsigned int inst)
 	rra = (unsigned char)(((inst>>5)&0x10) | (inst&0xF));
 	rd = mcu->dm[rda];
 	rr = mcu->dm[rra];
-	r = mcu->dm[rda] = rd | rr;
+	r = rd | rr;
+	mcu->dm[rda] = r;
 	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
@@ -2601,7 +2701,8 @@ static void exec_neg(struct MSIM_AVR *mcu, unsigned int inst)
 
 	rda = (inst>>4)&0x1F;
 	rd = mcu->dm[rda];
-	r = mcu->dm[rda] = (unsigned char)(~rd + 1);
+	r = (unsigned char)(~rd + 1);
+	mcu->dm[rda] = r;
 	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, r ? 1 : 0);
@@ -2698,35 +2799,44 @@ static void exec_elpm(struct MSIM_AVR *mcu, unsigned int inst)
 	 */
 	unsigned char rda, zh, zl, ez;
 	unsigned long z;
+	uint8_t err;
 
+	err = 0;
 	if (mcu->rampz == NULL) {
 		fprintf(stderr, "[e]: ELPM instruction is not supported on "
 		        "devices without RAMPZ register!\n");
-		exit(1);
+		err = 1;
 	}
 
-	SKIP_CYCLES(mcu, 1, 2);		/* Skip 3 cycles anyway */
+	if (err == 0) {
+		SKIP_CYCLES(mcu, 1, 2);		/* Skip 3 cycles anyway */
 
-	ez = *mcu->rampz;
-	zh = mcu->dm[REG_ZH];
-	zl = mcu->dm[REG_ZL];
-	z = (unsigned long)(((ez<<16)&0xFF0000) |
-	                    ((zh<<8)&0xFF00) |
-	                    (zl&0xFF));
+		ez = *mcu->rampz;
+		zh = mcu->dm[REG_ZH];
+		zl = mcu->dm[REG_ZL];
+		z = (unsigned long)(((ez<<16)&0xFF0000) |
+		                    ((zh<<8)&0xFF00) |
+		                    (zl&0xFF));
 
-	if (inst == 0x95D8) {				/* type I */
-		mcu->dm[0] = mcu->pm[z];
-	} else if ((inst & 0xFE0F) == 0x9006) {		/* type II */
-		rda = (inst>>4)&0x1F;
-		mcu->dm[rda] = mcu->pm[z];
-	} else if ((inst & 0xFE0F) == 0x9007) {		/* type III */
-		rda = (inst>>4)&0x1F;
-		mcu->dm[rda] = mcu->pm[z++];
-		*mcu->rampz = (unsigned char)((z>>16)&0xFF);
-		mcu->dm[REG_ZH] = (unsigned char)((z>>8)&0xFF);
-		mcu->dm[REG_ZL] = (unsigned char)(z&0xFF);
+		if (inst == 0x95D8) {				/* type I */
+			mcu->dm[0] = mcu->pm[z];
+		} else if ((inst & 0xFE0F) == 0x9006) {		/* type II */
+			rda = (inst>>4)&0x1F;
+			mcu->dm[rda] = mcu->pm[z];
+		} else if ((inst & 0xFE0F) == 0x9007) {		/* type III */
+			rda = (inst>>4)&0x1F;
+			mcu->dm[rda] = mcu->pm[z++];
+			*mcu->rampz = (unsigned char)((z>>16)&0xFF);
+			mcu->dm[REG_ZH] = (unsigned char)((z>>8)&0xFF);
+			mcu->dm[REG_ZL] = (unsigned char)(z&0xFF);
+		}
+		mcu->pc += 2;
+	} else {
+		/* There was an attempt to execute an illegal instruction.
+		 * We'll have to terminate simulation with error code in this
+		 * case. */
+		mcu->state = AVR_MSIM_TESTFAIL;
 	}
-	mcu->pc += 2;
 }
 
 static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst)
@@ -2742,33 +2852,45 @@ static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst)
 	 */
 	unsigned char zl, zh, ez, c;
 	unsigned long z;
+	uint8_t err;
 
+	err = 0;
 	if (mcu->spmcsr == NULL) {
-		fprintf(stderr, "[e]: SPMCSR(SPMCR) is not available on "
-		        "this device!\n");
-		exit(1);
+		fprintf(stderr, "[e]: SPMCSR(SPMCR) register is not "
+		        "available on this device!\n");
+		err = 1;
 	}
 
-	ez = (unsigned char)(mcu->rampz != NULL ? *mcu->rampz : 0);
-	zh = mcu->dm[REG_ZH];
-	zl = mcu->dm[REG_ZL];
-	z = (unsigned long)(((ez<<16)&0xFF0000) | ((zh<<8)&0xFF00) | (zl&0xFF));
-	c = *mcu->spmcsr & 0x7;
+	if (err == 0) {
+		ez = (unsigned char)(mcu->rampz != NULL ? *mcu->rampz : 0);
+		zh = mcu->dm[REG_ZH];
+		zl = mcu->dm[REG_ZL];
+		z = (unsigned long)(((ez<<16)&0xFF0000) |
+		                    ((zh<<8)&0xFF00) |
+		                    (zl&0xFF));
+		c = *mcu->spmcsr & 0x7;
 
-	if (c == 0x3) {			/* erase PM page */
-		memset(&mcu->pm[z], 0xFF, mcu->spm_pagesize);
-	} else if (c == 0x1) {		/* fill the buffer */
-		memcpy(&mcu->pmp[z], &mcu->dm[0], 2);
-	} else if (c == 0x5) {		/* write a page */
-		memcpy(&mcu->pm[z], mcu->pmp, mcu->spm_pagesize);
-	}
-	mcu->pc += 2;
+		if (c == 0x3) {			/* erase PM page */
+			memset(&mcu->pm[z], 0xFF, mcu->spm_pagesize);
+		} else if (c == 0x1) {		/* fill the buffer */
+			memcpy(&mcu->pmp[z], &mcu->dm[0], 2);
+		} else if (c == 0x5) {		/* write a page */
+			memcpy(&mcu->pm[z], mcu->pmp, mcu->spm_pagesize);
+		}
+		mcu->pc += 2;
 
-	if (inst == 0x95F8) {
-		z += 2;
-		if (mcu->rampz != NULL)
-			*mcu->rampz = (unsigned char)((z>>16)&0xFF);
-		mcu->dm[REG_ZH] = (unsigned char)((z>>8)&0xFF);
-		mcu->dm[REG_ZL] = (unsigned char)(z&0xFF);
+		if (inst == 0x95F8) {
+			z += 2;
+			if (mcu->rampz != NULL) {
+				*mcu->rampz = (unsigned char)((z>>16)&0xFF);
+			}
+			mcu->dm[REG_ZH] = (unsigned char)((z>>8)&0xFF);
+			mcu->dm[REG_ZL] = (unsigned char)(z&0xFF);
+		}
+	} else {
+		/* There was an attempt to execute an illegal instruction.
+		 * We'll have to terminate simulation with error code in this
+		 * case. */
+		mcu->state = AVR_MSIM_TESTFAIL;
 	}
 }

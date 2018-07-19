@@ -242,9 +242,10 @@ int MSIM_RSPHandle(void)
 
 		switch (poll(fds, 1, -1)) {
 		case -1:
-			if (errno == EINTR)
+			if (errno == EINTR) {
 				/* Ignore received signal while polling */
 				break;
+			}
 			fprintf(stderr, "Poll for RSP server failed: "
 			        "closing server connection: %s\n",
 			        strerror(errno));
@@ -285,8 +286,9 @@ int MSIM_RSPHandle(void)
 	/* Poll is always blocking. We have to wait. */
 	switch (poll(fds, 1, -1)) {
 	case -1:
-		if (errno == EINTR)
+		if (errno == EINTR) {
 			break;
+		}
 		fprintf(stderr, "Poll for RSP client failed: closing server "
 		        "connection: %s\n", strerror(errno));
 		rsp_close_client();
@@ -341,8 +343,9 @@ static void rsp_server_request(void)
 	fd = accept(rsp.fserv, (struct sockaddr *)&sock_addr, &len);
 
 	if (fd < 0) {
-		if (errno == EWOULDBLOCK || errno == EAGAIN)
+		if (errno == EWOULDBLOCK || errno == EAGAIN) {
 			return;
+		}
 
 		fprintf(stderr, "RSP server error creating client: "
 		        "closing connection: %s\n", strerror(errno));
@@ -526,9 +529,10 @@ static void rsp_read_reg(struct rsp_buf *buf)
 	}
 
 	val[0] = 0;
-	if (!read_reg(regn, val))
+	if (!read_reg(regn, val)) {
 		fprintf(stderr, "Unknown register %u, empty response "
 		        "will be returned\n", regn);
+	}
 	put_str_packet(val);
 }
 
@@ -687,8 +691,9 @@ static struct rsp_buf *get_packet(void)
 		 */
 		ch = (char)get_rsp_char();
 		while (ch != '$') {
-			if (ch == -1)
+			if (ch == -1) {
 				return  NULL;
+			}
 
 			/*
 			 * 0x03 is a special case, an out-of-band break
@@ -709,8 +714,9 @@ static struct rsp_buf *get_packet(void)
 			ch = (char)get_rsp_char();
 
 			/* Check for connection failure */
-			if (ch == -1)
+			if (ch == -1) {
 				return  NULL;
+			}
 			/*
 			 * If we hit a start of line char begin
 			 * all over again
@@ -722,8 +728,9 @@ static struct rsp_buf *get_packet(void)
 			}
 
 			/* Break out if we get the end of line char */
-			if (ch == '#')
+			if (ch == '#') {
 				break;
+			}
 			/*
 			 * Update the checksum and add the char to
 			 * the buffer
@@ -748,14 +755,16 @@ static struct rsp_buf *get_packet(void)
 			unsigned char xmitcsum;
 
 			ch = (char)get_rsp_char();
-			if (ch == -1)
-				return  NULL;
+			if (ch == -1) {
+				return NULL;
+			}
 
 			xmitcsum = (unsigned char)(hex(ch)<<4);
 
 			ch = (char)get_rsp_char();
-			if (ch == -1)
+			if (ch == -1) {
 				return  NULL;
+			}
 
 			xmitcsum += hex(ch);
 
@@ -801,13 +810,15 @@ static int get_rsp_char(void)
 	while (1) {
 		bytes = read(rsp.fcli, &c, sizeof c);
 
-		if (bytes == sizeof c)
+		if (bytes == sizeof c) {
 			return c&0xFF;
+		}
 
 		if (bytes == -1) {
 			/* Error: only allow interrupts or would block */
-			if (errno == EAGAIN || errno == EINTR)
+			if (errno == EAGAIN || errno == EINTR) {
 				continue;
+			}
 
 			fprintf(stderr, "Failed to read from RSP client: "
 			        "Closing client connection: %s\n",
@@ -837,8 +848,9 @@ static void put_rsp_char(char c)
 		switch (write(rsp.fcli, &c, sizeof c)) {
 		case -1:
 			/* Error: only allow interrupts or would block */
-			if (errno == EAGAIN || errno == EINTR)
+			if (errno == EAGAIN || errno == EINTR) {
 				break;
+			}
 
 			fprintf(stderr, "Failed to write to RSP client: "
 			        "Closing client connection: %s\n",
@@ -942,8 +954,9 @@ static void put_packet(struct rsp_buf *buf)
 
 		/* Check for ack of connection failure */
 		ch = get_rsp_char();
-		if (ch == -1)
+		if (ch == -1) {
 			return;			/* Fail the put silently. */
+		}
 	} while (ch != '+');
 }
 
@@ -1045,9 +1058,10 @@ static void rsp_vpkt(struct rsp_buf *buf)
 		return;
 	} else if (!strncmp("vRun;", buf->data, strlen("vRun;"))) {
 		/* We shouldn't be given any args, but check for this */
-		if (buf->len > strlen("vRun;"))
+		if (buf->len > strlen("vRun;")) {
 			fprintf(stderr, "Unexpected arguments to RSP vRun "
 			        "command: ignored\n");
+		}
 
 		/*
 		 * Restart the current program. However unlike a "R" packet,
@@ -1134,8 +1148,9 @@ static void rsp_read_all_regs(void)
 	int i;
 
 	rep = reply;
-	for (i = 0; i < 35; i++)
+	for (i = 0; i < 35; i++) {
 		rep += read_reg(i, rep);
+	}
 	*rep = 0;
 	put_str_packet(reply);
 }

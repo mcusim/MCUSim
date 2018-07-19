@@ -27,7 +27,6 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
-#include <stdio.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -45,8 +44,8 @@
 #include "mcusim/avr/sim/vcd_dump.h"
 
 /* Limits of statically allocated MCU memory */
-#define PMSZ			256*1024	/* Program memory limit */
-#define DMSZ			64*1024		/* Data memory limit */
+#define PMSZ			262144		/* Program memory size */
+#define DMSZ			65536		/* Data memory size */
 #define PM_PAGESZ		1024		/* PM page size */
 
 #define GDB_RSP_PORT		12750		/* Default GDB RSP port */
@@ -134,14 +133,14 @@ int main(int argc, char *argv[])
 	trap_at_isr = 0;
 	firmware_test = 0;
 
-	while ((c = getopt_long(argc, argv, CLI_OPTIONS,
-	                        longopts, NULL)) != -1) {
+	c = getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
+	while (c != -1) {
 		switch (c) {
 		case 'p':		/* Required. AVR device. */
 			partno = optarg;
 			break;
 		case 'U':		/* Required. Memory operation. */
-			if (parse_memop(optarg)) {
+			if (parse_memop(optarg) != 0) {
 				fprintf(stderr, "[e]: Incorrect memory "
 				        "operation specified!\n");
 				return 1;
@@ -188,10 +187,15 @@ int main(int argc, char *argv[])
 		case FIRMWARE_TEST_OPT:
 			firmware_test = 1;
 			break;
+		default:
+			fprintf(stderr, "[!]: Unknown option: -%c\n",
+			        optopt);
+			break;
 		}
+		c = getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
 	}
 
-	if (partno != NULL && (!strcmp(partno, "?"))) {
+	if ((partno != NULL) && (!strcmp(partno, "?"))) {
 		MSIM_PrintParts();
 		return 2;
 	}
@@ -205,8 +209,8 @@ int main(int argc, char *argv[])
 	/* Preparing file for program memory */
 	fp = NULL;
 	for (i = 0; i < memops_num; i++) {
-		if (memops[i].format == 'f' &&
-		                !strcmp(memops[i].memtype, "flash")) {
+		if ((memops[i].format == 'f') &&
+		                (!strcmp(memops[i].memtype, "flash"))) {
 			/* Try to open file to read program memory from */
 			fp = fopen(memops[i].operand, "r");
 			if (!fp) {
@@ -232,7 +236,7 @@ int main(int argc, char *argv[])
 	mcu.intr = &intr;
 	mcu.vcdd = &vcdd;
 	intr.trap_at_isr = trap_at_isr;
-	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp)) {
+	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp) != 0) {
 		fprintf(stderr, "[e]: AVR %s cannot be initialized!\n",
 		        partno);
 		return 1;
@@ -241,13 +245,15 @@ int main(int argc, char *argv[])
 
 	/* Do we have to print available registers only? */
 	regs = sizeof mcu.vcdd->regs/sizeof mcu.vcdd->regs[0];
-	if (print_regs) {
+	if (print_regs != 0) {
 		for (i = 0; i < regs; i++) {
 			/* Print first N registers only */
-			if (mcu.vcdd->regs[i].name[0] == 0)
+			if (mcu.vcdd->regs[i].name[0] == 0) {
 				break;
-			if (mcu.vcdd->regs[i].off < 0)
+			}
+			if (mcu.vcdd->regs[i].off < 0) {
 				continue;
+			}
 			printf("%s (0x%2lX)\n",
 			       mcu.vcdd->regs[i].name, mcu.vcdd->regs[i].off);
 		}
@@ -255,14 +261,15 @@ int main(int argc, char *argv[])
 	}
 
 	/* Apply memory modifications */
-	for (i = 0; i < memops_num; i++)
-		if (apply_memop(&mcu, &memops[i])) {
+	for (i = 0; i < memops_num; i++) {
+		if (apply_memop(&mcu, &memops[i]) != 0) {
 			fprintf(stderr, "[e]: Memory modification failed: "
 			        "memtype=%s, op=%c, val=%s\n",
 			        &memops[i].memtype[0], memops[i].operation,
 			        &memops[i].operand[0]);
 			return 1;
 		}
+	}
 
 	/* Select registers to be dumped */
 	dump_regs = 0;
@@ -272,33 +279,43 @@ int main(int argc, char *argv[])
 			size_t len = strlen(mcu.vcdd->regs[j].name);
 			int bitn, cr, bit_cr;
 
-			if (!len)
+			if (!len) {
 				continue;
+			}
 			cr = strncmp(mcu.vcdd->regs[j].name, vcd_regs[i], len);
-			if (cr)
+			if (cr != 0) {
 				continue;
+			}
 
 			/* Do we have a bit index suffix? */
 			bit = len < sizeof vcd_regs[0]/sizeof vcd_regs[0][0]
 			      ? &vcd_regs[i][len] : NULL;
 			bit_cr = sscanf(bit, "%d", &bitn);
-			if (bit_cr != 1)
+			if (bit_cr != 1) {
 				bitn = -1;
+			}
 
 			/* Set index of a register to be dumped */
 			mcu.vcdd->bit[dump_regs].regi = (short)j;
-			mcu.vcdd->bit[dump_regs++].n = (short)bitn;
+			mcu.vcdd->bit[dump_regs].n = (short)bitn;
+			dump_regs++;
 			break;
 		}
 	}
 
 	/* Try to set required frequency */
-	if (freq > mcu.freq)
+	if (freq > mcu.freq) {
 		fprintf(stderr, "[!]: Frequency %u.%u kHz is above maximum "
 		        "possible %lu.%lu kHz for selected clock source\n",
-		        freq/1000, freq%1000, mcu.freq/1000, mcu.freq%1000);
-	else if (freq > 0)
+		        freq/1000U, freq%1000U,
+		        mcu.freq/1000UL, mcu.freq%1000UL);
+	} else if (freq > 0U) {
 		mcu.freq = freq;
+	} else {
+		fprintf(stderr, "[!]: Frequency %u.%u kHz cannot be "
+		        "selected as a clock source\n",
+		        freq/1000U, freq%1000U);
+	}
 
 	/* Load Lua peripherals if it is required */
 	if (luap && MSIM_LoadLuaPeripherals(&mcu, luap)) {
@@ -317,8 +334,9 @@ int main(int argc, char *argv[])
 	}
 	sim_retcode = MSIM_SimulateAVR(&mcu, 0, mcu.flashend+1, firmware_test);
 	MSIM_CleanLuaPeripherals();
-	if (!firmware_test)
+	if (!firmware_test) {
 		MSIM_RSPClose();
+	}
 
 	return sim_retcode;
 }
@@ -409,34 +427,37 @@ static void print_config(const struct MSIM_AVR *m)
 
 static void parse_dump(char *cmd)
 {
-	if (cmd == NULL)
+	if (cmd == NULL) {
 		return;
+	}
 	if (!strcmp(cmd, "?")) {
-		/*
-		 * User asked to print all registers which can be included
-		 * into VCD dump. Set flag and return, no more.
-		 */
+		/* User asked to print all registers which can be included
+		 * into VCD dump. Set flag and return, no more. */
 		print_regs = 1;
 		return;
 	} else {
 		int c;
 		char *p;
 		/* We've got a register name to parse. Let's do it! */
-		for (c = 0; cmd[c] != 0; c++)
-			if (cmd[c] == ',')
+		for (c = 0; cmd[c] != 0; c++) {
+			if (cmd[c] == ',') {
 				cmd[c] = ' ';
+			}
+		}
 
 		p = cmd;
 		while (1) {
 			int ret;
 			ret = sscanf(p, "%15s", &vcd_regs[vcd_rn][0]);
-			if (ret == EOF)
+			if (ret == EOF) {
 				break;
+			}
 			if (ret == 1) {
 				vcd_rn++;
 				p = strstr(p, " ");
-				if (p == NULL)
+				if (p == NULL) {
 					break;
+				}
 				p++;
 				continue;
 			}
@@ -453,9 +474,10 @@ static int parse_rsp_port(const char *opt)
 	int rsp_port;
 
 	rsp_port = atoi(opt);
-	if (!(rsp_port > 1024 && rsp_port < 65536)) {
-		fprintf(stderr, "[!]: GDB RSP port should be within "
-		        "(1024, 65536) range! Default port will be used.\n");
+	if (!((rsp_port > 1024) && (rsp_port < 65536))) {
+		fprintf(stderr, "[!]: GDB RSP port should be in a "
+		        "(1024, 65536) range exclusively! Default port "
+		        "will be used.\n");
 		rsp_port = GDB_RSP_PORT;
 	}
 	return rsp_port;
@@ -477,40 +499,47 @@ static int parse_memop(char *opt)
 {
 	int c, r;
 
-	for (c = 0; opt[c] != 0; c++)
-		if (opt[c] == ':')
+	for (c = 0; opt[c] != 0; c++) {
+		if (opt[c] == ':') {
 			opt[c] = ' ';
+		}
+	}
 	r = sscanf(opt, "%16s %1c %4096s %1c",
 	           &memops[memops_num].memtype[0],
 	           &memops[memops_num].operation,
 	           &memops[memops_num].operand[0],
 	           &memops[memops_num].format);
 
-	if (r == EOF || r < 3 || r > 4) /* Something went wrong */
+	if ((r==EOF) || (r<3) || (r>4)) {
+		/* Something went wrong */
 		return 1;
-	if (r == 3)			/* 'File' format is default one */
+	}
+	if (r==3) {
+		/* 'File' format is default one */
 		memops[memops_num].format = 'f';
+	}
 	memops_num++;
 	return 0;
 }
 
 static int apply_memop(struct MSIM_AVR *m, struct MSIM_MemOp *mo)
 {
-	if (mo->format < 0)	/* Operation is applied already, skipping */
-		return 0;
+	int r;
 
-	if (!strcmp(mo->memtype, "efuse")) {
-		return set_fuse(m, mo, FUSE_EXT);
+	if (mo->format < 0) {	/* Operation is applied already, skipping */
+		r = 0;
+	} else if (!strcmp(mo->memtype, "efuse")) {
+		r = set_fuse(m, mo, FUSE_EXT);
 	} else if (!strcmp(mo->memtype, "hfuse")) {
-		return set_fuse(m, mo, FUSE_HIGH);
+		r = set_fuse(m, mo, FUSE_HIGH);
 	} else if (!strcmp(mo->memtype, "lfuse")) {
-		return set_fuse(m, mo, FUSE_LOW);
+		r = set_fuse(m, mo, FUSE_LOW);
 	} else if (!strcmp(mo->memtype, "lock")) {
-		return set_lock(m, mo);
+		r = set_lock(m, mo);
 	} else {
-		return 1;
+		r = 1;
 	}
-	return 0;
+	return r;
 }
 
 static int set_fuse(struct MSIM_AVR *m, struct MSIM_MemOp *mo,

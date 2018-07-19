@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simm8a.h"
@@ -355,13 +356,15 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 
 	if (presc != tc2_presc) {
 		/* We may have TC2 enabled with Compare Match missed. */
-		if (tc2_presc == 0 && mcu->dm[TCNT2] > mcu->dm[OCR2])
+		if (tc2_presc == 0 && mcu->dm[TCNT2] > mcu->dm[OCR2]) {
 			missed_cm = 1;
+		}
 
 		tc2_presc = presc;
 		/* Should we really clean these ticks? */
 		tc2_ticks = 0;
-	} else if (missed_cm) {
+	}
+	if ((missed_cm != 0) && (presc == tc2_presc)) {
 		missed_cm = 0;
 	}
 
@@ -446,16 +449,18 @@ static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
 		        "[e] It's highly likely a bug - please, report it.\n");
 		return;
 	}
-	if (!IS_SET(mcu->dm[DDRB], pin))
+	if (!IS_SET(mcu->dm[DDRB], pin)) {
 		return;
+	}
 
 	/* Update Output Compare pin (OC1A or OC1B) */
 	switch (com) {
 	case 1:
-		if (IS_SET(mcu->dm[PORTB], pin))
+		if (IS_SET(mcu->dm[PORTB], pin)) {
 			CLEAR(mcu->dm[PORTB], pin);
-		else
+		} else {
 			SET(mcu->dm[PORTB], pin);
+		}
 		break;
 	case 2:
 		CLEAR(mcu->dm[PORTB], pin);
@@ -553,24 +558,28 @@ static void timer2_pcpwm(struct MSIM_AVR *mcu,
 {
 	/* NOTE: This mode allows PWM to be generated using dual-slope
 	 * operation (preferred for motor control applications). Duty cycle
-	 * can be controlled by the value in OCR2 register. */
+	 * can be controlled by the value in OCR2 register.
+	 *
+	 * Dual-slope operation means counting from BOTTOM(0) to MAX(255),
+	 * then from MAX back to the BOTTOM and start again. */
 	static uint8_t cnt_down = 0;
 
-	/* Dual-slope operation means counting from BOTTOM(0) to MAX(255),
-	 * then from MAX back to the BOTTOM and start again. */
 	if ((*ticks) == (presc-1)) {
 		if (mcu->dm[TCNT2] == 0xFF) {
-			if (ocr2_buf == 0xFF)
+			if (ocr2_buf == 0xFF) {
 				mcu->dm[TIFR] |= (1<<OCF2);
+			}
 			if (missed_cm || (ocr2_buf == 0xFF &&
-			                  mcu->dm[OCR2] < 0xFF))
+			                  mcu->dm[OCR2] < 0xFF)) {
 				timer2_oc2_pcpwm(mcu, com2, COMP_MATCH_UPCNT);
+			}
 
 			cnt_down = 1;
 			ocr2_buf = mcu->dm[OCR2];
-			if (ocr2_buf == 0xFF)
+			if (ocr2_buf == 0xFF) {
 				timer2_oc2_pcpwm(mcu, com2,
 				                 COMP_MATCH_DOWNCNT);
+			}
 			mcu->dm[TCNT2]--;
 		} else if (mcu->dm[TCNT2] == 0) {
 			cnt_down = 0;
@@ -581,15 +590,17 @@ static void timer2_pcpwm(struct MSIM_AVR *mcu,
 			timer2_oc2_pcpwm(mcu, com2, cnt_down
 			                 ? COMP_MATCH_DOWNCNT
 			                 : COMP_MATCH_UPCNT);
-			if (!cnt_down)
+			if (!cnt_down) {
 				mcu->dm[TCNT2]++;
-			else
+			} else {
 				mcu->dm[TCNT2]--;
+			}
 		} else {
-			if (!cnt_down)
+			if (!cnt_down) {
 				mcu->dm[TCNT2]++;
-			else
+			} else {
 				mcu->dm[TCNT2]--;
+			}
 		}
 		*ticks = 0;
 		return;
@@ -601,16 +612,18 @@ static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, uint8_t com2)
 {
 	/* Check Data Direction Register first. DDRB3 should be set to
 	 * enable the output driver (according to a datasheet).*/
-	if (!IS_SET(mcu->dm[DDRB], PB3))
+	if (!IS_SET(mcu->dm[DDRB], PB3)) {
 		return;
+	}
 
 	/* Update Output Compare pin (OC2) */
 	switch (com2) {
 	case 1:
-		if (IS_SET(mcu->dm[PORTB], PB3))
+		if (IS_SET(mcu->dm[PORTB], PB3)) {
 			CLEAR(mcu->dm[PORTB], PB3);
-		else
+		} else {
 			SET(mcu->dm[PORTB], PB3);
+		}
 		break;
 	case 2:
 		CLEAR(mcu->dm[PORTB], PB3);
@@ -630,30 +643,34 @@ static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, uint8_t com2,
 {
 	/* Check Data Direction Register first. DDRB3 should be set to
 	 * enable the output driver (according to a datasheet).*/
-	if (!IS_SET(mcu->dm[DDRB], PB3))
+	if (!IS_SET(mcu->dm[DDRB], PB3)) {
 		return;
+	}
 
 	/* Update Output Compare pin (OC2) */
 	switch (com2) {
 	case 1:
 		if (state == COMPARE_MATCH) {
-			if (IS_SET(mcu->dm[PORTB], PB3))
+			if (IS_SET(mcu->dm[PORTB], PB3)) {
 				CLEAR(mcu->dm[PORTB], PB3);
-			else
+			} else {
 				SET(mcu->dm[PORTB], PB3);
+			}
 		}
 		break;
 	case 2:		/* Non-inverting compare output mode */
-		if (state == COMPARE_MATCH)
+		if (state == COMPARE_MATCH) {
 			CLEAR(mcu->dm[PORTB], PB3);
-		else
+		} else {
 			SET(mcu->dm[PORTB], PB3);
+		}
 		break;
 	case 3:		/* Inverting compare output mode */
-		if (state == COMPARE_MATCH)
+		if (state == COMPARE_MATCH) {
 			SET(mcu->dm[PORTB], PB3);
-		else
+		} else {
 			CLEAR(mcu->dm[PORTB], PB3);
+		}
 		break;
 	case 0:
 	default:
@@ -667,8 +684,9 @@ static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, uint8_t com2,
 {
 	/* Check Data Direction Register first. DDRB3 should be set to
 	 * enable the output driver (according to a datasheet).*/
-	if (!IS_SET(mcu->dm[DDRB], PB3))
+	if (!IS_SET(mcu->dm[DDRB], PB3)) {
 		return;
+	}
 
 	/* Update Output Compare pin (OC2) */
 	switch (com2) {
@@ -677,16 +695,18 @@ static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, uint8_t com2,
 		        "correct PWM mode\n");
 		break;
 	case 2:		/* Non-inverting compare output mode */
-		if (state == COMP_MATCH_UPCNT)
+		if (state == COMP_MATCH_UPCNT) {
 			CLEAR(mcu->dm[PORTB], PB3);
-		else
+		} else {
 			SET(mcu->dm[PORTB], PB3);
+		}
 		break;
 	case 3:		/* Inverting compare output mode */
-		if (state == COMP_MATCH_UPCNT)
+		if (state == COMP_MATCH_UPCNT) {
 			SET(mcu->dm[PORTB], PB3);
-		else
+		} else {
 			CLEAR(mcu->dm[PORTB], PB3);
+		}
 		break;
 	case 0:
 	default:
@@ -765,8 +785,12 @@ int MSIM_M8ASetFuse(void *m, uint32_t fuse_n, uint8_t fuse_v)
 				mcu->freq = 8000000;	/* max 8 MHz */
 				break;
 			}
-			if (!ckopt)
+			if (!ckopt) {
 				mcu->freq = 16000000;	/* max 16 MHz */
+			}
+		} else {
+			fprintf(stderr, "[e]: CKSEL = %" PRIu8 ", but it "
+			        "should be in [0, 15] inclusively!\n", cksel);
 		}
 		break;
 	case FUSE_HIGH:
@@ -795,10 +819,11 @@ int MSIM_M8ASetFuse(void *m, uint32_t fuse_n, uint8_t fuse_v)
 			break;
 		}
 
-		if (fuse_v&0x1)		/* BOOTRST is 1(unprogrammed) */
+		if (fuse_v&0x1) {	/* BOOTRST is 1(unprogrammed) */
 			mcu->intr->reset_pc = mcu->pc = 0x0000;
-		else			/* BOOTRST is 0(programmed) */
+		} else {		/* BOOTRST is 0(programmed) */
 			mcu->intr->reset_pc = mcu->pc = mcu->bls->start;
+		}
 
 		switch (cksel) {
 		case 5:
@@ -811,8 +836,9 @@ int MSIM_M8ASetFuse(void *m, uint32_t fuse_n, uint8_t fuse_v)
 			mcu->freq = 8000000;	/* max 8 MHz */
 			break;
 		}
-		if (!ckopt)
+		if (!ckopt) {
 			mcu->freq = 16000000;	/* max 16 MHz */
+		}
 
 		break;
 	default:			/* Should not happen */

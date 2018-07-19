@@ -162,10 +162,11 @@ int flua_AVR_SetRegBit(lua_State *L)
 		        "bit of a register: %u\n", "N/A", bit);
 		return 0;
 	}
-	if (val&1)
+	if (val&1) {
 		mcu->dm[reg] |= (unsigned char)(1<<bit);
-	else
+	} else {
 		mcu->dm[reg] &= (unsigned char)(~(1<<bit));
+	}
 	return 0;
 }
 
@@ -191,10 +192,11 @@ int flua_AVR_SetIOBit(lua_State *L)
 		        "bit: %u\n", "N/A", bit);
 		return 0;
 	}
-	if (val&1)
+	if (val&1) {
 		mcu->dm[io_reg] |= (unsigned char)(1<<bit);
-	else
+	} else {
 		mcu->dm[io_reg] &= (unsigned char)(~(1<<bit));
+	}
 	return 0;
 }
 
