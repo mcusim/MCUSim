@@ -65,8 +65,8 @@
 #define SET_FUSE_F	MSIM_M328PSetFuse
 #define SET_LOCK_F	MSIM_M328PSetLock
 
-int MSIM_M328PSetFuse(void *mcu, unsigned int fuse_n, unsigned char fuse_v);
-int MSIM_M328PSetLock(void *mcu, unsigned char lock_v);
+int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v);
+int MSIM_M328PSetLock(struct MSIM_AVR *mcu, uint8_t lock_v);
 
 /* ATMega328P Fuse Low Byte */
 enum MSIM_AVRFuseLowByte {
@@ -95,7 +95,7 @@ enum MSIM_AVRFuseExtended {
 	AVR_FEXT_BODLEVEL2,
 };
 
-#define SREG	_SFR_IO8(0x3F)
+#define SREG		_SFR_IO8(0x3F)
 #define SPH		_SFR_IO8(0x3E)
 #define SPL		_SFR_IO8(0x3D)
 #include "mcusim/avr/sim/vcd_regs.h"

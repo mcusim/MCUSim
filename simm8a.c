@@ -39,6 +39,7 @@
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simm8a.h"
 
+#define NOT_CONNECTED		0xFFU
 #define COMPARE_MATCH		75
 #define SET_TO_BOTTOM		76
 #define COMP_MATCH_UPCNT	77
@@ -109,11 +110,8 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	return 0;
 }
 
-int MSIM_M8ATickTimers(void *m)
+int MSIM_M8ATickTimers(struct MSIM_AVR *mcu)
 {
-	struct MSIM_AVR *mcu;
-
-	mcu = (struct MSIM_AVR *)m;
 	tick_timer2(mcu);
 	tick_timer1(mcu);
 	tick_timer0(mcu);
@@ -135,27 +133,36 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 	static uint32_t tc0_ticks;
 	uint8_t tccr0;			/* Timer/Counter0 control register */
 	uint32_t presc;			/* Prescaler value */
+	uint8_t stop_mode;
+
+	stop_mode = 0;
 
 	tccr0 = mcu->dm[TCCR0];
 	presc = 0;
 
 	switch (tccr0) {
 	case 0x1:
-		presc = 1;		/* No prescaling, clk_io */
+		/* No prescaling, clk_io */
+		presc = 1;
 		break;
 	case 0x2:
-		presc = 8;		/* clk_io/8 */
+		/* clk_io/8 */
+		presc = 8;
 		break;
 	case 0x3:
-		presc = 64;		/* clk_io/64 */
+		/* clk_io/64 */
+		presc = 64;
 		break;
 	case 0x4:
-		presc = 256;		/* clk_io/256 */
+		/* clk_io/256 */
+		presc = 256;
 		break;
 	case 0x5:
-		presc = 1024;		/* clk_io/1024 */
+		/* clk_io/1024 */
+		presc = 1024;
 		break;
-	case 0x6:			/* Ext. clock on T0/PD4 (fall) */
+	case 0x6:
+		/* Ext. clock on T0/PD4 (fall) */
 		if (IS_FALL(init_portd, mcu->dm[PORTD], PD4) ||
 		                IS_FALL(init_pind, mcu->dm[PIND], PD4)) {
 			if (mcu->dm[TCNT0] == 0xFF) {
@@ -169,8 +176,13 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 		}
 		tc0_presc = 0;
 		tc0_ticks = 0;
-		return;
-	case 0x7:			/* Ext. clock on T0/PD4 (rise) */
+		/* This is an external clock source mode (and not a stopped
+		 * mode) actually, but we use this variable to skip all other
+		 * actions. */
+		stop_mode = 1;
+		break;
+	case 0x7:
+		/* Ext. clock on T0/PD4 (rise) */
 		if (IS_RISE(init_portd, mcu->dm[PORTD], PD4) ||
 		                IS_RISE(init_pind, mcu->dm[PIND], PD4)) {
 			if (mcu->dm[TCNT0] == 0xFF) {
@@ -184,32 +196,44 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 		}
 		tc0_presc = 0;
 		tc0_ticks = 0;
-		return;
+		/* This is an external clock source mode (and not a stopped
+		 * mode) actually, but we use this variable to skip all other
+		 * actions. */
+		stop_mode = 1;
+		break;
 	case 0x0:			/* No clock source (stopped mode) */
 	default:			/* Should not happen! */
 		tc0_presc = 0;
 		tc0_ticks = 0;
-		return;
+		stop_mode = 1;
+		break;
 	}
 
 	/* Internal clock */
-	if (presc != tc0_presc) {
-		tc0_presc = presc;
-		tc0_ticks = 0;
-	}
-	if (tc0_ticks == (tc0_presc-1)) {
-		if (mcu->dm[TCNT0] == 0xFF) {
-			/* Reset Timer/Counter0 */
-			mcu->dm[TCNT0] = 0;
-			/* Timer/Counter0 overflow occured */
-			mcu->dm[TIFR] |= (1<<TOV0);
-		} else {
-			mcu->dm[TCNT0]++;
+	if (stop_mode == 0U) {
+		if (presc != tc0_presc) {
+			tc0_presc = presc;
+			tc0_ticks = 0;
 		}
-		tc0_ticks = 0;
-		return;
+		if (tc0_ticks < (tc0_presc-1U)) {
+			tc0_ticks++;
+		} else if (tc0_ticks > (tc0_presc-1U)) {
+			fprintf(stderr, "[e]: Number of Timer0 ticks=%" PRIu32
+			        " should be less then or equal to "
+			        "(prescaler-1)=%" PRIu32 ". Timer0 will not "
+			        "be updated!\n", tc0_ticks, (tc0_presc-1U));
+		} else {
+			if (mcu->dm[TCNT0] == 0xFF) {
+				/* Reset Timer/Counter0 */
+				mcu->dm[TCNT0] = 0;
+				/* Timer/Counter0 overflow occured */
+				mcu->dm[TIFR] |= (1<<TOV0);
+			} else {
+				mcu->dm[TCNT0]++;
+			}
+			tc0_ticks = 0;
+		}
 	}
-	tc0_ticks++;
 }
 
 static void tick_timer1(struct MSIM_AVR *mcu)
@@ -232,6 +256,9 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 	uint8_t com1a;		/* Compare Output mode COM1A1:0 */
 	uint8_t com1b;		/* Compare Output mode COM1B1:0 */
 	uint32_t presc;		/* Prescaler */
+	uint8_t stop_mode;
+
+	stop_mode = 0;
 
 	cs1 = DM(TCCR1B)&0x7;
 	wgm1 = ((DM(TCCR1B)>>4)&1) | ((DM(TCCR1B)>>3)&1) |
@@ -256,48 +283,55 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 		presc = 1024;		/* clk_io/1024 */
 		break;
 	case 0x6:			/* Ext. clock on T1/PD5 (fall) */
-	/* External clock isn't supported at the moment. */
-	/* break; */
+		/* External clock isn't supported at the moment. */
+		stop_mode = 1;
+		break;
 	case 0x7:			/* Ext. clock on T1/PD5 (rise) */
-	/* External clock isn't supported at the moment. */
-	/* break; */
+		/* External clock isn't supported at the moment. */
+		stop_mode = 1;
+		break;
 	case 0x0:			/* No clock source (stopped mode) */
 	default:			/* Should not happen! */
 		tc1_presc = 0;
 		tc1_ticks = 0;
-		return;
+		stop_mode = 1;
 	}
 
-
-	if (presc != tc1_presc) {
+	if ((stop_mode == 0U) && (presc != tc1_presc)) {
 		tc1_presc = presc;
 		/* Should we really clean these ticks? */
 		tc1_ticks = 0;
 	}
 
-	switch (wgm1) {
-	case 0:
-		timer1_normal(mcu, tc1_presc, &tc1_ticks, wgm1, com1a, com1b);
-		return;
-	case 2:
-		/* timer1_ctc(mcu, tc2_presc, &tc2_ticks, wgm2, com2); */
-		return;
-	case 3:
-		/* timer1_fastpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2); */
-		return;
-	case 1:
-		/* timer1_pcpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2); */
-		return;
-	default:			/* Should not happen! */
-		if (wgm1 != old_wgm1) {
-			fprintf(stderr, "[!]: Selected mode WGM13:0 = %u "
-			        "of the Timer/Counter1 is not supported\n",
-			        wgm1);
-			old_wgm1 = wgm1;
+	if (stop_mode == 0U) {
+		switch (wgm1) {
+		case 0:
+			timer1_normal(mcu, tc1_presc, &tc1_ticks, wgm1,
+			              com1a, com1b);
+			break;
+		case 2:
+			/* timer1_ctc(mcu, tc2_presc, &tc2_ticks,
+			 *            wgm2, com2); */
+			break;
+		case 3:
+			/* timer1_fastpwm(mcu, tc2_presc, &tc2_ticks,
+			 *                wgm2, com2); */
+			break;
+		case 1:
+			/* timer1_pcpwm(mcu, tc2_presc, &tc2_ticks,
+			 *              wgm2, com2); */
+			break;
+		default:			/* Should not happen! */
+			if (wgm1 != old_wgm1) {
+				fprintf(stderr, "[!]: Selected mode "
+				        "WGM13:0 = %u of the Timer/Counter1 "
+				        "is not supported\n", wgm1);
+				old_wgm1 = wgm1;
+			}
+			tc1_presc = 0;
+			tc1_ticks = 0;
+			break;
 		}
-		tc1_presc = 0;
-		tc1_ticks = 0;
-		return;
 	}
 }
 
@@ -320,6 +354,9 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	uint8_t wgm2;		/* Waveform Generation WGM21:0 */
 	uint8_t com2;		/* Compare Output mode COM21:0 */
 	uint32_t presc;		/* Prescaler */
+	uint8_t stop_mode;
+
+	stop_mode = 0;
 
 	cs2 = mcu->dm[TCCR2]&0x7;
 	wgm2 = (((mcu->dm[TCCR2]>>WGM21)<<1)&2) | ((mcu->dm[TCCR2]>>WGM20)&1);
@@ -351,12 +388,12 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	default:			/* Should not happen! */
 		tc2_presc = 0;
 		tc2_ticks = 0;
-		return;
+		stop_mode = 1;
 	}
 
-	if (presc != tc2_presc) {
+	if ((stop_mode == 0U) && (presc != tc2_presc)) {
 		/* We may have TC2 enabled with Compare Match missed. */
-		if (tc2_presc == 0 && mcu->dm[TCNT2] > mcu->dm[OCR2]) {
+		if ((tc2_presc == 0U) && (mcu->dm[TCNT2] > mcu->dm[OCR2])) {
 			missed_cm = 1;
 		}
 
@@ -364,33 +401,35 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 		/* Should we really clean these ticks? */
 		tc2_ticks = 0;
 	}
-	if ((missed_cm != 0) && (presc == tc2_presc)) {
+	if ((stop_mode == 0U) && (missed_cm != 0U) && (presc == tc2_presc)) {
 		missed_cm = 0;
 	}
 
-	switch (wgm2) {
-	case 0:
-		timer2_normal(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
-		return;
-	case 2:
-		timer2_ctc(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
-		return;
-	case 3:
-		timer2_fastpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
-		return;
-	case 1:
-		timer2_pcpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
-		return;
-	default:			/* Should not happen! */
-		if (wgm2 != old_wgm2) {
-			fprintf(stderr, "[!]: Selected mode WGM21:0 = %u "
-			        "of the Timer/Counter2 is not supported\n",
-			        wgm2);
-			old_wgm2 = wgm2;
+	if (stop_mode == 0U) {
+		switch (wgm2) {
+		case 0:
+			timer2_normal(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
+			break;
+		case 2:
+			timer2_ctc(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
+			break;
+		case 3:
+			timer2_fastpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
+			break;
+		case 1:
+			timer2_pcpwm(mcu, tc2_presc, &tc2_ticks, wgm2, com2);
+			break;
+		default:			/* Should not happen! */
+			if (wgm2 != old_wgm2) {
+				fprintf(stderr, "[!]: Selected mode "
+				        "WGM21:0 = %u of the Timer/Counter2 "
+				        "is not supported\n", wgm2);
+				old_wgm2 = wgm2;
+			}
+			tc2_presc = 0;
+			tc2_ticks = 0;
+			break;
 		}
-		tc2_presc = 0;
-		tc2_ticks = 0;
-		return;
 	}
 }
 
@@ -405,8 +444,15 @@ static void timer1_normal(struct MSIM_AVR *mcu,
 	ocr1a = ((DM(OCR1AH)<<8)&0xFF00) | (DM(OCR1AL));
 	ocr1b = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL));
 
-	if (*ticks == (presc-1)) {
-		if (tcnt1 == 0xFFFF) {
+	if ((*ticks) < (presc-1U)) {
+		(*ticks)++;
+	} else if ((*ticks) > (presc-1U)) {
+		fprintf(stderr, "[e]: Number of Timer1 ticks=%" PRIu32
+		        " should be less then or equal to "
+		        "(prescaler-1)=%" PRIu32 ". Timer1 will not "
+		        "be updated!\n", *ticks, (presc-1U));
+	} else {
+		if (tcnt1 == 0xFFFFU) {
 			/* Reset Timer/Counter1 */
 			tcnt1 = 0;
 			/* Set Timer/Counter1 overflow flag */
@@ -422,56 +468,59 @@ static void timer1_normal(struct MSIM_AVR *mcu,
 		} else {
 			tcnt1++;
 		}
-		DM(TCNT1H) = (tcnt1>>8)&0xFF;
-		DM(TCNT1L) = tcnt1&0xFF;
-		*ticks = 0;
-		return;
+		DM(TCNT1H) = (tcnt1>>8)&0xFFU;
+		DM(TCNT1L) = tcnt1&0xFFU;
+		(*ticks) = 0;
 	}
-	(*ticks)++;
 }
 
 static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
                               uint8_t com1b, uint8_t chan)
 {
 	uint8_t pin, com;
+	uint8_t err;
+
+	err = 0;
 
 	/* Check Data Direction Register first. DDRB3 should be set to
 	 * enable the output driver (according to a datasheet).*/
-	if (chan == A_CHAN) {
+	if (chan == (uint8_t)A_CHAN) {
 		pin = PB1;
 		com = com1a;
-	} else if (chan == B_CHAN) {
+	} else if (chan == (uint8_t)B_CHAN) {
 		pin = PB2;
 		com = com1b;
 	} else {
 		fprintf(stderr, "[e] Unsupported channel of the Output "
-		        "Compare unit is used in Timer/Counter1!\n"
-		        "[e] It's highly likely a bug - please, report it.\n");
-		return;
+		        "Compare unit is used in Timer/Counter1! "
+		        "It's highly likely a bug - please, report it.\n");
+		err = 1;
 	}
-	if (!IS_SET(mcu->dm[DDRB], pin)) {
-		return;
+	if ((err == 0U) && (!IS_SET(mcu->dm[DDRB], pin))) {
+		err = 1;
 	}
 
 	/* Update Output Compare pin (OC1A or OC1B) */
-	switch (com) {
-	case 1:
-		if (IS_SET(mcu->dm[PORTB], pin)) {
+	if (err == 0U) {
+		switch (com) {
+		case 1:
+			if (IS_SET(mcu->dm[PORTB], pin) == 1) {
+				CLEAR(mcu->dm[PORTB], pin);
+			} else {
+				SET(mcu->dm[PORTB], pin);
+			}
+			break;
+		case 2:
 			CLEAR(mcu->dm[PORTB], pin);
-		} else {
+			break;
+		case 3:
 			SET(mcu->dm[PORTB], pin);
+			break;
+		case 0:
+		default:
+			/* OC1A/OC1B disconnected, do nothing */
+			break;
 		}
-		break;
-	case 2:
-		CLEAR(mcu->dm[PORTB], pin);
-		break;
-	case 3:
-		SET(mcu->dm[PORTB], pin);
-		break;
-	case 0:
-	default:
-		/* OC1A/OC1B disconnected, do nothing */
-		break;
 	}
 }
 
@@ -479,7 +528,14 @@ static void timer2_normal(struct MSIM_AVR *mcu,
                           uint32_t presc, uint32_t *ticks,
                           uint8_t wgm2, uint8_t com2)
 {
-	if (*ticks == (presc-1)) {
+	if ((*ticks) < (presc-1U)) {
+		(*ticks)++;
+	} else if ((*ticks) > (presc-1U)) {
+		fprintf(stderr, "[e]: Number of Timer2 ticks=%" PRIu32
+		        " should be less then or equal to "
+		        "(prescaler-1)=%" PRIu32 ". Timer2 will not "
+		        "be updated!\n", *ticks, (presc-1U));
+	} else {
 		if (mcu->dm[TCNT2] == 0xFF) {
 			/* Reset Timer/Counter2 */
 			mcu->dm[TCNT2] = 0;
@@ -492,10 +548,8 @@ static void timer2_normal(struct MSIM_AVR *mcu,
 		} else {
 			mcu->dm[TCNT2]++;
 		}
-		*ticks = 0;
-		return;
+		(*ticks) = 0;
 	}
-	(*ticks)++;
 }
 
 static void timer2_ctc(struct MSIM_AVR *mcu, uint32_t presc, uint32_t *ticks,
@@ -505,7 +559,14 @@ static void timer2_ctc(struct MSIM_AVR *mcu, uint32_t presc, uint32_t *ticks,
 	 * frequency which is controlled by the value in OCR2 register
 	 * (top border of the timer/counter). */
 
-	if ((*ticks) == (presc-1)) {
+	if ((*ticks) < (presc-1U)) {
+		(*ticks)++;
+	} else if ((*ticks) > (presc-1U)) {
+		fprintf(stderr, "[e]: Number of Timer2 ticks=%" PRIu32
+		        " should be less then or equal to "
+		        "(prescaler-1)=%" PRIu32 ". Timer2 will not "
+		        "be updated!\n", *ticks, (presc-1U));
+	} else {
 		if (mcu->dm[TCNT2] == mcu->dm[OCR2]) {
 			/* Reset Timer/Counter2 */
 			mcu->dm[TCNT2] = 0;
@@ -516,10 +577,8 @@ static void timer2_ctc(struct MSIM_AVR *mcu, uint32_t presc, uint32_t *ticks,
 		} else {
 			mcu->dm[TCNT2]++;
 		}
-		*ticks = 0;
-		return;
+		(*ticks) = 0;
 	}
-	(*ticks)++;
 }
 
 static void timer2_fastpwm(struct MSIM_AVR *mcu,
@@ -528,12 +587,19 @@ static void timer2_fastpwm(struct MSIM_AVR *mcu,
 {
 	/* NOTE: This mode allows PWM to be generated using single-slope
 	 * operation. Duty cycle can be controlled by the value in
-	 * OCR2 register. */
-
-	/* Single-slope operation means counting from BOTTOM(0) to MAX(255),
+	 * OCR2 register.
+	 *
+	 * Single-slope operation means counting from BOTTOM(0) to MAX(255),
 	 * reset back to BOTTOM in the following clock cycle and
 	 * start again. */
-	if ((*ticks) == (presc-1)) {
+	if ((*ticks) < (presc-1U)) {
+		(*ticks)++;
+	} else if ((*ticks) > (presc-1U)) {
+		fprintf(stderr, "[e]: Number of Timer2 ticks=%" PRIu32
+		        " should be less then or equal to "
+		        "(prescaler-1)=%" PRIu32 ". Timer2 will not "
+		        "be updated!\n", *ticks, (presc-1U));
+	} else {
 		if (mcu->dm[TCNT2] == 0xFF) {
 			mcu->dm[TCNT2] = 0;
 			ocr2_buf = mcu->dm[OCR2];
@@ -546,10 +612,8 @@ static void timer2_fastpwm(struct MSIM_AVR *mcu,
 		} else {
 			mcu->dm[TCNT2]++;
 		}
-		*ticks = 0;
-		return;
+		(*ticks) = 0;
 	}
-	(*ticks)++;
 }
 
 static void timer2_pcpwm(struct MSIM_AVR *mcu,
@@ -564,19 +628,26 @@ static void timer2_pcpwm(struct MSIM_AVR *mcu,
 	 * then from MAX back to the BOTTOM and start again. */
 	static uint8_t cnt_down = 0;
 
-	if ((*ticks) == (presc-1)) {
+	if ((*ticks) < (presc-1U)) {
+		(*ticks)++;
+	} else if ((*ticks) > (presc-1U)) {
+		fprintf(stderr, "[e]: Number of Timer2 ticks=%" PRIu32
+		        " should be less then or equal to "
+		        "(prescaler-1)=%" PRIu32 ". Timer2 will not "
+		        "be updated!\n", *ticks, (presc-1U));
+	} else {
 		if (mcu->dm[TCNT2] == 0xFF) {
-			if (ocr2_buf == 0xFF) {
+			if (ocr2_buf == 0xFFU) {
 				mcu->dm[TIFR] |= (1<<OCF2);
 			}
-			if (missed_cm || (ocr2_buf == 0xFF &&
-			                  mcu->dm[OCR2] < 0xFF)) {
+			if (missed_cm || ((ocr2_buf == 0xFFU) &&
+			                  (mcu->dm[OCR2] < 0xFF))) {
 				timer2_oc2_pcpwm(mcu, com2, COMP_MATCH_UPCNT);
 			}
 
 			cnt_down = 1;
 			ocr2_buf = mcu->dm[OCR2];
-			if (ocr2_buf == 0xFF) {
+			if (ocr2_buf == 0xFFU) {
 				timer2_oc2_pcpwm(mcu, com2,
 				                 COMP_MATCH_DOWNCNT);
 			}
@@ -602,24 +673,26 @@ static void timer2_pcpwm(struct MSIM_AVR *mcu,
 				mcu->dm[TCNT2]--;
 			}
 		}
-		*ticks = 0;
-		return;
+		(*ticks) = 0;
 	}
-	(*ticks)++;
 }
 
 static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, uint8_t com2)
 {
+	uint8_t com2_v;
+
 	/* Check Data Direction Register first. DDRB3 should be set to
-	 * enable the output driver (according to a datasheet).*/
+	 * enable the output driver (according to a datasheet). */
 	if (!IS_SET(mcu->dm[DDRB], PB3)) {
-		return;
+		com2_v = NOT_CONNECTED;
+	} else {
+		com2_v = com2;
 	}
 
 	/* Update Output Compare pin (OC2) */
 	switch (com2) {
 	case 1:
-		if (IS_SET(mcu->dm[PORTB], PB3)) {
+		if (IS_SET(mcu->dm[PORTB], PB3) == 1) {
 			CLEAR(mcu->dm[PORTB], PB3);
 		} else {
 			SET(mcu->dm[PORTB], PB3);
@@ -632,6 +705,7 @@ static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, uint8_t com2)
 		SET(mcu->dm[PORTB], PB3);
 		break;
 	case 0:
+	case NOT_CONNECTED:
 	default:
 		/* OC2 disconnected, do nothing */
 		break;
@@ -641,17 +715,21 @@ static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, uint8_t com2)
 static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, uint8_t com2,
                                uint8_t state)
 {
+	uint8_t com2_v;
+
 	/* Check Data Direction Register first. DDRB3 should be set to
-	 * enable the output driver (according to a datasheet).*/
+	 * enable the output driver (according to a datasheet). */
 	if (!IS_SET(mcu->dm[DDRB], PB3)) {
-		return;
+		com2_v = NOT_CONNECTED;
+	} else {
+		com2_v = com2;
 	}
 
 	/* Update Output Compare pin (OC2) */
 	switch (com2) {
 	case 1:
-		if (state == COMPARE_MATCH) {
-			if (IS_SET(mcu->dm[PORTB], PB3)) {
+		if (state == (uint8_t)COMPARE_MATCH) {
+			if (IS_SET(mcu->dm[PORTB], PB3) == 1) {
 				CLEAR(mcu->dm[PORTB], PB3);
 			} else {
 				SET(mcu->dm[PORTB], PB3);
@@ -659,20 +737,21 @@ static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, uint8_t com2,
 		}
 		break;
 	case 2:		/* Non-inverting compare output mode */
-		if (state == COMPARE_MATCH) {
+		if (state == (uint8_t)COMPARE_MATCH) {
 			CLEAR(mcu->dm[PORTB], PB3);
 		} else {
 			SET(mcu->dm[PORTB], PB3);
 		}
 		break;
 	case 3:		/* Inverting compare output mode */
-		if (state == COMPARE_MATCH) {
+		if (state == (uint8_t)COMPARE_MATCH) {
 			SET(mcu->dm[PORTB], PB3);
 		} else {
 			CLEAR(mcu->dm[PORTB], PB3);
 		}
 		break;
 	case 0:
+	case NOT_CONNECTED:
 	default:
 		/* OC2 disconnected, do nothing */
 		break;
@@ -682,98 +761,194 @@ static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, uint8_t com2,
 static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, uint8_t com2,
                              uint8_t state)
 {
+	uint8_t com2_v;
+
 	/* Check Data Direction Register first. DDRB3 should be set to
 	 * enable the output driver (according to a datasheet).*/
 	if (!IS_SET(mcu->dm[DDRB], PB3)) {
-		return;
+		com2_v = NOT_CONNECTED;
+	} else {
+		com2_v = com2;
 	}
 
 	/* Update Output Compare pin (OC2) */
-	switch (com2) {
+	switch (com2_v) {
 	case 1:
 		fprintf(stderr, "[!] COM21:0=1 is reserved in the phase "
 		        "correct PWM mode\n");
 		break;
 	case 2:		/* Non-inverting compare output mode */
-		if (state == COMP_MATCH_UPCNT) {
+		if (state == (uint8_t)COMP_MATCH_UPCNT) {
 			CLEAR(mcu->dm[PORTB], PB3);
 		} else {
 			SET(mcu->dm[PORTB], PB3);
 		}
 		break;
 	case 3:		/* Inverting compare output mode */
-		if (state == COMP_MATCH_UPCNT) {
+		if (state == (uint8_t)COMP_MATCH_UPCNT) {
 			SET(mcu->dm[PORTB], PB3);
 		} else {
 			CLEAR(mcu->dm[PORTB], PB3);
 		}
 		break;
 	case 0:
+	case NOT_CONNECTED:
 	default:
 		/* OC2 disconnected, do nothing */
 		break;
 	}
 }
 
-int MSIM_M8ASetFuse(void *m, uint32_t fuse_n, uint8_t fuse_v)
+int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 {
-	struct MSIM_AVR *mcu;
 	uint8_t cksel, bootsz, ckopt;
+	int ret;
 
-	mcu = (struct MSIM_AVR *)m;
-	if (fuse_n > 1) {
-		fprintf(stderr, "[!]: Fuse #%u is not supported by %s\n",
+	ret = 0;
+	if (fuse_n > 1U) {
+		fprintf(stderr, "[e]: Fuse #%u is not supported by %s\n",
 		        fuse_n, mcu->name);
-		return -1;
+		ret = 1;
 	}
 
-	mcu->fuse[fuse_n] = fuse_v;
-	cksel = mcu->fuse[0]&0xF;
-	ckopt = (mcu->fuse[1]>>4)&0x1;
+	if (ret == 0) {
+		mcu->fuse[fuse_n] = fuse_v;
+		cksel = mcu->fuse[0]&0xF;
+		ckopt = (mcu->fuse[1]>>4)&0x1;
 
-	switch (fuse_n) {
-	case FUSE_LOW:
-		cksel = fuse_v&0xF;
-		if (cksel == 0) {
-			mcu->clk_source = AVR_EXT_CLK;
-		} else if (cksel >= 1 && cksel <= 4) {
-			mcu->clk_source = AVR_INT_CAL_RC_CLK;
-			switch (cksel) {
-			case 1:
-				mcu->freq = 1000000;	/* 1 MHz */
+		switch (fuse_n) {
+		case FUSE_LOW:
+			cksel = fuse_v&0xFU;
+			if (cksel == 0U) {
+				mcu->clk_source = AVR_EXT_CLK;
+			} else if ((cksel >= 1U) && (cksel <= 4U)) {
+				mcu->clk_source = AVR_INT_CAL_RC_CLK;
+				switch (cksel) {
+				case 1:
+					mcu->freq = 1000000;	/* 1 MHz */
+					break;
+				case 2:
+					mcu->freq = 2000000;	/* 2 MHz */
+					break;
+				case 3:
+					mcu->freq = 4000000;	/* 4 MHz */
+					break;
+				case 4:
+					mcu->freq = 8000000;	/* 8 MHz */
+					break;
+				default:
+					/* Shouldn't happen! */
+					fprintf(stderr, "[e]: CKSEL = %" PRIu8
+					        ", but it should be within "
+					        "[1,4] inclusively!\n", cksel);
+					break;
+				}
+			} else if ((cksel >= 5U) && (cksel <= 8U)) {
+				mcu->clk_source = AVR_EXT_RC_CLK;
+				switch (cksel) {
+				case 5:
+					/* max 0.9 MHz */
+					mcu->freq = 900000;
+					break;
+				case 6:
+					/* max 3 MHz */
+					mcu->freq = 3000000;
+					break;
+				case 7:
+					/* max 4 MHz */
+					mcu->freq = 8000000;
+					break;
+				case 8:
+					/* max 12 MHz */
+					mcu->freq = 12000000;
+					break;
+				default:
+					/* Shouldn't happen! */
+					fprintf(stderr, "[e]: CKSEL = %" PRIu8
+					        ", but it should be within "
+					        "[5,8] inclusively!\n", cksel);
+					break;
+				}
+			} else if (cksel == 9U) {
+				/* 32.768 kHz low frequency crystal */
+				mcu->clk_source = AVR_EXT_LOWF_CRYSTAL_CLK;
+				mcu->freq = 32768;
+			} else if ((cksel >= 10U) && (cksel <= 15U)) {
+				mcu->clk_source = AVR_EXT_CRYSTAL;
+				cksel = (cksel>>1)&0x7U;
+				switch (cksel) {
+				case 5:
+					/* max 0.9 MHz */
+					mcu->freq = 900000;
+					break;
+				case 6:
+					/* max 3 MHz */
+					mcu->freq = 3000000;
+					break;
+				case 7:
+					/* max 8 MHz */
+					mcu->freq = 8000000;
+					break;
+				default:
+					fprintf(stderr, "[e]: (CKSEL>>1) = "
+					        "%" PRIu8 ", but it should be "
+					        "within [5,7] inclusively!\n",
+					        cksel);
+					break;
+				}
+				if (!ckopt) {
+					/* max 16 MHz */
+					mcu->freq = 16000000;
+				}
+			} else {
+				/* Shouldn't happen! */
+				fprintf(stderr, "[e]: CKSEL = %" PRIu8 ", "
+				        "but it should be within [0,15] "
+				        "inclusively!\n", cksel);
+			}
+			break;
+		case FUSE_HIGH:
+			bootsz = (fuse_v>>1)&0x3U;
+			ckopt = (fuse_v>>4)&0x1U;
+			switch (bootsz) {
+			case 3:
+				mcu->bls->start = 0x1F00;
+				mcu->bls->end = 0x1FFF;
+				mcu->bls->size = 256;
 				break;
 			case 2:
-				mcu->freq = 2000000;	/* 2 MHz */
+				mcu->bls->start = 0x1E00;
+				mcu->bls->end = 0x1FFF;
+				mcu->bls->size = 512;
 				break;
-			case 3:
-				mcu->freq = 4000000;	/* 4 MHz */
+			case 1:
+				mcu->bls->start = 0x1C00;
+				mcu->bls->end = 0x1FFF;
+				mcu->bls->size = 1024;
 				break;
-			case 4:
-				mcu->freq = 8000000;	/* 8 MHz */
+			case 0:
+				mcu->bls->start = 0x1800;
+				mcu->bls->end = 0x1FFF;
+				mcu->bls->size = 2048;
 				break;
-			}
-		} else if (cksel >= 5 && cksel <= 8) {
-			mcu->clk_source = AVR_EXT_RC_CLK;
-			switch (cksel) {
-			case 5:
-				mcu->freq = 900000;	/* max 0.9 MHz */
-				break;
-			case 6:
-				mcu->freq = 3000000;	/* max 3 MHz */
-				break;
-			case 7:
-				mcu->freq = 8000000;	/* max 4 MHz */
-				break;
-			case 8:
-				mcu->freq = 12000000;	/* max 12 MHz */
+			default:
+				/* Shouldn't happen! */
+				fprintf(stderr, "[e]: BOOTSZ = %" PRIu8 ", "
+				        "but it should be within [0,3] "
+				        "inclusively!\n", bootsz);
 				break;
 			}
-		} else if (cksel == 9) {
-			mcu->clk_source = AVR_EXT_LOWF_CRYSTAL_CLK;
-			mcu->freq = 32768;		/* 32.768 kHz */
-		} else if (cksel >= 10 && cksel <= 15) {
-			mcu->clk_source = AVR_EXT_CRYSTAL;
-			cksel = (cksel>>1)&0x7;
+
+			if ((fuse_v&1U) == 1U) {
+				/* BOOTRST is 1(unprogrammed) */
+				mcu->intr->reset_pc = 0x0000;
+				mcu->pc = 0x0000;
+			} else {
+				/* BOOTRST is 0(programmed) */
+				mcu->intr->reset_pc = mcu->bls->start;
+				mcu->pc = mcu->bls->start;
+			}
+
 			switch (cksel) {
 			case 5:
 				mcu->freq = 900000;	/* max 0.9 MHz */
@@ -784,98 +959,55 @@ int MSIM_M8ASetFuse(void *m, uint32_t fuse_n, uint8_t fuse_v)
 			case 7:
 				mcu->freq = 8000000;	/* max 8 MHz */
 				break;
+			default:
+				fprintf(stderr, "[e]: CKSEL = %" PRIu8 ", "
+				        "but it should be within [5,7] "
+				        "inclusively!\n", cksel);
+				break;
 			}
 			if (!ckopt) {
 				mcu->freq = 16000000;	/* max 16 MHz */
 			}
-		} else {
-			/* Nothing */;
-		}
-		break;
-	case FUSE_HIGH:
-		bootsz = (fuse_v>>1)&0x3;
-		ckopt = (fuse_v>>4)&0x1;
-		switch (bootsz) {
-		case 3:
-			mcu->bls->start = 0x1F00;
-			mcu->bls->end = 0x1FFF;
-			mcu->bls->size = 256;
-			break;
-		case 2:
-			mcu->bls->start = 0x1E00;
-			mcu->bls->end = 0x1FFF;
-			mcu->bls->size = 512;
-			break;
-		case 1:
-			mcu->bls->start = 0x1C00;
-			mcu->bls->end = 0x1FFF;
-			mcu->bls->size = 1024;
-			break;
-		case 0:
-			mcu->bls->start = 0x1800;
-			mcu->bls->end = 0x1FFF;
-			mcu->bls->size = 2048;
-			break;
-		}
 
-		if (fuse_v&0x1) {	/* BOOTRST is 1(unprogrammed) */
-			mcu->intr->reset_pc = mcu->pc = 0x0000;
-		} else {		/* BOOTRST is 0(programmed) */
-			mcu->intr->reset_pc = mcu->pc = mcu->bls->start;
-		}
-
-		switch (cksel) {
-		case 5:
-			mcu->freq = 900000;	/* max 0.9 MHz */
 			break;
-		case 6:
-			mcu->freq = 3000000;	/* max 3 MHz */
-			break;
-		case 7:
-			mcu->freq = 8000000;	/* max 8 MHz */
-			break;
+		default:			/* Should not happen */
+			fprintf(stderr, "[e]: Unknown fuse = %" PRIu32 ", "
+			        "%s will not be modified!\n",
+			        fuse_n, mcu->name);
+			ret = 1;
 		}
-		if (!ckopt) {
-			mcu->freq = 16000000;	/* max 16 MHz */
-		}
-
-		break;
-	default:			/* Should not happen */
-		return -1;
 	}
-	return 0;
+	return ret;
 }
 
-int MSIM_M8ASetLock(void *m, uint8_t lock_v)
+int MSIM_M8ASetLock(struct MSIM_AVR *mcu, uint8_t lock_v)
 {
 	/* Waiting to be implemented */
 	return 0;
 }
 
-int MSIM_M8AProvideIRQs(void *m)
+int MSIM_M8AProvideIRQs(struct MSIM_AVR *mcu)
 {
-	struct MSIM_AVR *mcu;
 	uint8_t timsk, tifr;
 
-	mcu = (struct MSIM_AVR *)m;
 	timsk = mcu->dm[TIMSK];
 	tifr = mcu->dm[TIFR];
 
 	/* TIMER0 OVF - Timer/Counter0 Overflow */
-	if ((timsk>>TOIE0)&1 && (tifr>>TOV0)&1) {
+	if (((timsk>>TOIE0)&1U) && ((tifr>>TOV0)&1U)) {
 		mcu->intr->irq[TIMER0_OVF_vect_num-1] = 1;
 		/* Clear TOV0 flag */
 		mcu->dm[TIFR] &= ~(1<<TOV0);
 	}
 
 	/* TIMER2 OVF - Timer/Counter2 Overflow */
-	if ((timsk>>TOIE2)&1 && (tifr>>TOV2)&1) {
+	if (((timsk>>TOIE2)&1U) && ((tifr>>TOV2)&1U)) {
 		mcu->intr->irq[TIMER2_OVF_vect_num-1] = 1;
 		/* Clear TOV2 flag */
 		mcu->dm[TIFR] &= ~(1<<TOV2);
 	}
 	/* TIMER2 COMP - Timer/Counter2 Compare Match */
-	if ((timsk>>OCIE2)&1 && (tifr>>OCF2)&1) {
+	if (((timsk>>OCIE2)&1U) && ((tifr>>OCF2)&1U)) {
 		mcu->intr->irq[TIMER2_COMP_vect_num-1] = 1;
 		/* Clear OCF2 flag */
 		mcu->dm[TIFR] &= ~(1<<OCF2);

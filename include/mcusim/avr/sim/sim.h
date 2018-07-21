@@ -59,6 +59,10 @@ extern "C" {
 #define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
 #define SET(byte, bit)		((byte)|=(1<<(bit)))
 
+/* Forward declaration of the structure to describe AVR microcontroller
+ * instance. */
+struct MSIM_AVR;
+
 /* MCU-specific functions.
  *
  * Simulated microcontroller may provide its own implementations of the
@@ -67,11 +71,11 @@ extern "C" {
  * these functions can be declared (mcusim/avr/sim/simm8a.h) and
  * implemented (simm8a.c).
  */
-typedef int (*MSIM_SetFuse_f)(void *mcu,
+typedef int (*MSIM_SetFuse_f)(struct MSIM_AVR *mcu,
                               unsigned int fuse_n, unsigned char fuse_v);
-typedef int (*MSIM_SetLock_f)(void *mcu, unsigned char lock_v);
-typedef int (*MSIM_TickTimers_f)(void *mcu);
-typedef int (*MSIM_ProvideIRQs_f)(void *mcu);
+typedef int (*MSIM_SetLock_f)(struct MSIM_AVR *mcu, unsigned char lock_v);
+typedef int (*MSIM_TickTimers_f)(struct MSIM_AVR *mcu);
+typedef int (*MSIM_ProvideIRQs_f)(struct MSIM_AVR *mcu);
 
 /* State of a simulated AVR microcontroller. Some of these states are
  * AVR-native, others - added by the simulator to manipulate a simulation

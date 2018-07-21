@@ -62,10 +62,10 @@
 #define TICK_TIMERS_F	MSIM_M8ATickTimers
 #define PROVIDE_IRQS_F	MSIM_M8AProvideIRQs
 
-int MSIM_M8ASetFuse(void *mcu, unsigned int fuse_n, unsigned char fuse_v);
-int MSIM_M8ASetLock(void *mcu, unsigned char lock_v);
-int MSIM_M8ATickTimers(void *mcu);
-int MSIM_M8AProvideIRQs(void *mcu);
+int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v);
+int MSIM_M8ASetLock(struct MSIM_AVR *mcu, uint8_t lock_v);
+int MSIM_M8ATickTimers(struct MSIM_AVR *mcu);
+int MSIM_M8AProvideIRQs(struct MSIM_AVR *mcu);
 
 #define SREG		_SFR_IO8(0x3F)
 #define SPH		_SFR_IO8(0x3E)
