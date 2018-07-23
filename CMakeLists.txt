@@ -31,8 +31,9 @@
 cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
-# Version
-set(MSIM_VERSION "0.1.81")
+# Program name and version
+set(MCUSIM "mcusim")
+set(MSIM_VERSION "0.1.82")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Load modules from our source tree too
@@ -44,9 +45,6 @@ add_subdirectory(misra)
 
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
-
-# Simulator program name
-set(MCUSIM "mcusim")
 
 # Set flags here
 if (CMAKE_BUILD_TYPE MATCHES Debug)

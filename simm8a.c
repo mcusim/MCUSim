@@ -38,6 +38,7 @@
 
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simm8a.h"
+#include "mcusim/avr/sim/mcu_init.h"
 
 #define NOT_CONNECTED		0xFFU
 #define COMPARE_MATCH		75
@@ -61,8 +62,9 @@ static uint8_t init_pinb;
  * the PWM modes and updated during either TOP or BOTTOM of the counting
  * sequence. */
 static uint8_t ocr2_buf;
-/* Timer may start counting from a value higher then the one on OCR2 and
- * for that reason misses the Compare Match. This flag is set in this case. */
+/* Timer may start counting from a value higher then the one stored in OCR2
+ * and for that reason misses the Compare Match. This flag is set in
+ * this case. */
 static uint8_t missed_cm = 0;
 
 static void tick_timer0(struct MSIM_AVR *mcu);
@@ -100,14 +102,18 @@ static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, uint8_t com2,
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
-#include "mcusim/avr/sim/mcu_init.h"
+	int r;
 
-	update_watched_values(mcu);
-	/* I/O ports have internal pull-up resistors (selected for each bit) */
-	mcu->dm[PORTB] = 0xFF;
-	mcu->dm[PORTC] = 0xFF;
-	mcu->dm[PORTD] = 0xFF;
-	return 0;
+	r = mcu_init(mcu, args);
+	if (r == 0) {
+		update_watched_values(mcu);
+		/* I/O ports have internal pull-up resistors (selected
+		 * for each bit) */
+		mcu->dm[PORTB] = 0xFF;
+		mcu->dm[PORTC] = 0xFF;
+		mcu->dm[PORTD] = 0xFF;
+	}
+	return r;
 }
 
 int MSIM_M8ATickTimers(struct MSIM_AVR *mcu)

@@ -34,11 +34,11 @@
 #include <inttypes.h>
 
 #include "mcusim/avr/sim/simm328p.h"
+#include "mcusim/avr/sim/mcu_init.h"
 
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
-#include "mcusim/avr/sim/mcu_init.h"
-	return 0;
+	return mcu_init(mcu, args);
 }
 
 int MSIM_M328PSetFuse(struct MSIM_AVR *m, uint32_t fuse_n, uint8_t fuse_v)

@@ -288,6 +288,7 @@ int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
 				return -1;
 			} else {
 				mcu_found = 1;
+				break;
 			}
 		}
 	}

@@ -712,7 +712,7 @@ static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
 	default:
 		return -1;
 	}
-exit:
+
 	return 0;
 }
 
@@ -2316,7 +2316,7 @@ static void exec_inc(struct MSIM_AVR *mcu, unsigned int inst)
 	val = mcu->dm[rd_addr];
 	val += 1U;
 	r = (unsigned char)val;
-	mcu->dm[rd_addr] = r;
+	mcu->dm[rd_addr] = (unsigned char)r;
 	mcu->pc += 2;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
