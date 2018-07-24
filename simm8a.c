@@ -46,6 +46,8 @@
 #define COMP_MATCH_UPCNT	77
 #define COMP_MATCH_DOWNCNT	78
 
+/* Two arbitrary constants to mark two distinct output compare channels
+ * of the microcontroller. */
 #define A_CHAN			79
 #define B_CHAN			80
 

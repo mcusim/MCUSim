@@ -33,7 +33,7 @@
  *
  * This file provides basic functions to load, run and unload these models.
  */
-#include <stdio.h>
+//#include <stdio.h>
 #include <stdint.h>
 #include "mcusim/avr/sim/peripheral_lua.h"
 #include "mcusim/avr/sim/peripheral_luaapi.h"
@@ -47,23 +47,26 @@ static lua_State *lua_states[LUA_PERIPHERALS];
 int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *file)
 {
 	static char path[4096];
-	unsigned int i, j, ci, regs;
+	uint32_t i, j, ci, regs;
+	uint8_t err;
 	FILE *f;
+
+	i = 0;
+	err = 0;
 
 	f = fopen(file, "r");
 	if (f == NULL) {
 		fprintf(stderr, "[e]: Cannot load Lua peripherals "
 		        "from: %s\n", file);
-		return 1;
+		err = 1;
 	}
 
-	i = 0;
-	while (fgets(path, sizeof path, f) != NULL) {
+	while ((err == 0U) && (fgets(path, sizeof path, f) != NULL)) {
 		/* Skip comment lines */
 		if (path[0] == '#') {
 			continue;
 		}
-		for (ci = 0; ci < 4096; ci++) {
+		for (ci = 0U; ci < 4096U; ci++) {
 			if (path[ci] == '\n') {
 				path[ci] = 0;
 				break;
@@ -81,8 +84,7 @@ int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *file)
 			fprintf(stderr, "[e]: Cannot load device model : %s, "
 			        "reason: %s\n", path,
 			        lua_tostring(lua_states[i], -1));
-			fclose(f);
-			return 1;
+			break;
 		}
 
 		/* Register mcusim API functions */
@@ -149,8 +151,11 @@ int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *file)
 
 		i++;
 	}
-	fclose(f);
-	return 0;
+
+	if (err == 0U) {
+		fclose(f);
+	}
+	return err;
 }
 
 void MSIM_CleanLuaPeripherals(void)

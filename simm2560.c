@@ -27,10 +27,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
 
 #include "mcusim/avr/sim/simm2560.h"
 #include "mcusim/avr/sim/mcu_init.h"
