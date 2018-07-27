@@ -78,6 +78,9 @@ static void update_watched_values(struct MSIM_AVR *mcu);
 static void timer1_normal(struct MSIM_AVR *mcu, uint32_t presc,
                           uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
                           uint8_t com1b);
+static void timer1_ctc(struct MSIM_AVR *mcu, uint32_t presc,
+                       uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
+                       uint8_t com1b);
 
 static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
                               uint8_t com1b, uint8_t chan);
@@ -254,8 +257,7 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 	 *   WGM13:0 = 4 or 12;
 	 * - (planned) Fast PWM Mode, WGM13:0 = 5, 6, 7, 14 or 15;
 	 * - (planned) Phase Correct PWM Mode, WGM13:0 = 1, 2, 3, 10 or 11
-	 * - (planned) Phase and Frequency Correct PWM Mode, WGM13:0 = 8 or 9
-	 */
+	 * - (planned) Phase and Frequency Correct PWM Mode, WGM13:0 = 8, 9 */
 	static uint32_t tc1_presc;
 	static uint32_t tc1_ticks;
 	static uint8_t old_wgm1;
@@ -317,19 +319,12 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 			timer1_normal(mcu, tc1_presc, &tc1_ticks, wgm1,
 			              com1a, com1b);
 			break;
-		case 2:
-			/* timer1_ctc(mcu, tc2_presc, &tc2_ticks,
-			 *            wgm2, com2); */
+		case 4:
+		case 12:
+			timer1_ctc(mcu, tc1_presc, &tc1_ticks, wgm1, com1a,
+			           com1b);
 			break;
-		case 3:
-			/* timer1_fastpwm(mcu, tc2_presc, &tc2_ticks,
-			 *                wgm2, com2); */
-			break;
-		case 1:
-			/* timer1_pcpwm(mcu, tc2_presc, &tc2_ticks,
-			 *              wgm2, com2); */
-			break;
-		default:			/* Should not happen! */
+		default:
 			if (wgm1 != old_wgm1) {
 				fprintf(stderr, "[!]: Selected mode "
 				        "WGM13:0 = %u of the Timer/Counter1 "
@@ -448,9 +443,9 @@ static void timer1_normal(struct MSIM_AVR *mcu,
 	uint32_t tcnt1;
 	uint32_t ocr1a, ocr1b;
 
-	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00) | (DM(TCNT1L));
-	ocr1a = ((DM(OCR1AH)<<8)&0xFF00) | (DM(OCR1AL));
-	ocr1b = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL));
+	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00) | (DM(TCNT1L)&0xFF);
+	ocr1a = ((DM(OCR1AH)<<8)&0xFF00) | (DM(OCR1AL)&0xFF);
+	ocr1b = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL)&0xFF);
 
 	if ((*ticks) < (presc-1U)) {
 		(*ticks)++;
@@ -482,16 +477,66 @@ static void timer1_normal(struct MSIM_AVR *mcu,
 	}
 }
 
+static void timer1_ctc(struct MSIM_AVR *mcu, uint32_t presc,
+                       uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
+                       uint8_t com1b)
+{
+	uint32_t tcnt1;
+	uint32_t ocr1a;
+	uint32_t icr1;
+	uint32_t top;
+
+	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00U) | (DM(TCNT1L)&0xFFU);
+	ocr1a = ((DM(OCR1AH)<<8)&0xFF00U) | (DM(OCR1AL)&0xFFU);
+	icr1 = (((DM(ICR1H)<<8)&0xFF00U) | (DM(ICR1L)&0xFFU));
+
+	if ((*ticks) < (presc-1U)) {
+		(*ticks)++;
+	} else if ((*ticks) > (presc-1U)) {
+		fprintf(stderr, "[e]: Number of Timer1 ticks=%" PRIu32
+		        " should be less then or equal to "
+		        "(prescaler-1)=%" PRIu32 ". Timer1 will not "
+		        "be updated!\n", *ticks, (presc-1U));
+	} else {
+		if (((wgm1==4U) && (tcnt1 == ocr1a)) ||
+		                ((wgm1 == 12U) && (tcnt1 == icr1))) {
+			if (wgm1 == 4U) {
+				mcu->dm[TIFR] |= (1<<OCF1A);
+				top = ocr1a;
+			} else {
+				mcu->dm[TIFR] |= (1<<ICF1);
+				top = icr1;
+			}
+
+			if (top == 0xFFFFU) {
+				/* Set Timer/Counter1 overflow flag */
+				mcu->dm[TIFR] |= (1<<TOV1);
+				tcnt1 = 0;
+			} else {
+				tcnt1++;
+			}
+			timer1_oc1_nonpwm(mcu, com1a, com1b, A_CHAN);
+		} else if (tcnt1 == 0xFFFFU) {
+			/* Set Timer/Counter1 overflow flag */
+			mcu->dm[TIFR] |= (1<<TOV1);
+			/* Reset Timer/Counter1 */
+			tcnt1 = 0;
+		} else {
+			tcnt1++;
+		}
+		DM(TCNT1H) = (tcnt1>>8)&0xFFU;
+		DM(TCNT1L) = tcnt1&0xFFU;
+		(*ticks) = 0;
+	}
+}
+
 static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
                               uint8_t com1b, uint8_t chan)
 {
 	uint8_t pin, com;
-	uint8_t err;
 
-	err = 0;
-
-	/* Check Data Direction Register first. DDRB3 should be set to
-	 * enable the output driver (according to a datasheet).*/
+	/* Check Data Direction Register first. DDRB1 or DDRB2 should
+	 * be set to enable the output driver (according to a datasheet). */
 	if (chan == (uint8_t)A_CHAN) {
 		pin = PB1;
 		com = com1a;
@@ -502,14 +547,14 @@ static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
 		fprintf(stderr, "[e] Unsupported channel of the Output "
 		        "Compare unit is used in Timer/Counter1! "
 		        "It's highly likely a bug - please, report it.\n");
-		err = 1;
+		com = NOT_CONNECTED;
 	}
-	if ((err == 0U) && (!IS_SET(mcu->dm[DDRB], pin))) {
-		err = 1;
+	if ((com != NOT_CONNECTED) && (!IS_SET(mcu->dm[DDRB], pin))) {
+		com = NOT_CONNECTED;
 	}
 
 	/* Update Output Compare pin (OC1A or OC1B) */
-	if (err == 0U) {
+	if (com != NOT_CONNECTED) {
 		switch (com) {
 		case 1:
 			if (IS_SET(mcu->dm[PORTB], pin) == 1) {
@@ -600,6 +645,7 @@ static void timer2_fastpwm(struct MSIM_AVR *mcu,
 	 * Single-slope operation means counting from BOTTOM(0) to MAX(255),
 	 * reset back to BOTTOM in the following clock cycle and
 	 * start again. */
+
 	if ((*ticks) < (presc-1U)) {
 		(*ticks)++;
 	} else if ((*ticks) > (presc-1U)) {

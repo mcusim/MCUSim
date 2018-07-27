@@ -33,7 +33,7 @@ project(mcusim C)
 
 # Program name and version
 set(MCUSIM "mcusim")
-set(MSIM_VERSION "0.1.83")
+set(MSIM_VERSION "0.1.84")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Load modules from our source tree too
