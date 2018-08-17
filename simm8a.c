@@ -56,14 +56,18 @@
 /* Initial PORTD and PIND values and to track T0/PD4 and T1/PD5. */
 static uint8_t init_portd;
 static uint8_t init_pind;
+
 /* Initial PORTB and PINB value to track TOSC1/PB6 and TOSC2/PB7. */
 static uint8_t init_portb;
 static uint8_t init_pinb;
 
-/* The OCR2 Compare Register is double buffered when using any of
+/* The OCRx Compare Registers are double buffered when using any of
  * the PWM modes and updated during either TOP or BOTTOM of the counting
  * sequence. */
 static uint8_t ocr2_buf;
+static uint8_t ocr1a_buf;
+static uint8_t ocr1b_buf;
+
 /* Timer may start counting from a value higher then the one stored in OCR2
  * and for that reason misses the Compare Match. This flag is set in
  * this case. */
@@ -81,9 +85,21 @@ static void timer1_normal(struct MSIM_AVR *mcu, uint32_t presc,
 static void timer1_ctc(struct MSIM_AVR *mcu, uint32_t presc,
                        uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
                        uint8_t com1b);
+static void timer1_fastpwm(struct MSIM_AVR *mcu, uint32_t presc,
+                           uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
+                           uint8_t com1b);
+static void timer1_pcpwm(struct MSIM_AVR *mcu, uint32_t presc,
+                         uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
+                         uint8_t com1b);
+static void timer1_pfcpwm(struct MSIM_AVR *mcu, uint32_t presc,
+                          uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
+                          uint8_t com1b);
 
+/* Timer/Counter1 helper functions */
 static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
                               uint8_t com1b, uint8_t chan);
+static void timer1_oc1_fastpwm(struct MSIM_AVR *mcu, uint8_t com1a,
+                               uint8_t com1b, uint8_t chan, uint8_t state);
 
 /* Timer/Counter2 modes of operation */
 static void timer2_normal(struct MSIM_AVR *mcu,
@@ -99,6 +115,7 @@ static void timer2_pcpwm(struct MSIM_AVR *mcu,
                          uint32_t presc, uint32_t *ticks,
                          uint8_t wgm2, uint8_t com2);
 
+/* Timer/Counter2 helper functions */
 static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, uint8_t com2);
 static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, uint8_t com2,
                                uint8_t state);
@@ -253,9 +270,9 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 	 * There are several modes of operation available:
 	 *
 	 * - (supported) Normal Mode, WGM13:0 = 0;
-	 * - (planned) Clear Timer on Compare Match (CTC) Mode,
+	 * - (supported) Clear Timer on Compare Match (CTC) Mode,
 	 *   WGM13:0 = 4 or 12;
-	 * - (planned) Fast PWM Mode, WGM13:0 = 5, 6, 7, 14 or 15;
+	 * - (supported) Fast PWM Mode, WGM13:0 = 5, 6, 7, 14 or 15;
 	 * - (planned) Phase Correct PWM Mode, WGM13:0 = 1, 2, 3, 10 or 11
 	 * - (planned) Phase and Frequency Correct PWM Mode, WGM13:0 = 8, 9 */
 	static uint32_t tc1_presc;
@@ -312,6 +329,10 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 		/* Should we really clean these ticks? */
 		tc1_ticks = 0;
 	}
+	if (stop_mode == 1U) {
+		ocr1a_buf = mcu->dm[OCR1A];
+		ocr1b_buf = mcu->dm[OCR1B];
+	}
 
 	if (stop_mode == 0U) {
 		switch (wgm1) {
@@ -323,6 +344,27 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 		case 12:
 			timer1_ctc(mcu, tc1_presc, &tc1_ticks, wgm1, com1a,
 			           com1b);
+			break;
+		case 5:
+		case 6:
+		case 7:
+		case 14:
+		case 15:
+			timer1_fastpwm(mcu, tc1_presc, &tc1_ticks, wgm1,
+			               com1a, com1b);
+			break;
+		case 1:
+		case 2:
+		case 3:
+		case 10:
+		case 11:
+			timer1_pcpwm(mcu, tc1_presc, &tc1_ticks, wgm1, com1a,
+			             com1b);
+			break;
+		case 8:
+		case 9:
+			timer1_pfcpwm(mcu, tc1_presc, &tc1_ticks, wgm1, com1a,
+			              com1b);
 			break;
 		default:
 			if (wgm1 != old_wgm1) {
@@ -407,6 +449,9 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	if ((stop_mode == 0U) && (missed_cm != 0U) && (presc == tc2_presc)) {
 		missed_cm = 0;
 	}
+	if (stop_mode == 1U) {
+		ocr2_buf = mcu->dm[OCR2];
+	}
 
 	if (stop_mode == 0U) {
 		switch (wgm2) {
@@ -482,52 +527,211 @@ static void timer1_ctc(struct MSIM_AVR *mcu, uint32_t presc,
                        uint8_t com1b)
 {
 	uint32_t tcnt1;
-	uint32_t ocr1a;
+	uint32_t ocr1a, ocr1b;
 	uint32_t icr1;
 	uint32_t top;
+	uint8_t err;
 
 	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00U) | (DM(TCNT1L)&0xFFU);
 	ocr1a = ((DM(OCR1AH)<<8)&0xFF00U) | (DM(OCR1AL)&0xFFU);
+	ocr1b = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL)&0xFF);
 	icr1 = (((DM(ICR1H)<<8)&0xFF00U) | (DM(ICR1L)&0xFFU));
+	err = 0;
 
-	if ((*ticks) < (presc-1U)) {
+	switch (wgm1) {
+	case 4U:
+		top = ocr1a;
+		break;
+	case 12U:
+		top = icr1;
+		break;
+	default:
+		/* All other values of WGM13:0 are not allowed in CTC Mode. */
+		fprintf(stderr, "[e]: WGM13:0=%" PRIu8 " isn't allowed in "
+		        "CTC Mode of Timer1. It looks like a bug (please, "
+		        "report at trac.mcusim.org).\n", wgm1);
+		err = 1;
+		break;
+	}
+
+	if ((err == 0U) && ((*ticks) < (presc-1U))) {
 		(*ticks)++;
-	} else if ((*ticks) > (presc-1U)) {
+	} else if ((err == 0U) && ((*ticks) > (presc-1U))) {
 		fprintf(stderr, "[e]: Number of Timer1 ticks=%" PRIu32
 		        " should be less then or equal to "
 		        "(prescaler-1)=%" PRIu32 ". Timer1 will not "
 		        "be updated!\n", *ticks, (presc-1U));
-	} else {
-		if (((wgm1==4U) && (tcnt1 == ocr1a)) ||
-		                ((wgm1 == 12U) && (tcnt1 == icr1))) {
-			if (wgm1 == 4U) {
+	} else if (err == 0U) {
+		if ((tcnt1 == top) || (tcnt1 == 0xFFFFU)) {
+			if ((wgm1 == 4U) && (tcnt1 == ocr1a)) {
 				mcu->dm[TIFR] |= (1<<OCF1A);
-				top = ocr1a;
-			} else {
+				timer1_oc1_nonpwm(mcu, com1a, com1b, A_CHAN);
+			}
+			if (tcnt1 == ocr1b) {
+				mcu->dm[TIFR] |= (1<<OCF1B);
+				timer1_oc1_nonpwm(mcu, com1a, com1b, B_CHAN);
+			}
+			if ((wgm1 == 12U) && (tcnt1 == icr1)) {
 				mcu->dm[TIFR] |= (1<<ICF1);
-				top = icr1;
 			}
 
-			if (top == 0xFFFFU) {
-				/* Set Timer/Counter1 overflow flag */
+			/* Set Timer/Counter1 overflow flag at MAX only */
+			if (tcnt1 == 0xFFFFU) {
 				mcu->dm[TIFR] |= (1<<TOV1);
-				tcnt1 = 0;
-			} else {
-				tcnt1++;
 			}
-			timer1_oc1_nonpwm(mcu, com1a, com1b, A_CHAN);
-		} else if (tcnt1 == 0xFFFFU) {
-			/* Set Timer/Counter1 overflow flag */
-			mcu->dm[TIFR] |= (1<<TOV1);
-			/* Reset Timer/Counter1 */
 			tcnt1 = 0;
+		} else if (tcnt1 == ocr1a) {
+			mcu->dm[TIFR] |= (1<<OCF1A);
+			timer1_oc1_nonpwm(mcu, com1a, com1b, A_CHAN);
+			tcnt1++;
+		} else if (tcnt1 == ocr1b) {
+			mcu->dm[TIFR] |= (1<<OCF1B);
+			timer1_oc1_nonpwm(mcu, com1a, com1b, B_CHAN);
+			tcnt1++;
+		} else if (tcnt1 == icr1) {
+			mcu->dm[TIFR] |= (1<<ICF1);
+			tcnt1++;
 		} else {
 			tcnt1++;
 		}
 		DM(TCNT1H) = (tcnt1>>8)&0xFFU;
 		DM(TCNT1L) = tcnt1&0xFFU;
 		(*ticks) = 0;
+	} else {
+		printf("[w]: Timer1 in CTC Mode hasn't been updated "
+		       "due to error occured earlier.\n");
 	}
+}
+
+static void timer1_fastpwm(struct MSIM_AVR *mcu, uint32_t presc,
+                           uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
+                           uint8_t com1b)
+{
+	uint32_t tcnt1;
+	uint32_t ocr1a, ocr1b;
+	uint32_t icr1;
+	uint32_t top;
+	uint8_t err;
+
+	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00U) | (DM(TCNT1L)&0xFFU);
+	ocr1a = ((DM(OCR1AH)<<8)&0xFF00U) | (DM(OCR1AL)&0xFFU);
+	ocr1b = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL)&0xFF);
+	icr1 = (((DM(ICR1H)<<8)&0xFF00U) | (DM(ICR1L)&0xFFU));
+	err = 0;
+
+	switch (wgm1) {
+	case 5:
+		top = 0x00FFU;
+		break;
+	case 6:
+		top = 0x01FFU;
+		break;
+	case 7:
+		top = 0x03FFU;
+		break;
+	case 14:
+		if (icr1 < 0x0003U) {
+			fprintf(stderr, "[e]: ICR1 = %" PRIu32 ", but minimum "
+			        "resolution for Fast PWM Mode of Timer1 "
+			        "is 2-bit, i.e. ICR1 = 0x0003\n", icr1);
+			top = 0x0003U;
+		} else {
+			top = icr1;
+		}
+		break;
+	case 15:
+		if (ocr1a_buf < 0x0003U) {
+			fprintf(stderr, "[e]: OCR1A = %" PRIu32 ", but "
+			        "minimum resolution for Fast PWM Mode "
+			        "of Timer1 is 2-bit, i.e. OCR1A = 0x0003\n",
+			        ocr1a_buf);
+			top = 0x0003U;
+		} else {
+			top = ocr1a_buf;
+		}
+		break;
+	default:
+		/* All other values of WGM13:0 are not allowed in
+		 * Fast PWM Mode. */
+		fprintf(stderr, "[e]: WGM13:0=%" PRIu8 " isn't allowed in "
+		        "Fast PWM Mode of Timer1. It looks like a bug "
+		        "(please, report at trac.mcusim.org).\n", wgm1);
+		err = 1;
+		break;
+	}
+
+	if ((err == 0U) && ((*ticks) < (presc-1U))) {
+		(*ticks)++;
+	} else if ((err == 0U) && ((*ticks) > (presc-1U))) {
+		fprintf(stderr, "[e]: Number of Timer1 ticks=%" PRIu32
+		        " should be less then or equal to "
+		        "(prescaler-1)=%" PRIu32 ". Timer1 will not "
+		        "be updated!\n", *ticks, (presc-1U));
+	} else if (err == 0U) {
+		if ((tcnt1 == top) || (tcnt1 == 0xFFFFU)) {
+			/* Set Timer/Counter1 overflow flag */
+			mcu->dm[TIFR] |= (1<<TOV1);
+
+			if ((wgm1 == 14U) && (tcnt1 == icr1)) {
+				mcu->dm[TIFR] |= (1<<ICF1);
+			}
+			if ((wgm1 == 15U) && (tcnt1 == ocr1a_buf)) {
+				mcu->dm[TIFR] |= (1<<OCF1A);
+				timer1_oc1_fastpwm(mcu, com1a, com1b, A_CHAN,
+				                   COMPARE_MATCH);
+			}
+			if (tcnt1 == ocr1b_buf) {
+				mcu->dm[TIFR] |= (1<<OCF1B);
+				timer1_oc1_fastpwm(mcu, com1a, com1b, B_CHAN,
+				                   COMPARE_MATCH);
+			}
+
+			/* Update buffered values */
+			ocr1a_buf = ocr1a;
+			ocr1b_buf = ocr1b;
+
+			/* Update OC1A/OC1B at BOTTOM */
+			timer1_oc1_fastpwm(mcu, com1a, com1b, A_CHAN,
+			                   SET_TO_BOTTOM);
+			timer1_oc1_fastpwm(mcu, com1a, com1b, B_CHAN,
+			                   SET_TO_BOTTOM);
+
+			tcnt1 = 0;
+		} else if (tcnt1 == ocr1a_buf) {
+			mcu->dm[TIFR] |= (1<<OCF1A);
+			timer1_oc1_fastpwm(mcu, com1a, com1b, A_CHAN,
+			                   COMPARE_MATCH);
+			tcnt1++;
+		} else if (tcnt1 == ocr1b_buf) {
+			mcu->dm[TIFR] |= (1<<OCF1B);
+			timer1_oc1_fastpwm(mcu, com1a, com1b, B_CHAN,
+			                   COMPARE_MATCH);
+			tcnt1++;
+		} else if (tcnt1 == icr1) {
+			mcu->dm[TIFR] |= (1<<ICF1);
+			tcnt1++;
+		} else {
+			tcnt1++;
+		}
+		DM(TCNT1H) = (tcnt1>>8)&0xFFU;
+		DM(TCNT1L) = tcnt1&0xFFU;
+		(*ticks) = 0;
+	} else {
+		printf("[w]: Timer1 in Fast PWM Mode hasn't been updated "
+		       "due to error occured earlier.\n");
+	}
+}
+
+static void timer1_pcpwm(struct MSIM_AVR *mcu, uint32_t presc,
+                         uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
+                         uint8_t com1b)
+{
+}
+
+static void timer1_pfcpwm(struct MSIM_AVR *mcu, uint32_t presc,
+                          uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
+                          uint8_t com1b)
+{
 }
 
 static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
@@ -549,6 +753,7 @@ static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
 		        "It's highly likely a bug - please, report it.\n");
 		com = NOT_CONNECTED;
 	}
+
 	if ((com != NOT_CONNECTED) && (!IS_SET(mcu->dm[DDRB], pin))) {
 		com = NOT_CONNECTED;
 	}
@@ -568,6 +773,71 @@ static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
 			break;
 		case 3:
 			SET(mcu->dm[PORTB], pin);
+			break;
+		case 0:
+		default:
+			/* OC1A/OC1B disconnected, do nothing */
+			break;
+		}
+	}
+}
+
+static void timer1_oc1_fastpwm(struct MSIM_AVR *mcu, uint8_t com1a,
+                               uint8_t com1b, uint8_t chan, uint8_t state)
+{
+	uint8_t pin, com;
+	uint8_t wgm1;
+
+	wgm1 = ((DM(TCCR1B)>>4)&1) | ((DM(TCCR1B)>>3)&1) |
+	       ((DM(TCCR1A)>>1)&1) | (DM(TCCR1A)&1);
+
+	/* Check Data Direction Register first. DDRB1 or DDRB2 should
+	 * be set to enable the output driver (according to a datasheet). */
+	if (chan == (uint8_t)A_CHAN) {
+		pin = PB1;
+		com = com1a;
+	} else if (chan == (uint8_t)B_CHAN) {
+		pin = PB2;
+		com = com1b;
+	} else {
+		fprintf(stderr, "[e] Unsupported channel of the Output "
+		        "Compare unit is used in Timer/Counter1! "
+		        "It's highly likely a bug - please, report it.\n");
+		com = NOT_CONNECTED;
+	}
+
+	if ((com != NOT_CONNECTED) && (!IS_SET(mcu->dm[DDRB], pin))) {
+		com = NOT_CONNECTED;
+	}
+
+	/* Update Output Compare pin (OC1A or OC1B) */
+	if (com != NOT_CONNECTED) {
+		switch (com) {
+		case 1:
+			/* Only OC1A will be toggled on Compare Match
+			 * with WGM13:0 = 15 */
+			if ((wgm1 == 15U) && (pin == PB1) &&
+			                (state == (uint8_t)COMPARE_MATCH)) {
+				if (IS_SET(mcu->dm[PORTB], pin) == 1) {
+					CLEAR(mcu->dm[PORTB], pin);
+				} else {
+					SET(mcu->dm[PORTB], pin);
+				}
+			}
+			break;
+		case 2:
+			if (state == (uint8_t)COMPARE_MATCH) {
+				CLEAR(mcu->dm[PORTB], pin);
+			} else {
+				SET(mcu->dm[PORTB], pin);
+			}
+			break;
+		case 3:
+			if (state == (uint8_t)COMPARE_MATCH) {
+				SET(mcu->dm[PORTB], pin);
+			} else {
+				CLEAR(mcu->dm[PORTB], pin);
+			}
 			break;
 		case 0:
 		default:

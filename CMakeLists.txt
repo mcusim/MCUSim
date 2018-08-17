@@ -33,12 +33,12 @@ project(mcusim C)
 
 # Program name and version
 set(MCUSIM "mcusim")
-set(MSIM_VERSION "0.1.84")
-add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
+set(MSIM_VERSION "0.1.85")
 
 # Load modules from our source tree too
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 add_subdirectory(scripts)
 add_subdirectory(tests)
 add_subdirectory(misra)
