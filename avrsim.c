@@ -276,30 +276,65 @@ int main(int argc, char *argv[])
 	for (i = 0; i < vcd_rn; i++) {
 		for (j = 0; j < regs; j++) {
 			char *bit;
+			char *pos;
 			size_t len = strlen(mcu.vcdd->regs[j].name);
 			int bitn, cr, bit_cr;
 
 			if (!len) {
 				continue;
 			}
+
+			pos = strstr(mcu.vcdd->regs[j].name, vcd_regs[i]);
 			cr = strncmp(mcu.vcdd->regs[j].name, vcd_regs[i], len);
-			if (cr != 0) {
+
+			/* Do we have a 16-bit register mentioned or an exact
+			 * match of the register names? */
+			if ((cr != 0) && (pos != NULL)) {
+				if (mcu.vcdd->regs[j].name[len-1] == 'H') {
+					mcu.vcdd->bit[dump_regs].regi =
+					        (short)j;
+				}
+				if (mcu.vcdd->regs[j].name[len-1] == 'L') {
+					mcu.vcdd->bit[dump_regs].reg_lowi =
+					        (short)j;
+				}
+
+				if ((mcu.vcdd->bit[dump_regs].regi >= 0) &&
+				                (mcu.vcdd->bit[dump_regs].
+				                 reg_lowi >= 0)) {
+					mcu.vcdd->bit[dump_regs].n = -1;
+					strncpy(mcu.vcdd->bit[dump_regs].name,
+					        mcu.vcdd->regs[j].name, sizeof
+					        mcu.vcdd->bit[dump_regs].name);
+					mcu.vcdd->bit[dump_regs].name[len-1] =
+					        0;
+
+					dump_regs++;
+					break;
+				}
+			} else if (cr != 0) {
 				continue;
-			}
+			} else {
+				/* Do we have a register available? */
+				if (mcu.vcdd->regs[j].off < 0) {
+					continue;
+				}
 
-			/* Do we have a bit index suffix? */
-			bit = len < sizeof vcd_regs[0]/sizeof vcd_regs[0][0]
-			      ? &vcd_regs[i][len] : NULL;
-			bit_cr = sscanf(bit, "%d", &bitn);
-			if (bit_cr != 1) {
-				bitn = -1;
-			}
+				/* Do we have a bit index suffix? */
+				bit = len < sizeof vcd_regs[0]/
+				      sizeof vcd_regs[0][0]
+				      ? &vcd_regs[i][len] : NULL;
+				bit_cr = sscanf(bit, "%d", &bitn);
+				if (bit_cr != 1) {
+					bitn = -1;
+				}
 
-			/* Set index of a register to be dumped */
-			mcu.vcdd->bit[dump_regs].regi = (short)j;
-			mcu.vcdd->bit[dump_regs].n = (short)bitn;
-			dump_regs++;
-			break;
+				/* Set index of a register to be dumped */
+				mcu.vcdd->bit[dump_regs].regi = (short)j;
+				mcu.vcdd->bit[dump_regs].n = (short)bitn;
+				dump_regs++;
+				break;
+			}
 		}
 	}
 

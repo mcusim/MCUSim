@@ -189,10 +189,14 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 #endif
 
 	/* Do not include any register into dump by default */
-	for (i = 0; i < sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0]; i++)
+	for (i = 0; i < sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0]; i++) {
 		mcu->vcdd->bit[i].regi = -1;
-	for (i = 0; i < sizeof mcu->vcdd->regs/sizeof mcu->vcdd->regs[0]; i++)
+		mcu->vcdd->bit[i].reg_lowi = -1;
+	}
+	for (i = 0; i < sizeof mcu->vcdd->regs/
+	                sizeof mcu->vcdd->regs[0]; i++) {
 		mcu->vcdd->regs[i].off = -1;
+	}
 #ifdef VCD_DUMP_REGS
 	avail_regsn = sizeof mcu->vcdd->regs/sizeof mcu->vcdd->regs[0];
 	for (i = 0; i < avail_regsn; i++) {

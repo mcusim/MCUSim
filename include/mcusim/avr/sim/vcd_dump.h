@@ -44,20 +44,29 @@ struct MSIM_VCDRegister {
 	char name[16];			/* Name of a register (DDRB, etc.) */
 	long off;			/* Offset to the register in RAM */
 	unsigned char *addr;		/* Pointer to the register in RAM*/
-	unsigned char oldv;
+	uint32_t oldv;
 };
 
 /* Specific bit of a register */
 struct MSIM_VCDBit {
-	short regi;			/* Register index */
-	short n;			/* Bit number (may be negative) */
+	/* Index of a register (or MSB of a 16-bit register) */
+	short regi;
+	/* Bit number (may be negative to include all bits of a register
+	 * to dump) */
+	short n;
+	/* Index of LSB of a register (usually followed by L suffix,
+	 * like TCNT1L, may be negative to show that register is 8-bit one) */
+	int16_t reg_lowi;
+	/* Name of a register requested by user (TCNT1 instead of TCNT1H,
+	 * for instance) */
+	char name[16];
 };
 
 /* Structure to keep details about registers to be dumped into VCD file */
 struct MSIM_VCDDetails {
 	/* List of all available registers for VCD dump */
 	struct MSIM_VCDRegister regs[VCD_REGS_MAX];
-	/* Flags to dump the whole 8 bits (negative) or
+	/* Flags to dump the whole register (negative) or
 	 * selected bit only (bit index) */
 	struct MSIM_VCDBit bit[VCD_REGS_MAX];
 };
