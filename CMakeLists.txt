@@ -33,7 +33,7 @@ project(mcusim C)
 
 # Program name and version
 set(MCUSIM "mcusim")
-set(MSIM_VERSION "0.1.88")
+set(MSIM_VERSION "0.1.89")
 
 # Load modules from our source tree too
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
