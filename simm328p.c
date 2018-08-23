@@ -53,138 +53,134 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 
 	if (err == 0U) {
 		mcu->fuse[fuse_n] = fuse_v;
-		cksel = mcu->fuse[0]&0xF;
-	}
 
-	switch (fuse_n) {
-	case FUSE_LOW:
-		/* There should be no error happened before */
-		if (err != 0U) {
-			break;
-		}
+		switch (fuse_n) {
+		case FUSE_LOW:
+			cksel = fuse_v&0xFU;
 
-		cksel = fuse_v&0xFU;
-
-		if (cksel == 0U) {
-			mcu->clk_source = AVR_EXT_CLK;
-		} else if (cksel == 1U) {
-			fprintf(stderr, "[e]: CKSEL3:0 = %" PRIu8 " is "
-			        "reserved on %s\n", cksel, mcu->name);
-			err = 1;
-			break;
-		} else if (cksel == 2U) {
-			mcu->clk_source = AVR_INT_CAL_RC_CLK;
-			mcu->freq = 8000000;		/* max 8 MHz */
-		} else if (cksel == 3U) {
-			mcu->clk_source = AVR_INT_128K_RC_CLK;
-			mcu->freq = 128000;		/* max 128 kHz */
-		}  else if ((cksel == 4U) || (cksel == 5U)) {
-			mcu->clk_source = AVR_EXT_LOWF_CRYSTAL_CLK;
-			switch (cksel) {
-			case 4:
-				mcu->freq = 1000000;	/* max 1 MHz */
+			if (cksel == 0U) {
+				mcu->clk_source = AVR_EXT_CLK;
+			} else if (cksel == 1U) {
+				fprintf(stderr, "[e]: CKSEL3:0 = %" PRIu8
+				        " is reserved on %s\n",
+				        cksel, mcu->name);
+				err = 1;
 				break;
-			case 5:
-				mcu->freq = 32768;	/* max 32,768 kHz */
+			} else if (cksel == 2U) {
+				mcu->clk_source = AVR_INT_CAL_RC_CLK;
+				/* max 8 MHz */
+				mcu->freq = 8000000;
+			} else if (cksel == 3U) {
+				mcu->clk_source = AVR_INT_128K_RC_CLK;
+				/* max 128 kHz */
+				mcu->freq = 128000;
+			}  else if ((cksel == 4U) || (cksel == 5U)) {
+				mcu->clk_source = AVR_EXT_LOWF_CRYSTAL_CLK;
+				switch (cksel) {
+				case 4:
+					/* max 1 MHz */
+					mcu->freq = 1000000;
+					break;
+				case 5:
+					/* max 32,768 kHz */
+					mcu->freq = 32768;
+					break;
+				default:
+					/* Should not happen! */
+					fprintf(stderr, "[e]: CKSEL3:0 = %"
+					        PRIu8 ", but it should be "
+					        "in [4,5] inclusively!\n",
+					        cksel);
+					err = 1;
+					break;
+				}
+			} else if ((cksel == 6U) || (cksel == 7U)) {
+				mcu->clk_source = AVR_FULLSWING_CRYSTAL_CLK;
+				mcu->freq = 20000000; /* max 20 MHz */
+			} else if ((cksel >= 8U) && (cksel <= 15U)) {
+				mcu->clk_source = AVR_LOWP_CRYSTAL_CLK;
+
+				/* CKSEL0 can be used to adjust start-up time
+				 * and additional delay from MCU reset. */
+
+				/* CKSEL3:1 sets frequency range */
+				cksel = cksel&0xEU;
+				switch (cksel) {
+				case 8:
+					mcu->freq = 900000; /* max 0.9MHz */
+					break;
+				case 10:
+					mcu->freq = 3000000; /* max 3MHz */
+					break;
+				case 12:
+					mcu->freq = 8000000; /* max 8MHz */
+					break;
+				case 14:
+					mcu->freq = 16000000; /* max 16MHz */
+					break;
+				default:
+					/* Should not happen! */
+					fprintf(stderr, "[e]: CKSEL3:1 = %"
+					        PRIu8 ", but it should be 8, "
+					        "10, 12 or 14 to select a "
+					        "correct frequency range!\n",
+					        cksel);
+					err = 1;
+					break;
+				}
+			} else {
+				/* Should not happen! */
+			}
+			break;
+		case FUSE_HIGH:
+			bootsz = (fuse_v>>1)&0x3U;
+
+			switch (bootsz) {
+			case 3:
+				mcu->bls->start = 0x7E00; /* first byte */
+				mcu->bls->end = 0x7FFF; /* last byte */
+				mcu->bls->size = 512; /* bytes! */
+				break;
+			case 2:
+				mcu->bls->start = 0x7C00;
+				mcu->bls->end = 0x7FFF;
+				mcu->bls->size = 1024; /* bytes */
+				break;
+			case 1:
+				mcu->bls->start = 0x7800;
+				mcu->bls->end = 0x7FFF;
+				mcu->bls->size = 2048; /* bytes */
+				break;
+			case 0:
+				mcu->bls->start = 0x7000;
+				mcu->bls->end = 0x7FFF;
+				mcu->bls->size = 4096; /* bytes */
 				break;
 			default:
 				/* Should not happen! */
-				fprintf(stderr, "[e]: CKSEL3:0 = %" PRIu8 ", "
-				        "but it should be in [4,5] "
-				        "inclusively!\n", cksel);
+				fprintf(stderr, "[e]: BOOTSZ1:0 = %" PRIu8
+				        ", but it should be in [0,3] "
+				        "inclusively!\n", bootsz);
 				err = 1;
 				break;
 			}
-		} else if ((cksel == 6U) || (cksel == 7U)) {
-			mcu->clk_source = AVR_FULLSWING_CRYSTAL_CLK;
-			mcu->freq = 20000000; /* max 20 MHz */
-		} else if ((cksel >= 8U) && (cksel <= 15U)) {
-			mcu->clk_source = AVR_LOWP_CRYSTAL_CLK;
 
-			/* CKSEL0 can be used to adjust start-up time and
-			 * additional delay from MCU reset. */
-
-			/* CKSEL3:1 sets frequency range in this case. */
-			cksel = cksel&0xEU;
-			switch (cksel) {
-			case 8:
-				mcu->freq = 900000;	/* max 0.9MHz */
-				break;
-			case 10:
-				mcu->freq = 3000000;	/* max 3MHz */
-				break;
-			case 12:
-				mcu->freq = 8000000;	/* max 8MHz */
-				break;
-			case 14:
-				mcu->freq = 16000000;	/* max 16MHz */
-				break;
-			default:
-				/* Should not happen! */
-				fprintf(stderr, "[e]: CKSEL3:1 = %" PRIu8
-				        ", but it should be 8, 10, 12 or 14 "
-				        "to select a correct frequency "
-				        "range!\n", cksel);
-				err = 1;
-				break;
+			if ((fuse_v&1U) == 1U) {
+				mcu->intr->reset_pc = 0x0000;
+				mcu->pc = 0x0000;
+			} else {
+				mcu->intr->reset_pc = mcu->bls->start;
+				mcu->pc = mcu->bls->start;
 			}
-		} else {
-			/* Should not happen! */
-			err = 1;
-		}
-		break;
-	case FUSE_HIGH:
-		/* There should be no error happened before */
-		if (err != 0U) {
-			break;
-		}
 
-		bootsz = (fuse_v>>1)&0x3U;
-
-		switch (bootsz) {
-		case 3:
-			mcu->bls->start = 0x7E00;	/* first byte */
-			mcu->bls->end = 0x7FFF;		/* last byte */
-			mcu->bls->size = 512;		/* bytes! */
 			break;
-		case 2:
-			mcu->bls->start = 0x7C00;
-			mcu->bls->end = 0x7FFF;
-			mcu->bls->size = 1024;		/* bytes! */
-			break;
-		case 1:
-			mcu->bls->start = 0x7800;
-			mcu->bls->end = 0x7FFF;
-			mcu->bls->size = 2048;		/* bytes! */
-			break;
-		case 0:
-			mcu->bls->start = 0x7000;
-			mcu->bls->end = 0x7FFF;
-			mcu->bls->size = 4096;		/* bytes! */
+		case FUSE_EXT:
 			break;
 		default:
-			/* Should not happen! */
-			fprintf(stderr, "[e]: BOOTSZ1:0 = %" PRIu8 ", but it "
-			        "should be in [0,3] inclusively!\n", bootsz);
+			/* Should not happen */
 			err = 1;
 			break;
 		}
-
-		if ((fuse_v&1U) == 1U) {
-			mcu->intr->reset_pc = 0x0000;
-			mcu->pc = 0x0000;
-		} else {
-			mcu->intr->reset_pc = mcu->bls->start;
-			mcu->pc = mcu->bls->start;
-		}
-
-		break;
-	case FUSE_EXT:
-		break;
-	default:
-		/* Should not happen */
-		err = 1;
-		break;
 	}
 
 	return err;

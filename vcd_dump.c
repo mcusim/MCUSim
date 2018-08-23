@@ -106,6 +106,13 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 			break;
 		}
 
+		if (reg->addr == NULL) {
+			fprintf(stderr, "[!]: Register with known address "
+			        "(placed in data memory) can be dumped "
+			        "only: regname=\"\"%16s\n", reg->name);
+			continue;
+		}
+
 		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
 		reg_val = *reg->addr;
 		if (mcu->vcdd->bit[i].reg_lowi >= 0) {
@@ -114,12 +121,6 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 			rl = *reg_low->addr;
 			reg_val = ((uint16_t)(rh<<8)&0xFF00U)|
 			          (uint16_t)(rl&0x00FFU);
-		}
-		if (!reg->addr) {
-			fprintf(stderr, "[!]: Register with known address "
-			        "(placed in data memory) can be dumped "
-			        "only: regname=\"\"%16s\n", reg->name);
-			continue;
 		}
 
 		if (mcu->vcdd->bit[i].reg_lowi >= 0) {
