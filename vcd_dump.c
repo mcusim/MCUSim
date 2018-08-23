@@ -159,7 +159,7 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 
 	/* Do we have at least one register which value has changed? */
 	for (i = 0; i < regs; i++) {
-		short n;			/* Bit index of a register */
+		short n;		/* Bit index of a register */
 
 		/* No register changes on fall should be */
 		if (fall) {
@@ -192,10 +192,8 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 		}
 	}
 
-	/*
-	 * There is no register which value changed. Should we print a
-	 * clock pulse in this case?
-	 */
+	/* There is no register which value changed. Should we print a
+	 * clock pulse in this case? */
 	if (new_value == 0) {
 		if (!clk_prints_left) {
 			return;
@@ -208,10 +206,8 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 		return;
 	}
 
-	/*
-	 * We've at least one register which value changed.
-	 * Let's print it.
-	 */
+	/* We've at least one register which value changed.
+	 * Let's print it. */
 	for (i = 0; i < regs; i++) {
 		/* First N registers to be dumped only */
 		if (mcu->vcdd->bit[i].regi < 0) {
@@ -241,7 +237,6 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 		}
 
 		/* Print selected register */
-		reg->oldv = reg_val;
 		if (mcu->vcdd->bit[i].reg_lowi >= 0) {
 			print_reg16(buf, sizeof buf, rh, rl);
 			fprintf(f, "b%s %s\n", buf, mcu->vcdd->bit[i].name);
@@ -253,6 +248,31 @@ void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
 			             mcu->vcdd->bit[i].n);
 			fprintf(f, "b%s %s%d\n", buf, reg->name,
 			        mcu->vcdd->bit[i].n);
+		}
+	}
+
+	/* Update "old" values of the registers */
+	for (i = 0; i < regs; i++) {
+		/* First N registers to be updated only */
+		if (mcu->vcdd->bit[i].regi < 0) {
+			break;
+		}
+
+		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
+		reg_val = *reg->addr;
+		if (mcu->vcdd->bit[i].reg_lowi >= 0) {
+			reg_low = &mcu->vcdd->regs[mcu->vcdd->bit[i].reg_lowi];
+			rh = *reg->addr;
+			rl = *reg_low->addr;
+			reg_val = ((uint16_t)(rh<<8)&0xFF00U)|
+			          (uint16_t)(rl&0x00FFU);
+		}
+
+		/* Hasn't it been changed? */
+		if (reg_val == reg->oldv) {
+			continue;
+		} else {
+			reg->oldv = reg_val;
 		}
 	}
 }
