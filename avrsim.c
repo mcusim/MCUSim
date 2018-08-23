@@ -415,8 +415,15 @@ static void print_short_usage(void)
 
 static void print_version(void)
 {
-	printf("mcusim %s - microcontroller-based circuit simulator "
-	       "<https://trac.mcusim.org>\n", MSIM_VERSION);
+#ifndef DEBUG
+	printf("mcusim %s - microcontroller-based circuit simulator\n"
+	       "Find documentation and report issues at "
+	       "https://trac.mcusim.org\n", MSIM_VERSION);
+#else
+	printf("mcusim %s [debug] - microcontroller-based circuit simulator\n"
+	       "Find documentation and report issues at "
+	       "https://trac.mcusim.org\n", MSIM_VERSION);
+#endif
 }
 
 static void print_config(const struct MSIM_AVR *m)

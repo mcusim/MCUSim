@@ -1437,11 +1437,12 @@ static void exec_sbiw(struct MSIM_AVR *mcu, unsigned int inst)
 
 	SKIP_CYCLES(mcu, 1, 1);
 
-	rdl_addr = regs[(inst>>4)&0x03];
-	rdh_addr = (unsigned char)(rdl_addr+1);
-	c = ((inst>>2)&0x30)|(inst&0x0F);
+	rdl_addr = regs[((inst>>4) & 0x03)];
+	rdh_addr = (uint8_t)(rdl_addr + 1);
+	c = ((inst>>2)&0x30) | (inst&0x0F);
 
-	buf = r = (unsigned int)((mcu->dm[rdh_addr]<<8)|mcu->dm[rdl_addr]);
+	buf = (uint32_t)((mcu->dm[rdh_addr]<<8) | (mcu->dm[rdl_addr]));
+	r = buf;
 	r -= c;
 	buf = r & ~buf;
 
@@ -1454,8 +1455,8 @@ static void exec_sbiw(struct MSIM_AVR *mcu, unsigned int inst)
 	                    MSIM_ReadSREGFlag(mcu, AVR_SREG_TWOSCOM_OF));
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_ZERO, !r ? 1 : 0);
 
-	mcu->dm[rdh_addr] = (r >> 8) & 0x0F;
-	mcu->dm[rdl_addr] = r & 0x0F;
+	mcu->dm[rdh_addr] = (r>>8) & 0xFF;
+	mcu->dm[rdl_addr] = r & 0xFF;
 	mcu->pc += 2;
 }
 
@@ -1567,6 +1568,7 @@ static void exec_sbc(struct MSIM_AVR *mcu, unsigned int inst)
 
 	r = (unsigned char)(mcu->dm[rda] - mcu->dm[rra] -
 	                    MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY));
+	mcu->dm[rda] = r;
 	mcu->pc += 2;
 
 	buf = (~rd & rr) | (rr & r) | (r & ~rd);
@@ -1594,14 +1596,14 @@ static void exec_adiw(struct MSIM_AVR *mcu, unsigned int inst)
 	SKIP_CYCLES(mcu, 1, 1);
 
 	rdl_addr = regs[(inst >> 4) & 3];
-	rdh_addr = (unsigned char)(rdl_addr + 1);
+	rdh_addr = (uint8_t)(rdl_addr + 1);
 	c = ((inst >> 2) & 0x30) | (inst & 0x0F);
 
-	rd = (unsigned int)((mcu->dm[rdh_addr]<<8)|mcu->dm[rdl_addr]);
+	rd = (uint32_t)((mcu->dm[rdh_addr] << 8) | (mcu->dm[rdl_addr]));
 	r = rd + c;
 
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, ((~r & rd) >> 15) & 1);
-	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (unsigned char)((r>>15)&1));
+	MSIM_UpdateSREGFlag(mcu, AVR_SREG_NEGATIVE, (uint8_t)((r>>15)&1));
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_TWOSCOM_OF, ((r & ~rd) >> 15) & 1);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_SIGN,
 	                    MSIM_ReadSREGFlag(mcu, AVR_SREG_NEGATIVE) ^
@@ -1625,9 +1627,8 @@ static void exec_adc_rol(struct MSIM_AVR *mcu, unsigned int inst)
 
 	rd = mcu->dm[rd_addr];
 	rr = mcu->dm[rr_addr];
-	mcu->dm[rd_addr] = r = (unsigned char)
-	                       (rd + rr +
-	                        MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY));
+	r = (uint8_t)(rd + rr + MSIM_ReadSREGFlag(mcu, AVR_SREG_CARRY));
+	mcu->dm[rd_addr] = r;
 
 	buf = (rd & rr) | (rr & ~r) | (~r & rd);
 	MSIM_UpdateSREGFlag(mcu, AVR_SREG_CARRY, (buf >> 7) & 1);
