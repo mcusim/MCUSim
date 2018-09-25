@@ -13,7 +13,7 @@ Prerequisites
 
  If you want to enable additional features (Lua-based models, XSPICE library,
  etc.) the following software should be installed: lua (5.2 or above),
- GNU make, readline, bison, flex.
+ GNU make, readline, bison, flex, X11 headers and libs.
 
  If you want to contribute to the project you will need the following
  software installed: astyle, python (2.7 or above), cppcheck (1.83 or above),
