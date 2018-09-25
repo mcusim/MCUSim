@@ -416,13 +416,16 @@ static void print_short_usage(void)
 static void print_version(void)
 {
 #ifndef DEBUG
-	printf("mcusim %s - microcontroller-based circuit simulator\n"
-	       "Find documentation and report issues at "
-	       "https://trac.mcusim.org\n", MSIM_VERSION);
+	printf("mcusim %s : Microcontroller-based circuit simulator\n"
+	       "Please find documentation at https://trac.mcusim.org\n"
+	       "Please file your bug-reports at https://trac.mcusim.org/"
+	       "newticket\n", MSIM_VERSION);
 #else
-	printf("mcusim %s [debug] - microcontroller-based circuit simulator\n"
-	       "Find documentation and report issues at "
-	       "https://trac.mcusim.org\n", MSIM_VERSION);
+	printf("mcusim %s : Microcontroller-based circuit simulator "
+	       "(Debug version)\n"
+	       "Please find documentation at https://trac.mcusim.org\n"
+	       "Please file your bug-reports at https://trac.mcusim.org/"
+	       "newticket\n", MSIM_VERSION);
 #endif
 }
 
@@ -431,7 +434,7 @@ static void print_config(const struct MSIM_AVR *m)
 	static const int max_wid = 23;
 	/*
 	 * AVR memory is organized as array of bytes in the simulator, but
-	 * it's natural to measure program memory in words because
+	 * it's natural to measure program memory in 16-bits words because
 	 * all AVR instructions are 16- or 32-bits wide.
 	 *
 	 * It's why all program memory addresses are divided by two before
@@ -458,7 +461,7 @@ static void print_config(const struct MSIM_AVR *m)
 
 	/* Notify user about a maximum number of CLK_IO ticks to be dumped.
 	 *
-	 * NOTE: If compiler doesn't support "unsigned long long", then
+	 * NOTE: If a C compiler doesn't support "unsigned long long", then
 	 * we'll be limited to 4,294,967,295 number of ticks which results
 	 * in ~268.44s of simulation time at 16MHz of CLK_IO.*/
 #ifndef ULLONG_MAX

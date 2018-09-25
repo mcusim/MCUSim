@@ -44,8 +44,6 @@ struct MSIM_MemOp {
 	char format;			/* Optional, value format */
 };
 
-int MSIM_InterpretCommands(struct MSIM_AVR *mcu);
-
 #ifdef __cplusplus
 }
 #endif

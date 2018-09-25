@@ -1,0 +1,73 @@
+Readme for MCUSim
+=================
+
+ MCUSim is a digital simulator of the 8-bit AVR microcontrollers. It is
+ written from scratch to assist in circuit simulation, firmware debugging,
+ testing, and signal tracing.
+
+ Simulator can be extended by creating models written in Lua. They may affect
+ state of a simulated MCU in several ways, e.g. access internal registers,
+ generate signals on its pins or terminate the whole simulation, and play
+ roles of the significant parts of a circuit connected to the microcontroller
+ (external EEPROM, humidity sensor, MOSFET switch).
+
+ There is an interactive script also to prepare a simulated MCU instance
+ which is installed together with the simulator executable. It is particularly
+ helpful to set up microcontroller for a firmware debugging (via remote GDB
+ target at localhost:12750) or create a firmware test with Lua models to check
+ conditions and parameters.
+
+ Registers of a simulated MCU can be saved into a VCD (value change dump)
+ file and read using GTKWave viewer.
+
+How can I start a discussion?
+-----------------------------
+
+ Feel free to ask questions and start a discussion in the mailing lists for
+ users or developers. There is no specific rules which one to choose, so
+ subscribe and send a letter.
+
+How can I join the development?
+-------------------------------
+
+ To join the development just code the feature you want to add and send
+ your patch in the mailing list. Before you start coding check the latest
+ development release of MCUSim from our git repository or try to find a
+ ticket at https://trac.mcusim.org/report. It might be that your feature has
+ already been implemented.
+
+ There is no bureaucracy here.
+
+Mailing lists
+-------------
+
+ There are three mailing lists dedicated to the announces, use and development
+ of MCUSim.
+
+ * mcusim-announce@mcusim.org:
+   MCUSim announces. Subscribe to stay informed about new versions,
+   release notes, etc.
+
+ * mcusim@mcusim.org:
+   This list is the list for the users of the MCUSim simulator.
+
+ * mcusim-dev@mcusim.org:
+   This is the list for developers and "want to be" developers. Subscribe to
+   discuss any development issues and share patches.
+
+ To subscribe the list(s), send a message to:
+   <mcusim-announce-subscribe@mcusim.org>
+   <mcusim-subscribe@mcusim.org>
+   <mcusim-dev-subscribe@mcusim.org>
+
+ To unsubscribe from the list(s), send a message to:
+   <mcusim-announce-unsubscribe@mcusim.org>
+   <mcusim-unsubscribe@mcusim.org>
+   <mcusim-dev-unsubscribe@mcusim.org>
+
+Web sites
+---------
+
+ This project is hosted on Github.com.
+ Home page, wiki and issue tracker is at https://trac.mcusim.org
+

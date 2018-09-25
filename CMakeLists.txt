@@ -1,6 +1,5 @@
-# Copyright (c) 2017, 2018,
-# Dmitry Salychev <darkness.bsd@gmail.com>,
-# Alexander Salychev <ppsalex@rambler.ru> et al.
+#
+# Copyright (c) 2017, 2018, The MCUSim Contributors
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -10,45 +9,45 @@
 #     * Redistributions in binary form must reproduce the above copyright
 #       notice, this list of conditions and the following disclaimer in the
 #       documentation and/or other materials provided with the distribution.
-#     * Neither the name of the <organization> nor the
+#     * Neither the name of the MCUSim or its parts nor the
 #       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
-#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
 # THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
-# ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
 #
 # MCUSim build configuration file
 #
 cmake_minimum_required(VERSION 3.2)
-project(mcusim C)
+project(MCUSim C)
 
 # Program name and version
 set(MCUSIM "mcusim")
-set(MSIM_VERSION "0.1.91")
+set(MSIM_VERSION "0.1.92")
 
 # Load modules from our source tree too
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
-add_subdirectory(scripts)
-add_subdirectory(tests)
-add_subdirectory(misra)
+add_subdirectory(scripts)	# Helper scripts and script-based MCUSim models
+add_subdirectory(tests)		# MCUSim simulation tests
+add_subdirectory(misra)		# Configuration to check MISRA C rules
+add_subdirectory(xspice)	# Compile MCUSim as XSPICE .cm library
 
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
 # Set flags here
 if (CMAKE_BUILD_TYPE MATCHES Debug)
-	message(STATUS "Debug version of mcusim ${MSIM_VERSION} will be built by default.")
+	message(STATUS "[OPTION] Building MCUSim ${MSIM_VERSION}, debug version")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDEBUG")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 	    ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
@@ -60,8 +59,7 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wsign-compare")
 	endif()
 else()
-	message(STATUS "Release version of mcusim ${MSIM_VERSION} will be built.")
-	message(STATUS "Set CMAKE_BUILD_TYPE=Debug to build a debug version.")
+	message(STATUS "[OPTION] Building MCUSim ${MSIM_VERSION}, release version")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 	    ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2")
@@ -89,7 +87,11 @@ set(MCUSIM_SRC		simcore.c
 			vcd_dump.c)
 
 # Look for libraries, packages, etc.
-find_package(Lua)
+if (WITH_LUA)
+	find_package(Lua REQUIRED)
+else()
+	find_package(Lua)
+endif()
 
 # Set target libraries here
 set(TARGET_LIBS "")
@@ -98,10 +100,13 @@ if (LUA_FOUND AND
     ((LUA_VERSION_MINOR EQUAL 2) OR (LUA_VERSION_MINOR GREATER 2)))
 	add_definitions(-DLUA_FOUND=1)
 	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
-	message(STATUS "Support for Lua-based peripherals will be enabled")
+	message(STATUS "[OPTION] Building with Lua-based models")
 else()
-	message(STATUS "[!] Support for Lua-based peripherals will be disabled")
-	message(STATUS "[!] Required Lua version is 5.2 or above")
+	if (WITH_LUA)
+		message(FATAL_ERROR "[OPTION] Building without Lua-based models")
+	else()
+		message(STATUS "[OPTION] Building without Lua-based models")
+	endif()
 endif()
 
 # Check functions, include files here

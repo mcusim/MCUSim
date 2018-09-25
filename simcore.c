@@ -109,14 +109,14 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		}
 	}
 
-	/* Force MCU to run in firmware test mode. */
+	/* Force MCU to run in a firmware-test mode. */
 	if (firmware_test) {
 		mcu->state = AVR_RUNNING;
 	}
 
 	/* Main simulation loop. Each iteration represents both rise (R) and
-	 * fall (F) of the microcontroller's clock pulse. It's necessary
-	 * to dump CLK_IO to the timing diagram in a pulse-accurate way.
+	 * fall (F) of the microcontroller's clock. It's necessary to dump
+	 * CLK_IO to the timing diagram in a pulse-accurate way.
 	 *
 	 *                          MAIN LOOP ITERATIONS
 	 *            R     F     R     F     R     F     R     F     R

@@ -288,10 +288,14 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 	stop_mode = 0;
 
 	cs1 = DM(TCCR1B)&0x7;
-	wgm1 = (((DM(TCCR1B)>>WGM13)&1)<<3) | (((DM(TCCR1B)>>WGM12)&1)<<2) |
-	       (((DM(TCCR1A)>>WGM11)&1)<<1) | (((DM(TCCR1A)>>WGM10)&1));
-	com1a = (((DM(TCCR1A)>>COM1A1)&1)<<1) | ((DM(TCCR1A)>>COM1A0)&1);
-	com1b = (((DM(TCCR1A)>>COM1B1)&1)<<1) | ((DM(TCCR1A)>>COM1B0)&1);
+	wgm1 = (uint8_t) (((DM(TCCR1B)>>WGM13)&1)<<3) |
+	       (uint8_t) (((DM(TCCR1B)>>WGM12)&1)<<2) |
+	       (uint8_t) (((DM(TCCR1A)>>WGM11)&1)<<1) |
+	       (uint8_t) (((DM(TCCR1A)>>WGM10)&1));
+	com1a = (uint8_t) (((DM(TCCR1A)>>COM1A1)&1)<<1) |
+	        (uint8_t) ((DM(TCCR1A)>>COM1A0)&1);
+	com1b = (uint8_t) (((DM(TCCR1A)>>COM1B1)&1)<<1) |
+	        (uint8_t) ((DM(TCCR1A)>>COM1B0)&1);
 
 	switch (cs1) {
 	case 0x1:
@@ -798,8 +802,10 @@ static void timer1_oc1_fastpwm(struct MSIM_AVR *mcu, uint8_t com1a,
 	uint8_t pin, com;
 	uint8_t wgm1;
 
-	wgm1 = (((DM(TCCR1B)>>WGM13)&1)<<3) | (((DM(TCCR1B)>>WGM12)&1)<<2) |
-	       (((DM(TCCR1A)>>WGM11)&1)<<1) | (((DM(TCCR1A)>>WGM10)&1));
+	wgm1 = (uint8_t) (((DM(TCCR1B)>>WGM13)&1)<<3) |
+	       (uint8_t) (((DM(TCCR1B)>>WGM12)&1)<<2) |
+	       (uint8_t) (((DM(TCCR1A)>>WGM11)&1)<<1) |
+	       (uint8_t) (((DM(TCCR1A)>>WGM10)&1));
 
 	/* Check Data Direction Register first. DDRB1 or DDRB2 should
 	 * be set to enable the output driver (according to a datasheet). */

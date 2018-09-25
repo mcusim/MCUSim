@@ -26,11 +26,11 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# MCUSim configuration file to check code to be compliant
-# with MISRA C:2012 rules.
+# MCUSim configuration file to check code to be compliant with MISRA C:2012
+# rules.
 #
 cmake_minimum_required(VERSION 3.2)
-project(mcusim-misra C)
+project(MCUSim-misra C)
 
 # Version
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")

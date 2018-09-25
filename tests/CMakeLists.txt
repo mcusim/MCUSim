@@ -29,7 +29,7 @@
 # MCUSim tests configuration file
 #
 cmake_minimum_required(VERSION 3.2)
-project(mcusim-tests NONE)
+project(MCUSim-tests NONE)
 
 # Version
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")

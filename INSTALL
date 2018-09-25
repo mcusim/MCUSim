@@ -1,0 +1,116 @@
+How to install MCUSim
+---------------------
+
+ This file contains an instruction about installing MCUSim from sources.
+
+Prerequisites
+-------------
+
+ MCUSim is written in C99 on FreeBSD and macOS operating systems, and thus a
+ complete C compilation environment is needed. CMake build system is required
+ to generate build files for various operating systems including GNU/Linux
+ and Windows.
+
+ If you want to enable additional features (Lua-based models, XSPICE library,
+ etc.) the following software should be installed: lua (5.2 or above),
+ GNU make, readline, bison, flex.
+
+ If you want to contribute to the project you will need the following
+ software installed: astyle, python (2.7 or above), cppcheck (1.83 or above),
+ avr-libc (optional, to compile AVR tests firmware).
+
+Install from tarball (e.g. mcusim-0.2.0.tar.gz)
+------------------------------------------------
+
+ This part covers installation from a release distribution (for example
+ mcusim-0.2.0.tar.gz). You may download tarball with the latest release
+ version from http://mcusim.org.
+
+ After downloading the tarball to a local directory unpack it using:
+
+        $ tar -xvf mcusim-0.2.0.tar.gz
+
+ Now change directory in to the top-level source directory (where this
+ INSTALL file can be found). You will have to run:
+
+        $ mkdir release
+        $ cd release
+        $ cmake ..
+        $ make
+        $ sudo make install
+
+ The default install directory for executables is /usr/local/bin. These steps
+ will be enough to compile a basic version of MCUSim. See the section titled
+ 'Advanced install' for instructions about additional arguments that can be
+ passed to cmake to customize the build and installation.
+
+ Useful MCUSim version can be compiled with the prefered cmake arguments:
+ -DWITH_LUA=True -DWITH_XSPICE=True (see 'Advanced install' section for
+ details).
+
+ FreeBSD users will have to add "-I/usr/local/include" to the CFLAGS
+ environment variable and "-L/usr/local/lib" to the LDFLAGS environment
+ variable to let MCUSim find GNU readline headers and libraries if
+ -DWITH_XSPICE option has been enabled.
+
+Install from the git repository
+-------------------------------
+
+ This part covers installation from sources taken directly from the git
+ repository. You may wish to follow this way if you want to use the most
+ recent version of MCUSim with the latest features or contribute to the
+ repository.
+
+ Clone repository using:
+
+        $ git clone git@github.com:dsalychev/mcusim.git
+
+ And follow the steps after tarball unpacking described above, in the
+ 'Install from tarball' section. There are options which can be passed to
+ cmake during configuration step. You may read 'Advanced install'
+ section to find these options described and additional instructions.
+
+ If you want to code any feature and share a patch, please install pre-commit
+ hooks from the repository root:
+
+        $ ./scripts/install-hooks.sh
+
+ They will check any changes in a commit to follow code format of the project
+ and report violations on a per-file basis with the exact lines to adjust.
+
+Advanced install
+----------------
+
+ These options can be provided to CMake during 'cmake ..' configuration step:
+
+ -DCMAKE_BUILD_TYPE=Release
+        Build a release version of MCUSim. This is a default option.
+        Executables will not have debug symbols included. Debug output will
+        be disabled.
+
+ -DCMAKE_BUILD_TYPE=Debug
+        Build a debug version of MCUSim. Executables will have debug symbols
+        included.
+
+ -DWITH_LUA=True
+        Build MCUSim with Lua-based models support. Configuration will not be
+        finished successfully if Lua is not installed.
+
+ -DWITH_XSPICE=True
+        Build MCUSim with XSPICE code model (i.e. mcusim.cm) library.
+        It is a shared object linked statically with MCUSim which contains
+        NGSpice models of the supported microcontrollers.
+        Please, note that NGSpice tarball with source code will be downloaded,
+        patched and compiled to provide the library (see -DNGSPICE_TARBALL and
+        -DNGSPICE_TARBALL_MD5 options also).
+
+ -DNGSPICE_MAKE=/usr/bin/make
+        Build NGSpice using specified make utility. It should be GNU make.
+
+ -DNGSPICE_TARBALL=/home/dsl/ngspice-28.tar.gz
+        Full path to the NGSpice tarball. This option is useful if you are not
+        going to download tarball from the Web.
+
+ -DNGSPICE_TARBALL_MD5=a11c1f99753934be7d60c0ab43821bbc
+        MD5 hash of the NGSpice tarball provided via -DNGSPICE_TARBALL option.
+
