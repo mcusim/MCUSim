@@ -67,14 +67,24 @@ if (WITH_XSPICE)
 	endif()
 	message(STATUS "[OPTION] Building with NGSpice make: ${_NGSPICE_MAKE}")
 
+	# Set flags to link code model library against MCUSim library
+	set(MSIM_CFLAGS "-I${CMAKE_SOURCE_DIR}/include")
+	set(MSIM_LDFLAGS "-L${CMAKE_BINARY_DIR}")
+
 	# Copy script to apply NGSpice patches
 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/patch-ngspice-sources DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches)
+
 	# Copy all sub-directories to the binary directory
 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches)
-	# Copy all patches to the binary directory
+
+	# Copy and configure all patches to the binary directory
 	file(GLOB PATCHES ${CMAKE_CURRENT_SOURCE_DIR}/ngspice-*.patch)
+	file(GLOB PATCHES_CONF ${CMAKE_CURRENT_SOURCE_DIR}/ngspice-*.patch.in)
 	foreach(PATCH ${PATCHES})
 		file(COPY ${PATCH} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches)
+	endforeach()
+	foreach(PATCH ${PATCHES_CONF})
+		configure_file(${PATCH} ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches @ONLY)
 	endforeach()
 
 	ExternalProject_Add(

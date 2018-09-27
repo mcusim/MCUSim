@@ -30,6 +30,10 @@
 #ifndef MSIM_AVR_INTERRUPT_H_
 #define MSIM_AVR_INTERRUPT_H_ 1
 
+#ifndef MSIM_MAIN_HEADER_H_
+#error "Please, include mcusim/mcusim.h instead of this header."
+#endif
+
 /* AVR IRQ limit, i.e. maximum number of interrupt vectors. */
 #define AVR_IRQ_NUM		64
 

@@ -31,7 +31,8 @@ project(MCUSim C)
 
 # Program name and version
 set(MCUSIM "mcusim")
-set(MSIM_VERSION "0.1.93")
+set(MCUSIM_LIB "libmcusim")
+set(MSIM_VERSION "0.1.94")
 
 # Load modules from our source tree too
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -72,7 +73,7 @@ else()
 endif()
 
 # Set sources here
-set(MCUSIM_SRC		simcore.c
+set(MCUSIM_LIB_SRC	simcore.c
 			simm8a.c
 			simm328p.c
 			simm328.c
@@ -82,7 +83,6 @@ set(MCUSIM_SRC		simcore.c
 			peripheral_lua.c
 			peripheral_luaapi.c
 			decoder.c
-			avrsim.c
 			gdb_rsp.c
 			vcd_dump.c)
 
@@ -161,9 +161,23 @@ if (LUA_FOUND)
 	include_directories(${LUA_INCLUDE_DIR})
 endif()
 
-add_executable(${MCUSIM} ${MCUSIM_SRC})
+# Compile MCUSim library and executable
+add_library(${MCUSIM_LIB} STATIC ${MCUSIM_LIB_SRC})
+add_executable(${MCUSIM} main.c)
+set_target_properties(${MCUSIM_LIB} PROPERTIES OUTPUT_NAME "mcusim")
+if ((WITH_FPIC MATCHES FALSE) OR
+    (WITH_FPIC MATCHES false) OR
+    (WITH_FPIC MATCHES False))
+	message(STATUS "[OPTION] Building without position-independent code (-fPIC) option")
+	set_target_properties(${MCUSIM_LIB} PROPERTIES POSITION_INDEPENDENT_CODE OFF)
+else()
+	message(STATUS "[OPTION] Building with position-independent code (-fPIC) option")
+	set_target_properties(${MCUSIM_LIB} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
+# Link MCUSim executable
+target_link_libraries(${MCUSIM} ${MCUSIM_LIB})
 target_link_libraries(${MCUSIM} ${TARGET_LIBS})
 
-# Install mcusim
-install(TARGETS ${MCUSIM}
-	DESTINATION bin)
+# Install MCUSim executable
+install(TARGETS ${MCUSIM} DESTINATION bin)

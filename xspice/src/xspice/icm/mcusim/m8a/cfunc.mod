@@ -33,6 +33,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <string.h>
+#include "mcusim/mcusim.h"
 
 void MSIM_M8AModel(ARGS)
 {
@@ -47,6 +48,7 @@ void MSIM_M8AModel(ARGS)
 
 	/* Setup required state variables */
 	if (INIT == 1) {  /* initial pass */
+		MSIM_PrintParts();
 		/* allocate storage for the outputs */
 		cm_event_alloc(0, sizeof(Digital_State_t));
 

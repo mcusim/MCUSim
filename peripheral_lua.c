@@ -35,8 +35,7 @@
  */
 //#include <stdio.h>
 #include <stdint.h>
-#include "mcusim/avr/sim/peripheral_lua.h"
-#include "mcusim/avr/sim/peripheral_luaapi.h"
+#include "mcusim/mcusim.h"
 #ifdef LUA_FOUND
 #include "lua.h"
 #include "lualib.h"

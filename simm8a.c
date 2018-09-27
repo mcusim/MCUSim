@@ -36,7 +36,7 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "mcusim/avr/sim/sim.h"
+#include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/simm8a.h"
 #include "mcusim/avr/sim/mcu_init.h"
 

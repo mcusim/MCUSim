@@ -34,14 +34,7 @@
 #include <limits.h>
 
 #include "mcusim/hex/ihex.h"
-#include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/bootloader.h"
-#include "mcusim/avr/sim/simcore.h"
-#include "mcusim/avr/sim/peripheral_lua.h"
-#include "mcusim/avr/sim/decoder.h"
-#include "mcusim/avr/sim/gdb_rsp.h"
-#include "mcusim/avr/sim/vcd_dump.h"
-#include "mcusim/avr/sim/interrupt.h"
+#include "mcusim/mcusim.h"
 
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E

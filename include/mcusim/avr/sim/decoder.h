@@ -30,6 +30,10 @@
 #ifndef MSIM_AVR_DECODER_H_
 #define MSIM_AVR_DECODER_H_ 1
 
+#ifndef MSIM_MAIN_HEADER_H_
+#error "Please, include mcusim/mcusim.h instead of this header."
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

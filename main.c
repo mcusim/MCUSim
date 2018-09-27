@@ -33,15 +33,9 @@
 #include <limits.h>
 #include <fcntl.h>
 
+#include "mcusim/mcusim.h"
 #include "mcusim/cli.h"
 #include "mcusim/getopt.h"
-#include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/simcore.h"
-#include "mcusim/avr/sim/bootloader.h"
-#include "mcusim/avr/sim/peripheral_lua.h"
-#include "mcusim/avr/sim/gdb_rsp.h"
-#include "mcusim/avr/sim/interrupt.h"
-#include "mcusim/avr/sim/vcd_dump.h"
 
 /* Limits of statically allocated MCU memory */
 #define PMSZ			262144		/* Program memory size */

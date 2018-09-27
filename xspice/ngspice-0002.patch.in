@@ -1,0 +1,11 @@
+--- src/xspice/icm/makedefs.in	2018-09-27 11:02:42.127054000 +0200
++++ src/xspice/icm/makedefs.in	2018-09-27 15:24:25.400590000 +0200
+@@ -25 +25 @@
+-EXTRA_CFLAGS = -fPIC
++EXTRA_CFLAGS = -fPIC @MSIM_CFLAGS@
+@@ -46 +46 @@
+-LIBS = -lm
++LIBS = -lm -lmcusim
+@@ -49 +49 @@
+-LDFLAGS = -shared
++LDFLAGS = -shared @MSIM_LDFLAGS@

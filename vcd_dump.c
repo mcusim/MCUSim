@@ -29,8 +29,7 @@
  */
 #include <stdint.h>
 #include <time.h>
-#include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/vcd_dump.h"
+#include "mcusim/mcusim.h"
 
 #define TERA			1000000000000.0
 #define MAX_CLK_PRINTS		50

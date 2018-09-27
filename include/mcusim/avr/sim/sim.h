@@ -38,15 +38,15 @@
 #ifndef MSIM_AVR_SIM_H_
 #define MSIM_AVR_SIM_H_ 1
 
+#ifndef MSIM_MAIN_HEADER_H_
+#error "Please, include mcusim/mcusim.h instead of this header."
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <stdint.h>
-
-#include "mcusim/avr/sim/bootloader.h"
-#include "mcusim/avr/sim/vcd_dump.h"
-#include "mcusim/avr/sim/interrupt.h"
 
 #define SIM_NAME		"mcusim"
 #define FUSE_LOW		0

@@ -30,6 +30,10 @@
 #ifndef MSIM_AVR_BLDR_H_
 #define MSIM_AVR_BLDR_H_ 1
 
+#ifndef MSIM_MAIN_HEADER_H_
+#error "Please, include mcusim/mcusim.h instead of this header."
+#endif
+
 #include <stdint.h>
 
 #include "mcusim/avr/sim/sim.h"

@@ -30,23 +30,20 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-
-#include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/gdb_rsp.h"
-#include "mcusim/avr/sim/decoder.h"
-
 #ifdef MSIM_POSIX
-#	include <netdb.h>
-#	include <sys/socket.h>
-#	include <string.h>
-#	include <fcntl.h>
-#	include <unistd.h>
-#	include <errno.h>
-#	include <poll.h>
-#	include <netinet/in.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <poll.h>
+#include <netinet/in.h>
 #ifndef MSIM_POSIX_CYGWIN
-#	include <netinet/tcp.h>
+#include <netinet/tcp.h>
 #endif
+
+#include "mcusim/mcusim.h"
 
 #define AVRSIM_RSP_PROTOCOL		"tcp"
 

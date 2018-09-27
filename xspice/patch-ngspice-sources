@@ -39,7 +39,7 @@ done
 
 echo "Applying MCUSim patches for NGSpice..."
 PATCH=`which patch`
-for line in $(find ../patches -name 'ngspice-*.patch'); do
+for line in $(find ../patches -name 'ngspice-*.patch*'); do
 	echo $line
         $PATCH -p0 -f -u --silent --input=$line
 done

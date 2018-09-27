@@ -31,9 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/simcore.h"
-#include "mcusim/avr/sim/decoder.h"
+#include "mcusim/mcusim.h"
 
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E

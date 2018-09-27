@@ -37,8 +37,7 @@
 #define _SFR_ASM_COMPAT 1
 #define __AVR_ATmega2560__ 1
 #include "mcusim/avr/io.h"
-#include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/simcore.h"
+#include "mcusim/mcusim.h"
 
 #define MCU_NAME	"ATmega2560"
 
