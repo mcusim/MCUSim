@@ -2336,8 +2336,8 @@ static void exec_jmp(struct MSIM_AVR *mcu, unsigned int inst)
 
 	msb = (unsigned int)(((mcu->pm[mcu->pc+3] << 8) & 0xFF00) |
 	                     (mcu->pm[mcu->pc+2] & 0xFF));
-	c = ((msb<<16)&0xFFFF0000) | ((inst>>3)&0x3E) | (inst&0x01);
-	mcu->pc = c;
+	c = msb | (((inst>>3)&0x3E) | (inst&0x01)) << 16;
+	mcu->pc = c * 2; // address is in words, not bytes
 }
 
 static void exec_lac(struct MSIM_AVR *mcu, unsigned int inst)
