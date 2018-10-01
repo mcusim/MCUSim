@@ -112,7 +112,7 @@ static void rsp_write_reg(struct rsp_buf *buf);
 static size_t read_reg(int n, char *buf);
 static void write_reg(int n, char *buf);
 
-void MSIM_RSPInit(struct MSIM_AVR *mcu, int portn)
+void MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, int portn)
 {
 	struct protoent *protocol;	/* Protocol entry */
 	struct hostent *host;		/* Host entry */
@@ -212,13 +212,13 @@ void MSIM_RSPInit(struct MSIM_AVR *mcu, int portn)
 	}
 }
 
-void MSIM_RSPClose(void)
+void MSIM_AVR_RSPClose(void)
 {
 	rsp_close_client();
 	rsp_close_server();
 }
 
-int MSIM_RSPHandle(void)
+int MSIM_AVR_RSPHandle(void)
 {
 	struct pollfd fds[2];
 
@@ -592,7 +592,7 @@ static void rsp_insert_matchpoint(struct rsp_buf *buf)
 		mcu->pm[addr+1] = BREAK_HIGH;
 		mcu->mpm[addr] = llsb;
 		mcu->mpm[addr+1] = lmsb;
-		if (MSIM_Is32(inst)) {
+		if (MSIM_AVR_Is32(inst)) {
 			hlsb = (unsigned char) mcu->pm[addr+2];
 			hmsb = (unsigned char) mcu->pm[addr+3];
 			mcu->pm[addr+2] = 0;
@@ -656,7 +656,7 @@ static void rsp_remove_matchpoint(struct rsp_buf *buf)
 		mcu->pm[addr+1] = lmsb;
 
 		inst = (unsigned short) (llsb | (lmsb << 8));
-		if (MSIM_Is32(inst)) {
+		if (MSIM_AVR_Is32(inst)) {
 			hlsb = (unsigned char) mcu->mpm[addr+2];
 			hmsb = (unsigned char) mcu->mpm[addr+3];
 			mcu->pm[addr+2] = hlsb;
@@ -1384,19 +1384,5 @@ static void rsp_step(struct rsp_buf *buf)
 	rsp.mcu->state = AVR_MSIM_STEP;
 	rsp.client_waiting = 1;
 }
-
-#else /* MSIM_POSIX is not defined */
-
-void MSIM_RSPInit(struct MSIM_AVR *mcu, int portn)
-{
-}
-
-int MSIM_RSPHandle(void)
-{
-	return 0;
-}
-
-void MSIM_RSPClose(void)
-{
-}
 #endif /* MSIM_POSIX */
+

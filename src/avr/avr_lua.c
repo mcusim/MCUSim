@@ -33,17 +33,18 @@
  *
  * This file provides basic functions to load, run and unload these models.
  */
-//#include <stdio.h>
 #include <stdint.h>
+
+#include "mcusim/avr/sim/luaapi.h"
 #include "mcusim/mcusim.h"
 #ifdef LUA_FOUND
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
 
-static lua_State *lua_states[LUA_PERIPHERALS];
+static lua_State *lua_states[MSIM_AVR_LUAMODELS];
 
-int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *file)
+int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *file)
 {
 	static char path[4096];
 	uint32_t i, j, ci, regs;
@@ -157,21 +158,21 @@ int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *file)
 	return err;
 }
 
-void MSIM_CleanLuaPeripherals(void)
+void MSIM_AVR_LUACleanModels(void)
 {
 	unsigned int i;
-	for (i = 0; i < LUA_PERIPHERALS; i++) {
+	for (i = 0; i < MSIM_AVR_LUAMODELS; i++) {
 		if (lua_states[i] != NULL) {
 			lua_close(lua_states[i]);
 		}
 	}
 }
 
-void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu)
+void MSIM_AVR_LUATickModels(struct MSIM_AVR *mcu)
 {
 	unsigned int i;
 
-	for (i = 0; i < LUA_PERIPHERALS; i++) {
+	for (i = 0; i < MSIM_AVR_LUAMODELS; i++) {
 		if (lua_states[i] == NULL) {
 			continue;
 		}

@@ -50,7 +50,7 @@ extern "C" {
  * AVR program memory is little endian, so "start" is an address of the LSB
  * of the first instruction in bootloader, "end" - address of the MSB of
  * the last bootloader instruction. */
-struct MSIM_AVRBootloader {
+struct MSIM_AVR_Bootloader {
 	unsigned long start;	/* First Bootloader byte in PM, in bytes */
 	unsigned long end;	/* Last Bootloader byte in PM, in bytes */
 	unsigned long size;	/* Bootloader size, in bytes */

@@ -39,7 +39,7 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	uint64_t dmsz, dm_size;
 
 #ifdef VCD_DUMP_REGS
-	struct MSIM_VCDRegister known_regs[] = VCD_DUMP_REGS;
+	struct MSIM_AVR_VCDRegister known_regs[] = VCD_DUMP_REGS;
 	uint32_t known_regsn = sizeof known_regs/sizeof known_regs[0];
 	uint32_t avail_regsn;
 #endif

@@ -24,7 +24,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# MCUSim build configuration file
+# MCUSim build configuration file.
 #
 cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
@@ -32,7 +32,7 @@ project(MCUSim C)
 # Program name and version
 set(MCUSIM "mcusim")
 set(MCUSIM_LIB "libmcusim")
-set(MSIM_VERSION "0.1.95")
+set(MSIM_VERSION "0.1.96")
 
 # Load modules from our source tree too
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -73,18 +73,18 @@ else()
 endif()
 
 # Set sources here
-set(MCUSIM_LIB_SRC	simcore.c
-			simm8a.c
-			simm328p.c
-			simm328.c
-			simm2560.c
-			ihex.c
-			getopt_long.c
-			peripheral_lua.c
-			peripheral_luaapi.c
-			decoder.c
-			gdb_rsp.c
-			vcd_dump.c)
+set(MCUSIM_LIB_SRC	src/avr/avr_simcore.c
+			src/avr/avr_m8a.c
+			src/avr/avr_m328p.c
+			src/avr/avr_m328.c
+			src/avr/avr_m2560.c
+			src/avr/avr_lua.c
+			src/avr/avr_luaapi.c
+			src/avr/avr_decoder.c
+			src/avr/avr_gdb.c
+			src/avr/avr_vcd.c
+			src/ihex.c
+			src/getopt_long.c)
 
 # Look for libraries, packages, etc.
 if (WITH_LUA)
@@ -115,7 +115,6 @@ if (NOT MSVC)
 	if (NOT RESULT)
 		unset(RESULT)
 		list(APPEND TARGET_LIBS -lm)
-		message(STATUS "Math library added to the TARGET_LIBS")
 	endif()
 endif()
 check_include_files(netdb.h HAVE_NETDB_H)
@@ -163,7 +162,7 @@ endif()
 
 # Compile MCUSim library and executable
 add_library(${MCUSIM_LIB} STATIC ${MCUSIM_LIB_SRC})
-add_executable(${MCUSIM} main.c)
+add_executable(${MCUSIM} src/main.c)
 set_target_properties(${MCUSIM_LIB} PROPERTIES OUTPUT_NAME "mcusim")
 if ((WITH_FPIC MATCHES FALSE) OR
     (WITH_FPIC MATCHES false) OR
@@ -181,3 +180,5 @@ target_link_libraries(${MCUSIM} ${TARGET_LIBS})
 
 # Install MCUSim executable
 install(TARGETS ${MCUSIM} DESTINATION bin)
+
+file(COPY ${CMAKE_SOURCE_DIR}/include DESTINATION ${CMAKE_BINARY_DIR})

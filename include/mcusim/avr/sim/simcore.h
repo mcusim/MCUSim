@@ -37,8 +37,7 @@
 #include <stdio.h>
 #include <stdint.h>
 
-#include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/bootloader.h"
+#include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/init.h"
 
 #ifdef __cplusplus
@@ -56,29 +55,29 @@ extern "C" {
  *
  * Simulator can be started in firmware test mode, i.e. no debuggers or
  * any external events are necessary to perform a simulation. */
-int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
-                     unsigned long addr, unsigned char firmware_test);
+int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
+                      unsigned long addr, unsigned char firmware_test);
 
 /* Initializes an MCU into specific model determined by the given name.
  * It is, generally, a good idea to prepare specific MCU model using this
  * function instead of MSIM_XXXInit() ones. */
-int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
-                 unsigned char *pm, unsigned long pm_size,
-                 unsigned char *dm, unsigned long dm_size,
-                 unsigned char *mpm, FILE *fp);
+int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
+                  unsigned char *pm, unsigned long pm_size,
+                  unsigned char *dm, unsigned long dm_size,
+                  unsigned char *mpm, FILE *fp);
 
 /* Functions to work with a stack inside MCU */
-void MSIM_StackPush(struct MSIM_AVR *mcu, unsigned char val);
-uint8_t MSIM_StackPop(struct MSIM_AVR *mcu);
+void MSIM_AVR_StackPush(struct MSIM_AVR *mcu, unsigned char val);
+uint8_t MSIM_AVR_StackPop(struct MSIM_AVR *mcu);
 
 /* Functions to update/read SREG bits */
-void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVRSREGFlag flag,
-                         unsigned char set_f);
-unsigned char MSIM_ReadSREGFlag(struct MSIM_AVR *mcu,
-                                enum MSIM_AVRSREGFlag flag);
+void MSIM_AVR_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVR_SREGFlag flag,
+                             unsigned char set_f);
+uint8_t MSIM_AVR_ReadSREGFlag(struct MSIM_AVR *mcu,
+                              enum MSIM_AVR_SREGFlag flag);
 
 /* Prints supported AVR parts. */
-void MSIM_PrintParts(void);
+void MSIM_AVR_PrintParts(void);
 
 #ifdef __cplusplus
 }

@@ -40,19 +40,7 @@
 #define REG_ZL			0x1E
 #define CLK_RISE		0
 #define CLK_FALL		1
-
-#ifndef ULLONG_MAX
-/* For compilers without "unsigned long long" support
- * NOTE: Amount of simulation time for VCD dump will be limited to
- * 134218 ms (MCU clock is 16 MHz) because of a limit of 32-bits
- * unsigned integer.
- */
-#define TICKS_MAX	ULONG_MAX
-#define ticks_t		unsigned long
-#else
-#define TICKS_MAX	ULLONG_MAX
-#define ticks_t		unsigned long long
-#endif
+#define TICKS_MAX		UINT64_MAX
 
 typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 
@@ -77,16 +65,17 @@ static struct init_cell init_funcs[] = {
 
 static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 
-int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
-                     unsigned long addr, unsigned char firmware_test)
+int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
+                      unsigned long addr, unsigned char firmware_test)
 {
-	ticks_t tick;		/* Number of rises and falls sinse start */
-	unsigned char tick_ovf;	/* Have we reached maximum number of ticks? */
-	FILE *vcd_f;		/* File to store VCD dump to */
-	int ret_code;		/* Code to return */
+	FILE *vcd_f;		/* File to write VCD dump to */
+	uint64_t tick;		/* # of ticks (rises+falls) sinse start */
+	uint8_t tick_ovf;	/* Ticks overflow flag */
+	int ret_code;		/* Return code */
 	char dump_name[256];
 
-	tick = tick_ovf = 0;
+	tick = 0;
+	tick_ovf = 0;
 	vcd_f = NULL;
 	ret_code = 0;
 
@@ -94,7 +83,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 	if (mcu->vcdd->bit[0].regi >= 0) {
 		snprintf(&dump_name[0], sizeof dump_name, "%s-trace.vcd",
 		         mcu->name);
-		vcd_f = MSIM_VCDOpenDump(mcu, dump_name);
+		vcd_f = MSIM_AVR_VCDOpenDump(mcu, dump_name);
 		if (!vcd_f) {
 			fprintf(stderr, "[e]: Failed to open dump file: "
 			        "dump.vcd\n");
@@ -143,7 +132,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		/* Wait for request from GDB in MCU stopped mode */
 		if (!firmware_test && !mcu->ic_left &&
 		                (mcu->state == AVR_STOPPED) &&
-		                MSIM_RSPHandle()) {
+		                MSIM_AVR_RSPHandle()) {
 			if (vcd_f) {
 				fclose(vcd_f);
 			}
@@ -151,14 +140,14 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		}
 
 		/* Tick peripherals written in Lua */
-		MSIM_TickLuaPeripherals(mcu);
+		MSIM_AVR_LUATickModels(mcu);
 		/* Tick timers (MCU-defined!) */
 		if (mcu->tick_timers) {
 			mcu->tick_timers(mcu);
 		}
 		/* Dump registers to VCD */
 		if (vcd_f && !tick_ovf) {
-			MSIM_VCDDumpFrame(vcd_f, mcu, tick, CLK_RISE);
+			MSIM_AVR_VCDDumpFrame(vcd_f, mcu, tick, CLK_RISE);
 		}
 
 		/* Test scope of a program counter */
@@ -194,7 +183,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		 */
 		if ((mcu->ic_left || mcu->state == AVR_RUNNING ||
 		                mcu->state == AVR_MSIM_STEP) &&
-		                MSIM_StepAVR(mcu)) {
+		                MSIM_AVR_Step(mcu)) {
 			if (vcd_f) {
 				fclose(vcd_f);
 			}
@@ -214,8 +203,8 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		if (mcu->provide_irqs) {
 			mcu->provide_irqs(mcu);
 		}
-		if (!mcu->ic_left && !mcu->intr->exec_main &&
-		                MSIM_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT) &&
+		if (MSIM_AVR_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT) &&
+		                (!mcu->ic_left) && (!mcu->intr->exec_main) &&
 		                (mcu->state == AVR_RUNNING ||
 		                 mcu->state == AVR_MSIM_STEP)) {
 			handle_irq(mcu);
@@ -250,7 +239,7 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 		}
 		/* Dump fall to VCD */
 		if (vcd_f && !tick_ovf) {
-			MSIM_VCDDumpFrame(vcd_f, mcu, tick, CLK_FALL);
+			MSIM_AVR_VCDDumpFrame(vcd_f, mcu, tick, CLK_FALL);
 		}
 		tick++;
 	}
@@ -261,10 +250,10 @@ int MSIM_SimulateAVR(struct MSIM_AVR *mcu, unsigned long steps,
 	return ret_code;
 }
 
-int MSIM_InitAVR(struct MSIM_AVR *mcu, const char *mcu_name,
-                 unsigned char *pm, unsigned long pm_size,
-                 unsigned char *dm, unsigned long dm_size,
-                 unsigned char *mpm, FILE *fp)
+int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
+                  unsigned char *pm, unsigned long pm_size,
+                  unsigned char *dm, unsigned long dm_size,
+                  unsigned char *mpm, FILE *fp)
 {
 	unsigned int i;
 	char mcu_found = 0;
@@ -362,14 +351,14 @@ static int handle_irq(struct MSIM_AVR *mcu)
 	 * i == 0		highest priority
 	 * i == AVR_IRQ_NUM-1	lowest priority
 	 */
-	for (i = 0; i < AVR_IRQ_NUM; i++) {
+	for (i = 0; i < MSIM_AVR_IRQNUM; i++) {
 		if (mcu->intr->irq[i] > 0) {
 			break;
 		}
 	}
 
 	ret = 0;
-	if (i != AVR_IRQ_NUM) {
+	if (i != MSIM_AVR_IRQNUM) {
 		/* Execute ISR */
 		/* Clear selected IRQ */
 		mcu->intr->irq[i] = 0;
@@ -377,15 +366,15 @@ static int handle_irq(struct MSIM_AVR *mcu)
 		/* Disable interrupts globally.
 		 * NOTE: It isn't applicable for AVR XMEGA cores. */
 		if (!mcu->xmega) {
-			MSIM_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
+			MSIM_AVR_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
 		}
 
 		/* Push PC onto the stack */
-		MSIM_StackPush(mcu, (unsigned char)(mcu->pc & 0xFF));
-		MSIM_StackPush(mcu, (unsigned char)((mcu->pc >> 8) & 0xFF));
+		MSIM_AVR_StackPush(mcu, (unsigned char)(mcu->pc & 0xFF));
+		MSIM_AVR_StackPush(mcu, (unsigned char)((mcu->pc >> 8)&0xFF));
 		if (mcu->pc_bits > 16) {
-			MSIM_StackPush(mcu, (unsigned char)
-			               ((mcu->pc >> 16) & 0xFF));
+			MSIM_AVR_StackPush(mcu, (unsigned char)
+			                   ((mcu->pc >> 16) & 0xFF));
 		}
 
 		/* Load interrupt vector to PC */
@@ -402,8 +391,8 @@ static int handle_irq(struct MSIM_AVR *mcu)
 	return ret;
 }
 
-void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVRSREGFlag flag,
-                         unsigned char set_f)
+void MSIM_AVR_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVR_SREGFlag flag,
+                             unsigned char set_f)
 {
 	unsigned char v;
 
@@ -446,8 +435,8 @@ void MSIM_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVRSREGFlag flag,
 	}
 }
 
-unsigned char MSIM_ReadSREGFlag(struct MSIM_AVR *mcu,
-                                enum MSIM_AVRSREGFlag flag)
+uint8_t MSIM_AVR_ReadSREGFlag(struct MSIM_AVR *mcu,
+                              enum MSIM_AVR_SREGFlag flag)
 {
 	unsigned char pos;
 
@@ -486,7 +475,7 @@ unsigned char MSIM_ReadSREGFlag(struct MSIM_AVR *mcu,
 	return (unsigned char)((*mcu->sreg >> pos) & 0x01);
 }
 
-void MSIM_StackPush(struct MSIM_AVR *mcu, unsigned char val)
+void MSIM_AVR_StackPush(struct MSIM_AVR *mcu, unsigned char val)
 {
 	unsigned int sp;
 
@@ -496,7 +485,7 @@ void MSIM_StackPush(struct MSIM_AVR *mcu, unsigned char val)
 	*mcu->sph = (unsigned char) (sp >> 8);
 }
 
-uint8_t MSIM_StackPop(struct MSIM_AVR *mcu)
+uint8_t MSIM_AVR_StackPop(struct MSIM_AVR *mcu)
 {
 	unsigned int sp;
 	unsigned char v;
@@ -508,7 +497,7 @@ uint8_t MSIM_StackPop(struct MSIM_AVR *mcu)
 	return v;
 }
 
-void MSIM_PrintParts(void)
+void MSIM_AVR_PrintParts(void)
 {
 	unsigned int i;
 

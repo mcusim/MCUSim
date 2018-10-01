@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2017, 2018,
- * Dmitry Salychev <darkness.bsd@gmail.com>,
- * Alexander Salychev <ppsalex@rambler.ru> et al.
+ * Copyright (c) 2017, 2018, The MCUSim Contributors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -11,21 +9,20 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <organization> nor the
+ *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdint.h>
 #include <string.h>
@@ -34,12 +31,20 @@
 #include <fcntl.h>
 
 #include "mcusim/mcusim.h"
-#include "mcusim/cli.h"
 #include "mcusim/getopt.h"
 
+#define FUSE_LOW		0
+#define FUSE_HIGH		1
+#define FUSE_EXT		2
+#define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
+#define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
+#define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
+#define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
+#define SET(byte, bit)		((byte)|=(1<<(bit)))
+
 /* Limits of statically allocated MCU memory */
-#define PMSZ			262144		/* Program memory size */
-#define DMSZ			65536		/* Data memory size */
+#define PMSZ			(256*1024)	/* Program memory size */
+#define DMSZ			(64*1024)	/* Data memory size */
 #define PM_PAGESZ		1024		/* PM page size */
 
 #define GDB_RSP_PORT		12750		/* Default GDB RSP port */
@@ -67,27 +72,26 @@ static struct option longopts[] = {
 	{ "help", no_argument, NULL, PRINT_USAGE_OPT },
 	{ "firmware-test", no_argument, NULL, FIRMWARE_TEST_OPT }
 };
-/* END Command line options */
 
 static struct MSIM_AVR mcu;		/* Central MCU descriptor */
-static struct MSIM_AVRBootloader bls;	/* Bootloader section */
-static struct MSIM_AVRInt intr;		/* Interrupts and IRQs */
-static struct MSIM_VCDDetails vcdd;	/* Details about registers to dump */
+static struct MSIM_AVR_Bootloader bls;	/* Bootloader section */
+static struct MSIM_AVR_Int intr;	/* Interrupts and IRQs */
+static struct MSIM_AVR_VCDDetails vcdd;	/* Details about registers to dump */
 
 /* Statically allocated memory for MCU */
-static unsigned char pm[PMSZ];			/* Program memory */
-static unsigned char pmp[PM_PAGESZ];		/* Page buffer (PM) */
-static unsigned char dm[DMSZ];			/* Data memory */
-static unsigned char mpm[PMSZ];			/* Match points memory */
+static unsigned char pm[PMSZ];		/* Program memory */
+static unsigned char pmp[PM_PAGESZ];	/* Page buffer (PM) */
+static unsigned char dm[DMSZ];		/* Data memory */
+static unsigned char mpm[PMSZ];		/* Match points memory */
 
 /* VCD dump options */
-static char vcd_regs[VCD_REGS_MAX][16];		/* MCU registers to dump */
-static unsigned int vcd_rn;			/* Number of registers */
-static char print_regs;				/* Print available registers
-						   which can be dumped */
+static char vcd_regs[MSIM_AVR_VCD_REGS][16]; /* MCU registers to dump */
+static unsigned int vcd_rn;		/* Number of registers */
+static char print_regs;			/* Print available registers
+					   which can be dumped */
 
 /* MCU memory operations */
-static struct MSIM_MemOp memops[MAX_MEMOPS];
+static struct MSIM_AVR_MemOp memops[MAX_MEMOPS];
 static unsigned short memops_num;
 
 static void print_usage(void);
@@ -98,10 +102,10 @@ static void parse_dump(char *cmd);
 static int parse_rsp_port(const char *opt);
 static int parse_memop(char *opt);
 static unsigned int parse_freq(const char *opt);
-static int apply_memop(struct MSIM_AVR *m, struct MSIM_MemOp *mo);
-static int set_fuse(struct MSIM_AVR *m, struct MSIM_MemOp *mo,
+static int apply_memop(struct MSIM_AVR *m, struct MSIM_AVR_MemOp *mo);
+static int set_fuse(struct MSIM_AVR *m, struct MSIM_AVR_MemOp *mo,
                     unsigned int fuse_n);
-static int set_lock(struct MSIM_AVR *m, struct MSIM_MemOp *mo);
+static int set_lock(struct MSIM_AVR *m, struct MSIM_AVR_MemOp *mo);
 
 int main(int argc, char *argv[])
 {
@@ -109,23 +113,22 @@ int main(int argc, char *argv[])
 	FILE *fp;
 	int c, rsp_port, sim_retcode;
 	char *partno, *luap;
-	unsigned int i, j, regs;
-	unsigned int dump_regs;		/* (1) */
-	unsigned int freq;
-	unsigned char trap_at_isr;	/* (2) */
-	unsigned char firmware_test;	/* (3) */
-	/* 1. Number of registers to store in VCD dump.
-	 * 2. Flag to trap debugger right before interrupt service
-	 *    routine execution.
-	 * 3. Start simulator without waiting for a debugger in order to test
-	 *    firmware. */
+	uint32_t i, j, regs;
+	uint32_t freq;
+	uint32_t dump_regs;	/* # of registers to store in VCD dump. */
+	uint8_t trap_at_isr;	/* Flag to trap debugger right before ISR. */
+	uint8_t firmware_test;	/* Start simulator without waiting for a
+	                           debugger in order to test firmware. */
 
-	partno = luap = NULL;
-	vcd_rn = print_regs = memops_num = 0;
-	rsp_port = GDB_RSP_PORT;
+	partno = NULL;
+	luap = NULL;
+	vcd_rn = 0;
+	print_regs = 0;
+	memops_num = 0;
 	freq = 0;
 	trap_at_isr = 0;
 	firmware_test = 0;
+	rsp_port = GDB_RSP_PORT;
 
 	c = getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
 	while (c != -1) {
@@ -190,7 +193,7 @@ int main(int argc, char *argv[])
 	}
 
 	if ((partno != NULL) && (!strcmp(partno, "?"))) {
-		MSIM_PrintParts();
+		MSIM_AVR_PrintParts();
 		return 2;
 	}
 	print_version();
@@ -230,7 +233,7 @@ int main(int argc, char *argv[])
 	mcu.intr = &intr;
 	mcu.vcdd = &vcdd;
 	intr.trap_at_isr = trap_at_isr;
-	if (MSIM_InitAVR(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp) != 0) {
+	if (MSIM_AVR_Init(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp) != 0) {
 		fprintf(stderr, "[e]: AVR %s cannot be initialized!\n",
 		        partno);
 		return 1;
@@ -347,7 +350,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Load Lua peripherals if it is required */
-	if (luap && MSIM_LoadLuaPeripherals(&mcu, luap)) {
+	if (luap && MSIM_AVR_LUALoadModels(&mcu, luap)) {
 		fprintf(stderr, "[e]: Cannot load Lua device models\n");
 		return 1;
 	}
@@ -359,12 +362,12 @@ int main(int argc, char *argv[])
 	if (!firmware_test) {
 		printf("Listening for incoming GDB connections at "
 		       "localhost:%d...\n", rsp_port);
-		MSIM_RSPInit(&mcu, rsp_port);
+		MSIM_AVR_RSPInit(&mcu, rsp_port);
 	}
-	sim_retcode = MSIM_SimulateAVR(&mcu, 0, mcu.flashend+1, firmware_test);
-	MSIM_CleanLuaPeripherals();
+	sim_retcode = MSIM_AVR_Simulate(&mcu, 0, mcu.flashend+1, firmware_test);
+	MSIM_AVR_LUACleanModels();
 	if (!firmware_test) {
-		MSIM_RSPClose();
+		MSIM_AVR_RSPClose();
 	}
 
 	return sim_retcode;
@@ -561,7 +564,7 @@ static int parse_memop(char *opt)
 	return 0;
 }
 
-static int apply_memop(struct MSIM_AVR *m, struct MSIM_MemOp *mo)
+static int apply_memop(struct MSIM_AVR *m, struct MSIM_AVR_MemOp *mo)
 {
 	int r;
 
@@ -581,7 +584,7 @@ static int apply_memop(struct MSIM_AVR *m, struct MSIM_MemOp *mo)
 	return r;
 }
 
-static int set_fuse(struct MSIM_AVR *m, struct MSIM_MemOp *mo,
+static int set_fuse(struct MSIM_AVR *m, struct MSIM_AVR_MemOp *mo,
                     unsigned int fuse_n)
 {
 	unsigned int fusev;
@@ -607,7 +610,7 @@ static int set_fuse(struct MSIM_AVR *m, struct MSIM_MemOp *mo,
 	return 0;
 }
 
-static int set_lock(struct MSIM_AVR *m, struct MSIM_MemOp *mo)
+static int set_lock(struct MSIM_AVR *m, struct MSIM_AVR_MemOp *mo)
 {
 	unsigned int lockv;
 

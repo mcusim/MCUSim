@@ -27,44 +27,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
-#ifndef MSIM_AVR_PERIPHERAL_LUA_H_
-#define MSIM_AVR_PERIPHERAL_LUA_H_ 1
+#include <stdlib.h>
+#include <string.h>
 
-#ifndef MSIM_MAIN_HEADER_H_
-#error "Please, include mcusim/mcusim.h instead of this header."
-#endif
+#include "mcusim/avr/sim/m2560.h"
+#include "mcusim/avr/sim/mcu_init.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include "mcusim/avr/sim/sim.h"
-
-/* Maximum number of device models defined as Lua scripts to be loaded
- * during a simulation. */
-#define LUA_PERIPHERALS				256
-
-#ifdef LUA_FOUND
-
-/* Load peripherals written in Lua from a given list file. */
-int MSIM_LoadLuaPeripherals(struct MSIM_AVR *mcu, const char *);
-/* Close previously created Lua states. */
-void MSIM_CleanLuaPeripherals(void);
-/* Call a "tick" function of the models during each cycle of simulation. */
-void MSIM_TickLuaPeripherals(struct MSIM_AVR *mcu);
-
-#else
-
-/* Empty macros to replace function which cannot be implemented without
- * Lua library. */
-#define MSIM_LoadLuaPeripherals(mcu, file)	1
-#define MSIM_CleanLuaPeripherals(void)
-#define MSIM_TickLuaPeripherals(mcu)
-
-#endif /* LUA_FOUND */
-
-#ifdef __cplusplus
+int MSIM_M2560Init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
+{
+	return mcu_init(mcu, args);
 }
-#endif
-
-#endif /* MSIM_AVR_PERIPHERAL_LUA_H_ */

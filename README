@@ -24,14 +24,14 @@ How can I start a discussion?
 -----------------------------
 
  Feel free to ask questions and start a discussion in the mailing lists for
- users or developers. There is no specific rules which one to choose, so
+ users or developers. There are no specific rules which one to choose, so
  subscribe and send a letter.
 
 How can I join the development?
 -------------------------------
 
  To join the development just code the feature you want to add and send
- your patch in the mailing list. Before you start coding check the latest
+ your patch to the mailing list. Before you start coding check the latest
  development release of MCUSim from our git repository or try to find a
  ticket at https://trac.mcusim.org/report. It might be that your feature has
  already been implemented.

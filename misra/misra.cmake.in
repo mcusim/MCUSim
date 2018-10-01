@@ -26,9 +26,9 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# CMake script to check MISRA C:2012 rules by "make misra" command
+# CMake script to check MISRA C:2012 rules by "make misra" command.
 #
-file(GLOB C_FILES "@CMAKE_CURRENT_SOURCE_DIR@/../*.c")
+file(GLOB_RECURSE C_FILES "@CMAKE_SOURCE_DIR@/src/*.c")
 #file(GLOB_RECURSE C_FILES "@CMAKE_CURRENT_SOURCE_DIR@/../tests/*.c")
 
 # Load modules from our source tree too

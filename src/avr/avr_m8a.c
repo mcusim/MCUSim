@@ -37,8 +37,17 @@
 #include <inttypes.h>
 
 #include "mcusim/mcusim.h"
-#include "mcusim/avr/sim/simm8a.h"
+#include "mcusim/avr/sim/m8a.h"
 #include "mcusim/avr/sim/mcu_init.h"
+
+#define FUSE_LOW		0
+#define FUSE_HIGH		1
+#define FUSE_EXT		2
+#define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
+#define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
+#define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
+#define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
+#define SET(byte, bit)		((byte)|=(1<<(bit)))
 
 #define NOT_CONNECTED		0xFFU
 #define COMPARE_MATCH		75

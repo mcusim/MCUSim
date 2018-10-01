@@ -68,8 +68,12 @@ if (WITH_XSPICE)
 	message(STATUS "[OPTION] Building with NGSpice make: ${_NGSPICE_MAKE}")
 
 	# Set flags to link code model library against MCUSim library
-	set(MSIM_CFLAGS "-I${CMAKE_SOURCE_DIR}/include")
-	set(MSIM_LDFLAGS "-L${CMAKE_BINARY_DIR}")
+	set(MSIM_CFLAGS "$ENV{CFLAGS} -I${CMAKE_BINARY_DIR}/include")
+	set(MSIM_LDFLAGS "$ENV{LDFLAGS} -L${CMAKE_BINARY_DIR}")
+	if (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
+		set(MSIM_CFLAGS "${MSIM_CFLAGS} -I/usr/local/include")
+		set(MSIM_LDFLAGS "${MSIM_LDFLAGS} -L/usr/local/lib")
+	endif()
 
 	# Copy script to apply NGSpice patches
 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/patch-ngspice-sources DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches)
@@ -99,7 +103,7 @@ if (WITH_XSPICE)
 		# Patch working directory: SOURCE_DIR
 		PATCH_COMMAND "../patches/patch-ngspice-sources"
 		# Configuration working directory: BINARY_DIR
-		CONFIGURE_COMMAND "../src/configure" --enable-xspice --disable-debug --with-readline=yes
+		CONFIGURE_COMMAND "../src/configure" CFLAGS=${MSIM_CFLAGS} LDFLAGS=${MSIM_LDFLAGS} --enable-xspice --disable-debug --with-readline=yes
 		# Build working directory: BINARY_DIR
 		BUILD_COMMAND "${_NGSPICE_MAKE}"
 		INSTALL_COMMAND ""

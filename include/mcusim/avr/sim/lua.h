@@ -27,8 +27,12 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
-#ifndef MSIM_CLI_H_
-#define MSIM_CLI_H_ 1
+#ifndef MSIM_AVR_LUA_H_
+#define MSIM_AVR_LUA_H_ 1
+
+#ifndef MSIM_MAIN_HEADER_H_
+#error "Please, include mcusim/mcusim.h instead of this header."
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,16 +40,31 @@ extern "C" {
 
 #include "mcusim/avr/sim/sim.h"
 
-/* Structure to describe a memory operation requested by user. */
-struct MSIM_MemOp {
-	char memtype[16];		/* Type of MCU memory */
-	char operation;			/* Memory operation */
-	char operand[4096];		/* Path to file, value, etc. */
-	char format;			/* Optional, value format */
-};
+/* Maximum number of device models defined as Lua scripts to be loaded
+ * during a simulation. */
+#define MSIM_AVR_LUAMODELS			256
+
+#ifdef LUA_FOUND
+
+/* Load peripherals written in Lua from a given list file. */
+int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *);
+/* Close previously created Lua states. */
+void MSIM_AVR_LUACleanModels(void);
+/* Call a "tick" function of the models during each cycle of simulation. */
+void MSIM_AVR_LUATickModels(struct MSIM_AVR *mcu);
+
+#else
+
+/* Empty macros to replace function which cannot be implemented without
+ * Lua library. */
+#define MSIM_AVR_LUALoadModels(mcu, file)	1
+#define MSIM_AVR_LUACleanModels(void)
+#define MSIM_AVR_LUATickModels(mcu)
+
+#endif /* LUA_FOUND */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* MSIM_CLI_H_ */
+#endif /* MSIM_AVR_LUA_H_ */

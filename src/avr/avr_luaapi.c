@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "mcusim/mcusim.h"
+#include "mcusim/avr/sim/luaapi.h"
 #ifdef LUA_FOUND
 #include "lua.h"
 #include "lualib.h"
@@ -46,7 +47,7 @@ int flua_MSIM_SetState(lua_State *L)
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	unsigned int s = (unsigned int)lua_tointeger(L, 2);
 
-	mcu->state = (enum MSIM_AVRState)s;
+	mcu->state = (enum MSIM_AVR_State)s;
 	return 0; /* Number of results */
 }
 

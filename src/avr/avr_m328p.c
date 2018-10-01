@@ -31,8 +31,17 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "mcusim/avr/sim/simm328p.h"
+#include "mcusim/avr/sim/m328p.h"
 #include "mcusim/avr/sim/mcu_init.h"
+
+#define FUSE_LOW		0
+#define FUSE_HIGH		1
+#define FUSE_EXT		2
+#define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
+#define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
+#define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
+#define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
+#define SET(byte, bit)		((byte)|=(1<<(bit)))
 
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {

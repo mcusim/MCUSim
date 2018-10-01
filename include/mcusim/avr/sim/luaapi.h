@@ -27,21 +27,17 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  *
- * This file contains mcusim API for models written in Lua, i.e. it declares
+ * This file contains MCUSim API for models written in Lua, i.e. it declares
  * C functions of the simulator which can be called from the models.
  */
-#ifndef MSIM_AVR_PERIPHERAL_LUAAPI_H_
-#define MSIM_AVR_PERIPHERAL_LUAAPI_H_ 1
-
-#ifndef MSIM_MAIN_HEADER_H_
-#error "Please, include mcusim/mcusim.h instead of this header."
-#endif
+#ifndef MSIM_AVR_LUAAPI_H_
+#define MSIM_AVR_LUAAPI_H_ 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "mcusim/avr/sim/sim.h"
+#include "mcusim/mcusim.h"
 #ifdef LUA_FOUND
 #include "lua.h"
 #include "lualib.h"
@@ -156,4 +152,4 @@ int flua_MSIM_Freq(lua_State *L);
 }
 #endif
 
-#endif /* MSIM_AVR_PERIPHERAL_LUAAPI_H_ */
+#endif /* MSIM_AVR_LUAAPI_H_ */

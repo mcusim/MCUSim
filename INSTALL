@@ -48,7 +48,7 @@ Install from tarball (e.g. mcusim-0.2.0.tar.gz)
  -DWITH_LUA=True -DWITH_XSPICE=True (see 'Advanced install' section for
  details).
 
- FreeBSD users will have to add "-I/usr/local/include" to the CFLAGS
+ FreeBSD users may have to add "-I/usr/local/include" to the CFLAGS
  environment variable and "-L/usr/local/lib" to the LDFLAGS environment
  variable to let MCUSim find GNU readline headers and libraries if
  -DWITH_XSPICE option has been enabled.
@@ -114,7 +114,7 @@ Advanced install
  -DNGSPICE_TARBALL_MD5=a11c1f99753934be7d60c0ab43821bbc
         MD5 hash of the NGSpice tarball provided via -DNGSPICE_TARBALL option.
 
- -DWITH_FPIC=True
+ -DWITH_FPIC=False
         Build MCUSim library with a position-independent code (-fPIC) option.
         This one is true by default and can be deactivated by providing a
         false value.

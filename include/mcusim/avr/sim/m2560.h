@@ -27,65 +27,43 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
-#ifndef MSIM_AVR_VCD_DUMP_H_
-#define MSIM_AVR_VCD_DUMP_H_ 1
-
-#ifndef MSIM_MAIN_HEADER_H_
-#error "Please, include mcusim/mcusim.h instead of this header."
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef MSIM_AVR_M2560_H_
+#define MSIM_AVR_M2560_H_ 1
 
 #include <stdio.h>
 #include <stdint.h>
 
-#define VCD_REGS_MAX		512
+/* Include headers specific to the ATMega2560 */
+#define _SFR_ASM_COMPAT 1
+#define __AVR_ATmega2560__ 1
+#include "mcusim/avr/io.h"
+#include "mcusim/mcusim.h"
 
-/* Register of MCU which can be written into VCD file */
-struct MSIM_VCDRegister {
-	char name[16];			/* Name of a register (DDRB, etc.) */
-	long off;			/* Offset to the register in RAM */
-	unsigned char *addr;		/* Pointer to the register in RAM*/
-	uint32_t oldv;
-};
+#define MCU_NAME	"ATmega2560"
 
-/* Specific bit of a register */
-struct MSIM_VCDBit {
-	/* Index of a register (or MSB of a 16-bit register) */
-	short regi;
-	/* Bit number (may be negative to include all bits of a register
-	 * to dump) */
-	short n;
-	/* Index of LSB of a register (usually followed by L suffix,
-	 * like TCNT1L, may be negative to show that register is 8-bit one) */
-	int16_t reg_lowi;
-	/* Name of a register requested by user (TCNT1 instead of TCNT1H,
-	 * for instance) */
-	char name[16];
-};
+#define RESET_PC	0x0000	/* Reset vector address, in bytes */
+#define IVT_ADDR	0x0002	/* Interrupt vectors address, in bytes */
+#define PC_BITS		17		/* PC bit capacity */
+#define LBITS_DEFAULT	0xFF		/* Default lock bits */
 
-/* Structure to keep details about registers to be dumped into VCD file */
-struct MSIM_VCDDetails {
-	/* List of all available registers for VCD dump */
-	struct MSIM_VCDRegister regs[VCD_REGS_MAX];
-	/* Flags to dump the whole register (negative) or
-	 * selected bit only (bit index) */
-	struct MSIM_VCDBit bit[VCD_REGS_MAX];
-};
+#define CLK_SOURCE	AVR_INT_CAL_RC_CLK /* Calibrated Internal RC */
+#define CLK_FREQ	1000000		/* Oscillator frequency, in Hz */
 
-FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname);
+#define GP_REGS		32		/* GP registers, R0, R1, ..., R31 */
+#define IO_REGS		480		/* I/O registers, PORTD, SREG, etc. */
 
-/*
- * Function to dump MCU registers to VCD file.
- * This one is usually called each iteration of the main simulation loop.
- */
-void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
-                       unsigned char fall);
+#define BLS_START	0x03E000	/* First address in BLS, in bytes */
+#define BLS_END		0x03FFFF	/* Last address in BLS, in bytes */
+#define BLS_SIZE	8192		/* BLS size, in bytes */
 
-#ifdef __cplusplus
-}
-#endif
+#define FLASHSTART	0x0000
+#define RAMSIZE		8192		/* Internal SRAM */
+#define E2START		0x0000
+#define E2SIZE		4096
 
-#endif /* MSIM_AVR_VCD_DUMP_H_ */
+#define SREG		_SFR_IO8(0x3F)
+#define SPH		_SFR_IO8(0x3E)
+#define SPL		_SFR_IO8(0x3D)
+#include "mcusim/avr/sim/vcd_regs.h"
+
+#endif /* MSIM_AVR_M2560_H_ */

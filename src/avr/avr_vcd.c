@@ -39,20 +39,18 @@ static void print_reg(char *buf, unsigned int len, unsigned char r);
 static void print_regbit(char *buf, unsigned int len, unsigned char r,
                          short bit);
 
-FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
+FILE *MSIM_AVR_VCDOpenDump(struct MSIM_AVR *mcu, const char *dumpname)
 {
 	FILE *f;
 	time_t timer;
 	char buf[32];
 	struct tm *tm_info;
 	unsigned int i, regs;
-	struct MSIM_AVR *mcu;
-	struct MSIM_VCDRegister *reg;
-	struct MSIM_VCDRegister *reg_low;
+	struct MSIM_AVR_VCDRegister *reg;
+	struct MSIM_AVR_VCDRegister *reg_low;
 	uint8_t rh, rl;
 	uint32_t reg_val;
 
-	mcu = (struct MSIM_AVR *)vmcu;
 	regs = sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0];
 
 	f = fopen(dumpname, "w");
@@ -140,19 +138,17 @@ FILE *MSIM_VCDOpenDump(void *vmcu, const char *dumpname)
 	return f;
 }
 
-void MSIM_VCDDumpFrame(FILE *f, void *vmcu, unsigned long tick,
-                       unsigned char fall)
+void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, unsigned long tick,
+                           unsigned char fall)
 {
 	static unsigned int clk_prints_left = 0;
 	unsigned int i, regs;
 	char buf[32], print_tick, new_value;
-	struct MSIM_AVR *mcu;
-	struct MSIM_VCDRegister *reg;
-	struct MSIM_VCDRegister *reg_low;
+	struct MSIM_AVR_VCDRegister *reg;
+	struct MSIM_AVR_VCDRegister *reg_low;
 	uint8_t rh, rl;
 	uint32_t reg_val;
 
-	mcu = (struct MSIM_AVR *)vmcu;
 	regs = sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0];
 	print_tick = 1;
 	new_value = 0;

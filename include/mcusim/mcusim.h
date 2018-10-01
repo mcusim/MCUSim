@@ -29,14 +29,13 @@
 #ifndef MSIM_MAIN_HEADER_H_
 #define MSIM_MAIN_HEADER_H_ 1
 
+#include "mcusim/avr/sim/bootloader.h"
+#include "mcusim/avr/sim/decoder.h"
+#include "mcusim/avr/sim/gdb.h"
+#include "mcusim/avr/sim/interrupt.h"
+#include "mcusim/avr/sim/lua.h"
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simcore.h"
-#include "mcusim/avr/sim/decoder.h"
-#include "mcusim/avr/sim/bootloader.h"
-#include "mcusim/avr/sim/peripheral_lua.h"
-#include "mcusim/avr/sim/peripheral_luaapi.h"
-#include "mcusim/avr/sim/gdb_rsp.h"
-#include "mcusim/avr/sim/interrupt.h"
-#include "mcusim/avr/sim/vcd_dump.h"
+#include "mcusim/avr/sim/vcd.h"
 
 #endif /* MSIM_MAIN_HEADER_H_ */

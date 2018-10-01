@@ -27,8 +27,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
-#ifndef MSIM_AVR_SIMM8A_H_
-#define MSIM_AVR_SIMM8A_H_ 1
+#ifndef MSIM_AVR_M8A_H_
+#define MSIM_AVR_M8A_H_ 1
 
 #include <stdio.h>
 #include <stdint.h>
@@ -72,4 +72,4 @@ int MSIM_M8AProvideIRQs(struct MSIM_AVR *mcu);
 #define SPL		_SFR_IO8(0x3D)
 #include "mcusim/avr/sim/vcd_regs.h"
 
-#endif /* MSIM_AVR_SIMM8A_H_ */
+#endif /* MSIM_AVR_M8A_H_ */
