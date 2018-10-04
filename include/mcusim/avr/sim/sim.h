@@ -166,7 +166,8 @@ struct MSIM_AVR {
 
 	unsigned char *pm;		/* Program memory (PM) */
 	unsigned char *pmp;		/* Page buffer of PM */
-	unsigned char *dm;		/* GP, I/O registers and SRAM */
+	unsigned char *dm;		/* GP, I/O registers and SRAM */ 
+	// What is size of dm? 
 	unsigned char *mpm;		/* Memory to store instructions at
 					   breakpoints */
 	unsigned long pm_size;		/* Allocated size of PM */

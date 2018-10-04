@@ -34,10 +34,99 @@
 
 #include "mcusim/avr/sim/simm328p.h"
 
+static void tick_timer0(struct MSIM_AVR *mcu);
+
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
 #include "mcusim/avr/sim/mcu_init.h"
 	return 0;
+}
+
+int MSIM_M328PTickTimers(void *m)
+{
+	struct MSIM_AVR *mcu;
+
+	mcu = (struct MSIM_AVR *)m;
+	tick_timer0(mcu);
+
+	return 0;
+}
+
+static void tick_timer0(struct MSIM_AVR *mcu){
+	
+	static unsigned int tc0_presc;
+	static unsigned int tc0_ticks;
+	unsigned char cs0;			/* Clock Select bits CS0[2:0] */
+	/* TODO: Wave form generation WGM */
+	unsigned int presc;			/* Prescaler value */
+
+	cs0 = mcu->dm[TCCR0B]&0x7;	/* &00000111 */
+
+	switch (cs0) {
+	case 0x1:
+		presc = 1;			/* No prescaling, clk_io */
+		break;
+	case 0x2:
+		presc = 8;			/* clk_io/8 */
+		break;
+	case 0x3:
+		presc = 64;			/* clk_io/64 */
+		break;
+	case 0x4:
+		presc = 256;		/* clk_io/256 */
+		break;
+	case 0x5:
+		presc = 1024;		/* clk_io/1024 */
+		break;
+	case 0x6:				/* Ext. clock on T0(PD4) (fall) */
+		if (IS_FALL(init_portd, mcu->dm[PORTD], PD4) ||
+		                IS_FALL(init_pind, mcu->dm[PIND], PD4)) {
+			if (mcu->dm[TCNT0] == 0xFF) {
+				mcu->dm[TCNT0] = 0;			/* Reset Timer/Counter0 */
+				mcu->dm[TIFR] |= (1<<TOV0);	/* Timer/Counter0 overflow occured */
+			} else {						/* Count UP on tick */
+				mcu->dm[TCNT0]++;
+			}
+		}
+		tc0_presc = 0;
+		tc0_ticks = 0;
+		return;
+	case 0x7:				/* Ext. clock on T0(PD4) (rise) */
+		if (IS_RISE(init_portd, mcu->dm[PORTD], PD4) ||
+		                IS_RISE(init_pind, mcu->dm[PIND], PD4)) {
+			if (mcu->dm[TCNT0] == 0xFF) {
+				mcu->dm[TCNT0] = 0;			/* Reset Timer/Counter0 */
+				mcu->dm[TIFR] |= (1<<TOV0);	/* Timer/Counter0 overflow occured */
+			} else {						/* Count UP on tick */
+				mcu->dm[TCNT0]++;
+			}
+		}
+		tc0_presc = 0;
+		tc0_ticks = 0;
+		return;
+	case 0x0:			/* No clock source (stopped mode) */
+	default:			/* Should not happen! */
+		tc0_presc = 0;
+		tc0_ticks = 0;
+		return;
+	}
+		/* Internal clock */
+	if (presc != tc0_presc) {
+		tc0_presc = presc;
+		tc0_ticks = 0;
+	}
+		/* Timer Counting mechanism */	
+	if (tc0_ticks == (tc0_presc-1)) {
+		if (mcu->dm[TCNT0] == 0xFF) {
+			mcu->dm[TCNT0] = 0;			/* Reset Timer/Counter0 */
+			mcu->dm[TIFR] |= (1<<TOV0);	/* Timer/Counter0 overflow occured */
+		} else {						/* Count UP on tick */
+			mcu->dm[TCNT0]++;
+		}
+		tc0_ticks = 0;					/* Calculate next tick */			
+		return;
+	}
+	tc0_ticks++;
 }
 
 int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
