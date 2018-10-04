@@ -37,6 +37,7 @@
 #include <stdint.h>
 #include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/luaapi.h"
+#include "mcusim/log.h"
 #ifdef LUA_FOUND
 #include "lua.h"
 #include "lualib.h"
@@ -56,6 +57,13 @@ int flua_MSIM_Freq(lua_State *L)
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	lua_pushinteger(L, (long)mcu->freq);
 	return 1; /* Number of results */
+}
+
+int flua_MSIM_Print(lua_State *L)
+{
+	const char *msg = (const char *)lua_tostring(L, 1);
+	MSIM_LOG_INFO(msg);
+	return 0;
 }
 
 int flua_AVR_RegBit(lua_State *L)

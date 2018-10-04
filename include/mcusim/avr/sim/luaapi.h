@@ -146,6 +146,15 @@ int flua_MSIM_SetState(lua_State *L);
  */
 int flua_MSIM_Freq(lua_State *L);
 
+/* Function to print anything from a Lua model. It is supposed to be a
+ * replacement of a Lua print() function and based on the MCUSim logging
+ * mechanism.
+ *
+ * Lua parameters:
+ * 	const char *message;
+ */
+int flua_MSIM_Print(lua_State *L);
+
 #endif /* LUA_FOUND */
 
 #ifdef __cplusplus

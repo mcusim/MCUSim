@@ -87,7 +87,7 @@ int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *file)
 			break;
 		}
 
-		/* Register mcusim API functions */
+		/* Register MCUSim API functions */
 		lua_pushcfunction(lua_states[i], flua_AVR_IOBit);
 		lua_setglobal(lua_states[i], "AVR_IOBit");
 		lua_pushcfunction(lua_states[i], flua_AVR_ReadIO);
@@ -108,6 +108,9 @@ int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *file)
 		lua_setglobal(lua_states[i], "MSIM_SetState");
 		lua_pushcfunction(lua_states[i], flua_MSIM_Freq);
 		lua_setglobal(lua_states[i], "MSIM_Freq");
+		/* Override existing Lua functions */
+		lua_pushcfunction(lua_states[i], flua_MSIM_Print);
+		lua_setglobal(lua_states[i], "print");
 
 		/* Add registers available for the current MCU model to
 		 * the Lua state. */

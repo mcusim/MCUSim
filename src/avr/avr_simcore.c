@@ -33,8 +33,9 @@
 #include <string.h>
 #include <limits.h>
 
-#include "mcusim/hex/ihex.h"
 #include "mcusim/mcusim.h"
+#include "mcusim/hex/ihex.h"
+#include "mcusim/log.h"
 
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
@@ -48,14 +49,14 @@ typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 static int handle_irq(struct MSIM_AVR *mcu);
 
 /* Cell contains AVR MCU part and its init function. */
-struct init_cell {
+struct init_func_info {
 	char partno[20];
 	char name[20];
 	init_func f;
 };
 
 /* Init functions for supported AVR MCUs. */
-static struct init_cell init_funcs[] = {
+static struct init_func_info init_funcs[] = {
 	{ "m8",		"ATmega8",	MSIM_M8AInit },
 	{ "m8a",	"ATmega8A",	MSIM_M8AInit },
 	{ "m328",	"ATmega328",	MSIM_M328Init },
@@ -72,7 +73,8 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 	uint64_t tick;		/* # of ticks (rises+falls) sinse start */
 	uint8_t tick_ovf;	/* Ticks overflow flag */
 	int ret_code;		/* Return code */
-	char dump_name[256];
+	char dump_name[256];	/* Name of a VCD dump file */
+	char log_buf[1024];	/* Buffer to keep a log message */
 
 	tick = 0;
 	tick_ovf = 0;
@@ -85,14 +87,16 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		         mcu->name);
 		vcd_f = MSIM_AVR_VCDOpenDump(mcu, dump_name);
 		if (!vcd_f) {
-			fprintf(stderr, "[e]: Failed to open dump file: "
-			        "dump.vcd\n");
+			snprintf(log_buf, sizeof log_buf, "failed to open a "
+			         "VCD file %s to write to", dump_name);
+			MSIM_LOG_FATAL(log_buf);
 			return -1;
 		}
 	}
 
 	/* Force MCU to run in a firmware-test mode. */
 	if (firmware_test) {
+		MSIM_LOG_DEBUG("running in a firmware test mode");
 		mcu->state = AVR_RUNNING;
 	}
 
@@ -122,9 +126,17 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		 * source of this state setting is a command from debugger.
 		 */
 		if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_STOP)) {
+			if (MSIM_LOG_ISDEBUG) {
+				snprintf(log_buf, sizeof log_buf, "simulation "
+				         "terminated because of stopped mcu, "
+				         "pc=0x%06lX", mcu->pc);
+				MSIM_LOG_DEBUG(log_buf);
+			}
 			break;
 		}
 		if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_TESTFAIL)) {
+			MSIM_LOG_DEBUG("simulation terminated because of a "
+			               "failed test");
 			ret_code = 1;
 			break;
 		}
@@ -133,10 +145,12 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		if (!firmware_test && !mcu->ic_left &&
 		                (mcu->state == AVR_STOPPED) &&
 		                MSIM_AVR_RSPHandle()) {
-			if (vcd_f) {
-				fclose(vcd_f);
-			}
-			return 1;
+			snprintf(log_buf, sizeof log_buf, "handling message "
+			         "from GDB RSP client failed: pc=0x%06lX, "
+			         "pc+1=0x%06lX", mcu->pc, mcu->pc+1);
+			MSIM_LOG_FATAL(log_buf);
+			ret_code = 1;
+			break;
 		}
 
 		/* Tick peripherals written in Lua */
@@ -152,14 +166,13 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 
 		/* Test scope of a program counter */
 		if ((mcu->pc+1) >= mcu->pm_size) {
-			if (vcd_f) {
-				fclose(vcd_f);
-			}
-			fprintf(stderr, "[e]: Program counter is out of "
-			        "scope: pc=0x%4lX, pc+1=0x%4lX, "
-			        "flash_addr=0x%4lX\n",
-			        mcu->pc, mcu->pc+1, mcu->pm_size-1);
-			return 1;
+			snprintf(log_buf, sizeof log_buf, "program counter "
+			         "is out of scope: pc=0x%06lX, pc+1=0x%06lX, "
+			         "flash_addr=0x%06lX", mcu->pc, mcu->pc+1,
+			         mcu->pm_size-1);
+			MSIM_LOG_FATAL(log_buf);
+			ret_code = 1;
+			break;
 		}
 
 		/* Decode next instruction. It's usually hard to say in
@@ -184,10 +197,12 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		if ((mcu->ic_left || mcu->state == AVR_RUNNING ||
 		                mcu->state == AVR_MSIM_STEP) &&
 		                MSIM_AVR_Step(mcu)) {
-			if (vcd_f) {
-				fclose(vcd_f);
-			}
-			return 1;
+			snprintf(log_buf, sizeof log_buf, "decoding "
+			         "instruction failed: pc=0x%06lX, "
+			         "pc+1=0x%06lX", mcu->pc, mcu->pc+1);
+			MSIM_LOG_FATAL(log_buf);
+			ret_code = 1;
+			break;
 		}
 
 		/* Provide IRQs (MCU-defined!) based on MCU flags and handle
@@ -224,20 +239,19 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 
 		/* Increment ticks or print a warning message in case of
 		 * maximum amount of ticks reached (extremely unlikely
-		 * if compiler supports "unsigned long long" type).
-		 */
+		 * if compiler supports "unsigned long long" type). */
 		if (tick == TICKS_MAX) {
 			tick_ovf = 1;
-			printf("[!]: Maximum amount of simulation ticks "
-			       "reached!\n");
+			MSIM_LOG_WARN("maximum amount of simulation ticks "
+			              "reached");
 			if (vcd_f) {
-				printf("[!]: VCD dump won't be recorded "
-				       "further\n");
+				MSIM_LOG_WARN("VCD dump will not be recorded "
+				              "further");
 			}
 		} else {
 			tick++;
 		}
-		/* Dump fall to VCD */
+		/* Dump a fall to VCD */
 		if (vcd_f && !tick_ovf) {
 			MSIM_AVR_VCDDumpFrame(vcd_f, mcu, tick, CLK_FALL);
 		}
@@ -257,6 +271,7 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
 {
 	unsigned int i;
 	char mcu_found = 0;
+	char log[1024];
 	struct MSIM_InitArgs args;
 
 	args.pm = pm;
@@ -276,14 +291,14 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
 	}
 
 	if (!mcu_found) {
-		fprintf(stderr, "[e]: Model is not supported: %s\n",
-		        mcu_name);
+		snprintf(log, sizeof log, "MCU model is not supported: %s",
+		         mcu_name);
+		MSIM_LOG_FATAL(log);
 		return -1;
 	}
 
 	if (load_progmem(mcu, fp)) {
-		fprintf(stderr, "[e]: Program memory cannot be loaded from a "
-		        "file\n");
+		MSIM_LOG_FATAL("program memory cannot be loaded from a file");
 		return -1;
 	}
 	mcu->state = AVR_STOPPED;
@@ -295,9 +310,10 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
 static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 {
 	IHexRecord rec, mem_rec;
+	char log[1024];
 
-	if (!fp) {
-		fprintf(stderr, "[e]: Cannot read from the filestream\n");
+	if (fp == NULL) {
+		MSIM_LOG_FATAL("cannot read program memory from a file");
 		return -1;
 	}
 
@@ -330,12 +346,14 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 
 		mem_rec.checksum = Checksum_IHexRecord(&mem_rec);
 		if (mem_rec.checksum != rec.checksum) {
-			printf("[e]: Checksum is not correct: 0x%X (memory) "
-			       "!= 0x%X (file)\nFile record:\n",
-			       mem_rec.checksum, rec.checksum);
-			Print_IHexRecord(&rec);
-			printf("[e]: Memory record: \n");
-			Print_IHexRecord(&mem_rec);
+			snprintf(log, sizeof log, "IHEX record checksum is "
+			         "not correct: 0x%X (memory) != 0x%X (file)",
+			         mem_rec.checksum, rec.checksum);
+			MSIM_LOG_FATAL(log);
+			MSIM_LOG_FATAL("file record:");
+			MSIM_IHEX_PrintRecord(&rec);
+			MSIM_LOG_FATAL("memory record:");
+			MSIM_IHEX_PrintRecord(&mem_rec);
 			return -1;
 		}
 	}
@@ -349,8 +367,7 @@ static int handle_irq(struct MSIM_AVR *mcu)
 
 	/* Let's try to find IRQ with the highest priority:
 	 * i == 0		highest priority
-	 * i == AVR_IRQ_NUM-1	lowest priority
-	 */
+	 * i == AVR_IRQ_NUM-1	lowest priority */
 	for (i = 0; i < MSIM_AVR_IRQNUM; i++) {
 		if (mcu->intr->irq[i] > 0) {
 			break;
@@ -397,7 +414,7 @@ void MSIM_AVR_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVR_SREGFlag flag,
 	unsigned char v;
 
 	if (!mcu) {
-		fprintf(stderr, "[e]: MCU is null");
+		MSIM_LOG_ERROR("illegal MCU descriptor");
 		return;
 	}
 
@@ -441,7 +458,7 @@ uint8_t MSIM_AVR_ReadSREGFlag(struct MSIM_AVR *mcu,
 	unsigned char pos;
 
 	if (!mcu) {
-		fprintf(stderr, "[e]: MCU is null");
+		MSIM_LOG_ERROR("illegal MCU descriptor");
 		return UINT8_MAX;
 	}
 
@@ -499,10 +516,12 @@ uint8_t MSIM_AVR_StackPop(struct MSIM_AVR *mcu)
 
 void MSIM_AVR_PrintParts(void)
 {
-	unsigned int i;
+	uint32_t i;
+	char buf[1024];
 
 	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++) {
-		printf("%-10s= %s\n", init_funcs[i].partno,
-		       init_funcs[i].name);
+		snprintf(buf, sizeof buf, "%s=%s", init_funcs[i].partno,
+		         init_funcs[i].name);
+		MSIM_LOG_INFO(buf);
 	}
 }

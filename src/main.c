@@ -32,6 +32,7 @@
 
 #include "mcusim/mcusim.h"
 #include "mcusim/getopt.h"
+#include "mcusim/log.h"
 
 #define FUSE_LOW		0
 #define FUSE_HIGH		1
@@ -73,7 +74,7 @@ static struct option longopts[] = {
 	{ "firmware-test", no_argument, NULL, FIRMWARE_TEST_OPT }
 };
 
-static struct MSIM_AVR mcu;		/* Central MCU descriptor */
+static struct MSIM_AVR mcu;		/* AVR MCU descriptor */
 static struct MSIM_AVR_Bootloader bls;	/* Bootloader section */
 static struct MSIM_AVR_Int intr;	/* Interrupts and IRQs */
 static struct MSIM_AVR_VCDDetails vcdd;	/* Details about registers to dump */
@@ -113,6 +114,7 @@ int main(int argc, char *argv[])
 	FILE *fp;
 	int c, rsp_port, sim_retcode;
 	char *partno, *luap;
+	char log[1024];		/* Buffer to write a log message to. */
 	uint32_t i, j, regs;
 	uint32_t freq;
 	uint32_t dump_regs;	/* # of registers to store in VCD dump. */
@@ -130,6 +132,10 @@ int main(int argc, char *argv[])
 	firmware_test = 0;
 	rsp_port = GDB_RSP_PORT;
 
+#ifdef DEBUG
+	MSIM_LOG_SetLevel(MSIM_LOG_LVLDEBUG);
+#endif
+
 	c = getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
 	while (c != -1) {
 		switch (c) {
@@ -138,8 +144,8 @@ int main(int argc, char *argv[])
 			break;
 		case 'U':		/* Required. Memory operation. */
 			if (parse_memop(optarg) != 0) {
-				fprintf(stderr, "[e]: Incorrect memory "
-				        "operation specified!\n");
+				MSIM_LOG_FATAL("Incorrect memory operation "
+				               "specified!");
 				return 1;
 			}
 			break;
@@ -153,18 +159,19 @@ int main(int argc, char *argv[])
 			freq = parse_freq(optarg);
 			break;
 		case ':':		/* Missing operand */
-			fprintf(stderr, "[!]: Option -%c requires "
-			        "an operand\n", optopt);
+			snprintf(log, sizeof log, "Option -%c requires an "
+			         "operand", optopt);
+			MSIM_LOG_FATAL(log);
 			return 1;
 		case '?':		/* Unknown option */
-			fprintf(stderr, "[!]: Unknown option: -%c\n",
-			        optopt);
+			snprintf(log, sizeof log, "Unknown option: -%c",
+			         optopt);
+			MSIM_LOG_FATAL(log);
 			return 1;
 		case DUMP_REGS_OPT:	/* Registers to dump into VCD file */
 			parse_dump(optarg);
 			break;
-		case GDB_RSP_PORT_OPT:	/* Set port for incoming connections
-					   from GDB RSP */
+		case GDB_RSP_PORT_OPT:	/* Port for GDB RSP clients */
 			rsp_port = parse_rsp_port(optarg);
 			break;
 		case TRAP_AT_ISR_OPT:	/* Enter stopped mode when interrupt
@@ -185,8 +192,9 @@ int main(int argc, char *argv[])
 			firmware_test = 1;
 			break;
 		default:
-			fprintf(stderr, "[!]: Unknown option: -%c\n",
-			        optopt);
+			snprintf(log, sizeof log, "Unknown option: -%c",
+			         optopt);
+			MSIM_LOG_WARN(log);
 			break;
 		}
 		c = getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
@@ -199,7 +207,7 @@ int main(int argc, char *argv[])
 	print_version();
 	if (partno == NULL) {
 		/* MCU model is necessary! */
-		fprintf(stderr, "[e]: Please, specify MCU model\n");
+		MSIM_LOG_FATAL("Please, specify MCU model (-p option)");
 		return 1;
 	}
 
@@ -211,9 +219,10 @@ int main(int argc, char *argv[])
 			/* Try to open file to read program memory from */
 			fp = fopen(memops[i].operand, "r");
 			if (!fp) {
-				fprintf(stderr, "[e]: Failed to open file to "
-				        "read a content of flash memory "
-				        "from: %s\n", memops[i].operand);
+				snprintf(log, sizeof log, "Failed to open "
+				         "file to read a content of flash "
+				         "memory from: %s", memops[i].operand);
+				MSIM_LOG_FATAL(log);
 				return 1;
 			}
 			/* Mark this operation as applied one */
@@ -221,9 +230,8 @@ int main(int argc, char *argv[])
 		}
 	}
 	if (fp == NULL) {
-		fprintf(stderr, "[e]: It is necessary to fill program "
-		        "memory, i.e. do not forget to "
-		        "-U flash:w:<filename>!\n");
+		MSIM_LOG_FATAL("It is necessary to fill a program memory "
+		               "(option -U flash:w:<filename>)");
 		return 1;
 	}
 
@@ -234,8 +242,9 @@ int main(int argc, char *argv[])
 	mcu.vcdd = &vcdd;
 	intr.trap_at_isr = trap_at_isr;
 	if (MSIM_AVR_Init(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp) != 0) {
-		fprintf(stderr, "[e]: AVR %s cannot be initialized!\n",
-		        partno);
+		snprintf(log, sizeof log, "MCU model %s cannot be initialized",
+		         partno);
+		MSIM_LOG_FATAL(log);
 		return 1;
 	}
 	fclose(fp);
@@ -251,8 +260,10 @@ int main(int argc, char *argv[])
 			if (mcu.vcdd->regs[i].off < 0) {
 				continue;
 			}
-			printf("%s (0x%2lX)\n",
-			       mcu.vcdd->regs[i].name, mcu.vcdd->regs[i].off);
+			snprintf(log, sizeof log, "%s (0x%2lX)",
+			         mcu.vcdd->regs[i].name,
+			         mcu.vcdd->regs[i].off);
+			MSIM_LOG_INFO(log);
 		}
 		return 2;
 	}
@@ -260,10 +271,11 @@ int main(int argc, char *argv[])
 	/* Apply memory modifications */
 	for (i = 0; i < memops_num; i++) {
 		if (apply_memop(&mcu, &memops[i]) != 0) {
-			fprintf(stderr, "[e]: Memory modification failed: "
-			        "memtype=%s, op=%c, val=%s\n",
-			        &memops[i].memtype[0], memops[i].operation,
-			        &memops[i].operand[0]);
+			snprintf(log, sizeof log, "Memory modification "
+			         "failed: memtype=%s, op=%c, val=%s",
+			         &memops[i].memtype[0], memops[i].operation,
+			         &memops[i].operand[0]);
+			MSIM_LOG_FATAL(log);
 			return 1;
 		}
 	}
@@ -337,34 +349,38 @@ int main(int argc, char *argv[])
 
 	/* Try to set required frequency */
 	if (freq > mcu.freq) {
-		fprintf(stderr, "[!]: Frequency %u.%u kHz is above maximum "
-		        "possible %lu.%lu kHz for selected clock source\n",
-		        freq/1000U, freq%1000U,
-		        mcu.freq/1000UL, mcu.freq%1000UL);
+		snprintf(log, sizeof log, "Clock frequency %u.%u kHz is "
+		         "above maximum possible %lu.%lu kHz for a selected "
+		         "clock source", freq/1000U, freq%1000U,
+		         mcu.freq/1000UL, mcu.freq%1000UL);
+		MSIM_LOG_WARN(log);
 	} else if (freq > 0U) {
 		mcu.freq = freq;
 	} else {
-		fprintf(stderr, "[!]: Frequency %u.%u kHz cannot be "
-		        "selected as a clock source\n",
-		        freq/1000U, freq%1000U);
-	}
-
-	/* Load Lua peripherals if it is required */
-	if (luap && MSIM_AVR_LUALoadModels(&mcu, luap)) {
-		fprintf(stderr, "[e]: Cannot load Lua device models\n");
-		return 1;
+		snprintf(log, sizeof log, "Clock frequency %u.%u kHz cannot "
+		         "be selected as a clock source",
+		         freq/1000U, freq%1000U);
+		MSIM_LOG_WARN(log);
 	}
 
 	/* Print MCU configuration */
 	print_config(&mcu);
 
+	/* Load Lua peripherals if it is required */
+	if (luap && MSIM_AVR_LUALoadModels(&mcu, luap)) {
+		MSIM_LOG_FATAL("Loading Lua device models failed");
+		return 1;
+	}
+
 	/* Prepare and run AVR simulation */
 	if (!firmware_test) {
-		printf("Listening for incoming GDB connections at "
-		       "localhost:%d...\n", rsp_port);
+		snprintf(log, sizeof log, "Waiting for incoming GDB "
+		         "connections at localhost:%d...", rsp_port);
+		MSIM_LOG_INFO(log);
 		MSIM_AVR_RSPInit(&mcu, rsp_port);
 	}
-	sim_retcode = MSIM_AVR_Simulate(&mcu, 0, mcu.flashend+1, firmware_test);
+	sim_retcode = MSIM_AVR_Simulate(
+	                      &mcu, 0, mcu.flashend+1, firmware_test);
 	MSIM_AVR_LUACleanModels();
 	if (!firmware_test) {
 		MSIM_AVR_RSPClose();
@@ -426,45 +442,50 @@ static void print_version(void)
 #endif
 }
 
-static void print_config(const struct MSIM_AVR *m)
+static void print_config(const struct MSIM_AVR *mcu)
 {
-	static const int max_wid = 23;
-	/*
-	 * AVR memory is organized as array of bytes in the simulator, but
+	/* AVR memory is organized as array of bytes in the simulator, but
 	 * it's natural to measure program memory in 16-bits words because
-	 * all AVR instructions are 16- or 32-bits wide.
-	 *
-	 * It's why all program memory addresses are divided by two before
-	 * printing.
-	 */
-	printf("%*s: %s\n", max_wid, "Model", m->name);
-	printf("%*s: %X%X%X\n", max_wid, "Signature",
-	       m->signature[0], m->signature[1], m->signature[2]);
-	printf("%*s: %lu.%lu kHz\n", max_wid, "Clock frequency",
-	       m->freq/1000, m->freq%1000);
-	printf("%*s: 0x%lX-0x%lX words\n", max_wid, "Program memory",
-	       m->flashstart >> 1, m->flashend >> 1);
-	printf("%*s: 0x%lX-0x%lX words\n", max_wid, "Bootloader section",
-	       m->bls->start >> 1, m->bls->end >> 1);
-	printf("%*s: 0x%lX-0x%lX bytes\n", max_wid, "Data memory",
-	       m->ramstart, m->ramend);
-	printf("%*s: 0x%X-0x%X bytes\n", max_wid, "EEPROM",
-	       m->e2start, m->e2end);
-	printf("%*s: 0x%lX word\n", max_wid, "PC", m->pc >> 1);
-	printf("%*s: 0x%lX word\n", max_wid, "Reset address",
-	       m->intr->reset_pc >> 1);
-	printf("%*s: 0x%lX word\n", max_wid, "Interrupt vectors table",
-	       m->intr->ivt >> 1);
+	 * all AVR instructions are 16- or 32-bits wide. This is why all
+	 * program memory addresses are divided by two before printing. */
+	char log[1024];
+	uint64_t reset_pc = mcu->intr->reset_pc>>1;
+	uint64_t ivt = mcu->intr->ivt>>1;
+	uint64_t flashstart = mcu->flashstart>>1;
+	uint64_t flashend = mcu->flashend>>1;
+	uint64_t blsstart = mcu->bls->start>>1;
+	uint64_t blsend = mcu->bls->end>>1;
 
-	/* Notify user about a maximum number of CLK_IO ticks to be dumped.
-	 *
-	 * NOTE: If a C compiler doesn't support "unsigned long long", then
-	 * we'll be limited to 4,294,967,295 number of ticks which results
-	 * in ~268.44s of simulation time at 16MHz of CLK_IO.*/
-#ifndef ULLONG_MAX
-	printf("[!] Maximum ticks of CLK_IO to dump: %lu\n",
-	       ULONG_MAX);
-#endif
+	snprintf(log, sizeof log, "MCU model: %s (signature %02X%02X%02X)",
+	         mcu->name, mcu->signature[0], mcu->signature[1],
+	         mcu->signature[2]);
+	MSIM_LOG_INFO(log);
+
+	snprintf(log, sizeof log, "clock frequency: %lu.%lu kHz",
+	         mcu->freq/1000, mcu->freq%1000);
+	MSIM_LOG_INFO(log);
+
+	snprintf(log, sizeof log, "fuses: EXT=0x%02X, HIGH=0x%02X, "
+	         "LOW=0x%02X", mcu->fuse[2], mcu->fuse[1], mcu->fuse[0]);
+	MSIM_LOG_INFO(log);
+
+	snprintf(log, sizeof log, "lock bits: 0x%02X", mcu->lockbits);
+	MSIM_LOG_INFO(log);
+
+	snprintf(log, sizeof log, "reset vector address: 0x%06lX", reset_pc);
+	MSIM_LOG_INFO(log);
+
+	snprintf(log, sizeof log, "interrupt vectors table address: "
+	         "0x%06lX", ivt);
+	MSIM_LOG_INFO(log);
+
+	snprintf(log, sizeof log, "flash section: 0x%06lX-0x%06lX",
+	         flashstart, flashend);
+	MSIM_LOG_INFO(log);
+
+	snprintf(log, sizeof log, "bootloader section: 0x%06lX-0x%06lX",
+	         blsstart, blsend);
+	MSIM_LOG_INFO(log);
 }
 
 static void parse_dump(char *cmd)

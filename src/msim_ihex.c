@@ -229,8 +229,7 @@ int Write_IHexRecord(const IHexRecord *ihexRecord, FILE *out)
 	return IHEX_OK;
 }
 
-/* Utility function to print the information stored in an Intel HEX8 record */
-void Print_IHexRecord(const IHexRecord *ihexRecord)
+void MSIM_IHEX_PrintRecord(const IHexRecord *ihexRecord)
 {
 	unsigned int i;
 	printf("Intel HEX8 Record Type: \t%d\n", ihexRecord->type);
@@ -244,7 +243,8 @@ void Print_IHexRecord(const IHexRecord *ihexRecord)
 		}
 	}
 	printf("}\n");
-	printf("Intel HEX8 Record Checksum: \t0x%2.2X\n", ihexRecord->checksum);
+	printf("Intel HEX8 Record Checksum: \t0x%2.2X\n",
+	       ihexRecord->checksum);
 }
 
 /* Utility function to calculate the checksum of an Intel HEX8 record */

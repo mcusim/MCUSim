@@ -30,7 +30,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.97")
+set(MSIM_VERSION "0.1.98")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -38,6 +38,7 @@ set(MCUSIM_LIB "libmcusim")
 
 # Load modules from our source tree too
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Filename.cmake)
 
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 add_subdirectory(scripts)	# Helper scripts and script-based MCUSim models
@@ -85,8 +86,9 @@ set(MCUSIM_LIB_SRC	src/avr/avr_simcore.c
 			src/avr/avr_decoder.c
 			src/avr/avr_gdb.c
 			src/avr/avr_vcd.c
-			src/ihex.c
-			src/getopt_long.c)
+			src/msim_getopt.c
+			src/msim_ihex.c
+			src/msim_log.c)
 
 # Look for libraries, packages, etc.
 if (WITH_LUA)
@@ -175,6 +177,8 @@ else()
 	message(STATUS "[OPTION] Building with position-independent code (-fPIC) option")
 	set_target_properties(${MCUSIM_LIB} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+define_filename_for_sources(${MCUSIM_LIB})
+define_filename_for_sources(${MCUSIM})
 
 # Link MCUSim executable
 target_link_libraries(${MCUSIM} ${MCUSIM_LIB})
