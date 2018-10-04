@@ -124,7 +124,7 @@ static void exec_brvc(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_brvs(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_bset(struct MSIM_AVR *mcu, unsigned int inst);
 static void exec_bst(struct MSIM_AVR *mcu, unsigned int inst);
-static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_lsb);
+static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_msb);
 static void exec_clc(struct MSIM_AVR *mcu);
 static void exec_clh(struct MSIM_AVR *mcu);
 static void exec_cln(struct MSIM_AVR *mcu);
@@ -1992,14 +1992,14 @@ static void exec_bst(struct MSIM_AVR *mcu, unsigned int inst)
 	mcu->pc += 2;
 }
 
-static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_lsb)
+static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_msb)
 {
 	/*
 	 * CALL – Long Call to a Subroutine
 	 * NOTE: This is a multi-cycle instruction.
 	 */
 	unsigned char lsb, msb;
-	unsigned int inst_msb;
+	unsigned int inst_lsb;
 	unsigned long pc, c;
 
 	if (!mcu->in_mcinst) {
@@ -2023,19 +2023,18 @@ static void exec_call(struct MSIM_AVR *mcu, unsigned int inst_lsb)
 	/* prepare the whole 32-bit instruction */
 	lsb = mcu->pm[mcu->pc+2];
 	msb = mcu->pm[mcu->pc+3];
-	inst_msb = (unsigned int) (lsb|(msb<<8));
+	inst_lsb = (unsigned int) (lsb|(msb<<8));
 
 	pc = mcu->pc+4;
-	c = (unsigned long)(((inst_msb<<6)&0xFF) |
-	                    ((inst_lsb>>3)&0x3E) |
-	                    (inst_lsb&1));
+	c = (unsigned long)((inst_lsb&0xFFFF) |
+	                    ((((inst_msb>>3)&0x3E) | (inst_msb&1)) << 16));
 
 	MSIM_AVR_StackPush(mcu, (unsigned char)(pc&0xFF));
 	MSIM_AVR_StackPush(mcu, (unsigned char)((pc>>8)&0xFF));
 	if (mcu->pc_bits > 16) {		/* for 22-bit PC or above */
 		MSIM_AVR_StackPush(mcu, (unsigned char)((pc>>16)&0xFF));
 	}
-	mcu->pc = c;
+	mcu->pc = c << 1; // address is in words, not bytes
 }
 
 static void exec_clc(struct MSIM_AVR *mcu)
@@ -2336,8 +2335,8 @@ static void exec_jmp(struct MSIM_AVR *mcu, unsigned int inst)
 
 	msb = (unsigned int)(((mcu->pm[mcu->pc+3] << 8) & 0xFF00) |
 	                     (mcu->pm[mcu->pc+2] & 0xFF));
-	c = ((msb<<16)&0xFFFF0000) | ((inst>>3)&0x3E) | (inst&0x01);
-	mcu->pc = c;
+	c = msb | (((inst>>3)&0x3E) | (inst&0x01)) << 16;
+	mcu->pc = c << 1; // address is in words, not bytes
 }
 
 static void exec_lac(struct MSIM_AVR *mcu, unsigned int inst)

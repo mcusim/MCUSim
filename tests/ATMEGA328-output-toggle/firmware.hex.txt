@@ -1,0 +1,58 @@
+
+./firmware.hex:     file format ihex
+
+
+Disassembly of section .sec1:
+
+00000000 <.sec1>:
+   0:	0c 94 34 00 	jmp	0x68	;  0x68
+   4:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+   8:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+   c:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  10:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  14:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  18:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  1c:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  20:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  24:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  28:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  2c:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  30:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  34:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  38:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  3c:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  40:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  44:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  48:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  4c:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  50:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  54:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  58:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  5c:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  60:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  64:	0c 94 3e 00 	jmp	0x7c	;  0x7c
+  68:	11 24       	eor	r1, r1
+  6a:	1f be       	out	0x3f, r1	; 63
+  6c:	cf ef       	ldi	r28, 0xFF	; 255
+  6e:	d8 e0       	ldi	r29, 0x08	; 8
+  70:	de bf       	out	0x3e, r29	; 62
+  72:	cd bf       	out	0x3d, r28	; 61
+  74:	0e 94 40 00 	call	0x80	;  0x80
+  78:	0c 94 4e 00 	jmp	0x9c	;  0x9c
+  7c:	0c 94 00 00 	jmp	0	;  0x0
+  80:	8f ef       	ldi	r24, 0xFF	; 255
+  82:	90 e0       	ldi	r25, 0x00	; 0
+  84:	31 e0       	ldi	r19, 0x01	; 1
+  86:	25 b1       	in	r18, 0x05	; 5
+  88:	23 27       	eor	r18, r19
+  8a:	25 b9       	out	0x05, r18	; 5
+  8c:	25 b1       	in	r18, 0x05	; 5
+  8e:	22 0f       	add	r18, r18
+  90:	25 b9       	out	0x05, r18	; 5
+  92:	01 97       	sbiw	r24, 0x01	; 1
+  94:	c1 f7       	brne	.-16     	;  0x86
+  96:	90 e0       	ldi	r25, 0x00	; 0
+  98:	80 e0       	ldi	r24, 0x00	; 0
+  9a:	08 95       	ret
+  9c:	f8 94       	cli
+  9e:	ff cf       	rjmp	.-2      	;  0x9e

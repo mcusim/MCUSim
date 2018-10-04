@@ -29,10 +29,12 @@
 cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
-# Program name and version
+# Program version
+set(MSIM_VERSION "0.1.97")
+
+# Program name
 set(MCUSIM "mcusim")
 set(MCUSIM_LIB "libmcusim")
-set(MSIM_VERSION "0.1.96")
 
 # Load modules from our source tree too
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
