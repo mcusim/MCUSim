@@ -32,9 +32,24 @@
 #include <string.h>
 #include <time.h>
 
+#include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simm328p.h"
 
+/* The OCR0 Compare Register is double buffered when using any of
+ * the PWM modes and updated during either TOP or BOTTOM of the counting
+ * sequence. */
+static unsigned char ocr0_buf;
+/* Timer may start counting from a value higher then the one on OCR0 and
+ * for that reason misses the Compare Match. This flag is set in this case. */
+static unsigned char missed_cm = 0;
+
 static void tick_timer0(struct MSIM_AVR *mcu);
+static void timer0_normal(struct MSIM_AVR *mcu,
+                          unsigned int presc, unsigned int *ticks,
+                          unsigned char wgm0, unsigned char com0);
+static void timer0_pcpwm(struct MSIM_AVR *mcu,
+                         unsigned int presc, unsigned int *ticks,
+                         unsigned char wgm0, unsigned char com0);
 
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
@@ -56,11 +71,13 @@ static void tick_timer0(struct MSIM_AVR *mcu){
 	
 	static unsigned int tc0_presc;
 	static unsigned int tc0_ticks;
+	static unsigned char old_wgm2; /*should it have initial value? */
 	unsigned char cs0;			/* Clock Select bits CS0[2:0] */
-	/* TODO: Wave form generation WGM */
+	unsigned char wgm0;							/* TODO: Wave form generation WGM */
 	unsigned int presc;			/* Prescaler value */
 
 	cs0 = mcu->dm[TCCR0B]&0x7;	/* &00000111 */
+	wgm0 = ((mcu->dm[TCCR0A]>>WGM00)&1) | ((mcu->dm[TCCR0A]>>WGM01)&2) | ((mcu->dm[TCCR0B]>>WGM02)&8);
 
 	switch (cs0) {
 	case 0x1:
@@ -112,6 +129,8 @@ static void tick_timer0(struct MSIM_AVR *mcu){
 	}
 		/* Internal clock */
 	if (presc != tc0_presc) {
+		if(tc0_presc == 0 && mcu->dm[TCNT0] > mcu->dm[OCR0])
+			missed_cm = 1;
 		tc0_presc = presc;
 		tc0_ticks = 0;
 	}
@@ -126,7 +145,82 @@ static void tick_timer0(struct MSIM_AVR *mcu){
 		tc0_ticks = 0;					/* Calculate next tick */			
 		return;
 	}
-	tc0_ticks++;
+	
+	switch (wgm0){
+		case 0: 
+			timer0_normal(mcu, tc0_presc, &tc0_ticks, wgm0, com0);
+			return;
+		case 1:
+			timer0_pcpwm(mcu, tc0_presc, &tc0_ticks, wgm0, com0);
+			return;
+		case 2:
+			timer0_ctc(mcu, tc0_presc, &tc0_ticks, wgm0, com0);
+			return;
+		case 3:
+			timer0_fastpwm(mcu, tc0_presc, &tc0_ticks, wgm0, com0);
+			return;
+		default:
+			if (wgm0 != old_wgm0) {
+			fprintf(stderr, "[!]: Selected mode WGM21:20 = %u "
+			        "of the Timer/Counter2 is not supported\n",
+			        wgm0);
+			old_wgm0 = wgm0;			
+			}
+			tc0_presc = 0;
+			tc0_ticks = 0;
+			return;
+	}
+}
+
+static void timer0_normal(struct MSIM_AVR *mcu,
+                          unsigned int presc, unsigned int *ticks,
+                          unsigned char wgm0, unsigned char com0)
+{
+	if (*ticks == (presc-1)) {
+		if (mcu->dm[TCNT0] == 0xFF) {
+			/* Reset Timer/Counter2 */
+			mcu->dm[TCNT0] = 0;
+			/* Set Timer/Counter2 overflow flag */
+			mcu->dm[TIFR] |= (1<<TOV0);
+
+			//timer2_oc2_nonpwm(mcu, com0);
+		} else {
+			mcu->dm[TCNT0]++;
+		}
+		*ticks = 0;
+		return;
+	}
+	(*ticks)++;
+}
+
+static void timer0_ctc(struct MSIM_AVR *mcu,
+                       unsigned int presc, unsigned int *ticks,
+                       unsigned char wgm0, unsigned char com0)
+{
+	/* NOTE: We're able to generate a waveform output in this mode with a
+	 * frequency which is controlled by the value in OCR0A register
+	 * (top border of the timer/counter). */
+
+	if ((*ticks) == (presc-1)) {
+		if (mcu->dm[TCNT0] == mcu->dm[OCR0A]) {
+			/* Reset Timer/Counter0 */
+			mcu->dm[TCNT0] = 0;
+			/* Set Timer/Counter0 output compare flag */
+			mcu->dm[TIFR] |= (1<<OCF0A);
+
+			timer2_oc2_nonpwm(mcu, com2);
+		} else {
+			mcu->dm[TCNT0]++;
+		}
+		*ticks = 0;
+		return;
+	}
+	(*ticks)++;
+}
+
+static void timer0_oc0_nonpwm(struct MSIM_AVR *mcu, unsigned char com0)
+{
+	
 }
 
 int MSIM_M328PSetFuse(void *m, unsigned int fuse_n, unsigned char fuse_v)
