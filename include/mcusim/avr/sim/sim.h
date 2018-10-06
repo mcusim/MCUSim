@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2017, 2018,
- * Dmitry Salychev <darkness.bsd@gmail.com>,
- * Alexander Salychev <ppsalex@rambler.ru> et al.
+ * Copyright (c) 2017, 2018, The MCUSim Contributors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -11,32 +9,32 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <organization> nor the
+ *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  *
  * This is a main header file which contains declarations to describe the
  * whole simulated microcontroller, and it's supposed to be AVR-agnostic.
  * It means that each declaration should be suitable for every available AVR
  * model.
- *
- * You'd probably better to start from reading "struct MSIM_AVR" declared
- * below.
  */
 #ifndef MSIM_AVR_SIM_H_
 #define MSIM_AVR_SIM_H_ 1
+
+#ifndef MSIM_MAIN_HEADER_H_
+#error "Please, include mcusim/mcusim.h instead of this header."
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,20 +42,9 @@ extern "C" {
 
 #include <stdint.h>
 
-#include "mcusim/avr/sim/bootloader.h"
-#include "mcusim/avr/sim/vcd_dump.h"
-#include "mcusim/avr/sim/interrupt.h"
-
-#define SIM_NAME		"mcusim"
-#define FUSE_LOW		0
-#define FUSE_HIGH		1
-#define FUSE_EXT		2
-
-#define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
-#define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
-#define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
-#define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
-#define SET(byte, bit)		((byte)|=(1<<(bit)))
+/* Forward declaration of the structure to describe AVR microcontroller
+ * instance. */
+struct MSIM_AVR;
 
 /* MCU-specific functions.
  *
@@ -67,16 +54,16 @@ extern "C" {
  * these functions can be declared (mcusim/avr/sim/simm8a.h) and
  * implemented (simm8a.c).
  */
-typedef int (*MSIM_SetFuse_f)(void *mcu,
-                              unsigned int fuse_n, unsigned char fuse_v);
-typedef int (*MSIM_SetLock_f)(void *mcu, unsigned char lock_v);
-typedef int (*MSIM_TickTimers_f)(void *mcu);
-typedef int (*MSIM_ProvideIRQs_f)(void *mcu);
+typedef int (*MSIM_AVR_SetFuse_f)(struct MSIM_AVR *mcu, uint32_t fuse_n,
+                                  uint8_t fuse_v);
+typedef int (*MSIM_AVR_SetLock_f)(struct MSIM_AVR *mcu, uint8_t lock_v);
+typedef int (*MSIM_AVR_TickTimers_f)(struct MSIM_AVR *mcu);
+typedef int (*MSIM_AVR_ProvideIRQs_f)(struct MSIM_AVR *mcu);
 
 /* State of a simulated AVR microcontroller. Some of these states are
  * AVR-native, others - added by the simulator to manipulate a simulation
  * process. */
-enum MSIM_AVRState {
+enum MSIM_AVR_State {
 	AVR_RUNNING,
 	AVR_STOPPED,
 	AVR_SLEEPING,
@@ -89,7 +76,7 @@ enum MSIM_AVRState {
 	AVR_MSIM_TESTFAIL
 };
 
-enum MSIM_AVRClkSource {
+enum MSIM_AVR_ClkSource {
 	AVR_INT_CLK,
 	AVR_EXT_CLK,
 	AVR_LOWP_CRYSTAL_CLK,		/* Low power crystal */
@@ -103,7 +90,7 @@ enum MSIM_AVRClkSource {
 	AVR_INT_128K_RC_CLK		/* Internal 128kHz RC Oscillator*/
 };
 
-enum MSIM_AVRSREGFlag {
+enum MSIM_AVR_SREGFlag {
 	AVR_SREG_CARRY,
 	AVR_SREG_ZERO,
 	AVR_SREG_NEGATIVE,
@@ -139,14 +126,14 @@ struct MSIM_AVR {
 	unsigned char *spmcsr;		/* Store Program Memory Control
 					   and Status Register (SPMCSR). */
 
-	struct MSIM_AVRBootloader *bls;		/* Bootloader Section */
-	enum MSIM_AVRState state;		/* State of the MCU */
-	enum MSIM_AVRClkSource clk_source;	/* Clock source */
+	struct MSIM_AVR_Bootloader *bls; /* Bootloader Section */
+	enum MSIM_AVR_State state;	 /* State of the MCU */
+	enum MSIM_AVR_ClkSource clk_source; /* Clock source */
 
 	unsigned long freq;		/* Current MCU frequency, Hz */
 	unsigned char pc_bits;		/* 16-bit PC, 22-bit PC, etc. */
 	unsigned long pc;		/* Current program counter */
-	struct MSIM_AVRInt *intr;	/* Interrupts and IRQs */
+	struct MSIM_AVR_Int *intr;	/* Interrupts and IRQs */
 	unsigned char ic_left;		/* Cycles left to finish current
 					   instruction */
 	unsigned char in_mcinst;	/* Multi-cycle instruction flag */
@@ -180,14 +167,22 @@ struct MSIM_AVR {
 	unsigned int regs;		/* Number of GP registers */
 	unsigned int io_regs;		/* Number of all I/O registers */
 
-	MSIM_SetFuse_f set_fusef;	/* Function to set AVR fuse byte */
-	MSIM_SetLock_f set_lockf;	/* Function to set AVR lock byte */
-	MSIM_TickTimers_f tick_timers;	/* Function to tick 8-bit timers */
-	MSIM_ProvideIRQs_f provide_irqs; /* Function to check MCU flags and
-					    set IRQs accordingly */
+	MSIM_AVR_SetFuse_f set_fusef;	/* Function to set AVR fuse byte */
+	MSIM_AVR_SetLock_f set_lockf;	/* Function to set AVR lock byte */
+	MSIM_AVR_TickTimers_f tick_timers; /* Function to tick 8-bit timers */
+	MSIM_AVR_ProvideIRQs_f provide_irqs; /* Function to check MCU flags and
+					        set IRQs accordingly */
 
-	struct MSIM_VCDDetails *vcdd;	/* Details about registers to
-					   be dumped into VCD file */
+	struct MSIM_AVR_VCDDetails *vcdd; /* Details about registers to
+					     be dumped into VCD file */
+};
+
+/* Structure to describe a memory operation requested by user. */
+struct MSIM_AVR_MemOp {
+	char memtype[16];		/* Type of MCU memory */
+	char operation;			/* Memory operation */
+	char operand[4096];		/* Path to file, value, etc. */
+	char format;			/* Optional, value format */
 };
 
 #ifdef __cplusplus

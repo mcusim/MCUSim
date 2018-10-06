@@ -27,8 +27,8 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
-#ifndef MSIM_AVR_DECODER_H_
-#define MSIM_AVR_DECODER_H_ 1
+#ifndef MSIM_AVR_GDB_H_
+#define MSIM_AVR_GDB_H_ 1
 
 #ifndef MSIM_MAIN_HEADER_H_
 #error "Please, include mcusim/mcusim.h instead of this header."
@@ -38,12 +38,24 @@
 extern "C" {
 #endif
 
-int MSIM_AVR_Step(struct MSIM_AVR *mcu);
+#ifdef MSIM_POSIX
 
-int MSIM_AVR_Is32(unsigned int inst);
+void MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, int portn);
+
+int MSIM_AVR_RSPHandle(void);
+
+void MSIM_AVR_RSPClose(void);
+
+#else /* MSIM_POSIX not defined */
+
+#define MSIM_AVR_RSPInit(mcu, portn)
+#define MSIM_AVR_RSPHandle()		1
+#define MSIM_AVR_RSPClose()
+
+#endif /* MSIM_POSIX */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* MSIM_AVR_DECODER_H_ */
+#endif /* MSIM_AVR_GDB_H_ */

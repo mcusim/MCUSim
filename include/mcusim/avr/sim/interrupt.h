@@ -30,17 +30,21 @@
 #ifndef MSIM_AVR_INTERRUPT_H_
 #define MSIM_AVR_INTERRUPT_H_ 1
 
+#ifndef MSIM_MAIN_HEADER_H_
+#error "Please, include mcusim/mcusim.h instead of this header."
+#endif
+
 /* AVR IRQ limit, i.e. maximum number of interrupt vectors. */
-#define AVR_IRQ_NUM		64
+#define MSIM_AVR_IRQNUM			64
 
 /*
  * Main structure to describe AVR interrupts within the simulated AVR
  * instance (reset address, IRQs, etc.)
  */
-struct MSIM_AVRInt {
+struct MSIM_AVR_Int {
 	unsigned long reset_pc;		/* Reset address */
 	unsigned long ivt;		/* Interrupt vectors table address */
-	unsigned char irq[AVR_IRQ_NUM];	/* Flags for interrupt requests */
+	unsigned char irq[MSIM_AVR_IRQNUM]; /* Flags for interrupt requests */
 	unsigned char exec_main;	/* Flag to execute one more
 					   instruction from the main
 					   program after an exit from ISR */

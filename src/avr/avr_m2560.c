@@ -27,23 +27,13 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
-#ifndef MSIM_AVR_DECODER_H_
-#define MSIM_AVR_DECODER_H_ 1
+#include <stdlib.h>
+#include <string.h>
 
-#ifndef MSIM_MAIN_HEADER_H_
-#error "Please, include mcusim/mcusim.h instead of this header."
-#endif
+#include "mcusim/avr/sim/m2560.h"
+#include "mcusim/avr/sim/mcu_init.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-int MSIM_AVR_Step(struct MSIM_AVR *mcu);
-
-int MSIM_AVR_Is32(unsigned int inst);
-
-#ifdef __cplusplus
+int MSIM_M2560Init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
+{
+	return mcu_init(mcu, args);
 }
-#endif
-
-#endif /* MSIM_AVR_DECODER_H_ */
