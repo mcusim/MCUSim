@@ -27,23 +27,43 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  */
-#ifndef MSIM_AVR_DECODER_H_
-#define MSIM_AVR_DECODER_H_ 1
+#ifndef MSIM_AVR_M328_H_
+#define MSIM_AVR_M328_H_ 1
 
-#ifndef MSIM_MAIN_HEADER_H_
-#error "Please, include mcusim/mcusim.h instead of this header."
-#endif
+#include <stdio.h>
+#include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/* Include headers specific to the ATMega328P */
+#define _SFR_ASM_COMPAT 1
+#define __AVR_ATmega328__ 1
+#include "mcusim/avr/io.h"
+#include "mcusim/mcusim.h"
 
-int MSIM_AVR_Step(struct MSIM_AVR *mcu);
+#define MCU_NAME	"ATmega328"
 
-int MSIM_AVR_Is32(unsigned int inst);
+#define RESET_PC	0x0000	/* Reset vector address, in bytes */
+#define IVT_ADDR	0x0002	/* Interrupt vectors address, in bytes */
+#define PC_BITS		14		/* PC bit capacity */
+#define LBITS_DEFAULT	0x3F		/* Default lock bits */
 
-#ifdef __cplusplus
-}
-#endif
+#define CLK_SOURCE	AVR_INT_CAL_RC_CLK /* Calibrated Internal RC */
+#define CLK_FREQ	1000000		/* Oscillator frequency, in Hz */
 
-#endif /* MSIM_AVR_DECODER_H_ */
+#define GP_REGS		32		/* GP registers, R0, R1, ..., R31 */
+#define IO_REGS		224		/* I/O registers, PORTD, SREG, etc. */
+
+#define BLS_START	0x7000		/* First address in BLS, in bytes */
+#define BLS_END		0x7FFF		/* Last address in BLS, in bytes */
+#define BLS_SIZE	4096		/* BLS size, in bytes */
+
+#define FLASHSTART	0x0000
+#define RAMSIZE		2048
+#define E2START		0x0000
+#define E2SIZE		1024
+
+#define SREG		_SFR_IO8(0x3F)
+#define SPH		_SFR_IO8(0x3E)
+#define SPL		_SFR_IO8(0x3D)
+#include "mcusim/avr/sim/vcd_regs.h"
+
+#endif /* MSIM_AVR_M328_H_ */

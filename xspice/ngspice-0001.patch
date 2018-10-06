@@ -1,0 +1,5 @@
+--- src/xspice/icm/GNUmakefile.in	2018-09-24 12:15:18.991040000 +0200
++++ src/xspice/icm/GNUmakefile.in	2018-09-24 11:58:58.281760000 +0200
+@@ -10 +10 @@
+-CMDIRS = spice2poly digital analog xtradev xtraevt table
++CMDIRS = spice2poly digital analog xtradev xtraevt table mcusim

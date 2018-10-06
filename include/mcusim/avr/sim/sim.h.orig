@@ -87,6 +87,7 @@ enum MSIM_AVR_ClkSource {
 	AVR_INT_128K_RC_CLK,	/* Internal 128kHz RC Oscillator*/
 	AVR_EXT_RC_CLK,			/* External RC */
 	AVR_EXT_CRYSTAL,		/* External crystal/ceramic resonator*/
+	AVR_INT_128K_RC_CLK		/* Internal 128kHz RC Oscillator*/
 };
 
 enum MSIM_AVR_SREGFlag {
@@ -152,8 +153,8 @@ struct MSIM_AVR {
 
 	unsigned char *pm;		/* Program memory (PM) */
 	unsigned char *pmp;		/* Page buffer of PM */
-	unsigned char *dm;		/* GP, I/O registers and SRAM */
-	// What is size of dm?
+	unsigned char *dm;		/* GP, I/O registers and SRAM */ 
+	// What is size of dm? 
 	unsigned char *mpm;		/* Memory to store instructions at
 					   breakpoints */
 	unsigned long pm_size;		/* Allocated size of PM */

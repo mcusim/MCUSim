@@ -62,6 +62,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include "mcusim/log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -222,7 +223,7 @@ int Write_IHexRecord(const IHexRecord *ihexRecord, FILE *out);
  * \return Always returns IHEX_OK (success).
  * \retval IHEX_OK on success.
 */
-void Print_IHexRecord(const IHexRecord *ihexRecord);
+void MSIM_IHEX_PrintRecord(const IHexRecord *ihexRecord);
 
 /**
  * Calculates the checksum of an Intel HEX8 IHexRecord structure.
