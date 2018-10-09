@@ -432,13 +432,13 @@ static void print_version(void)
 	printf("mcusim %s : Microcontroller-based circuit simulator\n"
 	       "Please find documentation at https://trac.mcusim.org\n"
 	       "Please file your bug-reports at https://trac.mcusim.org/"
-	       "newticket\n", MSIM_VERSION);
+	       "newticket\n\n", MSIM_VERSION);
 #else
 	printf("mcusim %s : Microcontroller-based circuit simulator "
 	       "(Debug version)\n"
 	       "Please find documentation at https://trac.mcusim.org\n"
 	       "Please file your bug-reports at https://trac.mcusim.org/"
-	       "newticket\n", MSIM_VERSION);
+	       "newticket\n\n", MSIM_VERSION);
 #endif
 }
 

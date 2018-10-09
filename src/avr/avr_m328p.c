@@ -43,9 +43,154 @@
 #define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
 #define SET(byte, bit)		((byte)|=(1<<(bit)))
 
+#define DM(v)			(mcu->dm[v])
+
+/* Initial PORTD and PIND values and to track T0/PD4 and T1/PD5. */
+static uint8_t init_portd;
+static uint8_t init_pind;
+
+
+/* The OCR0 Compare Register is double buffered when using any of
+ * the PWM modes and updated during either TOP or BOTTOM of the counting
+ * sequence. */
+static unsigned char ocr0_buf;
+/* Timer may start counting from a value higher then the one on OCR0 and
+ * for that reason misses the Compare Match. This flag is set in this case. */
+static unsigned char missed_cm = 0;
+
+static void tick_timer0(struct MSIM_AVR *mcu);
+
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
 	return mcu_init(mcu, args);
+}
+
+int MSIM_M328PTickTimers(struct MSIM_AVR *mcu)
+{
+	tick_timer0(mcu);
+	return 0;
+}
+
+static void tick_timer0(struct MSIM_AVR *mcu)
+{
+	/* 8-bit Timer/Counter0 with PWM */
+
+	static uint32_t tc0_presc;
+	static uint32_t tc0_ticks;
+	static uint8_t old_wgm0;
+	uint8_t cs0;			/* Clock Select bits CS0[2:0] */
+	uint8_t wgm0;			/* Waveform Generation  */
+	uint8_t com0a;			/* Compare Output mode  */
+	uint8_t com0b;			/* Compare Output mode  */
+	uint32_t presc;			/* Prescaler value */
+
+	cs0 = DM(TCCR0B)&0x7;
+	wgm0 = ((DM(TCCR0A)>>WGM00)&1) |
+	       ((DM(TCCR0A)>>WGM01)&2) |
+	       ((DM(TCCR0B)>>WGM02)&8);
+	com0a = ((DM(TCCR0A)>>COM0A0)&6) |
+	        ((DM(TCCR0A)>>COM0A1)&7);
+	com0b = ((DM(TCCR0A)>>COM0B0)&4) |
+	        ((DM(TCCR0A)>>COM0B1)&5);
+
+	switch (cs0) {
+	case 0x1:
+		presc = 1;		/* No prescaling, clk_io */
+		break;
+	case 0x2:
+		presc = 8;		/* clk_io/8 */
+		break;
+	case 0x3:
+		presc = 64;		/* clk_io/64 */
+		break;
+	case 0x4:
+		presc = 256;		/* clk_io/256 */
+		break;
+	case 0x5:
+		presc = 1024;		/* clk_io/1024 */
+		break;
+	case 0x6:			/* Ext. clock on T0(PD4) (fall) */
+		if (IS_FALL(init_portd, DM(PORTD), PD4) ||
+		                IS_FALL(init_pind, DM(PIND), PD4)) {
+			if (DM(TCNT0) == 0xFF) {
+				/* Reset Timer/Counter0 */
+				DM(TCNT0) = 0;
+				/* Timer/Counter0 overflow occured */
+				DM(TIFR) |= (1<<TOV0);
+			} else {	/* Count UP on tick */
+				DM(TCNT0)++;
+			}
+		}
+		tc0_presc = 0;
+		tc0_ticks = 0;
+		return;
+	case 0x7:			/* Ext. clock on T0(PD4) (rise) */
+		if (IS_RISE(init_portd, DM(PORTD), PD4) ||
+		                IS_RISE(init_pind, DM(PIND), PD4)) {
+			if (DM(TCNT0) == 0xFF) {
+				/* Reset Timer/Counter0 */
+				DM(TCNT0) = 0;
+				/* Timer/Counter0 overflow occured */
+				DM(TIFR) |= (1<<TOV0);
+			} else {	/* Count UP on tick */
+				DM(TCNT0)++;
+			}
+		}
+		tc0_presc = 0;
+		tc0_ticks = 0;
+		return;
+	case 0x0:			/* No clock source (stopped mode) */
+	default:			/* Should not happen! */
+		tc0_presc = 0;
+		tc0_ticks = 0;
+		return;
+	}
+	/* Internal clock */
+	if (presc != tc0_presc) {
+		if ((tc0_presc == 0) && (DM(TCNT0) > DM(OCR0A))) {
+			missed_cm = 1;
+		}
+		tc0_presc = presc;
+		tc0_ticks = 0;
+	}
+	/* Timer Counting mechanism */
+	if (tc0_ticks == (tc0_presc-1)) {
+		if (DM(TCNT0) == 0xFF) {
+			/* Reset Timer/Counter0 */
+			DM(TCNT0) = 0;
+			/* Timer/Counter0 overflow occured */
+			DM(TIFR) |= (1<<TOV0);
+		} else {		/* Count UP on tick */
+			DM(TCNT0)++;
+		}
+		tc0_ticks = 0;		/* Calculate next tick */
+		return;
+	}
+
+	switch (wgm0) {
+	case 0:
+		/* timer0 normal mode */
+		break;
+	case 1:
+		/* timer0 pcpwm mode */
+		break;
+	case 2:
+		/* timer0 ctc mode */
+		break;
+	case 3:
+		/* timer0 fastpwm mode */
+		break;
+	default:
+		if (wgm0 != old_wgm0) {
+			fprintf(stderr, "[!]: Selected mode WGM21:20 = %u "
+			        "of the Timer/Counter2 is not supported\n",
+			        wgm0);
+			old_wgm0 = wgm0;
+		}
+		tc0_presc = 0;
+		tc0_ticks = 0;
+		break;
+	}
 }
 
 int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)

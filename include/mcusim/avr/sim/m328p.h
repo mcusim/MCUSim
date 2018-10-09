@@ -63,9 +63,11 @@
 
 #define SET_FUSE_F	MSIM_M328PSetFuse
 #define SET_LOCK_F	MSIM_M328PSetLock
+#define TICK_TIMERS_F	MSIM_M328PTickTimers
 
 int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v);
 int MSIM_M328PSetLock(struct MSIM_AVR *mcu, uint8_t lock_v);
+int MSIM_M328PTickTimers(struct MSIM_AVR *mcu);
 
 /* ATMega328P Fuse Low Byte */
 enum MSIM_AVRFuseLowByte {
