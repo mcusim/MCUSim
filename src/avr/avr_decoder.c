@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2017, 2018,
- * Dmitry Salychev <darkness.bsd@gmail.com>,
- * Alexander Salychev <ppsalex@rambler.ru> et al.
+ * Copyright (c) 2017, 2018, The MCUSim Contributors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -11,27 +9,27 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <organization> nor the
+ *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "mcusim/mcusim.h"
+#include "mcusim/log.h"
 
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
@@ -197,8 +195,8 @@ static void exec_ld(struct MSIM_AVR *mcu, unsigned int inst,
 
 int MSIM_AVR_Step(struct MSIM_AVR *mcu)
 {
-	unsigned char msb, lsb;
-	unsigned short inst;
+	uint8_t msb, lsb;
+	uint16_t inst;
 
 	if (!mcu->read_from_mpm) {
 		/* Decode instruction from program memory as usual */
@@ -214,7 +212,9 @@ int MSIM_AVR_Step(struct MSIM_AVR *mcu)
 	}
 
 	if (decode_inst(mcu, inst)) {
-		fprintf(stderr, "[e]: Unknown instruction: 0x%X\n", inst);
+		snprintf(mcu->log, sizeof mcu->log, "unknown instruction: "
+		         "0x%04X", inst);
+		MSIM_LOG_FATAL(mcu->log);
 		return -1;
 	}
 	return 0;
@@ -222,13 +222,10 @@ int MSIM_AVR_Step(struct MSIM_AVR *mcu)
 
 int MSIM_AVR_Is32(unsigned int inst)
 {
-	unsigned int i = inst & 0xfc0f;
-	return	/* STS */ i == 0x9200 ||
-	                  /* LDS */ i == 0x9000 ||
-	                  /* JMP */ i == 0x940c ||
-	                  /* JMP */ i == 0x940d ||
-	                  /* CALL */i == 0x940e ||
-	                  /* CALL */i == 0x940f;
+	return ((inst&0xFE0F) == 0x9200) ||		/* STS */
+	       ((inst&0xFE0F) == 0x9000) ||		/* LDS */
+	       ((inst&0xFE0E) == 0x940C) ||		/* JMP */
+	       ((inst&0xFE0E) == 0x940E);		/* CALL */
 }
 
 static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst)
@@ -1026,7 +1023,7 @@ static void exec_sts(struct MSIM_AVR *mcu, unsigned int inst)
 
 	addr_lsb = mcu->pm[mcu->pc + 2];
 	addr_msb = mcu->pm[mcu->pc + 3];
-	addr = (unsigned int) (addr_lsb | (addr_msb << 8));
+	addr = (unsigned int) (((addr_msb<<8)&0xFF00) | (addr_lsb&0xFF));
 
 	rr = (unsigned char)((inst & 0x01F0) >> 4);
 	mcu->dm[addr] = mcu->dm[rr];
@@ -2528,13 +2525,13 @@ static void exec_eicall(struct MSIM_AVR *mcu)
 
 	err = 0;
 	if (!mcu->eind) {
-		fprintf(stderr, "[e]: EICALL instruction is not supported "
-		        "on the devices without EIND register\n");
+		MSIM_LOG_FATAL("EICALL instruction is not supported on the "
+		               "devices without EIND register");
 		err = 1;
 	}
 	if (mcu->pc_bits < 22) {
-		fprintf(stderr, "[e]: EICALL is implemented in the devices "
-		        "with 22-bit PC only\n");
+		MSIM_LOG_FATAL("EICALL instruction is implemented in the "
+		               "devices with 22-bit PC only");
 		err = 1;
 	}
 
@@ -2567,8 +2564,8 @@ static void exec_eijmp(struct MSIM_AVR *mcu)
 
 	err = 0;
 	if (!mcu->eind) {
-		fprintf(stderr, "[e]: EIJMP instruction is not supported on "
-		        "the devices without EIND register\n");
+		MSIM_LOG_FATAL("EIJMP instruction is not supported on the "
+		               "devices without EIND register");
 		err = 1;
 	}
 
@@ -2801,8 +2798,8 @@ static void exec_elpm(struct MSIM_AVR *mcu, unsigned int inst)
 
 	err = 0;
 	if (mcu->rampz == NULL) {
-		fprintf(stderr, "[e]: ELPM instruction is not supported on "
-		        "devices without RAMPZ register!\n");
+		MSIM_LOG_FATAL("ELPM instruction is not supported on the "
+		               "devices without RAMPZ register");
 		err = 1;
 	}
 
@@ -2854,8 +2851,8 @@ static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst)
 
 	err = 0;
 	if (mcu->spmcsr == NULL) {
-		fprintf(stderr, "[e]: SPMCSR(SPMCR) register is not "
-		        "available on this device!\n");
+		MSIM_LOG_FATAL("SPMCSR(SPMCR) register is not available "
+		               "on this device");
 		err = 1;
 	}
 

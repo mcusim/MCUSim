@@ -517,11 +517,8 @@ uint8_t MSIM_AVR_StackPop(struct MSIM_AVR *mcu)
 void MSIM_AVR_PrintParts(void)
 {
 	uint32_t i;
-	char buf[1024];
 
 	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++) {
-		snprintf(buf, sizeof buf, "%s=%s", init_funcs[i].partno,
-		         init_funcs[i].name);
-		MSIM_LOG_INFO(buf);
+		printf("%s %s\n", init_funcs[i].partno, init_funcs[i].name);
 	}
 }

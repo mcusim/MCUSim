@@ -46,14 +46,10 @@ extern "C" {
  * instance. */
 struct MSIM_AVR;
 
-/* MCU-specific functions.
- *
- * Simulated microcontroller may provide its own implementations of the
- * functions in order to support these features (fuses, locks, timers,
- * IRQs, etc.). ATmega8A is a good example of MCU to understand how
- * these functions can be declared (mcusim/avr/sim/simm8a.h) and
- * implemented (simm8a.c).
- */
+/* Simulated MCU may provide its own implementations of the functions in order
+ * to support these features (fuses, locks, timers, IRQs, etc.). ATmega8A is a
+ * good example of MCU to understand how these functions can be declared
+ * (mcusim/avr/sim/m8a.h) and implemented (simm8a.c). */
 typedef int (*MSIM_AVR_SetFuse_f)(struct MSIM_AVR *mcu, uint32_t fuse_n,
                                   uint8_t fuse_v);
 typedef int (*MSIM_AVR_SetLock_f)(struct MSIM_AVR *mcu, uint8_t lock_v);
@@ -174,6 +170,8 @@ struct MSIM_AVR {
 
 	struct MSIM_AVR_VCDDetails *vcdd; /* Details about registers to
 					     be dumped into VCD file */
+
+	char log[1024];			/* Buffer to print a log message */
 };
 
 /* Structure to describe a memory operation requested by user. */
