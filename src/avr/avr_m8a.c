@@ -177,28 +177,22 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 	presc = 0;
 
 	switch (tccr0) {
-	case 0x1:
-		/* No prescaling, clk_io */
+	case 0x1:			/* No prescaling, clk_io */
 		presc = 1;
 		break;
-	case 0x2:
-		/* clk_io/8 */
+	case 0x2:			/* clk_io/8 */
 		presc = 8;
 		break;
-	case 0x3:
-		/* clk_io/64 */
+	case 0x3:			/* clk_io/64 */
 		presc = 64;
 		break;
-	case 0x4:
-		/* clk_io/256 */
+	case 0x4:			/* clk_io/256 */
 		presc = 256;
 		break;
-	case 0x5:
-		/* clk_io/1024 */
+	case 0x5:			/* clk_io/1024 */
 		presc = 1024;
 		break;
-	case 0x6:
-		/* Ext. clock on T0/PD4 (fall) */
+	case 0x6:			/* Ext. clock on T0/PD4 (fall) */
 		if (IS_FALL(init_portd, DM(PORTD), PD4) ||
 		                IS_FALL(init_pind, DM(PIND), PD4)) {
 			if (DM(TCNT0) == 0xFF) {
@@ -217,8 +211,7 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 		 * actions. */
 		stop_mode = 1;
 		break;
-	case 0x7:
-		/* Ext. clock on T0/PD4 (rise) */
+	case 0x7:			/* Ext. clock on T0/PD4 (rise) */
 		if (IS_RISE(init_portd, DM(PORTD), PD4) ||
 		                IS_RISE(init_pind, DM(PIND), PD4)) {
 			if (DM(TCNT0) == 0xFF) {
@@ -276,14 +269,15 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 static void tick_timer1(struct MSIM_AVR *mcu)
 {
 	/* 16-bit Timer/Counter1
-	 * There are several modes of operation available:
 	 *
+	 * There are several modes of operation available;
 	 * - (supported) Normal Mode, WGM13:0 = 0;
 	 * - (supported) Clear Timer on Compare Match (CTC) Mode,
 	 *   WGM13:0 = 4 or 12;
 	 * - (supported) Fast PWM Mode, WGM13:0 = 5, 6, 7, 14 or 15;
 	 * - (supported) Phase Correct PWM Mode, WGM13:0 = 1, 2, 3, 10 or 11
-	 * - (planned) Phase and Frequency Correct PWM Mode, WGM13:0 = 8, 9 */
+	 * - (supported) Phase and Frequency Correct PWM Mode, WGM13:0 = 8, 9
+	 */
 	static uint32_t tc1_presc;
 	static uint32_t tc1_ticks;
 	static uint8_t old_wgm1;
@@ -395,8 +389,8 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 static void tick_timer2(struct MSIM_AVR *mcu)
 {
 	/* 8-bit Timer/Counter1
-	 * There are several modes of operation available:
 	 *
+	 * There are several modes of operation available:
 	 * - (supported) The simplest mode is a normal one, when counter
 	 *               is incremented only and no counter clear is performed,
 	 *               WGM21:0 = 0;
@@ -755,6 +749,7 @@ static void timer1_pcpwm(struct MSIM_AVR *mcu, uint32_t presc,
                          uint8_t com1b)
 {
 	/* Phase Correct PWM mode.
+	 *
 	 * NOTE: This mode allows PWM to be generated using dual-slope
 	 * operation (preferred for motor control applications). Duty cycle
 	 * can be controlled by the fixed values 0x00FF, 0x01FF, or 0x03FF
@@ -900,7 +895,144 @@ static void timer1_pfcpwm(struct MSIM_AVR *mcu, uint32_t presc,
                           uint32_t *ticks, uint8_t wgm1, uint8_t com1a,
                           uint8_t com1b)
 {
-	/* Waiting to be implemented... */
+	/* Phase and Frequency Correct PWM mode.
+	 *
+	 * NOTE: This mode allows PWM to be generated using dual-slope
+	 * operation (preferred for motor control applications). Duty cycle
+	 * can be controlled by the value in ICR1 (WGM13:0 = 8) or the value
+	 * in OCR1A (WGM13:0 = 9).
+	 *
+	 * Dual-slope operation means counting from BOTTOM to TOP,
+	 * then from TOP back to the BOTTOM and start again.
+	 *
+	 * The main difference between the Phase and Frequency Correct PWM
+	 * mode and the Phase Correct one is the OCR1x register is updated by
+	 * the OCR1x buffer register (at the BOTTOM for the first one,
+	 * at the TOP for the last one).
+	 */
+	static uint8_t cnt_down = 0;
+	uint32_t tcnt1;
+	uint32_t ocr1a, ocr1b;
+	uint32_t icr1;
+	uint32_t top;
+	uint8_t err;
+
+	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00) | (DM(TCNT1L)&0xFF);
+	ocr1a = ((DM(OCR1AH)<<8)&0xFF00) | (DM(OCR1AL)&0xFF);
+	ocr1b = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL)&0xFF);
+	icr1 = (((DM(ICR1H)<<8)&0xFF00) | (DM(ICR1L)&0xFF));
+	err = 0;
+
+	switch (wgm1) {
+	case 8:
+		if (icr1 < 0x0003U) {
+			snprintf(mcu->log, sizeof mcu->log, "ICR1 = %" PRIu32
+			         ", but minimum resolution for Phase and "
+			         "Frequency Correct PWM mode of timer1 is "
+			         "2-bit, i.e. ICR1 = 0x0003", icr1);
+			MSIM_LOG_ERROR(mcu->log);
+			top = 0x0003U;
+		} else {
+			top = icr1;
+		}
+		break;
+	case 9:
+		if (ocr1a_buf < 0x0003U) {
+			snprintf(mcu->log, sizeof mcu->log, "OCR1A = %" PRIu32
+			         ", but minimum resolution for Phase and "
+			         "Frequency Correct PWM mode of timer1 is "
+			         "2-bit, i.e. OCR1A = 0x0003", ocr1a_buf);
+			MSIM_LOG_ERROR(mcu->log);
+			top = 0x0003U;
+		} else {
+			top = ocr1a_buf;
+		}
+		break;
+	default:
+		/* All other values of WGM13:0 are not allowed in
+		 * Phase and Frequency Correct PWM mode. */
+		snprintf(mcu->log, sizeof mcu->log, "WGM13:0=%" PRIu8
+		         " is not allowed in Phase and Frequency Correct PWM "
+		         "mode of timer1; It looks like a bug (please report "
+		         "it at trac.mcusim.org)", wgm1);
+		MSIM_LOG_FATAL(mcu->log);
+		err = 1;
+		break;
+	}
+
+	if ((err == 0U) && ((*ticks) < (presc-1U))) {
+		(*ticks)++;
+	} else if ((err == 0U) && ((*ticks) > (presc-1U))) {
+		snprintf(mcu->log, sizeof mcu->log, "number of timer1 ticks=%"
+		         PRIu32 " should be <= (prescaler-1)=%" PRIu32
+		         "; timer1 will not be updated", *ticks, (presc-1U));
+		MSIM_LOG_ERROR(mcu->log);
+	} else if (err == 0U) {
+		if ((tcnt1 == top) || (tcnt1 == 0xFFFFU)) {
+			if ((wgm1 == 11U) && (tcnt1 == ocr1a_buf)) {
+				DM(TIFR) |= (1<<OCF1A);
+				timer1_oc1_pcpwm(mcu, com1a, com1b, A_CHAN,
+				                 COMP_MATCH_UPCNT);
+			}
+			if (tcnt1 == ocr1b) {
+				DM(TIFR) |= (1<<OCF1B);
+				timer1_oc1_pcpwm(mcu, com1a, com1b, B_CHAN,
+				                 COMP_MATCH_UPCNT);
+			}
+			if ((wgm1 == 10U) && (tcnt1 == icr1)) {
+				DM(TIFR) |= (1<<ICF1);
+			}
+
+			cnt_down = 1;
+			tcnt1--;
+		} else if (tcnt1 == 0U) {
+			cnt_down = 0;
+			/* Update OCR1x values at BOTTOM */
+			ocr1a_buf = ((DM(OCR1AH)<<8)&0xFF00) |
+			            (DM(OCR1AL)&0x00FF);
+			ocr1b_buf = ((DM(OCR1BH)<<8)&0xFF00) |
+			            (DM(OCR1BL)&0x00FF);
+			/* Set Timer/Counter1 overflow flag at BOTTOM only */
+			DM(TIFR) |= (1<<TOV1);
+			tcnt1++;
+		} else {
+			if (tcnt1 == ocr1a_buf) {
+				DM(TIFR) |= (1<<OCF1A);
+				timer1_oc1_pcpwm(mcu, com1a, com1b, A_CHAN,
+				                 (cnt_down == 1)
+				                 ? COMP_MATCH_DOWNCNT
+				                 : COMP_MATCH_UPCNT);
+			} else {
+				/* Do nothing in this case */
+			}
+			if (tcnt1 == ocr1b_buf) {
+				DM(TIFR) |= (1<<OCF1B);
+				timer1_oc1_pcpwm(mcu, com1a, com1b, B_CHAN,
+				                 (cnt_down == 1)
+				                 ? COMP_MATCH_DOWNCNT
+				                 : COMP_MATCH_UPCNT);
+			} else {
+				/* Do nothing in this case */
+			}
+			if (tcnt1 == icr1) {
+				DM(TIFR) |= (1<<ICF1);
+			} else {
+				/* Do nothing in this case */
+			}
+			if (cnt_down == 1) {
+				tcnt1--;
+			} else {
+				tcnt1++;
+			}
+		}
+
+		DM(TCNT1H) = (tcnt1>>8)&0xFFU;
+		DM(TCNT1L) = tcnt1&0xFFU;
+		(*ticks) = 0;
+	} else {
+		MSIM_LOG_WARN("timer1 in Phase and Frequency Correct mode was "
+		              "not updated due to error occured earlier");
+	}
 }
 
 static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com1a,
