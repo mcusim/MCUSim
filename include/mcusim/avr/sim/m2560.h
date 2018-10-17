@@ -30,12 +30,13 @@
 #ifndef MSIM_AVR_M2560_H_
 #define MSIM_AVR_M2560_H_ 1
 
-#include <stdio.h>
-#include <stdint.h>
-
 /* Include headers specific to the ATMega2560 */
 #define _SFR_ASM_COMPAT 1
 #define __AVR_ATmega2560__ 1
+
+#include <stdio.h>
+#include <stdint.h>
+
 #include "mcusim/avr/io.h"
 #include "mcusim/mcusim.h"
 

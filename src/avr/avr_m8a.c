@@ -63,10 +63,11 @@
 /* Initial PORTD and PIND values and to track T0/PD4 and T1/PD5. */
 static uint8_t init_portd;
 static uint8_t init_pind;
-
 /* Initial PORTB and PINB value to track TOSC1/PB6 and TOSC2/PB7. */
 static uint8_t init_portb;
 static uint8_t init_pinb;
+/* Initial UBRRL value to update USART baud rate generator. */
+static uint8_t init_ubrrl;
 
 /* The OCRx Compare Registers are double buffered when using any of
  * the PWM modes and updated during either TOP or BOTTOM of the counting
@@ -83,7 +84,10 @@ static uint8_t missed_cm = 0;
 static void tick_timer0(struct MSIM_AVR *mcu);
 static void tick_timer1(struct MSIM_AVR *mcu);
 static void tick_timer2(struct MSIM_AVR *mcu);
-static void update_watched_values(struct MSIM_AVR *mcu);
+static void update_watched(struct MSIM_AVR *mcu);
+
+/* USART baud rate generator */
+static void tick_usart(struct MSIM_AVR *mcu);
 
 /* Timer/Counter1 modes of operation */
 static void timer1_normal(struct MSIM_AVR *mcu, uint32_t presc,
@@ -137,9 +141,8 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 
 	r = mcu_init(mcu, args);
 	if (r == 0) {
-		update_watched_values(mcu);
-		/* I/O ports have internal pull-up resistors (selected
-		 * for each bit) */
+		update_watched(mcu);
+		/* I/O ports have internal pull-up resistors */
 		mcu->dm[PORTB] = 0xFF;
 		mcu->dm[PORTC] = 0xFF;
 		mcu->dm[PORTD] = 0xFF;
@@ -147,21 +150,28 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	return r;
 }
 
-int MSIM_M8ATickTimers(struct MSIM_AVR *mcu)
+int MSIM_M8ATickPerf(struct MSIM_AVR *mcu)
 {
 	tick_timer2(mcu);
 	tick_timer1(mcu);
 	tick_timer0(mcu);
-	update_watched_values(mcu);
+	tick_usart(mcu);
+
+	/* Update watched values after all of the peripherals. */
+	update_watched(mcu);
+
 	return 0;
 }
 
-static void update_watched_values(struct MSIM_AVR *mcu)
+static void update_watched(struct MSIM_AVR *mcu)
 {
-	init_portd = mcu->dm[PORTD];
-	init_pind = mcu->dm[PIND];
-	init_portb = mcu->dm[PORTB];
-	init_pinb = mcu->dm[PINB];
+	init_portd = DM(PORTD);
+	init_pind = DM(PIND);
+
+	init_portb = DM(PORTB);
+	init_pinb = DM(PINB);
+
+	init_ubrrl = DM(UBRRL);
 }
 
 static void tick_timer0(struct MSIM_AVR *mcu)
@@ -388,7 +398,7 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 
 static void tick_timer2(struct MSIM_AVR *mcu)
 {
-	/* 8-bit Timer/Counter1
+	/* 8-bit Timer/Counter2
 	 *
 	 * There are several modes of operation available:
 	 * - (supported) The simplest mode is a normal one, when counter
@@ -483,6 +493,45 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 			tc2_ticks = 0;
 			break;
 		}
+	}
+}
+
+static void tick_usart(struct MSIM_AVR *mcu)
+{
+	/* You may think about this function as a programmable prescaler or
+	 * baud rate generator.
+	 *
+	 * It is running at the system clock and is loaded with the UBRR
+	 * register value each time the counter has counted down to zero or
+	 * when the UBRRL register is written (24.3.1. Internal Clock
+	 * Generation – The Baud Rate Generator). */
+	static uint32_t baudrate;		/* 12-bit baud rate value */
+	static int32_t ticks = -1;		/* Current prescaler ticks */
+	uint8_t mult = 1;			/* Multiplier of a divider */
+
+	if ((init_ubrrl != DM(UBRRL)) || (ticks == 0)) {
+		/* Update baud rate */
+		baudrate = ((DM(UBRRH)&0x0F)<<8) | DM(UBRRL);
+
+		if (((DM(UCSRC)>>UMSEL)&1) == 0U) {
+			if (((DM(UCSRA)>>U2X)&1) == 0U) {
+				/* Asynchronous Normal mode */
+				mult = 16;
+			} else {
+				/* Asynchronous Double Speed mode */
+				mult = 8;
+			}
+		} else {
+			/* Synchronous mode (not supported yet) */
+			mult = 1;
+		}
+
+		/* Does it mean that ticks should be updated at the moment? */
+		ticks = mult*(baudrate+1);
+	}
+
+	if (ticks == 0) {
+		/* USART clock is going to be generated */
 	}
 }
 
@@ -1700,7 +1749,7 @@ int MSIM_M8ASetLock(struct MSIM_AVR *mcu, uint8_t lock_v)
 	return 0;
 }
 
-int MSIM_M8AProvideIRQs(struct MSIM_AVR *mcu)
+int MSIM_M8APassIRQs(struct MSIM_AVR *mcu)
 {
 	uint8_t timsk, tifr;
 

@@ -30,7 +30,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.101")
+set(MSIM_VERSION "0.1.102")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -120,6 +120,24 @@ if (NOT MSVC)
 		unset(RESULT)
 		list(APPEND TARGET_LIBS -lm)
 	endif()
+endif()
+check_function_exists(posix_openpt HAVE_POSIX_OPENPT)
+check_function_exists(grantpt HAVE_POSIX_GRANTPT)
+check_function_exists(ptsname HAVE_POSIX_PTSNAME)
+check_function_exists(unlockpt HAVE_POSIX_UNLOCKPT)
+check_function_exists(open HAVE_POSIX_OPEN)
+check_function_exists(close HAVE_POSIX_CLOSE)
+check_function_exists(read HAVE_POSIX_READ)
+check_function_exists(write HAVE_POSIX_WRITE)
+if (HAVE_POSIX_OPENPT AND
+    HAVE_POSIX_GRANTPT AND
+    HAVE_POSIX_PTSNAME AND
+    HAVE_POSIX_UNLOCKPT AND
+    HAVE_POSIX_OPEN AND
+    HAVE_POSIX_CLOSE AND
+    HAVE_POSIX_READ AND
+    HAVE_POSIX_WRITE)
+	#add_definitions(-DMSIM_POSIX_PTY=1)
 endif()
 check_include_files(netdb.h HAVE_NETDB_H)
 check_include_files("sys/socket.h" HAVE_SYS_SOCKET_H)

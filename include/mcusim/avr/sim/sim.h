@@ -47,14 +47,15 @@ extern "C" {
 struct MSIM_AVR;
 
 /* Simulated MCU may provide its own implementations of the functions in order
- * to support these features (fuses, locks, timers, IRQs, etc.). ATmega8A is a
- * good example of MCU to understand how these functions can be declared
- * (mcusim/avr/sim/m8a.h) and implemented (simm8a.c). */
+ * to support these features (fuses, locks, timers, IRQs, etc.).
+ *
+ * NOTE: ATmega8A is a good example of MCU to understand how these functions
+ * can be declared and implemented. */
 typedef int (*MSIM_AVR_SetFuse_f)(struct MSIM_AVR *mcu, uint32_t fuse_n,
                                   uint8_t fuse_v);
 typedef int (*MSIM_AVR_SetLock_f)(struct MSIM_AVR *mcu, uint8_t lock_v);
-typedef int (*MSIM_AVR_TickTimers_f)(struct MSIM_AVR *mcu);
-typedef int (*MSIM_AVR_ProvideIRQs_f)(struct MSIM_AVR *mcu);
+typedef int (*MSIM_AVR_TickPerf_f)(struct MSIM_AVR *mcu);
+typedef int (*MSIM_AVR_PassIRQs_f)(struct MSIM_AVR *mcu);
 
 /* State of a simulated AVR microcontroller. Some of these states are
  * AVR-native, others - added by the simulator to manipulate a simulation
@@ -164,9 +165,9 @@ struct MSIM_AVR {
 
 	MSIM_AVR_SetFuse_f set_fusef;	/* Function to set AVR fuse byte */
 	MSIM_AVR_SetLock_f set_lockf;	/* Function to set AVR lock byte */
-	MSIM_AVR_TickTimers_f tick_timers; /* Function to tick 8-bit timers */
-	MSIM_AVR_ProvideIRQs_f provide_irqs; /* Function to check MCU flags and
-					        set IRQs accordingly */
+	MSIM_AVR_TickPerf_f tick_perf;	/* Function to tick 8-bit timers */
+	MSIM_AVR_PassIRQs_f pass_irqs;	/* Function to check MCU flags and
+					   set IRQs accordingly */
 
 	struct MSIM_AVR_VCDDetails *vcdd; /* Details about registers to
 					     be dumped into VCD file */

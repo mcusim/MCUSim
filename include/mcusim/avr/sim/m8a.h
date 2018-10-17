@@ -30,12 +30,13 @@
 #ifndef MSIM_AVR_M8A_H_
 #define MSIM_AVR_M8A_H_ 1
 
-#include <stdio.h>
-#include <stdint.h>
-
 /* Include headers specific to the ATMega8A */
 #define _SFR_ASM_COMPAT 1
 #define __AVR_ATmega8A__ 1
+
+#include <stdio.h>
+#include <stdint.h>
+
 #include "mcusim/avr/io.h"
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simcore.h"
@@ -59,13 +60,13 @@
 
 #define SET_FUSE_F	MSIM_M8ASetFuse
 #define SET_LOCK_F	MSIM_M8ASetLock
-#define TICK_TIMERS_F	MSIM_M8ATickTimers
-#define PROVIDE_IRQS_F	MSIM_M8AProvideIRQs
+#define TICK_PERF_F	MSIM_M8ATickPerf
+#define PASS_IRQS_F	MSIM_M8APassIRQs
 
 int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v);
 int MSIM_M8ASetLock(struct MSIM_AVR *mcu, uint8_t lock_v);
-int MSIM_M8ATickTimers(struct MSIM_AVR *mcu);
-int MSIM_M8AProvideIRQs(struct MSIM_AVR *mcu);
+int MSIM_M8ATickPerf(struct MSIM_AVR *mcu);
+int MSIM_M8APassIRQs(struct MSIM_AVR *mcu);
 
 #define SREG		_SFR_IO8(0x3F)
 #define SPH		_SFR_IO8(0x3E)
@@ -73,3 +74,4 @@ int MSIM_M8AProvideIRQs(struct MSIM_AVR *mcu);
 #include "mcusim/avr/sim/vcd_regs.h"
 
 #endif /* MSIM_AVR_M8A_H_ */
+

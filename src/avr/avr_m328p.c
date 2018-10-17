@@ -65,7 +65,7 @@ int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	return mcu_init(mcu, args);
 }
 
-int MSIM_M328PTickTimers(struct MSIM_AVR *mcu)
+int MSIM_M328PTickPerf(struct MSIM_AVR *mcu)
 {
 	tick_timer0(mcu);
 	return 0;
