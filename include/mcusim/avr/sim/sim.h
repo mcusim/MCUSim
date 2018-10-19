@@ -64,13 +64,9 @@ enum MSIM_AVR_State {
 	AVR_RUNNING,
 	AVR_STOPPED,
 	AVR_SLEEPING,
-
-	/* Execute next instruction. */
-	AVR_MSIM_STEP,
-	/* Terminate simulation and exit. */
-	AVR_MSIM_STOP,
-	/* Terminate simulation because of test failure. */
-	AVR_MSIM_TESTFAIL
+	AVR_MSIM_STEP,			/* Execute next instruction */
+	AVR_MSIM_STOP,			/* Terminate sim (correctly) */
+	AVR_MSIM_TESTFAIL		/* Terminate sim (test failure) */
 };
 
 enum MSIM_AVR_ClkSource {
@@ -173,6 +169,8 @@ struct MSIM_AVR {
 					     be dumped into VCD file */
 
 	char log[1024];			/* Buffer to print a log message */
+
+	struct MSIM_AVR_PTYDetails *pty; /* Details to work with pseudo-term */
 };
 
 /* Structure to describe a memory operation requested by user. */

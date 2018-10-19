@@ -24,19 +24,64 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * Main header file which denotes a public API of the MCUSim library.
+ * There are some declarations and functions to pair a master pseudo-terminal
+ * device (in POSIX terms) with USART within a simulated AVR microcontroller.
  */
-#ifndef MSIM_MAIN_HEADER_H_
-#define MSIM_MAIN_HEADER_H_ 1
+#include <stdint.h>
+#ifdef MSIM_POSIX_PTY
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-#include "mcusim/avr/sim/bootloader.h"
-#include "mcusim/avr/sim/decoder.h"
-#include "mcusim/avr/sim/gdb.h"
-#include "mcusim/avr/sim/interrupt.h"
-#include "mcusim/avr/sim/lua.h"
-#include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/simcore.h"
-#include "mcusim/avr/sim/vcd.h"
+#include "mcusim/log.h"
+#include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/pty.h"
 
-#endif /* MSIM_MAIN_HEADER_H_ */
+int MSIM_AVR_PTYOpen(struct MSIM_AVR *mcu)
+{
+	int32_t masterfd = -1;
+	int32_t slavefd = -1;
+	char *slavedevice;
+	int pty_err = 0;
+
+	masterfd = posix_openpt(O_RDWR|O_NOCTTY);
+	mcu->pty->master_fd = masterfd;
+
+	if ((masterfd == -1) || (grantpt(masterfd) == -1) ||
+	                (unlockpt(masterfd) == -1) ||
+	                ((slavedevice = ptsname(masterfd)) == NULL)) {
+		pty_err = 1;
+		MSIM_LOG_ERROR("failed to setup pty master device");
+	} else {
+#ifdef DEBUG
+		snprintf(mcu->log, sizeof mcu->log, "slave pty device "
+		         "is: %s", slavedevice);
+		MSIM_LOG_DEBUG(mcu->log);
+#endif
+		slavefd = open(slavedevice, O_RDWR|O_NOCTTY);
+		mcu->pty->slave_fd = slavefd;
+		snprintf(mcu->pty->slave_name, sizeof mcu->pty->slave_name,
+		         "%s", slavedevice);
+		if (slavefd < 0) {
+			pty_err = 1;
+			snprintf(mcu->log, sizeof mcu->log, "cannot "
+			         "open pty slave device: %s", slavedevice);
+			MSIM_LOG_ERROR(mcu->log);
+		}
+	}
+	return pty_err;
+}
+
+int MSIM_AVR_PTYClose(struct MSIM_AVR *mcu)
+{
+	if (mcu->pty->slave_fd >= 0) {
+		close(mcu->pty->slave_fd);
+	}
+	if (mcu->pty->master_fd >= 0) {
+		close(mcu->pty->master_fd);
+	}
+	return 0;
+}
+
+#endif /* MSIM_POSIX_PTY */
+

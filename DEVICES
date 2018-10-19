@@ -4,7 +4,8 @@ Supported embedded peripherals are in a third column.
 
 
 ATmega8A        m8a        init, fuses, timer/counter0, timer/counter2,
-                           timer/counter1 partially, interrupts partially
+                           timer/counter1, interrupts (partially),
+                           USART (initial implementation)
 
 ATmega8         m8         same as ATmega8A
 

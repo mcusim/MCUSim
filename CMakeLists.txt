@@ -30,7 +30,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.103")
+set(MSIM_VERSION "0.1.104")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -86,12 +86,14 @@ set(MCUSIM_LIB_SRC	src/avr/avr_simcore.c
 			src/avr/avr_decoder.c
 			src/avr/avr_gdb.c
 			src/avr/avr_vcd.c
+			src/avr/avr_pty.c
 			src/msim_getopt.c
 			src/msim_ihex.c
 			src/msim_log.c)
 
 # Look for libraries, packages, etc.
 if (WITH_LUA)
+	message(STATUS "[OPTION] Lua-based models strictly required")
 	find_package(Lua REQUIRED)
 else()
 	find_package(Lua)
@@ -129,6 +131,9 @@ check_function_exists(open HAVE_POSIX_OPEN)
 check_function_exists(close HAVE_POSIX_CLOSE)
 check_function_exists(read HAVE_POSIX_READ)
 check_function_exists(write HAVE_POSIX_WRITE)
+if (WITH_POSIX_PTY)
+	message(STATUS "[OPTION] POSIX pseudo-terminals strictly required")
+endif()
 if (HAVE_POSIX_OPENPT AND
     HAVE_POSIX_GRANTPT AND
     HAVE_POSIX_PTSNAME AND
@@ -137,7 +142,14 @@ if (HAVE_POSIX_OPENPT AND
     HAVE_POSIX_CLOSE AND
     HAVE_POSIX_READ AND
     HAVE_POSIX_WRITE)
-	#add_definitions(-DMSIM_POSIX_PTY=1)
+	message(STATUS "[OPTION] Building with POSIX pseudo-terminals")
+	add_definitions(-DMSIM_POSIX_PTY=1)
+else()
+	if (WITH_POSIX_PTY)
+		message(FATAL_ERROR "[OPTION] Building without POSIX pseudo-terminals")
+	else()
+		message(STATUS "[OPTION] Building without POSIX pseudo-terminals")
+	endif()
 endif()
 check_include_files(netdb.h HAVE_NETDB_H)
 check_include_files("sys/socket.h" HAVE_SYS_SOCKET_H)
