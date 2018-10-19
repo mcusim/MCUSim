@@ -60,14 +60,15 @@
 
 #define DM(v)			(mcu->dm[v])
 
-/* Initial PORTD and PIND values and to track T0/PD4 and T1/PD5. */
-static uint8_t init_portd;
-static uint8_t init_pind;
-/* Initial PORTB and PINB value to track TOSC1/PB6 and TOSC2/PB7. */
-static uint8_t init_portb;
-static uint8_t init_pinb;
-/* Initial UBRRL value to update USART baud rate generator. */
-static uint8_t init_ubrrl;
+static uint8_t init_portd;	/* PORTD (buffer) */
+static uint8_t init_pind;	/* PIND (buffer) */
+static uint8_t init_portb;	/* PORTB (buffer) */
+static uint8_t init_pinb;	/* PINB (buffer) */
+
+static uint8_t ucsra_buf;	/* USART Control and Status A (buffer) */
+static uint8_t ucsrc_buf;	/* USART Control and Status C (buffer) */
+static uint8_t ubrrh_buf;	/* USART Baud Rate High (buffer) */
+static uint8_t ubrrl_buf;	/* USART Baud Rate Low (buffer) */
 
 /* The OCRx Compare Registers are double buffered when using any of
  * the PWM modes and updated during either TOP or BOTTOM of the counting
@@ -86,8 +87,9 @@ static void tick_timer1(struct MSIM_AVR *mcu);
 static void tick_timer2(struct MSIM_AVR *mcu);
 static void update_watched(struct MSIM_AVR *mcu);
 
-/* USART baud rate generator */
 static void tick_usart(struct MSIM_AVR *mcu);
+static void usart_receive(struct MSIM_AVR *mcu);
+static void usart_transmit(struct MSIM_AVR *mcu);
 
 /* Timer/Counter1 modes of operation */
 static void timer1_normal(struct MSIM_AVR *mcu, uint32_t presc,
@@ -167,11 +169,20 @@ static void update_watched(struct MSIM_AVR *mcu)
 {
 	init_portd = DM(PORTD);
 	init_pind = DM(PIND);
-
 	init_portb = DM(PORTB);
 	init_pinb = DM(PINB);
 
-	init_ubrrl = DM(UBRRL);
+	/* NOTE: The UBRRH register shares the same I/O location as the
+	 * UCSRC Register (24.10. Accessing UBRRH/UCSRC Registers). It means
+	 * that URSEL (MSB bit) should be checked additionally to understand
+	 * which register should be updated */
+	if (((DM(UBRRH)>>URSEL)&1) == 0) {
+		ubrrh_buf = DM(UBRRH);
+	} else {
+		ucsrc_buf = DM(UCSRC);
+	}
+	ubrrl_buf = DM(UBRRL);
+	ucsra_buf = DM(UCSRA);
 }
 
 static void tick_timer0(struct MSIM_AVR *mcu)
@@ -501,38 +512,91 @@ static void tick_usart(struct MSIM_AVR *mcu)
 	/* You may think about this function as a programmable prescaler or
 	 * baud rate generator.
 	 *
-	 * It is running at the system clock and is loaded with the UBRR
-	 * register value each time the counter has counted down to zero or
-	 * when the UBRRL register is written (24.3.1. Internal Clock
-	 * Generation – The Baud Rate Generator). */
-	static uint32_t baudrate;		/* 12-bit baud rate value */
-	static int32_t ticks = -1;		/* Current prescaler ticks */
-	uint8_t mult = 1;			/* Multiplier of a divider */
+	 * It is running at the system clock (Fosc) and is loaded with the
+	 * 12-bit UBRR register value each time the counter has counted down
+	 * to zero or when the UBRRL register is written.
+	 * (see 24.3.1. Internal Clock Generation...) */
+	static uint32_t rx_ticks = 0;
+	static uint32_t tx_ticks = 0;
+	static uint32_t baud;		/* 12-bit baud rate value */
+	static uint32_t rx_presc = 0;	/* Rx clock prescaler, (UBRR+1) */
+	static uint32_t tx_presc = 0;	/* Tx clock prescaler, m*(UBRR+1) */
+	uint8_t mult = 1;		/* Multiplier of Tx clock divider */
 
-	if ((init_ubrrl != DM(UBRRL)) || (ticks == 0)) {
-		/* Update baud rate */
-		baudrate = ((DM(UBRRH)&0x0F)<<8) | DM(UBRRL);
+	if ((ubrrl_buf != DM(UBRRL)) || (rx_ticks == 0U) || (tx_presc == 0U)) {
+		/* Load a new baud rate value */
+		if (((DM(UBRRH)>>UMSEL)&1) == 0U) {
+			/* There is a UBRRH value stored in data memory after
+			 * the last tick of the AVR decoder. */
+			if (DM(UBRRH) != ubrrh_buf) {
+				baud = (uint32_t)((DM(UBRRH)&0x0F)<<8) |
+				       (uint32_t)DM(UBRRL);
+			} else {
+				baud = (uint32_t)((ubrrh_buf&0x0F)<<8) |
+				       (uint32_t)DM(UBRRL);
+			}
+		} else {
+			/* There is a UCSRC value stored in data memory after
+			 * the last tick of the AVR decoder. */
+			baud = (uint32_t)((ubrrh_buf&0x0F)<<8) |
+			       (uint32_t)DM(UBRRL);
+		}
+
+		/* Update Rx clock prescaler (and ticks?) */
+		rx_presc = baud+1;
+		rx_ticks = rx_presc;
 
 		if (((DM(UCSRC)>>UMSEL)&1) == 0U) {
 			if (((DM(UCSRA)>>U2X)&1) == 0U) {
-				/* Asynchronous Normal mode */
-				mult = 16;
+				mult = 16; /* Asynchronous Normal mode */
 			} else {
-				/* Asynchronous Double Speed mode */
-				mult = 8;
+				mult = 8; /* Asynchronous Double Speed mode */
 			}
 		} else {
-			/* Synchronous mode (not supported yet) */
-			mult = 1;
+			mult = 1; /* Synchronous mode */
+			MSIM_LOG_WARN("USART synchronous mode is not "
+			              "supported yet, Txclk=Fosc/(UBRR+1)");
 		}
-
-		/* Does it mean that ticks should be updated at the moment? */
-		ticks = mult*(baudrate+1);
+		/* Update Tx clock prescaler (and ticks?) */
+		tx_presc = mult*(baud+1);
+		tx_ticks = tx_presc;
 	}
 
-	if (ticks == 0) {
-		/* USART clock is going to be generated */
+	/* Count-down Rx ticks */
+	if (rx_ticks > 0) {
+		rx_ticks--;
+	} else {
+		if (((DM(UCSRB)>>RXEN)&1) == 1U) {
+			/* Generate Rx clock */
+			usart_receive(mcu);
+		} else {
+			/* USART Rx inactive, do nothing */
+		}
 	}
+
+	/* Count-down Tx ticks */
+	if (tx_ticks > 0) {
+		tx_ticks--;
+	} else {
+		if (((DM(UCSRB)>>TXEN)&1) == 1U) {
+			/* Generate Tx clock */
+			usart_transmit(mcu);
+		} else {
+			/* USART Tx inactive, do nothing */
+		}
+	}
+}
+
+static void usart_receive(struct MSIM_AVR *mcu)
+{
+	/* NOTE: This function is called when USART Rx clock is generated */
+	/* Waiting to be implemented... */
+}
+
+static void usart_transmit(struct MSIM_AVR *mcu)
+{
+	/* NOTE: This function is called when USART Tx clock is generated */
+	/* Waiting to be implemented... */
 }
 
 static void timer1_normal(struct MSIM_AVR *mcu,
