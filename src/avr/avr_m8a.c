@@ -1082,7 +1082,7 @@ static void timer1_pfcpwm(struct MSIM_AVR *mcu, uint32_t presc,
 		MSIM_LOG_ERROR(mcu->log);
 	} else if (err == 0U) {
 		if ((tcnt1 == top) || (tcnt1 == 0xFFFFU)) {
-			if ((wgm1 == 11U) && (tcnt1 == ocr1a_buf)) {
+			if ((wgm1 == 9U) && (tcnt1 == ocr1a_buf)) {
 				DM(TIFR) |= (1<<OCF1A);
 				timer1_oc1_pcpwm(mcu, com1a, com1b, A_CHAN,
 				                 COMP_MATCH_UPCNT);
@@ -1092,7 +1092,7 @@ static void timer1_pfcpwm(struct MSIM_AVR *mcu, uint32_t presc,
 				timer1_oc1_pcpwm(mcu, com1a, com1b, B_CHAN,
 				                 COMP_MATCH_UPCNT);
 			}
-			if ((wgm1 == 10U) && (tcnt1 == icr1)) {
+			if ((wgm1 == 8U) && (tcnt1 == icr1)) {
 				DM(TIFR) |= (1<<ICF1);
 			}
 
