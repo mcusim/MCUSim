@@ -27,9 +27,16 @@
  * There are some declarations and functions to pair a master pseudo-terminal
  * device (in POSIX terms) with USART within a simulated AVR microcontroller.
  */
-#include <stdint.h>
 #ifdef MSIM_POSIX_PTY
+
+/* glibc (starting from 2.2) requires _XOPEN_SOURCE >= 600 to expose
+ * definitions for POSIX.1-2001 base specification plus XSI extension
+ * and C99 definitions. */
+#define _XOPEN_SOURCE		600
+
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
 

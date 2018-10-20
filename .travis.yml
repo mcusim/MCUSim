@@ -15,7 +15,7 @@ before_script:
         - sudo apt-get install -y liblua5.2 liblua5.2-dev texlive
         - mkdir build
         - cd build
-        - cmake -DWITH_LUA=True -DWITH_POSIX_PTY=True -DWITH_XSPICE=True ..
+        - cmake -DWITH_LUA=True -DWITH_POSIX_PTY=True ..
 
 script:
         - make
@@ -28,7 +28,7 @@ addons:
   coverity_scan:
     project:
       name: "dsalychev/mcusim"
-      description: "Simulator for MCU-based circuits (via Travis CI)"
+      description: "MCUSim - Microcontroller-based circuit simulator (via Travis CI)"
     notification_email: darkness.bsd@gmail.com
     build_command_prepend: "make clean"
     build_command:   "make"
@@ -38,5 +38,5 @@ notifications:
   email:
     recipients:
       - darkness.bsd@gmail.com
-    on_success: always # default: always
+    on_success: never # default: always
     on_failure: always # default: always
