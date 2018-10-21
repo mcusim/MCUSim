@@ -90,5 +90,15 @@ int MSIM_AVR_PTYClose(struct MSIM_AVR *mcu)
 	return 0;
 }
 
+ssize_t MSIM_AVR_PTYWrite(struct MSIM_AVR *mcu, uint8_t *buf, uint32_t len)
+{
+	return write(mcu->pty->master_fd, buf, len);
+}
+
+ssize_t MSIM_AVR_PTYRead(struct MSIM_AVR *mcu, uint8_t *buf, uint32_t len)
+{
+	return read(mcu->pty->master_fd, buf, len);
+}
+
 #endif /* MSIM_POSIX_PTY */
 

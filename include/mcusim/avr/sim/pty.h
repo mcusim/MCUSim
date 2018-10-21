@@ -48,11 +48,15 @@ struct MSIM_AVR_PTYDetails {
 
 int MSIM_AVR_PTYOpen(struct MSIM_AVR *mcu);
 int MSIM_AVR_PTYClose(struct MSIM_AVR *mcu);
+ssize_t MSIM_AVR_PTYWrite(struct MSIM_AVR *mcu, uint8_t *buf, uint32_t len);
+ssize_t MSIM_AVR_PTYRead(struct MSIM_AVR *mcu, uint8_t *buf, uint32_t len);
 
 #else
 
-#define MSIM_AVR_PTYOpen(mcu)		0
-#define MSIM_AVR_PTYClose(mcu)		0
+#define MSIM_AVR_PTYOpen(mcu)			0
+#define MSIM_AVR_PTYClose(mcu)			0
+#define MSIM_AVR_PTYWrite(mcu, buf, len)	((ssize_t)-1)
+#define MSIM_AVR_PTYRead(mcu, buf, len)		((ssize_t)-1)
 
 #endif
 

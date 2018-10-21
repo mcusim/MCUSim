@@ -223,8 +223,6 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	mcu->pass_irqs = NULL;
 #endif
 
-	MSIM_AVR_PTYOpen(mcu);
-
 	return 0;
 }
 

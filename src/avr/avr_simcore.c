@@ -153,12 +153,19 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 			break;
 		}
 
-		/* Tick peripherals written in Lua */
-		MSIM_AVR_LUATickModels(mcu);
-		/* Tick MCU periferals */
+		/* Tick MCU periferals.
+		 *
+		 * NOTE: It is important to tick MCU peripherals before
+		 * updating Lua models. One of the reasons is an accessing
+		 * mechanism of the registers which share the same I/O
+		 * location (UBRRH/UCSRC of ATmega8A for example). */
 		if (mcu->tick_perf != NULL) {
 			mcu->tick_perf(mcu);
 		}
+
+		/* Tick peripherals written in Lua */
+		MSIM_AVR_LUATickModels(mcu);
+
 		/* Dump registers to VCD */
 		if (vcd_f && !tick_ovf) {
 			MSIM_AVR_VCDDumpFrame(vcd_f, mcu, tick, CLK_RISE);

@@ -251,6 +251,11 @@ int main(int argc, char *argv[])
 	}
 	fclose(fp);
 
+	mcu.pty->master_fd = -1;
+	mcu.pty->slave_fd = -1;
+	mcu.pty->slave_name[0] = 0;
+	MSIM_AVR_PTYOpen(&mcu);
+
 	/* Do we have to print available registers only? */
 	regs = sizeof mcu.vcdd->regs/sizeof mcu.vcdd->regs[0];
 	if (print_regs != 0) {
@@ -434,16 +439,18 @@ static void print_short_usage(void)
 static void print_version(void)
 {
 #ifndef DEBUG
-	printf("mcusim %s : Microcontroller-based circuit simulator\n"
-	       "Please find documentation at https://trac.mcusim.org\n"
-	       "Please file your bug-reports at https://trac.mcusim.org/"
-	       "newticket\n\n", MSIM_VERSION);
+	printf("MCUSim %s : Microcontroller-based circuit simulator\n"
+	       "        Copyright (c) 2017, 2018, The MCUSim Contributors\n"
+	       "        Please find documentation at https://trac.mcusim.org\n"
+	       "        Please file your bug-reports at "
+	       "https://trac.mcusim.org/newticket\n", MSIM_VERSION);
 #else
-	printf("mcusim %s : Microcontroller-based circuit simulator "
+	printf("MCUSim %s : Microcontroller-based circuit simulator "
 	       "(Debug version)\n"
-	       "Please find documentation at https://trac.mcusim.org\n"
-	       "Please file your bug-reports at https://trac.mcusim.org/"
-	       "newticket\n\n", MSIM_VERSION);
+	       "        Copyright (c) 2017, 2018, The MCUSim Contributors\n"
+	       "        Please find documentation at https://trac.mcusim.org\n"
+	       "        Please file your bug-reports at "
+	       "https://trac.mcusim.org/newticket\n", MSIM_VERSION);
 #endif
 }
 

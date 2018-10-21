@@ -69,6 +69,7 @@ static uint8_t ucsra_buf;	/* USART Control and Status A (buffer) */
 static uint8_t ucsrc_buf;	/* USART Control and Status C (buffer) */
 static uint8_t ubrrh_buf;	/* USART Baud Rate High (buffer) */
 static uint8_t ubrrl_buf;	/* USART Baud Rate Low (buffer) */
+static uint8_t udr_buf;		/* USART Data Register */
 
 /* The OCRx Compare Registers are double buffered when using any of
  * the PWM modes and updated during either TOP or BOTTOM of the counting
@@ -88,8 +89,10 @@ static void tick_timer2(struct MSIM_AVR *mcu);
 static void update_watched(struct MSIM_AVR *mcu);
 
 static void tick_usart(struct MSIM_AVR *mcu);
-static void usart_receive(struct MSIM_AVR *mcu);
+/* This function is called when USART Tx clock is generated */
 static void usart_transmit(struct MSIM_AVR *mcu);
+/* This function is called when USART Rx clock is generated */
+static void usart_receive(struct MSIM_AVR *mcu);
 
 /* Timer/Counter1 modes of operation */
 static void timer1_normal(struct MSIM_AVR *mcu, uint32_t presc,
@@ -183,6 +186,7 @@ static void update_watched(struct MSIM_AVR *mcu)
 	}
 	ubrrl_buf = DM(UBRRL);
 	ucsra_buf = DM(UCSRA);
+	udr_buf = DM(UDR);
 }
 
 static void tick_timer0(struct MSIM_AVR *mcu)
@@ -562,6 +566,11 @@ static void tick_usart(struct MSIM_AVR *mcu)
 		tx_ticks = tx_presc;
 	}
 
+	/* UDRE is cleared by writing to UDR */
+	if (DM(UDR) != udr_buf) {
+		DM(UCSRA) &= ~(1<<UDRE);
+	}
+
 	/* Count-down Rx ticks */
 	if (rx_ticks > 0) {
 		rx_ticks--;
@@ -587,16 +596,131 @@ static void tick_usart(struct MSIM_AVR *mcu)
 	}
 }
 
-static void usart_receive(struct MSIM_AVR *mcu)
-{
-	/* NOTE: This function is called when USART Rx clock is generated */
-	/* Waiting to be implemented... */
-}
-
 static void usart_transmit(struct MSIM_AVR *mcu)
 {
-	/* NOTE: This function is called when USART Tx clock is generated */
-	/* Waiting to be implemented... */
+	uint8_t buf[2];
+	uint32_t buf_len = 1;
+	uint8_t ucsz;
+	uint32_t written;
+	uint8_t err = 0;
+
+	/* Find how many bits to transmit */
+	ucsz = (((DM(UCSRB)>>UCSZ2)&1U)<<2) |
+	       (((DM(UCSRC)>>UCSZ1)&1U)<<1) |
+	       ((DM(UCSRC)>>UCSZ0)&1U);
+
+	buf[1] = 0;
+	switch (ucsz) {
+	case 0:			/* 5-bit */
+		buf[0] = DM(UDR)&0x1F;
+		break;
+	case 1:			/* 6-bit */
+		buf[0] = DM(UDR)&0x3F;
+		break;
+	case 2:			/* 7-bit */
+		buf[0] = DM(UDR)&0x7F;
+		break;
+	case 3:			/* 8-bit */
+		buf[0] = DM(UDR);
+		break;
+	case 7:			/* 9-bit */
+		/* NOTE: Should all other bits of buf[1] be filled from the
+		 * next portion of USART transmit data (and not with zeroes)?*/
+		buf[0] = DM(UDR);
+		buf[1] = (DM(UCSRB)>>TXB8)&1U;
+		buf_len = 2;
+		break;
+	default:
+		snprintf(mcu->log, sizeof mcu->log, "these bits to select "
+		         "USART character size are reserved: UCSZ=0x%" PRIX8,
+		         ucsz);
+		MSIM_LOG_ERROR(mcu->log);
+		err = 1;
+		break;
+	}
+
+	if (err == 0) {
+		if (mcu->pty->master_fd >= 0) {
+			written = MSIM_AVR_PTYWrite(mcu, buf, buf_len);
+			if (written != buf_len) {
+				snprintf(mcu->log, sizeof mcu->log, "failed "
+				         "to feed PTY master with USART data, "
+				         "slave=%s", mcu->pty->slave_name);
+				MSIM_LOG_ERROR(mcu->log);
+			}
+			DM(UCSRA) |= (1<<UDRE);
+			DM(UCSRA) |= (1<<TXC);
+		} else {
+			MSIM_LOG_DEBUG("cannot feed PTY master with USART "
+			               "data: master_fd < 0");
+		}
+	}
+}
+
+static void usart_receive(struct MSIM_AVR *mcu)
+{
+	uint8_t buf[2];
+	uint32_t buf_len = 1;
+	uint32_t mask;
+	uint8_t ucsz;
+	uint32_t recv;
+	uint8_t err = 0;
+
+	/* Find how many bits to receive */
+	ucsz = (((DM(UCSRB)>>UCSZ2)&1U)<<2) |
+	       (((DM(UCSRC)>>UCSZ1)&1U)<<1) |
+	       ((DM(UCSRC)>>UCSZ0)&1U);
+
+	switch (ucsz) {
+	case 0:			/* 5-bit */
+		mask = 0x1F;
+		break;
+	case 1:			/* 6-bit */
+		mask = 0x3F;
+		break;
+	case 2:			/* 7-bit */
+		mask = 0x7F;
+		break;
+	case 3:			/* 8-bit */
+		mask = 0xFF;
+		break;
+	case 7:			/* 9-bit */
+		/* NOTE: Should all other bits of buf[1] be filled from the
+		 * next portion of USART receive data (and not with zeroes)? */
+		mask = 0xFF;
+		buf_len = 2;
+		break;
+	default:
+		snprintf(mcu->log, sizeof mcu->log, "these bits to select "
+		         "USART character size are reserved: UCSZ=0x%" PRIX8,
+		         ucsz);
+		MSIM_LOG_ERROR(mcu->log);
+		err = 1;
+		break;
+	}
+
+	if (err == 0) {
+		if (mcu->pty->master_fd >= 0) {
+			recv = MSIM_AVR_PTYRead(mcu, buf, buf_len);
+			if (recv != buf_len) {
+				snprintf(mcu->log, sizeof mcu->log, "failed "
+				         "to read USART data from PTY master, "
+				         "slave=%s", mcu->pty->slave_name);
+				MSIM_LOG_ERROR(mcu->log);
+			}
+
+			DM(UDR) = 0;
+			DM(UDR) |= buf[0]&mask;
+			DM(UCSRB) &= ~(1<<TXB8);
+			if ((buf_len == 2U) && ((buf[1]&1) == 1U)) {
+				DM(UCSRB) |= (1<<TXB8);
+			}
+			DM(UCSRA) |= (1<<RXC);
+		} else {
+			MSIM_LOG_DEBUG("cannot read USART data from PTY "
+			               "master: master_fd < 0");
+		}
+	}
 }
 
 static void timer1_normal(struct MSIM_AVR *mcu,
@@ -1815,10 +1939,11 @@ int MSIM_M8ASetLock(struct MSIM_AVR *mcu, uint8_t lock_v)
 
 int MSIM_M8APassIRQs(struct MSIM_AVR *mcu)
 {
-	uint8_t timsk, tifr;
+	uint8_t timsk;
+	uint8_t tifr;
 
-	timsk = mcu->dm[TIMSK];
-	tifr = mcu->dm[TIFR];
+	timsk = DM(TIMSK);		/* Timer Interrupt Mask Register */
+	tifr = DM(TIFR);		/* Timer Interrupt Flag Register */
 
 	/* Timer0 interrupts */
 	if (((timsk>>TOIE0)&1U) && ((tifr>>TOV0)&1U)) {
@@ -1852,6 +1977,32 @@ int MSIM_M8APassIRQs(struct MSIM_AVR *mcu)
 	if (((timsk>>TICIE1)&1U) && ((tifr>>ICF1)&1U)) {
 		mcu->intr->irq[TIMER1_CAPT_vect_num-1] = 1;
 		mcu->dm[TIFR] &= ~(1<<ICF1);
+	}
+
+	/* USART interrupts */
+	if (((DM(UCSRB)>>UDRIE)&1U) && ((DM(UCSRA)>>UDRE)&1U)) {
+		mcu->intr->irq[USART_UDRE_vect_num-1] = 1;
+		/* 24.6.3. Transmitter Flags and Interrupts
+		 *
+		 * When interrupt-driven data transmission is used, the Data
+		 * Register empty Interrupt routine must either write new data
+		 * to UDR in order to clear UDRE or disable the Data Register
+		 * empty Interrupt, otherwise a new interrupt will occur once
+		 * the interrupt routine terminates.
+		 *
+		 * DM(UCSRA) &= ~(1<<UDRE); */
+	}
+	if (((DM(UCSRB)>>TXCIE)&1U) && ((DM(UCSRA)>>TXC)&1U)) {
+		mcu->intr->irq[USART_TXC_vect_num-1] = 1;
+		DM(UCSRA) &= ~(1<<TXC);
+	}
+	if (((DM(UCSRB)>>RXCIE)&1U) && ((DM(UCSRA)>>RXC)&1U)) {
+		mcu->intr->irq[USART_RXC_vect_num-1] = 1;
+		/* RXC flag should not be cleared automatically, but by
+		 * reading UDR register. This behavior will have to be
+		 * adjusted further.
+		 * See 24.7.3. Receive Compete Flag and Interrupt */
+		DM(UCSRA) &= ~(1<<RXC);
 	}
 
 	return 0;
