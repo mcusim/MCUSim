@@ -78,6 +78,7 @@ static struct MSIM_AVR mcu;		/* AVR MCU descriptor */
 static struct MSIM_AVR_Bootloader bls;	/* Bootloader section */
 static struct MSIM_AVR_Int intr;	/* Interrupts and IRQs */
 static struct MSIM_AVR_VCDDetails vcdd;	/* Details about registers to dump */
+static struct MSIM_AVR_PTYDetails pty;	/* Pseudo-terminal details */
 
 /* Statically allocated memory for MCU */
 static unsigned char pm[PMSZ];		/* Program memory */
@@ -240,6 +241,7 @@ int main(int argc, char *argv[])
 	mcu.pmp = pmp;
 	mcu.intr = &intr;
 	mcu.vcdd = &vcdd;
+	mcu.pty = &pty;
 	intr.trap_at_isr = trap_at_isr;
 	if (MSIM_AVR_Init(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp) != 0) {
 		snprintf(log, sizeof log, "MCU model %s cannot be initialized",
@@ -379,8 +381,11 @@ int main(int argc, char *argv[])
 		MSIM_LOG_INFO(log);
 		MSIM_AVR_RSPInit(&mcu, rsp_port);
 	}
+
 	sim_retcode = MSIM_AVR_Simulate(
 	                      &mcu, 0, mcu.flashend+1, firmware_test);
+
+	MSIM_AVR_PTYClose(&mcu);
 	MSIM_AVR_LUACleanModels();
 	if (!firmware_test) {
 		MSIM_AVR_RSPClose();
@@ -432,13 +437,13 @@ static void print_version(void)
 	printf("mcusim %s : Microcontroller-based circuit simulator\n"
 	       "Please find documentation at https://trac.mcusim.org\n"
 	       "Please file your bug-reports at https://trac.mcusim.org/"
-	       "newticket\n", MSIM_VERSION);
+	       "newticket\n\n", MSIM_VERSION);
 #else
 	printf("mcusim %s : Microcontroller-based circuit simulator "
 	       "(Debug version)\n"
 	       "Please find documentation at https://trac.mcusim.org\n"
 	       "Please file your bug-reports at https://trac.mcusim.org/"
-	       "newticket\n", MSIM_VERSION);
+	       "newticket\n\n", MSIM_VERSION);
 #endif
 }
 

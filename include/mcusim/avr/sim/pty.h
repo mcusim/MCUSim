@@ -24,19 +24,40 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * Main header file which denotes a public API of the MCUSim library.
+ * There are some declarations and functions to pair a master pseudo-terminal
+ * device (in POSIX terms) with USART within a simulated AVR microcontroller.
  */
-#ifndef MSIM_MAIN_HEADER_H_
-#define MSIM_MAIN_HEADER_H_ 1
+#ifndef MSIM_AVR_PTY_H_
+#define MSIM_AVR_PTY_H_ 1
 
-#include "mcusim/avr/sim/bootloader.h"
-#include "mcusim/avr/sim/decoder.h"
-#include "mcusim/avr/sim/gdb.h"
-#include "mcusim/avr/sim/interrupt.h"
-#include "mcusim/avr/sim/lua.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <stdlib.h>
+
 #include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/simcore.h"
-#include "mcusim/avr/sim/vcd.h"
-#include "mcusim/avr/sim/pty.h"
 
-#endif /* MSIM_MAIN_HEADER_H_ */
+struct MSIM_AVR_PTYDetails {
+	int32_t master_fd;
+	int32_t slave_fd;
+	char slave_name[128];
+};
+
+#ifdef MSIM_POSIX_PTY
+
+int MSIM_AVR_PTYOpen(struct MSIM_AVR *mcu);
+int MSIM_AVR_PTYClose(struct MSIM_AVR *mcu);
+
+#else
+
+#define MSIM_AVR_PTYOpen(mcu)		0
+#define MSIM_AVR_PTYClose(mcu)		0
+
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* MSIM_AVR_PTY_H_ */

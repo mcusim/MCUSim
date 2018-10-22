@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2017, 2018,
- * Dmitry Salychev <darkness.bsd@gmail.com>,
- * Alexander Salychev <ppsalex@rambler.ru> et al.
+ * Copyright (c) 2017, 2018, The MCUSim Contributors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -11,21 +9,22 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <organization> nor the
+ *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * This is a main header with a common function to initialize all AVR models.
  */
 #ifndef MSIM_AVR_MCUINIT_H_
 #define MSIM_AVR_MCUINIT_H_ 1
@@ -162,13 +161,13 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 #endif
 	/* END Fuses */
 
-	/* Timers */
-#ifdef TICK_TIMERS_F
-	mcu->tick_timers = TICK_TIMERS_F;
+	/* MCU peripherals */
+#ifdef TICK_PERF_F
+	mcu->tick_perf = TICK_PERF_F;
 #else
-	mcu->tick_timers = NULL;
+	mcu->tick_perf = NULL;
 #endif
-	/* END Timers */
+	/* END MCU peripherals */
 
 #ifdef BLS_START
 	mcu->bls->start = BLS_START;
@@ -218,11 +217,13 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	/* Set up interrupts and IRQs */
 	mcu->intr->reset_pc = RESET_PC;
 	mcu->intr->ivt = IVT_ADDR;
-#ifdef PROVIDE_IRQS_F
-	mcu->provide_irqs = PROVIDE_IRQS_F;
+#ifdef PASS_IRQS_F
+	mcu->pass_irqs = PASS_IRQS_F;
 #else
-	mcu->provide_irqs = NULL;
+	mcu->pass_irqs = NULL;
 #endif
+
+	MSIM_AVR_PTYOpen(mcu);
 
 	return 0;
 }

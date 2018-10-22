@@ -77,6 +77,9 @@ int MSIM_M328PTickTimers(void *m)
 	mcu = (struct MSIM_AVR *)m;
 	tick_timer0(mcu);
 
+int MSIM_M328PTickPerf(struct MSIM_AVR *mcu)
+{
+	tick_timer0(mcu);
 	return 0;
 }
 
@@ -104,13 +107,13 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 
 	switch (cs0) {
 	case 0x1:
-		presc = 1;			/* No prescaling, clk_io */
+		presc = 1;		/* No prescaling, clk_io */
 		break;
 	case 0x2:
-		presc = 8;			/* clk_io/8 */
+		presc = 8;		/* clk_io/8 */
 		break;
 	case 0x3:
-		presc = 64;			/* clk_io/64 */
+		presc = 64;		/* clk_io/64 */
 		break;
 	case 0x4:
 		presc = 256;		/* clk_io/256 */
@@ -118,26 +121,30 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 	case 0x5:
 		presc = 1024;		/* clk_io/1024 */
 		break;
-	case 0x6:				/* Ext. clock on T0(PD4) (fall) */
+	case 0x6:			/* Ext. clock on T0(PD4) (fall) */
 		if (IS_FALL(init_portd, DM(PORTD), PD4) ||
 		                IS_FALL(init_pind, DM(PIND), PD4)) {
 			if (DM(TCNT0) == 0xFF) {
-				DM(TCNT0) = 0;			/* Reset Timer/Counter0 */
-				DM(TIFR) |= (1<<TOV0);	/* Timer/Counter0 overflow occured */
-			} else {						/* Count UP on tick */
+				/* Reset Timer/Counter0 */
+				DM(TCNT0) = 0;
+				/* Timer/Counter0 overflow occured */
+				DM(TIFR) |= (1<<TOV0);
+			} else {	/* Count UP on tick */
 				DM(TCNT0)++;
 			}
 		}
 		tc0_presc = 0;
 		tc0_ticks = 0;
 		return;
-	case 0x7:				/* Ext. clock on T0(PD4) (rise) */
+	case 0x7:			/* Ext. clock on T0(PD4) (rise) */
 		if (IS_RISE(init_portd, DM(PORTD), PD4) ||
 		                IS_RISE(init_pind, DM(PIND), PD4)) {
 			if (DM(TCNT0) == 0xFF) {
-				DM(TCNT0) = 0;			/* Reset Timer/Counter0 */
-				DM(TIFR) |= (1<<TOV0);	/* Timer/Counter0 overflow occured */
-			} else {						/* Count UP on tick */
+				/* Reset Timer/Counter0 */
+				DM(TCNT0) = 0;
+				/* Timer/Counter0 overflow occured */
+				DM(TIFR) |= (1<<TOV0);
+			} else {	/* Count UP on tick */
 				DM(TCNT0)++;
 			}
 		}
@@ -152,36 +159,39 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 	}
 	/* Internal clock */
 	if (presc != tc0_presc) {
-		if (tc0_presc == 0 && DM(TCNT0) > DM(OCR0A))
+		if ((tc0_presc == 0) && (DM(TCNT0) > DM(OCR0A))) {
 			missed_cm = 1;
+		}
 		tc0_presc = presc;
 		tc0_ticks = 0;
 	}
 	/* Timer Counting mechanism */
 	if (tc0_ticks == (tc0_presc-1)) {
 		if (DM(TCNT0) == 0xFF) {
-			DM(TCNT0) = 0;			/* Reset Timer/Counter0 */
-			DM(TIFR) |= (1<<TOV0);	/* Timer/Counter0 overflow occured */
-		} else {						/* Count UP on tick */
+			/* Reset Timer/Counter0 */
+			DM(TCNT0) = 0;
+			/* Timer/Counter0 overflow occured */
+			DM(TIFR) |= (1<<TOV0);
+		} else {		/* Count UP on tick */
 			DM(TCNT0)++;
 		}
-		tc0_ticks = 0;					/* Calculate next tick */
+		tc0_ticks = 0;		/* Calculate next tick */
 		return;
 	}
 
 	switch (wgm0) {
 	case 0:
 		/* timer0 normal mode */
-		return;
+		break;
 	case 1:
 		/* timer0 pcpwm mode */
-		return;
+		break;
 	case 2:
 		/* timer0 ctc mode */
-		return;
+		break;
 	case 3:
 		/* timer0 fastpwm mode */
-		return;
+		break;
 	default:
 		if (wgm0 != old_wgm0) {
 			fprintf(stderr, "[!]: Selected mode WGM21:20 = %u "

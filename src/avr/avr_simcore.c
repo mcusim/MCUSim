@@ -155,9 +155,9 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 
 		/* Tick peripherals written in Lua */
 		MSIM_AVR_LUATickModels(mcu);
-		/* Tick timers (MCU-defined!) */
-		if (mcu->tick_timers) {
-			mcu->tick_timers(mcu);
+		/* Tick MCU periferals */
+		if (mcu->tick_perf != NULL) {
+			mcu->tick_perf(mcu);
 		}
 		/* Dump registers to VCD */
 		if (vcd_f && !tick_ovf) {
@@ -189,11 +189,10 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		 * unveil their secrets. However, any details they're ready
 		 * to share are highly welcome.
 		 *
-		 * Simulator doesn't guarantee anything special
-		 * here either. The only thing you may rely on is instruction
-		 * which will be completed _after all_ of these cycles
-		 * required to finish instruction itself.
-		 */
+		 * Simulator doesn't guarantee anything special here either.
+		 * The only thing you may rely on is the instruction which
+		 * will be completed _after all_ of these cycles required to
+		 * finish instruction itself. */
 		if ((mcu->ic_left || mcu->state == AVR_RUNNING ||
 		                mcu->state == AVR_MSIM_STEP) &&
 		                MSIM_AVR_Step(mcu)) {
@@ -205,18 +204,17 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 			break;
 		}
 
-		/* Provide IRQs (MCU-defined!) based on MCU flags and handle
-		 * them if this is possible.
+		/* Provide IRQs based on the MCU flags and handle them if this
+		 * is possible.
 		 *
 		 * It's important to understand an interrupt may occur during
 		 * execution of a multi-cycle instruction. This instruction
 		 * is completed before the interrupt is served (according to
 		 * the multiple AVR datasheets). It means that we may provide
 		 * IRQs, but will have to wait required number of cycles
-		 * to serve them.
-		 */
-		if (mcu->provide_irqs) {
-			mcu->provide_irqs(mcu);
+		 * to serve them. */
+		if (mcu->pass_irqs != NULL) {
+			mcu->pass_irqs(mcu);
 		}
 		if (MSIM_AVR_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT) &&
 		                (!mcu->ic_left) && (!mcu->intr->exec_main) &&
@@ -231,9 +229,8 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		}
 
 		/* All cycles of a single instruction from a main program
-		 * have to be performed.
-		 */
-		if (!mcu->ic_left) {
+		 * have to be performed. */
+		if (mcu->ic_left == 0) {
 			mcu->intr->exec_main = 0;
 		}
 
@@ -244,7 +241,7 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 			tick_ovf = 1;
 			MSIM_LOG_WARN("maximum amount of simulation ticks "
 			              "reached");
-			if (vcd_f) {
+			if (vcd_f != NULL) {
 				MSIM_LOG_WARN("VCD dump will not be recorded "
 				              "further");
 			}
@@ -517,11 +514,8 @@ uint8_t MSIM_AVR_StackPop(struct MSIM_AVR *mcu)
 void MSIM_AVR_PrintParts(void)
 {
 	uint32_t i;
-	char buf[1024];
 
 	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++) {
-		snprintf(buf, sizeof buf, "%s=%s", init_funcs[i].partno,
-		         init_funcs[i].name);
-		MSIM_LOG_INFO(buf);
+		printf("%s %s\n", init_funcs[i].partno, init_funcs[i].name);
 	}
 }

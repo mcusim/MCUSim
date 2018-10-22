@@ -30,12 +30,13 @@
 #ifndef MSIM_AVR_M328_H_
 #define MSIM_AVR_M328_H_ 1
 
-#include <stdio.h>
-#include <stdint.h>
-
 /* Include headers specific to the ATMega328P */
 #define _SFR_ASM_COMPAT 1
 #define __AVR_ATmega328__ 1
+
+#include <stdio.h>
+#include <stdint.h>
+
 #include "mcusim/avr/io.h"
 #include "mcusim/mcusim.h"
 

@@ -119,3 +119,9 @@ Advanced install
         Build MCUSim library with a position-independent code (-fPIC) option.
         This one is true by default and can be deactivated by providing a
         false value.
+
+ -DWITH_POSIX_PTY=True
+        Build MCUSim with POSIX pseudo-terminals support. Configuration
+        will not be finished successfully if POSIX pseudo-terminals are not
+        supported in the host operating system.
+

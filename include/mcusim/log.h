@@ -48,8 +48,12 @@ extern "C" {
 #define MSIM_LOG_INFO(msg) MSIM_LOG_Log(MSIM_LOG_LVLINFO,		\
                 "info", __FILENAME__, __LINE__, msg);
 
+#ifdef DEBUG
 #define MSIM_LOG_DEBUG(msg) MSIM_LOG_Log(MSIM_LOG_LVLDEBUG,		\
                 "debug", __FILENAME__, __LINE__, msg);
+#else /* DEBUG is not defined */
+#define MSIM_LOG_DEBUG(msg)
+#endif /* DEBUG */
 
 /* Test logging level macros. This is a preferred way to check a current
  * logging level. */

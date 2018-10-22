@@ -46,19 +46,16 @@ extern "C" {
  * instance. */
 struct MSIM_AVR;
 
-/* MCU-specific functions.
+/* Simulated MCU may provide its own implementations of the functions in order
+ * to support these features (fuses, locks, timers, IRQs, etc.).
  *
- * Simulated microcontroller may provide its own implementations of the
- * functions in order to support these features (fuses, locks, timers,
- * IRQs, etc.). ATmega8A is a good example of MCU to understand how
- * these functions can be declared (mcusim/avr/sim/simm8a.h) and
- * implemented (simm8a.c).
- */
+ * NOTE: ATmega8A is a good example of MCU to understand how these functions
+ * can be declared and implemented. */
 typedef int (*MSIM_AVR_SetFuse_f)(struct MSIM_AVR *mcu, uint32_t fuse_n,
                                   uint8_t fuse_v);
 typedef int (*MSIM_AVR_SetLock_f)(struct MSIM_AVR *mcu, uint8_t lock_v);
-typedef int (*MSIM_AVR_TickTimers_f)(struct MSIM_AVR *mcu);
-typedef int (*MSIM_AVR_ProvideIRQs_f)(struct MSIM_AVR *mcu);
+typedef int (*MSIM_AVR_TickPerf_f)(struct MSIM_AVR *mcu);
+typedef int (*MSIM_AVR_PassIRQs_f)(struct MSIM_AVR *mcu);
 
 /* State of a simulated AVR microcontroller. Some of these states are
  * AVR-native, others - added by the simulator to manipulate a simulation
@@ -67,13 +64,9 @@ enum MSIM_AVR_State {
 	AVR_RUNNING,
 	AVR_STOPPED,
 	AVR_SLEEPING,
-
-	/* Execute next instruction. */
-	AVR_MSIM_STEP,
-	/* Terminate simulation and exit. */
-	AVR_MSIM_STOP,
-	/* Terminate simulation because of test failure. */
-	AVR_MSIM_TESTFAIL
+	AVR_MSIM_STEP,			/* Execute next instruction */
+	AVR_MSIM_STOP,			/* Terminate sim (correctly) */
+	AVR_MSIM_TESTFAIL		/* Terminate sim (test failure) */
 };
 
 enum MSIM_AVR_ClkSource {
@@ -168,12 +161,16 @@ struct MSIM_AVR {
 
 	MSIM_AVR_SetFuse_f set_fusef;	/* Function to set AVR fuse byte */
 	MSIM_AVR_SetLock_f set_lockf;	/* Function to set AVR lock byte */
-	MSIM_AVR_TickTimers_f tick_timers; /* Function to tick 8-bit timers */
-	MSIM_AVR_ProvideIRQs_f provide_irqs; /* Function to check MCU flags and
-					        set IRQs accordingly */
+	MSIM_AVR_TickPerf_f tick_perf;	/* Function to tick 8-bit timers */
+	MSIM_AVR_PassIRQs_f pass_irqs;	/* Function to check MCU flags and
+					   set IRQs accordingly */
 
 	struct MSIM_AVR_VCDDetails *vcdd; /* Details about registers to
 					     be dumped into VCD file */
+
+	char log[1024];			/* Buffer to print a log message */
+
+	struct MSIM_AVR_PTYDetails *pty; /* Details to work with pseudo-term */
 };
 
 /* Structure to describe a memory operation requested by user. */
