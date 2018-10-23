@@ -60,6 +60,11 @@ static unsigned char missed_cm = 0;
 
 static void tick_timer0(struct MSIM_AVR *mcu);
 
+/* Timer/Counter0 modes of operation */
+static void timer0_normal(struct MSIM_AVR *mcu,
+                          uint32_t presc, uint8_t *ticks,
+                          uint8_t wgm0, uint8_t com0a, uint8_t com0b);
+
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
 	return mcu_init(mcu, args);
@@ -190,6 +195,31 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 		tc0_presc = 0;
 		tc0_ticks = 0;
 		break;
+	}
+}
+
+static void timer0_normal(struct MSIM_AVR *mcu,
+                          uint32_t presc, uint8_t *ticks,
+                          uint8_t wgm0, uint8_t com0a, uint8_t com0b)
+{
+	if ((*ticks) < (presc-1U)) {
+		(*ticks)++;
+	} else if ((*ticks) > (presc-1U)) {
+		fprintf(stderr, "[e]: Number of Timer1 ticks=%" PRIu32
+		        " should be less then or equal to "
+		        "(prescaler-1)=%" PRIu32 ". Timer1 will not "
+		        "be updated!\n", *ticks, (presc-1U));
+	} else {
+		if (mcu->dm[TCNT0] == 0xFF) {
+			/* Reset Timer/Counter0 */
+			mcu->dm[TCNT0] = 0;
+			/* Set Timer/Counter0 overflow flag */
+			mcu->dm[TIFR] |= (1<<TOV0);
+		} else {
+			mcu->dm[TCNT0]++;
+		}
+		*ticks = 0;
+		return;
 	}
 }
 
