@@ -123,5 +123,7 @@ Advanced install
  -DWITH_POSIX_PTY=True
         Build MCUSim with POSIX pseudo-terminals support. Configuration
         will not be finished successfully if POSIX pseudo-terminals are not
-        supported in the host operating system.
+        supported in the host operating system. False value forces MCUSim to
+        not support pseudo-terminals even if they are available in the host
+        system.
 

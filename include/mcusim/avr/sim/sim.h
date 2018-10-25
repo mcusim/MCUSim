@@ -96,6 +96,7 @@ enum MSIM_AVR_SREGFlag {
 /* Instance of the AVR microcontroller. */
 struct MSIM_AVR {
 	char name[20];			/* Name of the MCU */
+	char log[1024];			/* Buffer to print a log message */
 	unsigned char signature[3];	/* Signature of the MCU */
 	unsigned char xmega;		/* XMEGA flag */
 	unsigned char reduced_core;	/* Reduced core flag */
@@ -112,47 +113,40 @@ struct MSIM_AVR {
 	unsigned char lockbits;		/* Lock bits of the MCU */
 	unsigned char fuse[6];		/* Fuse bytes of the MCU */
 
-	unsigned int spm_pagesize;	/* For devices with bootloader support,
-					   the flash pagesize (in bytes) to be
-					   used for Self Programming Mode (SPM)
-					   instruction. */
-	unsigned char *spmcsr;		/* Store Program Memory Control
-					   and Status Register (SPMCSR). */
+	unsigned int spm_pagesize;	/* Flash pagesize (in bytes) for SPM */
+	unsigned char *spmcsr;		/* SPMCSR Register (address in DM) */
 
 	struct MSIM_AVR_Bootloader *bls; /* Bootloader Section */
 	enum MSIM_AVR_State state;	 /* State of the MCU */
 	enum MSIM_AVR_ClkSource clk_source; /* Clock source */
 
 	unsigned long freq;		/* Current MCU frequency, Hz */
-	unsigned char pc_bits;		/* 16-bit PC, 22-bit PC, etc. */
 	unsigned long pc;		/* Current program counter */
-	struct MSIM_AVR_Int *intr;	/* Interrupts and IRQs */
-	unsigned char ic_left;		/* Cycles left to finish current
-					   instruction */
+	unsigned char pc_bits;		/* 16-bit PC, 22-bit PC, etc. */
+	unsigned char ic_left;		/* Cycles left to finish opcode */
 	unsigned char in_mcinst;	/* Multi-cycle instruction flag */
+	struct MSIM_AVR_Int *intr;	/* Interrupts and IRQs */
+	struct MSIM_AVR_Wdt *wdt;	/* Watchdog Timer */
 
 	unsigned char *sreg;		/* SREG in the data memory */
 	unsigned char *sph;		/* SP(high) in the data memory */
 	unsigned char *spl;		/* SP(low) in the data memory */
 
-	unsigned char *eind;		/* Extended indirect register.*/
+	unsigned char *eind;		/* Extended indirect register */
 	unsigned char *rampz;		/* Extended Z-pointer register */
 	unsigned char *rampy;		/* Extended Y-pointer register */
 	unsigned char *rampx;		/* Extended X-pointer register */
-	unsigned char *rampd;		/* Extended direct register
-					   NOTE: Email me at darkness.bsd at
-					   gmail.com if you're aware of
-					   AVR MCUs which use this register */
+	unsigned char *rampd;		/* Extended direct register */
 
 	unsigned char *pm;		/* Program memory (PM) */
 	unsigned char *pmp;		/* Page buffer of PM */
-	unsigned char *dm;		/* GP, I/O registers and SRAM */
-	unsigned char *mpm;		/* Memory to store instructions at
-					   breakpoints */
-	unsigned long pm_size;		/* Allocated size of PM */
-	unsigned long dm_size;		/* Allocated size of the data memory */
-	unsigned char read_from_mpm;	/* Flag to read from breakpoints
-					   memory, it is 0 usually */
+	unsigned char *mpm;		/* Match points memory, MPM */
+	unsigned char *dm;		/* Data memory (GP, I/O regs, SRAM) */
+	unsigned long pm_size;		/* Size of PM */
+	unsigned long dm_size;		/* Size of the data memory */
+	unsigned char read_from_mpm;	/* 1 - read opcode from MPM */
+	int64_t writ_io[4];		/* I/O regs written (previous tick) */
+	int64_t read_io[4];		/* I/O regs read (previous tick) */
 
 	unsigned int sfr_off;		/* Offset to the AVR special function
 					   registers */
@@ -162,15 +156,11 @@ struct MSIM_AVR {
 	MSIM_AVR_SetFuse_f set_fusef;	/* Function to set AVR fuse byte */
 	MSIM_AVR_SetLock_f set_lockf;	/* Function to set AVR lock byte */
 	MSIM_AVR_TickPerf_f tick_perf;	/* Function to tick 8-bit timers */
-	MSIM_AVR_PassIRQs_f pass_irqs;	/* Function to check MCU flags and
-					   set IRQs accordingly */
+	MSIM_AVR_PassIRQs_f pass_irqs;	/* Function to set IRQs */
 
-	struct MSIM_AVR_VCDDetails *vcdd; /* Details about registers to
-					     be dumped into VCD file */
-
-	char log[1024];			/* Buffer to print a log message */
-
-	struct MSIM_AVR_PTYDetails *pty; /* Details to work with pseudo-term */
+	struct MSIM_AVR_Vcd *vcdd;	/* VCD (dump) file details */
+	struct MSIM_AVR_Pty *pty;	/* Details to work with pseudo-term */
+	struct MSIM_AVR_Usart *usart;	/* Details to work with USART */
 };
 
 /* Structure to describe a memory operation requested by user. */

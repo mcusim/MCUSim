@@ -77,14 +77,16 @@ static struct option longopts[] = {
 static struct MSIM_AVR mcu;		/* AVR MCU descriptor */
 static struct MSIM_AVR_Bootloader bls;	/* Bootloader section */
 static struct MSIM_AVR_Int intr;	/* Interrupts and IRQs */
-static struct MSIM_AVR_VCDDetails vcdd;	/* Details about registers to dump */
-static struct MSIM_AVR_PTYDetails pty;	/* Pseudo-terminal details */
+static struct MSIM_AVR_Vcd vcdd;	/* Details about registers to dump */
+static struct MSIM_AVR_Pty pty;		/* Pseudo-terminal details */
+static struct MSIM_AVR_Wdt wdt;		/* Watchdog timer details */
+static struct MSIM_AVR_Usart usart;	/* USART details */
 
 /* Statically allocated memory for MCU */
 static unsigned char pm[PMSZ];		/* Program memory */
 static unsigned char pmp[PM_PAGESZ];	/* Page buffer (PM) */
-static unsigned char dm[DMSZ];		/* Data memory */
 static unsigned char mpm[PMSZ];		/* Match points memory */
+static unsigned char dm[DMSZ];		/* Data memory */
 
 /* VCD dump options */
 static char vcd_regs[MSIM_AVR_VCD_REGS][16]; /* MCU registers to dump */
@@ -212,7 +214,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	/* Preparing file for program memory */
+	/* Filling a program memory */
 	fp = NULL;
 	for (i = 0; i < memops_num; i++) {
 		if ((memops[i].format == 'f') &&
@@ -242,6 +244,8 @@ int main(int argc, char *argv[])
 	mcu.intr = &intr;
 	mcu.vcdd = &vcdd;
 	mcu.pty = &pty;
+	mcu.wdt = &wdt;
+	mcu.usart = &usart;
 	intr.trap_at_isr = trap_at_isr;
 	if (MSIM_AVR_Init(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp) != 0) {
 		snprintf(log, sizeof log, "MCU model %s cannot be initialized",
@@ -251,6 +255,7 @@ int main(int argc, char *argv[])
 	}
 	fclose(fp);
 
+	/* Create a pseudo-terminal for this MCU */
 	mcu.pty->master_fd = -1;
 	mcu.pty->slave_fd = -1;
 	mcu.pty->slave_name[0] = 0;
@@ -454,34 +459,33 @@ static void print_version(void)
 #endif
 }
 
-static void print_config(const struct MSIM_AVR *mcu)
+static void print_config(const struct MSIM_AVR *m)
 {
 	/* AVR memory is organized as array of bytes in the simulator, but
 	 * it's natural to measure program memory in 16-bits words because
 	 * all AVR instructions are 16- or 32-bits wide. This is why all
 	 * program memory addresses are divided by two before printing. */
 	char log[1024];
-	uint64_t reset_pc = mcu->intr->reset_pc>>1;
-	uint64_t ivt = mcu->intr->ivt>>1;
-	uint64_t flashstart = mcu->flashstart>>1;
-	uint64_t flashend = mcu->flashend>>1;
-	uint64_t blsstart = mcu->bls->start>>1;
-	uint64_t blsend = mcu->bls->end>>1;
+	uint64_t reset_pc = m->intr->reset_pc>>1;
+	uint64_t ivt = m->intr->ivt>>1;
+	uint64_t flashstart = m->flashstart>>1;
+	uint64_t flashend = m->flashend>>1;
+	uint64_t blsstart = m->bls->start>>1;
+	uint64_t blsend = m->bls->end>>1;
 
 	snprintf(log, sizeof log, "MCU model: %s (signature %02X%02X%02X)",
-	         mcu->name, mcu->signature[0], mcu->signature[1],
-	         mcu->signature[2]);
+	         m->name, m->signature[0], m->signature[1], m->signature[2]);
 	MSIM_LOG_INFO(log);
 
 	snprintf(log, sizeof log, "clock frequency: %lu.%lu kHz",
-	         mcu->freq/1000, mcu->freq%1000);
+	         m->freq/1000, m->freq%1000);
 	MSIM_LOG_INFO(log);
 
 	snprintf(log, sizeof log, "fuses: EXT=0x%02X, HIGH=0x%02X, "
-	         "LOW=0x%02X", mcu->fuse[2], mcu->fuse[1], mcu->fuse[0]);
+	         "LOW=0x%02X", m->fuse[2], m->fuse[1], m->fuse[0]);
 	MSIM_LOG_INFO(log);
 
-	snprintf(log, sizeof log, "lock bits: 0x%02X", mcu->lockbits);
+	snprintf(log, sizeof log, "lock bits: 0x%02X", m->lockbits);
 	MSIM_LOG_INFO(log);
 
 	snprintf(log, sizeof log, "reset vector address: 0x%06lX", reset_pc);

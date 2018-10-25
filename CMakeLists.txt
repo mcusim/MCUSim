@@ -30,7 +30,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0107")
+set(MSIM_VERSION "0.1.0108")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -131,8 +131,11 @@ check_function_exists(open HAVE_POSIX_OPEN)
 check_function_exists(close HAVE_POSIX_CLOSE)
 check_function_exists(read HAVE_POSIX_READ)
 check_function_exists(write HAVE_POSIX_WRITE)
-if (WITH_POSIX_PTY)
+if (WITH_POSIX_PTY MATCHES True)
 	message(STATUS "[OPTION] POSIX pseudo-terminals strictly required")
+endif()
+if (WITH_POSIX_PTY MATCHES False)
+	message(STATUS "[OPTION] POSIX pseudo-terminals strictly not required")
 endif()
 if (HAVE_POSIX_OPENPT AND
     HAVE_POSIX_GRANTPT AND
@@ -142,8 +145,12 @@ if (HAVE_POSIX_OPENPT AND
     HAVE_POSIX_CLOSE AND
     HAVE_POSIX_READ AND
     HAVE_POSIX_WRITE)
-	message(STATUS "[OPTION] Building with POSIX pseudo-terminals")
-	add_definitions(-DMSIM_POSIX_PTY=1)
+	if (WITH_POSIX_PTY MATCHES False)
+		message(STATUS "[OPTION] Building without POSIX pseudo-terminals")
+	else(WITH_POSIX_PTY MATCHES False)
+		message(STATUS "[OPTION] Building with POSIX pseudo-terminals")
+		add_definitions(-DMSIM_POSIX_PTY=1)
+	endif(WITH_POSIX_PTY MATCHES False)
 else()
 	if (WITH_POSIX_PTY)
 		message(FATAL_ERROR "[OPTION] Building without POSIX pseudo-terminals")

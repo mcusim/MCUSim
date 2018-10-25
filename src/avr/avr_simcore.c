@@ -171,12 +171,20 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 			MSIM_AVR_VCDDumpFrame(vcd_f, mcu, tick, CLK_RISE);
 		}
 
+		/* Test scope of a program counter within flash size */
+		if ((mcu->pc>>1) > (mcu->flashend>>1)) {
+			snprintf(log_buf, sizeof log_buf, "program counter is "
+			         "out of flash memory: pc=0x%06lX, flashend="
+			         "0x%06lX", mcu->pc>>1, mcu->flashend>>1);
+			MSIM_LOG_FATAL(log_buf);
+			ret_code = 1;
+			break;
+		}
 		/* Test scope of a program counter */
-		if ((mcu->pc+1) >= mcu->pm_size) {
+		if ((mcu->pc+2) >= mcu->pm_size) {
 			snprintf(log_buf, sizeof log_buf, "program counter "
-			         "is out of scope: pc=0x%06lX, pc+1=0x%06lX, "
-			         "flash_addr=0x%06lX", mcu->pc, mcu->pc+1,
-			         mcu->pm_size-1);
+			         "is out of scope: pc=0x%06lX, pm_size="
+			         "0x%06lX", mcu->pc, mcu->pm_size);
 			MSIM_LOG_FATAL(log_buf);
 			ret_code = 1;
 			break;
@@ -204,8 +212,7 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		                mcu->state == AVR_MSIM_STEP) &&
 		                MSIM_AVR_Step(mcu)) {
 			snprintf(log_buf, sizeof log_buf, "decoding "
-			         "instruction failed: pc=0x%06lX, "
-			         "pc+1=0x%06lX", mcu->pc, mcu->pc+1);
+			         "instruction failed: pc=0x%06lX", mcu->pc);
 			MSIM_LOG_FATAL(log_buf);
 			ret_code = 1;
 			break;

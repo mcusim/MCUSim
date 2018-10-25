@@ -28,11 +28,7 @@
  * OF SUCH DAMAGE.
  */
 
-/*
- * It's a common situation whether one AVR MCU has a set of registers, but
- * another one - doesn't. Memory offset of the unavailable registers
- * will be marked as NO_REG.
- */
+/* Memory offset of the unavailable I/O registers will be marked as NO_REG. */
 #define NO_REG		-1
 
 /* Status and stack registers */

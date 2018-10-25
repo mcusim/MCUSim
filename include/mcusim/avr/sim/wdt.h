@@ -24,11 +24,10 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * There are some declarations and functions to pair a master pseudo-terminal
- * device (in POSIX terms) with USART within a simulated AVR microcontroller.
+ * Watchdog timer of the AVR devices.
  */
-#ifndef MSIM_AVR_PTY_H_
-#define MSIM_AVR_PTY_H_ 1
+#ifndef MSIM_AVR_WDT_H_
+#define MSIM_AVR_WDT_H_ 1
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,32 +35,18 @@ extern "C" {
 
 #include <stdlib.h>
 
-#include "mcusim/avr/sim/sim.h"
-
-struct MSIM_AVR_Pty {
-	int32_t master_fd;
-	int32_t slave_fd;
-	char slave_name[128];
+struct MSIM_AVR_Wdt {
+	uint64_t sys_presc;	/* Prescaler from system clock to WDT clock */
+	uint64_t sys_ticks;	/* System cycles passed since last WDT tick */
+	uint64_t presc;		/* Number of WDT oscillator cycles */
+	uint64_t ticks;		/* Cycles passed since last WDT reset */
+	uint8_t on;		/* WDT activated flag */
+	uint8_t always_on;	/* WDT always on flag */
+	uint8_t checked;	/* WDT adjusted flag */
 };
-
-#ifdef MSIM_POSIX_PTY
-
-int MSIM_AVR_PTYOpen(struct MSIM_AVR *mcu);
-int MSIM_AVR_PTYClose(struct MSIM_AVR *mcu);
-ssize_t MSIM_AVR_PTYWrite(struct MSIM_AVR *mcu, uint8_t *buf, uint32_t len);
-ssize_t MSIM_AVR_PTYRead(struct MSIM_AVR *mcu, uint8_t *buf, uint32_t len);
-
-#else
-
-#define MSIM_AVR_PTYOpen(mcu)			0
-#define MSIM_AVR_PTYClose(mcu)			0
-#define MSIM_AVR_PTYWrite(mcu, buf, len)	((ssize_t)-1)
-#define MSIM_AVR_PTYRead(mcu, buf, len)		((ssize_t)-1)
-
-#endif
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* MSIM_AVR_PTY_H_ */
+#endif /* MSIM_AVR_WDT_H_ */
