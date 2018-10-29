@@ -171,38 +171,26 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	mcu->bls.size = 0;
 #endif
 
+	/* Init descriptors of the I/O registers */
+	for (i = 0; i < MSIM_AVR_DMSZ; i++) {
+		mcu->ioregs[i].off = -1;
+	}
+	/* Init registers to be included into VCD dump */
+	for (i = 0; i < MSIM_AVR_VCD_REGS; i++) {
+		mcu->vcd[i].i = -1;
+		mcu->vcd[i].reg_lowi = -1;
+	}
+
 #ifdef AVR_INIT_IOREGS
 	/* Fill descriptors of the available I/O registers */
 	for (i = 0; i < ioregs_num; i++) {
 		if (ioregs[i].off > 0) {
 			mcu->ioregs[ioregs[i].off] = ioregs[i];
+			mcu->ioregs[ioregs[i].off].addr =
+			        &mcu->dm[ioregs[i].off];
 		}
 	}
 #endif
-
-	/* Fill registers to be included into VCD dump */
-	/*
-	for (i = 0; i < sizeof mcu->vcd->bit/sizeof mcu->vcd->bit[0]; i++) {
-		mcu->vcd->bit[i].regi = -1;
-		mcu->vcd->bit[i].reg_lowi = -1;
-	}
-	for (i = 0; i < sizeof mcu->vcd->regs/
-	                sizeof mcu->vcd->regs[0]; i++) {
-		mcu->vcd->regs[i].off = -1;
-	}
-	#ifdef AVR_INIT_IOREGS
-	avail_regsn = sizeof mcu->vcd->regs/sizeof mcu->vcd->regs[0];
-	for (i = 0; i < avail_regsn; i++) {
-		if (i < known_regsn) {
-			known_regs[i].addr = &mcu->dm[known_regs[i].off];
-			known_regs[i].oldv = *known_regs[i].addr;
-			mcu->vcd->regs[i] = known_regs[i];
-		} else {
-			break;
-		}
-	}
-	#endif
-	*/
 
 	mcu->clk_source = CLK_SOURCE;
 	mcu->freq = CLK_FREQ;

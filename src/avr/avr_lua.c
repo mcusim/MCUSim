@@ -115,10 +115,10 @@ int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *file)
 		/* Add registers available for the current MCU model to
 		 * the Lua state. */
 		for (j = 0; j < MSIM_AVR_DMSZ; j++) {
-			if (mcu->ioregs[j].name[0] == 0) {
-				break;
-			}
 			if (mcu->ioregs[j].off < 0) {
+				continue;
+			}
+			if (mcu->ioregs[j].name[0] == 0) {
 				continue;
 			}
 

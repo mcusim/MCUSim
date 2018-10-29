@@ -39,6 +39,8 @@
 #define SPL		_SFR_IO8(0x3D)
 #define SPL_RES		0x00
 #define SPL_MASK	0xFF
+/* NOTE: The following values should be appended and assigned according to the
+ * datasheet. */
 #define PORTB_RES		0x00
 #define PORTB_MASK		0x00
 #define DDRB_RES		0x00

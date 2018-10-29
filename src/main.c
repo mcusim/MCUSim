@@ -273,9 +273,13 @@ int main(int argc, char *argv[])
 		for (j = 0; j < MSIM_AVR_DMSZ; j++) {
 			char *bit;
 			char *pos;
-			size_t len = strlen(mcu.vcd[j].name);
+			size_t len;
 			int bitn, cr, bit_cr;
 
+			if (mcu.ioregs[j].off < 0) {
+				continue;
+			}
+			len = strlen(mcu.ioregs[j].name);
 			if (len == 0) {
 				continue;
 			}
@@ -309,11 +313,6 @@ int main(int argc, char *argv[])
 			} else if (cr != 0) {
 				continue;
 			} else {
-				/* Do we have a register available? */
-				if (mcu.ioregs[j].off < 0) {
-					continue;
-				}
-
 				/* Do we have a bit index suffix? */
 				bit = len < sizeof vcd_regs[0]/
 				      sizeof vcd_regs[0][0]
@@ -326,6 +325,10 @@ int main(int argc, char *argv[])
 				/* Set index of a register to be dumped */
 				mcu.vcd[dump_regs].i = (int32_t)j;
 				mcu.vcd[dump_regs].n = (int8_t)bitn;
+				strncpy(mcu.vcd[dump_regs].name,
+				        mcu.ioregs[j].name,
+				        sizeof mcu.vcd[dump_regs].name);
+
 				dump_regs++;
 				break;
 			}
