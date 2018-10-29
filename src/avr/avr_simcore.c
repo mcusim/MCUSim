@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <limits.h>
+#include <inttypes.h>
 
 #include "mcusim/mcusim.h"
 #include "mcusim/hex/ihex.h"
@@ -61,7 +62,7 @@ static struct init_func_info init_funcs[] = {
 	{ "m8a",	"ATmega8A",	MSIM_M8AInit },
 	{ "m328",	"ATmega328",	MSIM_M328Init },
 	{ "m328p",	"ATmega328P",	MSIM_M328PInit },
-	{ "m2560",	"ATmega2560",	MSIM_M2560Init }
+//	{ "m2560",	"ATmega2560",	MSIM_M2560Init }
 };
 
 static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
@@ -74,7 +75,6 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 	uint8_t tick_ovf;	/* Ticks overflow flag */
 	int ret_code;		/* Return code */
 	char dump_name[256];	/* Name of a VCD dump file */
-	char log_buf[1024];	/* Buffer to keep a log message */
 
 	tick = 0;
 	tick_ovf = 0;
@@ -82,14 +82,14 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 	ret_code = 0;
 
 	/* Do we have registers to dump? */
-	if (mcu->vcdd->bit[0].regi >= 0) {
+	if (mcu->vcd->i >= 0) {
 		snprintf(&dump_name[0], sizeof dump_name, "%s-trace.vcd",
 		         mcu->name);
 		vcd_f = MSIM_AVR_VCDOpenDump(mcu, dump_name);
 		if (!vcd_f) {
-			snprintf(log_buf, sizeof log_buf, "failed to open a "
+			snprintf(mcu->log, sizeof mcu->log, "failed to open a "
 			         "VCD file %s to write to", dump_name);
-			MSIM_LOG_FATAL(log_buf);
+			MSIM_LOG_FATAL(mcu->log);
 			return -1;
 		}
 	}
@@ -127,10 +127,10 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		 */
 		if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_STOP)) {
 			if (MSIM_LOG_ISDEBUG) {
-				snprintf(log_buf, sizeof log_buf, "simulation "
+				snprintf(mcu->log, sizeof mcu->log, "simulation "
 				         "terminated because of stopped mcu, "
-				         "pc=0x%06lX", mcu->pc);
-				MSIM_LOG_DEBUG(log_buf);
+				         "pc=0x%06" PRIX32, mcu->pc);
+				MSIM_LOG_DEBUG(mcu->log);
 			}
 			break;
 		}
@@ -145,10 +145,10 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		if (!firmware_test && !mcu->ic_left &&
 		                (mcu->state == AVR_STOPPED) &&
 		                MSIM_AVR_RSPHandle()) {
-			snprintf(log_buf, sizeof log_buf, "handling message "
-			         "from GDB RSP client failed: pc=0x%06lX, "
-			         "pc+1=0x%06lX", mcu->pc, mcu->pc+1);
-			MSIM_LOG_FATAL(log_buf);
+			snprintf(mcu->log, sizeof mcu->log, "handling message "
+			         "from GDB RSP client failed: pc=0x%06" PRIX32,
+			         mcu->pc);
+			MSIM_LOG_FATAL(mcu->log);
 			ret_code = 1;
 			break;
 		}
@@ -173,19 +173,20 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 
 		/* Test scope of a program counter within flash size */
 		if ((mcu->pc>>1) > (mcu->flashend>>1)) {
-			snprintf(log_buf, sizeof log_buf, "program counter is "
-			         "out of flash memory: pc=0x%06lX, flashend="
-			         "0x%06lX", mcu->pc>>1, mcu->flashend>>1);
-			MSIM_LOG_FATAL(log_buf);
+			snprintf(mcu->log, sizeof mcu->log, "program counter is "
+			         "out of flash memory: pc=0x%06" PRIX32
+			         ", flashend=0x%06" PRIX32,
+			         mcu->pc>>1, mcu->flashend>>1);
+			MSIM_LOG_FATAL(mcu->log);
 			ret_code = 1;
 			break;
 		}
 		/* Test scope of a program counter */
 		if ((mcu->pc+2) >= mcu->pm_size) {
-			snprintf(log_buf, sizeof log_buf, "program counter "
-			         "is out of scope: pc=0x%06lX, pm_size="
-			         "0x%06lX", mcu->pc, mcu->pm_size);
-			MSIM_LOG_FATAL(log_buf);
+			snprintf(mcu->log, sizeof mcu->log, "program counter "
+			         "is out of scope: pc=0x%06" PRIX32 ", pm_size"
+			         "=0x%06" PRIX32, mcu->pc, mcu->pm_size);
+			MSIM_LOG_FATAL(mcu->log);
 			ret_code = 1;
 			break;
 		}
@@ -211,9 +212,10 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		if ((mcu->ic_left || mcu->state == AVR_RUNNING ||
 		                mcu->state == AVR_MSIM_STEP) &&
 		                MSIM_AVR_Step(mcu)) {
-			snprintf(log_buf, sizeof log_buf, "decoding "
-			         "instruction failed: pc=0x%06lX", mcu->pc);
-			MSIM_LOG_FATAL(log_buf);
+			snprintf(mcu->log, sizeof mcu->log, "decoding "
+			         "instruction failed: pc=0x%06" PRIX32,
+			         mcu->pc);
+			MSIM_LOG_FATAL(mcu->log);
 			ret_code = 1;
 			break;
 		}
@@ -231,7 +233,7 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 			mcu->pass_irqs(mcu);
 		}
 		if (MSIM_AVR_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT) &&
-		                (!mcu->ic_left) && (!mcu->intr->exec_main) &&
+		                (!mcu->ic_left) && (!mcu->intr.exec_main) &&
 		                (mcu->state == AVR_RUNNING ||
 		                 mcu->state == AVR_MSIM_STEP)) {
 			handle_irq(mcu);
@@ -245,7 +247,7 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		/* All cycles of a single instruction from a main program
 		 * have to be performed. */
 		if (mcu->ic_left == 0) {
-			mcu->intr->exec_main = 0;
+			mcu->intr.exec_main = 0;
 		}
 
 		/* Increment ticks or print a warning message in case of
@@ -287,8 +289,8 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
 
 	args.pm = pm;
 	args.dm = dm;
-	args.pmsz = pm_size;
-	args.dmsz = dm_size;
+	args.pmsz = (uint32_t)pm_size;
+	args.dmsz = (uint32_t)dm_size;
 
 	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++) {
 		if (!strcmp(init_funcs[i].partno, mcu_name)) {
@@ -313,7 +315,6 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
 		return -1;
 	}
 	mcu->state = AVR_STOPPED;
-	mcu->mpm = mpm;
 	mcu->read_from_mpm = 0;
 	return 0;
 }
@@ -380,7 +381,7 @@ static int handle_irq(struct MSIM_AVR *mcu)
 	 * i == 0		highest priority
 	 * i == AVR_IRQ_NUM-1	lowest priority */
 	for (i = 0; i < MSIM_AVR_IRQNUM; i++) {
-		if (mcu->intr->irq[i] > 0) {
+		if (mcu->intr.irq[i] > 0) {
 			break;
 		}
 	}
@@ -389,7 +390,7 @@ static int handle_irq(struct MSIM_AVR *mcu)
 	if (i != MSIM_AVR_IRQNUM) {
 		/* Execute ISR */
 		/* Clear selected IRQ */
-		mcu->intr->irq[i] = 0;
+		mcu->intr.irq[i] = 0;
 
 		/* Disable interrupts globally.
 		 * NOTE: It isn't applicable for AVR XMEGA cores. */
@@ -406,10 +407,10 @@ static int handle_irq(struct MSIM_AVR *mcu)
 		}
 
 		/* Load interrupt vector to PC */
-		mcu->pc = mcu->intr->ivt+(i*2);
+		mcu->pc = mcu->intr.ivt+(i*2);
 
 		/* Switch MCU to step mode if it's necessary */
-		if (mcu->intr->trap_at_isr && mcu->state == AVR_RUNNING) {
+		if (mcu->intr.trap_at_isr && mcu->state == AVR_RUNNING) {
 			mcu->state = AVR_MSIM_STEP;
 		}
 	} else {

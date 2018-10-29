@@ -30,19 +30,17 @@
 #ifndef MSIM_AVR_INIT_H_
 #define MSIM_AVR_INIT_H_ 1
 
-#ifndef MSIM_AVR_SIMCORE_H_
-#	error "Include <mcusim/avr/sim/simcore.h> instead of this file."
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 struct MSIM_InitArgs {
 	unsigned char *pm;
 	unsigned char *dm;
-	unsigned long pmsz;
-	unsigned long dmsz;
+	uint32_t pmsz;
+	uint32_t dmsz;
 };
 
 /* Initialize MCU as ATmega8A */

@@ -29,10 +29,6 @@
 #ifndef MSIM_AVR_VCD_H_
 #define MSIM_AVR_VCD_H_ 1
 
-#ifndef MSIM_MAIN_HEADER_H_
-#error "Please, include mcusim/mcusim.h instead of this header."
-#endif
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -40,41 +36,32 @@ extern "C" {
 #include <stdio.h>
 #include <stdint.h>
 
-#include "mcusim/mcusim.h"
+/* Forward declaration of the structure to describe AVR microcontroller
+ * instance. */
+struct MSIM_AVR;
 
-/* Maximum registers to dump in VCD file */
+/* Maximum registers to be stored in a VCD file */
 #define MSIM_AVR_VCD_REGS		512
 
-/* Register of MCU which can be written into VCD file */
-struct MSIM_AVR_VCDRegister {
-	char name[16];			/* Name of a register (DDRB, etc.) */
-	long off;			/* Offset to the register in RAM */
-	unsigned char *addr;		/* Pointer to the register in RAM*/
-	uint32_t oldv;
-};
-
-/* Specific bit of a register */
-struct MSIM_AVR_VCDBit {
-	/* Index of a register (or MSB of a 16-bit register) */
-	short regi;
-	/* Bit number (may be negative to include all bits of a register
-	 * to dump) */
-	short n;
-	/* Index of LSB of a register (usually followed by L suffix,
-	 * like TCNT1L, may be negative to show that register is 8-bit one) */
-	int16_t reg_lowi;
-	/* Name of a register requested by user (TCNT1 instead of TCNT1H,
-	 * for instance) */
+/* Structure to describe an AVR I/O register to be tracked in a VCD file.
+ *
+ * i		Offset of the register (or MSB of 16-bit register) in data
+ * 		memory. Can be negative to show this instance of the structure
+ * 		does not describe any register.
+ * reg_lowi	Offset of the LSB register part in data memory (usually
+ * 		followed by L suffix, like TCNT1L). Can be negative in case
+ * 		of 8-bit register.
+ * n		Number of a specific bit to track only. Can be negative to
+ * 		include all bits of the register.
+ * old_val	Previous value of the register (8-bit or 16-bit).
+ * name		Name of a register requested by user (TCNT1 instead of TCNT1H,
+ * 		for example). */
+struct MSIM_AVR_VCDReg {
+	int32_t i;
+	int32_t reg_lowi;
+	int8_t n;
+	uint32_t old_val;
 	char name[16];
-};
-
-/* Structure to keep details about registers to be dumped into VCD file */
-struct MSIM_AVR_Vcd {
-	/* List of all available registers for VCD dump */
-	struct MSIM_AVR_VCDRegister regs[MSIM_AVR_VCD_REGS];
-	/* Flags to dump the whole register (negative) or
-	 * selected bit only (bit index) */
-	struct MSIM_AVR_VCDBit bit[MSIM_AVR_VCD_REGS];
 };
 
 FILE *MSIM_AVR_VCDOpenDump(struct MSIM_AVR *mcu, const char *dumpname);
@@ -89,3 +76,4 @@ void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, unsigned long tick,
 #endif
 
 #endif /* MSIM_AVR_VCD_H_ */
+

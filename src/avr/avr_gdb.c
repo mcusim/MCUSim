@@ -29,6 +29,7 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #ifdef MSIM_POSIX
 #include <netdb.h>
@@ -127,7 +128,7 @@ void MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, int portn)
 	rsp.fserv = -1;			/* i.e. invalid */
 	rsp.fcli = -1;			/* i.e. invalid */
 	rsp.sigval = 0;			/* No exceptions */
-	rsp.start_addr = mcu->intr->reset_pc;	/* Reset PC by default */
+	rsp.start_addr = mcu->intr.reset_pc;	/* Reset PC by default */
 
 	protocol = getprotobyname(AVRSIM_RSP_PROTOCOL);
 	if (protocol == NULL) {
@@ -973,9 +974,9 @@ static void rsp_report_exception(void)
 
 static void rsp_continue(struct rsp_buf *buf)
 {
-	unsigned long addr;
+	uint32_t addr;
 
-	if (sscanf(buf->data, "c%lx", &addr) == 1) {
+	if (sscanf(buf->data, "c%" SCNx32, &addr) == 1) {
 		rsp.mcu->pc = addr;
 	}
 	rsp.mcu->state = AVR_RUNNING;
@@ -1081,7 +1082,7 @@ static void rsp_vpkt(struct rsp_buf *buf)
 
 static void rsp_restart(void)
 {
-	rsp.mcu->pc = rsp.mcu->intr->reset_pc;
+	rsp.mcu->pc = rsp.mcu->intr.reset_pc;
 	rsp.mcu->state = AVR_STOPPED;
 }
 
@@ -1132,7 +1133,7 @@ static void write_reg(int n, char *buf)
 		*rsp.mcu->spl = (unsigned char)((v>>8)&0xFF);
 		break;
 	case 34:			/* PC */
-		rsp.mcu->pc = hex2reg(buf, 8);
+		rsp.mcu->pc = (uint32_t)hex2reg(buf, 8);
 		break;
 	}
 	return;
@@ -1179,7 +1180,7 @@ static void rsp_write_all_regs(struct rsp_buf *buf)
 			*rsp.mcu->spl = (unsigned char)((v>>8)&0xFF);
 			break;
 		case 34: /* PC */
-			rsp.mcu->pc = hex2reg(buf->data+off, 8);
+			rsp.mcu->pc = (uint32_t)hex2reg(buf->data+off, 8);
 			off += 8;
 			break;
 		}

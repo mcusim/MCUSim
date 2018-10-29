@@ -52,7 +52,7 @@ int MSIM_AVR_PTYOpen(struct MSIM_AVR *mcu)
 	int pty_err = 0;
 
 	masterfd = posix_openpt(O_RDWR|O_NOCTTY);
-	mcu->pty->master_fd = masterfd;
+	mcu->pty.master_fd = masterfd;
 
 	if ((masterfd == -1) || (grantpt(masterfd) == -1) ||
 	                (unlockpt(masterfd) == -1) ||
@@ -66,8 +66,8 @@ int MSIM_AVR_PTYOpen(struct MSIM_AVR *mcu)
 		MSIM_LOG_DEBUG(mcu->log);
 #endif
 		slavefd = open(slavedevice, O_RDWR|O_NOCTTY);
-		mcu->pty->slave_fd = slavefd;
-		snprintf(mcu->pty->slave_name, sizeof mcu->pty->slave_name,
+		mcu->pty.slave_fd = slavefd;
+		snprintf(mcu->pty.slave_name, sizeof mcu->pty.slave_name,
 		         "%s", slavedevice);
 		if (slavefd < 0) {
 			pty_err = 1;
@@ -81,23 +81,23 @@ int MSIM_AVR_PTYOpen(struct MSIM_AVR *mcu)
 
 int MSIM_AVR_PTYClose(struct MSIM_AVR *mcu)
 {
-	if (mcu->pty->slave_fd >= 0) {
-		close(mcu->pty->slave_fd);
+	if (mcu->pty.slave_fd >= 0) {
+		close(mcu->pty.slave_fd);
 	}
-	if (mcu->pty->master_fd >= 0) {
-		close(mcu->pty->master_fd);
+	if (mcu->pty.master_fd >= 0) {
+		close(mcu->pty.master_fd);
 	}
 	return 0;
 }
 
 ssize_t MSIM_AVR_PTYWrite(struct MSIM_AVR *mcu, uint8_t *buf, uint32_t len)
 {
-	return write(mcu->pty->master_fd, buf, len);
+	return write(mcu->pty.master_fd, buf, len);
 }
 
 ssize_t MSIM_AVR_PTYRead(struct MSIM_AVR *mcu, uint8_t *buf, uint32_t len)
 {
-	return read(mcu->pty->master_fd, buf, len);
+	return read(mcu->pty.master_fd, buf, len);
 }
 
 #endif /* MSIM_POSIX_PTY */

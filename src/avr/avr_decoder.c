@@ -2694,11 +2694,9 @@ static void exec_reti(struct MSIM_AVR *mcu)
 	if (!mcu->xmega) {
 		MSIM_AVR_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 1);
 	}
-	/*
-	 * Execute one more instruction from the main program
-	 * after an exit from interrupt service routine.
-	 */
-	mcu->intr->exec_main = 1;
+	/* Execute one more instruction from the main program
+	 * after an exit from interrupt service routine. */
+	mcu->intr.exec_main = 1;
 }
 
 static void exec_swap(struct MSIM_AVR *mcu, unsigned int inst)
@@ -2939,8 +2937,8 @@ static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_wdr(struct MSIM_AVR *mcu)
 {
 	/* WDR - Watchdog Timer Reset */
-	mcu->wdt->sys_ticks = 0;
-	mcu->wdt->ticks = 0;
+	mcu->wdt.sys_ticks = 0;
+	mcu->wdt.ticks = 0;
 	mcu->pc += 2;
 }
 

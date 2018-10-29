@@ -24,25 +24,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
+ * Common data types to work with AVR I/O registers.
  */
-#ifndef MSIM_AVR_USART_H_
-#define MSIM_AVR_USART_H_ 1
+#ifndef MSIM_AVR_IO_H_
+#define MSIM_AVR_IO_H_ 1
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct MSIM_AVR_Usart {
-	uint32_t baud;		/* Current baud rate value */
-	uint8_t txb;		/* Transmit Buffer */
-	uint32_t rx_ticks;	/* USART ticks passed since last Rx */
-	uint32_t tx_ticks;	/* USART ticks passed since last Tx */
-	uint32_t rx_presc;	/* Rx clock prescaler, (UBRR+1) */
-	uint32_t tx_presc;	/* Tx clock prescaler, m*(UBRR+1) */
+/* I/O register of the AVR microcontroller */
+struct MSIM_AVR_IOReg {
+	char name[16];
+	int32_t off;		/* Register address (in data space) */
+	uint8_t *addr;		/* Pointer to the register in DM */
+	uint8_t reset;		/* Value after MCU reset */
+	uint8_t mask;		/* Access mask (1 - R/W or W, 0 - R) */
 };
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* MSIM_AVR_USART_H_ */
+#endif /* MSIM_AVR_IO_H_ */

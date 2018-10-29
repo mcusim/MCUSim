@@ -38,33 +38,26 @@
 #include <stdint.h>
 
 #include "mcusim/avr/io.h"
-#include "mcusim/mcusim.h"
+#include "mcusim/avr/sim/m328/m328_ioregs.h"
+#include "mcusim/avr/sim/io_regs.h"
+#include "mcusim/avr/sim/sim.h"
+#include "mcusim/avr/sim/simcore.h"
 
 #define MCU_NAME	"ATmega328"
-
 #define RESET_PC	0x0000	/* Reset vector address, in bytes */
 #define IVT_ADDR	0x0002	/* Interrupt vectors address, in bytes */
 #define PC_BITS		14		/* PC bit capacity */
 #define LBITS_DEFAULT	0x3F		/* Default lock bits */
-
 #define CLK_SOURCE	AVR_INT_CAL_RC_CLK /* Calibrated Internal RC */
 #define CLK_FREQ	1000000		/* Oscillator frequency, in Hz */
-
 #define GP_REGS		32		/* GP registers, R0, R1, ..., R31 */
 #define IO_REGS		224		/* I/O registers, PORTD, SREG, etc. */
-
 #define BLS_START	0x7000		/* First address in BLS, in bytes */
 #define BLS_END		0x7FFF		/* Last address in BLS, in bytes */
 #define BLS_SIZE	4096		/* BLS size, in bytes */
-
 #define FLASHSTART	0x0000
 #define RAMSIZE		2048
 #define E2START		0x0000
 #define E2SIZE		1024
-
-#define SREG		_SFR_IO8(0x3F)
-#define SPH		_SFR_IO8(0x3E)
-#define SPL		_SFR_IO8(0x3D)
-#include "mcusim/avr/sim/vcd_regs.h"
 
 #endif /* MSIM_AVR_M328_H_ */

@@ -36,7 +36,9 @@ extern "C" {
 
 #include <stdlib.h>
 
-#include "mcusim/avr/sim/sim.h"
+/* Forward declaration of the structure to describe AVR microcontroller
+ * instance. */
+struct MSIM_AVR;
 
 struct MSIM_AVR_Pty {
 	int32_t master_fd;

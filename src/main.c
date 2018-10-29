@@ -43,11 +43,6 @@
 #define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
 #define SET(byte, bit)		((byte)|=(1<<(bit)))
 
-/* Limits of statically allocated MCU memory */
-#define PMSZ			(256*1024)	/* Program memory size */
-#define DMSZ			(64*1024)	/* Data memory size */
-#define PM_PAGESZ		1024		/* PM page size */
-
 #define GDB_RSP_PORT		12750		/* Default GDB RSP port */
 #define MAX_MEMOPS		16		/* Maximum MCU memory
 						   modifications during
@@ -75,18 +70,6 @@ static struct option longopts[] = {
 };
 
 static struct MSIM_AVR mcu;		/* AVR MCU descriptor */
-static struct MSIM_AVR_Bootloader bls;	/* Bootloader section */
-static struct MSIM_AVR_Int intr;	/* Interrupts and IRQs */
-static struct MSIM_AVR_Vcd vcdd;	/* Details about registers to dump */
-static struct MSIM_AVR_Pty pty;		/* Pseudo-terminal details */
-static struct MSIM_AVR_Wdt wdt;		/* Watchdog timer details */
-static struct MSIM_AVR_Usart usart;	/* USART details */
-
-/* Statically allocated memory for MCU */
-static unsigned char pm[PMSZ];		/* Program memory */
-static unsigned char pmp[PM_PAGESZ];	/* Page buffer (PM) */
-static unsigned char mpm[PMSZ];		/* Match points memory */
-static unsigned char dm[DMSZ];		/* Data memory */
 
 /* VCD dump options */
 static char vcd_regs[MSIM_AVR_VCD_REGS][16]; /* MCU registers to dump */
@@ -118,7 +101,7 @@ int main(int argc, char *argv[])
 	int c, rsp_port, sim_retcode;
 	char *partno, *luap;
 	char log[1024];		/* Buffer to write a log message to. */
-	uint32_t i, j, regs;
+	uint32_t i, j;
 	uint32_t freq;
 	uint32_t dump_regs;	/* # of registers to store in VCD dump. */
 	uint8_t trap_at_isr;	/* Flag to trap debugger right before ISR. */
@@ -239,15 +222,9 @@ int main(int argc, char *argv[])
 	}
 
 	/* Initialize MCU as one of AVR models */
-	mcu.bls = &bls;
-	mcu.pmp = pmp;
-	mcu.intr = &intr;
-	mcu.vcdd = &vcdd;
-	mcu.pty = &pty;
-	mcu.wdt = &wdt;
-	mcu.usart = &usart;
-	intr.trap_at_isr = trap_at_isr;
-	if (MSIM_AVR_Init(&mcu, partno, pm, PMSZ, dm, DMSZ, mpm, fp) != 0) {
+	mcu.intr.trap_at_isr = trap_at_isr;
+	if (MSIM_AVR_Init(&mcu, partno, NULL, MSIM_AVR_PMSZ, NULL, MSIM_AVR_DMSZ, NULL,
+	                  fp) != 0) {
 		snprintf(log, sizeof log, "MCU model %s cannot be initialized",
 		         partno);
 		MSIM_LOG_FATAL(log);
@@ -256,25 +233,23 @@ int main(int argc, char *argv[])
 	fclose(fp);
 
 	/* Create a pseudo-terminal for this MCU */
-	mcu.pty->master_fd = -1;
-	mcu.pty->slave_fd = -1;
-	mcu.pty->slave_name[0] = 0;
+	mcu.pty.master_fd = -1;
+	mcu.pty.slave_fd = -1;
+	mcu.pty.slave_name[0] = 0;
 	MSIM_AVR_PTYOpen(&mcu);
 
 	/* Do we have to print available registers only? */
-	regs = sizeof mcu.vcdd->regs/sizeof mcu.vcdd->regs[0];
 	if (print_regs != 0) {
-		for (i = 0; i < regs; i++) {
-			/* Print first N registers only */
-			if (mcu.vcdd->regs[i].name[0] == 0) {
-				break;
+		for (i = 0; i < MSIM_AVR_DMSZ; i++) {
+			if (mcu.ioregs[i].name[0] == 0) {
+				continue;
 			}
-			if (mcu.vcdd->regs[i].off < 0) {
+			if (mcu.ioregs[i].off < 0) {
 				continue;
 			}
 			snprintf(log, sizeof log, "%s (0x%2lX)",
-			         mcu.vcdd->regs[i].name,
-			         mcu.vcdd->regs[i].off);
+			         mcu.ioregs[i].name,
+			         mcu.ioregs[i].off);
 			MSIM_LOG_INFO(log);
 		}
 		return 2;
@@ -295,40 +270,38 @@ int main(int argc, char *argv[])
 	/* Select registers to be dumped */
 	dump_regs = 0;
 	for (i = 0; i < vcd_rn; i++) {
-		for (j = 0; j < regs; j++) {
+		for (j = 0; j < MSIM_AVR_DMSZ; j++) {
 			char *bit;
 			char *pos;
-			size_t len = strlen(mcu.vcdd->regs[j].name);
+			size_t len = strlen(mcu.vcd[j].name);
 			int bitn, cr, bit_cr;
 
-			if (!len) {
+			if (len == 0) {
 				continue;
 			}
 
-			pos = strstr(mcu.vcdd->regs[j].name, vcd_regs[i]);
-			cr = strncmp(mcu.vcdd->regs[j].name, vcd_regs[i], len);
+			pos = strstr(mcu.ioregs[j].name, vcd_regs[i]);
+			cr = strncmp(mcu.ioregs[j].name, vcd_regs[i], len);
 
 			/* Do we have a 16-bit register mentioned or an exact
 			 * match of the register names? */
 			if ((cr != 0) && (pos != NULL)) {
-				if (mcu.vcdd->regs[j].name[len-1] == 'H') {
-					mcu.vcdd->bit[dump_regs].regi =
-					        (short)j;
+				if (mcu.ioregs[j].name[len-1] == 'H') {
+					mcu.vcd[dump_regs].i = (int32_t)j;
 				}
-				if (mcu.vcdd->regs[j].name[len-1] == 'L') {
-					mcu.vcdd->bit[dump_regs].reg_lowi =
-					        (short)j;
+				if (mcu.ioregs[j].name[len-1] == 'L') {
+					mcu.vcd[dump_regs].reg_lowi =
+					        (int32_t)j;
 				}
 
-				if ((mcu.vcdd->bit[dump_regs].regi >= 0) &&
-				                (mcu.vcdd->bit[dump_regs].
+				if ((mcu.vcd[dump_regs].i >= 0) &&
+				                (mcu.vcd[dump_regs].
 				                 reg_lowi >= 0)) {
-					mcu.vcdd->bit[dump_regs].n = -1;
-					strncpy(mcu.vcdd->bit[dump_regs].name,
-					        mcu.vcdd->regs[j].name, sizeof
-					        mcu.vcdd->bit[dump_regs].name);
-					mcu.vcdd->bit[dump_regs].name[len-1] =
-					        0;
+					mcu.vcd[dump_regs].n = -1;
+					strncpy(mcu.vcd[dump_regs].name,
+					        mcu.ioregs[j].name, sizeof
+					        mcu.vcd[dump_regs].name);
+					mcu.vcd[dump_regs].name[len-1] = 0;
 
 					dump_regs++;
 					break;
@@ -337,7 +310,7 @@ int main(int argc, char *argv[])
 				continue;
 			} else {
 				/* Do we have a register available? */
-				if (mcu.vcdd->regs[j].off < 0) {
+				if (mcu.ioregs[j].off < 0) {
 					continue;
 				}
 
@@ -351,8 +324,8 @@ int main(int argc, char *argv[])
 				}
 
 				/* Set index of a register to be dumped */
-				mcu.vcdd->bit[dump_regs].regi = (short)j;
-				mcu.vcdd->bit[dump_regs].n = (short)bitn;
+				mcu.vcd[dump_regs].i = (int32_t)j;
+				mcu.vcd[dump_regs].n = (int8_t)bitn;
 				dump_regs++;
 				break;
 			}
@@ -466,12 +439,12 @@ static void print_config(const struct MSIM_AVR *m)
 	 * all AVR instructions are 16- or 32-bits wide. This is why all
 	 * program memory addresses are divided by two before printing. */
 	char log[1024];
-	uint64_t reset_pc = m->intr->reset_pc>>1;
-	uint64_t ivt = m->intr->ivt>>1;
+	uint64_t reset_pc = m->intr.reset_pc>>1;
+	uint64_t ivt = m->intr.ivt>>1;
 	uint64_t flashstart = m->flashstart>>1;
 	uint64_t flashend = m->flashend>>1;
-	uint64_t blsstart = m->bls->start>>1;
-	uint64_t blsend = m->bls->end>>1;
+	uint64_t blsstart = m->bls.start>>1;
+	uint64_t blsend = m->bls.end>>1;
 
 	snprintf(log, sizeof log, "MCU model: %s (signature %02X%02X%02X)",
 	         m->name, m->signature[0], m->signature[1], m->signature[2]);

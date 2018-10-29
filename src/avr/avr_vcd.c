@@ -46,13 +46,11 @@ FILE *MSIM_AVR_VCDOpenDump(struct MSIM_AVR *mcu, const char *dumpname)
 	char buf[32];
 	struct tm *tm_info;
 	unsigned int i, regs;
-	struct MSIM_AVR_VCDRegister *reg;
-	struct MSIM_AVR_VCDRegister *reg_low;
+	struct MSIM_AVR_VCDReg *reg;
 	uint8_t rh, rl;
 	uint32_t reg_val;
 
-	regs = sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0];
-
+	regs = MSIM_AVR_VCD_REGS;
 	f = fopen(dumpname, "w");
 	if (!f) {
 		return NULL;
@@ -73,23 +71,23 @@ FILE *MSIM_AVR_VCDOpenDump(struct MSIM_AVR *mcu, const char *dumpname)
 	/* Declare VCD variables to dump */
 	fprintf(f, "$var reg 1 CLK_IO CLK_IO $end\n");
 	for (i = 0; i < regs; i++) {
-		if (mcu->vcdd->bit[i].regi < 0) {
+		if (mcu->vcd[i].i < 0) {
 			break;
 		}
-		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
+		reg = &mcu->vcd[i];
 
 		/* Are we going to dump a register bit only? */
-		if (mcu->vcdd->bit[i].reg_lowi >= 0) {
+		if (mcu->vcd[i].reg_lowi >= 0) {
 			fprintf(f, "$var reg 16 %s %s $end\n",
-			        mcu->vcdd->bit[i].name,
-			        mcu->vcdd->bit[i].name);
-		} else if (mcu->vcdd->bit[i].n < 0) {
+			        mcu->vcd[i].name,
+			        mcu->vcd[i].name);
+		} else if (mcu->vcd[i].n < 0) {
 			fprintf(f, "$var reg 8 %s %s $end\n",
 			        reg->name, reg->name);
 		} else {
 			fprintf(f, "$var reg 1 %s%d %s%d $end\n",
-			        reg->name, mcu->vcdd->bit[i].n,
-			        reg->name, mcu->vcdd->bit[i].n);
+			        reg->name, mcu->vcd[i].n,
+			        reg->name, mcu->vcd[i].n);
 		}
 	}
 	fprintf(f, "$upscope $end\n");
@@ -99,38 +97,30 @@ FILE *MSIM_AVR_VCDOpenDump(struct MSIM_AVR *mcu, const char *dumpname)
 	fprintf(f, "$dumpvars\n");
 	fprintf(f, "b0 CLK_IO\n");
 	for (i = 0; i < regs; i++) {
-		if (mcu->vcdd->bit[i].regi < 0) {
+		if (mcu->vcd[i].i < 0) {
 			break;
 		}
 
-		if (reg->addr == NULL) {
-			fprintf(stderr, "[!]: Register with known address "
-			        "(placed in data memory) can be dumped "
-			        "only: regname=\"\"%16s\n", reg->name);
-			continue;
-		}
-
-		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
-		reg_val = *reg->addr;
-		if (mcu->vcdd->bit[i].reg_lowi >= 0) {
-			reg_low = &mcu->vcdd->regs[mcu->vcdd->bit[i].reg_lowi];
-			rh = *reg->addr;
-			rl = *reg_low->addr;
+		reg = &mcu->vcd[i];
+		reg_val = *mcu->ioregs[reg->i].addr;
+		if (mcu->vcd[i].reg_lowi >= 0) {
+			rh = *mcu->ioregs[reg->i].addr;
+			rl = *mcu->ioregs[reg->reg_lowi].addr;
 			reg_val = ((uint16_t)(rh<<8)&0xFF00U)|
 			          (uint16_t)(rl&0x00FFU);
 		}
 
-		if (mcu->vcdd->bit[i].reg_lowi >= 0) {
+		if (mcu->vcd[i].reg_lowi >= 0) {
 			print_reg16(buf, sizeof buf, rh, rl);
-			fprintf(f, "b%s %s\n", buf, mcu->vcdd->bit[i].name);
-		} else if (mcu->vcdd->bit[i].n < 0) {
-			print_reg(buf, sizeof buf, *reg->addr);
+			fprintf(f, "b%s %s\n", buf, mcu->vcd[i].name);
+		} else if (mcu->vcd[i].n < 0) {
+			print_reg(buf, sizeof buf, *mcu->ioregs[reg->i].addr);
 			fprintf(f, "b%s %s\n", buf, reg->name);
 		} else {
-			print_regbit(buf, sizeof buf, *reg->addr,
-			             mcu->vcdd->bit[i].n);
+			print_regbit(buf, sizeof buf,
+			             *mcu->ioregs[reg->i].addr, mcu->vcd[i].n);
 			fprintf(f, "b%s %s%d\n", buf, reg->name,
-			        mcu->vcdd->bit[i].n);
+			        mcu->vcd[i].n);
 		}
 	}
 	fprintf(f, "$end\n");
@@ -144,45 +134,43 @@ void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, unsigned long tick,
 	static unsigned int clk_prints_left = 0;
 	unsigned int i, regs;
 	char buf[32], print_tick, new_value;
-	struct MSIM_AVR_VCDRegister *reg;
-	struct MSIM_AVR_VCDRegister *reg_low;
+	struct MSIM_AVR_VCDReg *reg;
 	uint8_t rh, rl;
 	uint32_t reg_val;
 
-	regs = sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0];
+	regs = MSIM_AVR_VCD_REGS;
 	print_tick = 1;
 	new_value = 0;
 
 	/* Do we have at least one register which value has changed? */
 	for (i = 0; i < regs; i++) {
-		short n;		/* Bit index of a register */
+		int8_t n;		/* Bit index of a register */
 
-		/* No register changes on fall should be */
-		if (fall) {
+		/* There should be no register changes on fall */
+		if (fall == 1U) {
 			break;
 		}
-		/* First N registers to be dumped only */
-		if (mcu->vcdd->bit[i].regi < 0) {
+		/* Only requested registers to be dumped only */
+		if (mcu->vcd[i].i < 0) {
 			break;
 		}
-		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
-		reg_val = *reg->addr;
-		if (mcu->vcdd->bit[i].reg_lowi >= 0) {
-			reg_low = &mcu->vcdd->regs[mcu->vcdd->bit[i].reg_lowi];
-			rh = *reg->addr;
-			rl = *reg_low->addr;
+
+		reg = &mcu->vcd[i];
+		reg_val = *mcu->ioregs[reg->i].addr;
+		if (mcu->vcd[i].reg_lowi >= 0) {
+			rh = *mcu->ioregs[reg->i].addr;
+			rl = *mcu->ioregs[reg->reg_lowi].addr;
 			reg_val = ((uint16_t)(rh<<8)&0xFF00U)|
 			          (uint16_t)(rl&0x00FFU);
 		}
 
 		/* Has register value been changed? */
-		n = mcu->vcdd->bit[i].n;
-		if ((n < 0) && (reg_val != reg->oldv)) {
+		n = mcu->vcd[i].n;
+		if ((n < 0) && (reg_val != reg->old_val)) {
 			new_value = 1;
 			break;
 		}
-		if (n >= 0 && (((*reg->addr >> n)&1) !=
-		                ((reg->oldv >> n)&1))) {
+		if (n >= 0 && (((reg_val >> n)&1)!=((reg->old_val >> n)&1))) {
 			new_value = 1;
 			break;
 		}
@@ -205,22 +193,21 @@ void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, unsigned long tick,
 	/* We've at least one register which value changed.
 	 * Let's print it. */
 	for (i = 0; i < regs; i++) {
-		/* First N registers to be dumped only */
-		if (mcu->vcdd->bit[i].regi < 0) {
+		/* Only requested registers to be dumped only */
+		if (mcu->vcd[i].i < 0) {
 			break;
 		}
 
-		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
-		reg_val = *reg->addr;
-		if (mcu->vcdd->bit[i].reg_lowi >= 0) {
-			reg_low = &mcu->vcdd->regs[mcu->vcdd->bit[i].reg_lowi];
-			rh = *reg->addr;
-			rl = *reg_low->addr;
+		reg = &mcu->vcd[i];
+		reg_val = *mcu->ioregs[reg->i].addr;
+		if (mcu->vcd[i].reg_lowi >= 0) {
+			rh = *mcu->ioregs[reg->i].addr;
+			rl = *mcu->ioregs[reg->reg_lowi].addr;
 			reg_val = ((uint16_t)(rh<<8)&0xFF00U)|
 			          (uint16_t)(rl&0x00FFU);
 		}
-		/* Hasn't it been changed? */
-		if (reg_val == reg->oldv) {
+		/* Has it been changed? */
+		if (reg_val == reg->old_val) {
 			continue;
 		}
 
@@ -233,42 +220,41 @@ void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, unsigned long tick,
 		}
 
 		/* Print selected register */
-		if (mcu->vcdd->bit[i].reg_lowi >= 0) {
+		if (mcu->vcd[i].reg_lowi >= 0) {
 			print_reg16(buf, sizeof buf, rh, rl);
-			fprintf(f, "b%s %s\n", buf, mcu->vcdd->bit[i].name);
-		} else if (mcu->vcdd->bit[i].n < 0) {
-			print_reg(buf, sizeof buf, *reg->addr);
+			fprintf(f, "b%s %s\n", buf, mcu->vcd[i].name);
+		} else if (mcu->vcd[i].n < 0) {
+			print_reg(buf, sizeof buf, *mcu->ioregs[reg->i].addr);
 			fprintf(f, "b%s %s\n", buf, reg->name);
 		} else {
-			print_regbit(buf, sizeof buf, *reg->addr,
-			             mcu->vcdd->bit[i].n);
+			print_regbit(buf, sizeof buf,
+			             *mcu->ioregs[reg->i].addr, mcu->vcd[i].n);
 			fprintf(f, "b%s %s%d\n", buf, reg->name,
-			        mcu->vcdd->bit[i].n);
+			        mcu->vcd[i].n);
 		}
 	}
 
-	/* Update "old" values of the registers */
+	/* Update previous values of the registers */
 	for (i = 0; i < regs; i++) {
-		/* First N registers to be updated only */
-		if (mcu->vcdd->bit[i].regi < 0) {
+		/* Only requested registers to be dumped only */
+		if (mcu->vcd[i].i < 0) {
 			break;
 		}
 
-		reg = &mcu->vcdd->regs[mcu->vcdd->bit[i].regi];
-		reg_val = *reg->addr;
-		if (mcu->vcdd->bit[i].reg_lowi >= 0) {
-			reg_low = &mcu->vcdd->regs[mcu->vcdd->bit[i].reg_lowi];
-			rh = *reg->addr;
-			rl = *reg_low->addr;
+		reg = &mcu->vcd[i];
+		reg_val = *mcu->ioregs[reg->i].addr;
+		if (mcu->vcd[i].reg_lowi >= 0) {
+			rh = *mcu->ioregs[reg->i].addr;
+			rl = *mcu->ioregs[reg->reg_lowi].addr;
 			reg_val = ((uint16_t)(rh<<8)&0xFF00U)|
 			          (uint16_t)(rl&0x00FFU);
 		}
 
-		/* Hasn't it been changed? */
-		if (reg_val == reg->oldv) {
+		/* Has it been changed? */
+		if (reg_val == reg->old_val) {
 			continue;
 		} else {
-			reg->oldv = reg_val;
+			reg->old_val = reg_val;
 		}
 	}
 }

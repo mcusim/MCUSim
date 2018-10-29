@@ -47,7 +47,7 @@ static lua_State *lua_states[MSIM_AVR_LUAMODELS];
 int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *file)
 {
 	static char path[4096];
-	uint32_t i, j, ci, regs;
+	uint32_t i, j, ci;
 	uint8_t err;
 	FILE *f;
 
@@ -114,18 +114,17 @@ int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *file)
 
 		/* Add registers available for the current MCU model to
 		 * the Lua state. */
-		regs = sizeof mcu->vcdd->regs/sizeof mcu->vcdd->regs[0];
-		for (j = 0; j < regs; j++) {
-			if (mcu->vcdd->regs[j].name[0] == 0) {
+		for (j = 0; j < MSIM_AVR_DMSZ; j++) {
+			if (mcu->ioregs[j].name[0] == 0) {
 				break;
 			}
-			if (mcu->vcdd->regs[j].off < 0) {
+			if (mcu->ioregs[j].off < 0) {
 				continue;
 			}
 
 			lua_pushinteger(lua_states[i],
-			                (int)mcu->vcdd->regs[j].off);
-			lua_setglobal(lua_states[i], mcu->vcdd->regs[j].name);
+			                (int)mcu->ioregs[j].off);
+			lua_setglobal(lua_states[i], mcu->ioregs[j].name);
 		}
 
 		/* Add available MCU states to the Lua state. */

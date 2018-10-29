@@ -73,7 +73,7 @@ int flua_AVR_RegBit(lua_State *L)
 	unsigned char bit = (unsigned char)lua_tointeger(L, 3);
 
 	/* Model's trying to read something else. */
-	if (reg >= mcu->regs) {
+	if (reg >= mcu->regs_num) {
 		fprintf(stderr, "[e] Model %s is reading a bit of unknown "
 		        "register: %u\n", "N/A", reg);
 		lua_pushnil(L);
@@ -98,8 +98,8 @@ int flua_AVR_IOBit(lua_State *L)
 
 	/* Model's trying to read something else.
 	 * NOTE: We may have no I/O registers at all! */
-	if (mcu->io_regs == 0 ||
-	                io_reg >= (mcu->sfr_off+mcu->io_regs) ||
+	if (mcu->ioregs_num == 0 ||
+	                io_reg >= (mcu->sfr_off+mcu->ioregs_num) ||
 	                io_reg < mcu->sfr_off) {
 		fprintf(stderr, "[e] Model %s is reading a bit of unknown I/O"
 		        " register: %u\n", "N/A", io_reg);
@@ -123,7 +123,7 @@ int flua_AVR_ReadReg(lua_State *L)
 	unsigned short reg = (unsigned short)lua_tointeger(L, 2);
 
 	/* Model's trying to read something else. */
-	if (reg >= mcu->regs) {
+	if (reg >= mcu->regs_num) {
 		fprintf(stderr, "[e] Model %s is reading unknown "
 		        "register: %u\n", "N/A", reg);
 		lua_pushnil(L);
@@ -140,8 +140,8 @@ int flua_AVR_ReadIO(lua_State *L)
 
 	/* Model's trying to read something else.
 	 * NOTE: We may have no I/O registers at all! */
-	if (mcu->io_regs == 0 ||
-	                io_reg >= (mcu->sfr_off+mcu->io_regs) ||
+	if (mcu->ioregs_num == 0 ||
+	                io_reg >= (mcu->sfr_off+mcu->ioregs_num) ||
 	                io_reg < mcu->sfr_off) {
 		fprintf(stderr, "[e] Model %s is reading unknown I/O "
 		        "register: %u\n", "N/A", io_reg);
@@ -160,7 +160,7 @@ int flua_AVR_SetRegBit(lua_State *L)
 	unsigned char val = (unsigned char)lua_tointeger(L, 4);
 
 	/* Model's trying to write something else. */
-	if (reg >= mcu->regs) {
+	if (reg >= mcu->regs_num) {
 		fprintf(stderr, "[e] Model %s is writing a bit of unknown "
 		        "register: %u\n", "N/A", reg);
 		return 0;
@@ -188,8 +188,8 @@ int flua_AVR_SetIOBit(lua_State *L)
 
 	/* Model's trying to write something else.
 	 * NOTE: We may have no I/O registers at all! */
-	if (mcu->io_regs == 0 ||
-	                io_reg >= (mcu->sfr_off+mcu->io_regs) ||
+	if (mcu->ioregs_num == 0 ||
+	                io_reg >= (mcu->sfr_off+mcu->ioregs_num) ||
 	                io_reg < mcu->sfr_off) {
 		fprintf(stderr, "[e] Model %s is writing a bit of unknown I/O"
 		        "register: %u\n", "N/A", io_reg);
@@ -216,7 +216,7 @@ int flua_AVR_WriteReg(lua_State *L)
 	unsigned char val = (unsigned char)lua_tointeger(L, 3);
 
 	/* Model's trying to write something else. */
-	if (reg >= mcu->regs) {
+	if (reg >= mcu->regs_num) {
 		fprintf(stderr, "[e] Model %s is writing unknown "
 		        "register: %u\n", "N/A", reg);
 		return 0;
@@ -233,8 +233,8 @@ int flua_AVR_WriteIO(lua_State *L)
 
 	/* Model's trying to write something else.
 	 * NOTE: We may have no I/O registers at all! */
-	if (mcu->io_regs == 0 ||
-	                io_reg >= (mcu->sfr_off+mcu->io_regs) ||
+	if (mcu->ioregs_num == 0 ||
+	                io_reg >= (mcu->sfr_off+mcu->ioregs_num) ||
 	                io_reg < mcu->sfr_off) {
 		fprintf(stderr, "[e] Model %s is writing unknown I/O"
 		        "register: %u\n", "N/A", io_reg);

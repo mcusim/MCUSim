@@ -33,7 +33,7 @@
 
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
-#include "mcusim/avr/sim/m8a.h"
+#include "mcusim/avr/sim/m8/m8a.h"
 #include "mcusim/avr/sim/mcu_init.h"
 
 #define FUSE_LOW		0
@@ -163,12 +163,12 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 		DM(PORTD) = 0xFF;
 
 		/* Set default WDT parameters */
-		mcu->wdt->sys_presc = 1;
-		mcu->wdt->sys_ticks = 0;
-		mcu->wdt->presc = 16*1024;	/* Default WDT prescaler, 16K*/
-		mcu->wdt->ticks = 0;
-		mcu->wdt->always_on = 0; 	/* WDT initially disabled */
-		mcu->wdt->checked = 0;		/* WDT will be adjusted */
+		mcu->wdt.sys_presc = 1;
+		mcu->wdt.sys_ticks = 0;
+		mcu->wdt.presc = 16*1024;	/* Default WDT prescaler */
+		mcu->wdt.ticks = 0;
+		mcu->wdt.always_on = 0; 	/* WDT initially disabled */
+		mcu->wdt.checked = 0;		/* WDT will be adjusted */
 
 		/* Set USART registers */
 		DM(UCSRA) = 0x20;
@@ -550,11 +550,11 @@ static void tick_usart(struct MSIM_AVR *mcu)
 	 * 12-bit UBRR register value each time the counter has counted down
 	 * to zero or when the UBRRL register is written.
 	 * (see 24.3.1. Internal Clock Generation...) */
-	uint32_t *rx_ticks = &mcu->usart->rx_ticks;
-	uint32_t *tx_ticks = &mcu->usart->tx_ticks;
-	uint32_t *baud = &mcu->usart->baud;
-	uint32_t *rx_presc = &mcu->usart->rx_presc;
-	uint32_t *tx_presc = &mcu->usart->tx_presc;
+	uint32_t *rx_ticks = &mcu->usart.rx_ticks;
+	uint32_t *tx_ticks = &mcu->usart.tx_ticks;
+	uint32_t *baud = &mcu->usart.baud;
+	uint32_t *rx_presc = &mcu->usart.rx_presc;
+	uint32_t *tx_presc = &mcu->usart.tx_presc;
 	uint8_t mult = 1;
 
 	if ((ubrrl_buf != DM(UBRRL)) || (*tx_ticks == 0U)) {
@@ -600,7 +600,7 @@ static void tick_usart(struct MSIM_AVR *mcu)
 	 * Data Buffer Register (TXB) is a destination for data stored in the
 	 * UDR Register location. */
 	if ((IS_WRIT(mcu, UDR)) && (IS_SET(DM(UCSRA), UDRE) == 1U)) {
-		mcu->usart->txb = DM(UDR);
+		mcu->usart.txb = DM(UDR);
 		/* Clear UDRE flag */
 		DM(UCSRA) &= ~(1<<UDRE);
 	}
@@ -638,21 +638,21 @@ static void tick_wdt(struct MSIM_AVR *mcu)
 	uint8_t wdp;		/* Watchdog Prescaler */
 
 	/* Initial WDT adjustment */
-	if (mcu->wdt->checked == 0U) {
+	if (mcu->wdt.checked == 0U) {
 		/* WDT oscillator frequency is 1 MHz */
-		mcu->wdt->sys_presc = mcu->freq/1000000;
-		mcu->wdt->sys_ticks = 0;
-		mcu->wdt->checked = 1;
+		mcu->wdt.sys_presc = mcu->freq/1000000;
+		mcu->wdt.sys_ticks = 0;
+		mcu->wdt.checked = 1;
 	}
 
 	/* Enable WDT if this is required */
-	if ((mcu->wdt->always_on == 0U) && (mcu->wdt->on == 0U) &&
+	if ((mcu->wdt.always_on == 0U) && (mcu->wdt.on == 0U) &&
 	                (DM(WDTCR) != wdtcr_buf) &&
 	                (IS_SET(DM(WDTCR), WDE) == 1)) {
 		MSIM_LOG_DEBUG("WDT is enabled");
-		mcu->wdt->on = 1;
-		mcu->wdt->sys_ticks = 0;
-		mcu->wdt->ticks = 0;
+		mcu->wdt.on = 1;
+		mcu->wdt.sys_ticks = 0;
+		mcu->wdt.ticks = 0;
 	}
 
 	/* Watch for attempts to adjust WDE (off) and/or WDP (prescaler) */
@@ -661,36 +661,36 @@ static void tick_wdt(struct MSIM_AVR *mcu)
 			/* Disable WDT if this is required */
 			if (IS_CLEAR(DM(WDTCR), WDE) == 1U) {
 				MSIM_LOG_DEBUG("WDT is disabled");
-				mcu->wdt->on = 0;
-				mcu->wdt->sys_ticks = 0;
-				mcu->wdt->ticks = 0;
+				mcu->wdt.on = 0;
+				mcu->wdt.sys_ticks = 0;
+				mcu->wdt.ticks = 0;
 			}
 			/* Adjust WDT prescaler if this is required */
 			wdp = DM(WDTCR)&0x07;
 			switch (wdp) {
 			case 0:
-				mcu->wdt->presc = 16*1024;
+				mcu->wdt.presc = 16*1024;
 				break;
 			case 1:
-				mcu->wdt->presc = 32*1024;
+				mcu->wdt.presc = 32*1024;
 				break;
 			case 2:
-				mcu->wdt->presc = 64*1024;
+				mcu->wdt.presc = 64*1024;
 				break;
 			case 3:
-				mcu->wdt->presc = 128*1024;
+				mcu->wdt.presc = 128*1024;
 				break;
 			case 4:
-				mcu->wdt->presc = 256*1024;
+				mcu->wdt.presc = 256*1024;
 				break;
 			case 5:
-				mcu->wdt->presc = 512*1024;
+				mcu->wdt.presc = 512*1024;
 				break;
 			case 6:
-				mcu->wdt->presc = 1024*1024;
+				mcu->wdt.presc = 1024*1024;
 				break;
 			case 7:
-				mcu->wdt->presc = 2048*1024;
+				mcu->wdt.presc = 2048*1024;
 				break;
 			default:
 				snprintf(mcu->log, sizeof mcu->log, "illegal "
@@ -718,24 +718,24 @@ static void tick_wdt(struct MSIM_AVR *mcu)
 	}
 
 	/* Update WDT if this one is enabled */
-	if ((mcu->wdt->always_on == 1U) || (mcu->wdt->on == 1U)) {
-		if (mcu->wdt->sys_ticks < mcu->wdt->sys_presc) {
+	if ((mcu->wdt.always_on == 1U) || (mcu->wdt.on == 1U)) {
+		if (mcu->wdt.sys_ticks < mcu->wdt.sys_presc) {
 			/* Pre-scaling system clock */
-			mcu->wdt->sys_ticks++;
+			mcu->wdt.sys_ticks++;
 		} else {
 			/* WDT oscillator clock */
-			if (mcu->wdt->ticks < mcu->wdt->presc) {
-				mcu->wdt->ticks++;
+			if (mcu->wdt.ticks < mcu->wdt.presc) {
+				mcu->wdt.ticks++;
 			} else {
 				/* Watchdog MCU reset */
-				mcu->pc = mcu->intr->reset_pc;
+				mcu->pc = mcu->intr.reset_pc;
 				DM(MCUCSR) |= (1<<WDRF);
-				mcu->wdt->sys_ticks = 0;
-				mcu->wdt->ticks = 0;
-				mcu->wdt->on = 0;
+				mcu->wdt.sys_ticks = 0;
+				mcu->wdt.ticks = 0;
+				mcu->wdt.on = 0;
 				MSIM_LOG_DEBUG("Watchdog MCU reset");
 			}
-			mcu->wdt->sys_ticks = 0;
+			mcu->wdt.sys_ticks = 0;
 		}
 	}
 }
@@ -766,21 +766,21 @@ static void usart_transmit(struct MSIM_AVR *mcu)
 	buf[1] = 0;
 	switch (ucsz) {
 	case 0:			/* 5-bit */
-		buf[0] = mcu->usart->txb&0x1F;
+		buf[0] = mcu->usart.txb&0x1F;
 		break;
 	case 1:			/* 6-bit */
-		buf[0] = mcu->usart->txb&0x3F;
+		buf[0] = mcu->usart.txb&0x3F;
 		break;
 	case 2:			/* 7-bit */
-		buf[0] = mcu->usart->txb&0x7F;
+		buf[0] = mcu->usart.txb&0x7F;
 		break;
 	case 3:			/* 8-bit */
-		buf[0] = mcu->usart->txb;
+		buf[0] = mcu->usart.txb;
 		break;
 	case 7:			/* 9-bit */
 		/* NOTE: Should all other bits of buf[1] be filled from the
 		 * next portion of USART transmit data (and not with zeroes)?*/
-		buf[0] = mcu->usart->txb;
+		buf[0] = mcu->usart.txb;
 		buf[1] = (DM(UCSRB)>>TXB8)&1U;
 		buf_len = 2;
 		break;
@@ -794,17 +794,17 @@ static void usart_transmit(struct MSIM_AVR *mcu)
 	}
 
 	if ((err == 0) && (IS_CLEAR(DM(UCSRA), UDRE) == 1)) {
-		if (mcu->pty->master_fd >= 0) {
+		if (mcu->pty.master_fd >= 0) {
 			written = MSIM_AVR_PTYWrite(mcu, buf, buf_len);
 			if (written != buf_len) {
 				snprintf(mcu->log, sizeof mcu->log, "failed "
 				         "to feed PTY master with USART data, "
-				         "slave=%s", mcu->pty->slave_name);
+				         "slave=%s", mcu->pty.slave_name);
 				MSIM_LOG_ERROR(mcu->log);
 			}
 #ifdef DEBUG
 			snprintf(mcu->log, sizeof mcu->log, "-> 0x%" PRIX8
-			         ", pc=0x%06lX", buf[0], mcu->pc);
+			         ", pc=0x%06" PRIX32, buf[0], mcu->pc);
 			MSIM_LOG_DEBUG(mcu->log);
 #endif
 			/* Set UDRE flag */
@@ -871,12 +871,12 @@ static void usart_receive(struct MSIM_AVR *mcu)
 	}
 
 	if ((err == 0) && (IS_CLEAR(DM(UCSRA), RXC) == 1)) {
-		if (mcu->pty->master_fd >= 0) {
+		if (mcu->pty.master_fd >= 0) {
 			recv = MSIM_AVR_PTYRead(mcu, buf, buf_len);
 			if (recv != buf_len) {
 				snprintf(mcu->log, sizeof mcu->log, "failed "
 				         "to read USART data from PTY master, "
-				         "slave=%s", mcu->pty->slave_name);
+				         "slave=%s", mcu->pty.slave_name);
 				MSIM_LOG_ERROR(mcu->log);
 			}
 #ifdef DEBUG
@@ -2033,37 +2033,37 @@ int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 		case FUSE_HIGH:
 			/* Do we have WDT always on? */
 			if (((fuse_v>>6)&1) == 0) {
-				mcu->wdt->always_on = 1;
-				mcu->wdt->on = 1;
+				mcu->wdt.always_on = 1;
+				mcu->wdt.on = 1;
 				MSIM_LOG_WARN("WDT is always ON (WDTON bit is "
 				              "programmed/cleared)");
 			} else {
-				mcu->wdt->always_on = 0;
-				mcu->wdt->on = 0;
+				mcu->wdt.always_on = 0;
+				mcu->wdt.on = 0;
 			}
 
 			bootsz = (fuse_v>>1)&0x3U;
 			ckopt = (fuse_v>>4)&0x1U;
 			switch (bootsz) {
 			case 3:
-				mcu->bls->start = 0x1F00;
-				mcu->bls->end = 0x1FFF;
-				mcu->bls->size = 256;
+				mcu->bls.start = 0x1F00;
+				mcu->bls.end = 0x1FFF;
+				mcu->bls.size = 256;
 				break;
 			case 2:
-				mcu->bls->start = 0x1E00;
-				mcu->bls->end = 0x1FFF;
-				mcu->bls->size = 512;
+				mcu->bls.start = 0x1E00;
+				mcu->bls.end = 0x1FFF;
+				mcu->bls.size = 512;
 				break;
 			case 1:
-				mcu->bls->start = 0x1C00;
-				mcu->bls->end = 0x1FFF;
-				mcu->bls->size = 1024;
+				mcu->bls.start = 0x1C00;
+				mcu->bls.end = 0x1FFF;
+				mcu->bls.size = 1024;
 				break;
 			case 0:
-				mcu->bls->start = 0x1800;
-				mcu->bls->end = 0x1FFF;
-				mcu->bls->size = 2048;
+				mcu->bls.start = 0x1800;
+				mcu->bls.end = 0x1FFF;
+				mcu->bls.size = 2048;
 				break;
 			default:
 				/* Shouldn't happen! */
@@ -2076,12 +2076,12 @@ int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 
 			if ((fuse_v&1U) == 1U) {
 				/* BOOTRST is 1(unprogrammed) */
-				mcu->intr->reset_pc = 0x0000;
+				mcu->intr.reset_pc = 0x0000;
 				mcu->pc = 0x0000;
 			} else {
 				/* BOOTRST is 0(programmed) */
-				mcu->intr->reset_pc = mcu->bls->start;
-				mcu->pc = mcu->bls->start;
+				mcu->intr.reset_pc = mcu->bls.start;
+				mcu->pc = mcu->bls.start;
 			}
 
 			switch (cksel) {
@@ -2133,41 +2133,41 @@ int MSIM_M8APassIRQs(struct MSIM_AVR *mcu)
 
 	/* Timer0 interrupts */
 	if (((timsk>>TOIE0)&1U) && ((tifr>>TOV0)&1U)) {
-		mcu->intr->irq[TIMER0_OVF_vect_num-1] = 1;
+		mcu->intr.irq[TIMER0_OVF_vect_num-1] = 1;
 		mcu->dm[TIFR] &= ~(1<<TOV0);
 	}
 
 	/* Timer2 interrupts */
 	if (((timsk>>TOIE2)&1U) && ((tifr>>TOV2)&1U)) {
-		mcu->intr->irq[TIMER2_OVF_vect_num-1] = 1;
+		mcu->intr.irq[TIMER2_OVF_vect_num-1] = 1;
 		mcu->dm[TIFR] &= ~(1<<TOV2);
 	}
 	if (((timsk>>OCIE2)&1U) && ((tifr>>OCF2)&1U)) {
-		mcu->intr->irq[TIMER2_COMP_vect_num-1] = 1;
+		mcu->intr.irq[TIMER2_COMP_vect_num-1] = 1;
 		mcu->dm[TIFR] &= ~(1<<OCF2);
 	}
 
 	/* Timer1 interrupts */
 	if (((timsk>>TOIE1)&1U) && ((tifr>>TOV1)&1U)) {
-		mcu->intr->irq[TIMER1_OVF_vect_num-1] = 1;
+		mcu->intr.irq[TIMER1_OVF_vect_num-1] = 1;
 		mcu->dm[TIFR] &= ~(1<<TOV1);
 	}
 	if (((timsk>>OCIE1A)&1U) && ((tifr>>OCF1A)&1U)) {
-		mcu->intr->irq[TIMER1_COMPA_vect_num-1] = 1;
+		mcu->intr.irq[TIMER1_COMPA_vect_num-1] = 1;
 		mcu->dm[TIFR] &= ~(1<<OCF1A);
 	}
 	if (((timsk>>OCIE1B)&1U) && ((tifr>>OCF1B)&1U)) {
-		mcu->intr->irq[TIMER1_COMPB_vect_num-1] = 1;
+		mcu->intr.irq[TIMER1_COMPB_vect_num-1] = 1;
 		mcu->dm[TIFR] &= ~(1<<OCF1B);
 	}
 	if (((timsk>>TICIE1)&1U) && ((tifr>>ICF1)&1U)) {
-		mcu->intr->irq[TIMER1_CAPT_vect_num-1] = 1;
+		mcu->intr.irq[TIMER1_CAPT_vect_num-1] = 1;
 		mcu->dm[TIFR] &= ~(1<<ICF1);
 	}
 
 	/* USART interrupts */
 	if (((DM(UCSRB)>>UDRIE)&1U) && ((DM(UCSRA)>>UDRE)&1U)) {
-		mcu->intr->irq[USART_UDRE_vect_num-1] = 1;
+		mcu->intr.irq[USART_UDRE_vect_num-1] = 1;
 		/* 24.6.3. Transmitter Flags and Interrupts
 		 *
 		 * When interrupt-driven data transmission is used, the Data
@@ -2179,11 +2179,11 @@ int MSIM_M8APassIRQs(struct MSIM_AVR *mcu)
 		 * DM(UCSRA) &= ~(1<<UDRE); */
 	}
 	if (((DM(UCSRB)>>TXCIE)&1U) && ((DM(UCSRA)>>TXC)&1U)) {
-		mcu->intr->irq[USART_TXC_vect_num-1] = 1;
+		mcu->intr.irq[USART_TXC_vect_num-1] = 1;
 		DM(UCSRA) &= ~(1<<TXC);
 	}
 	if (((DM(UCSRB)>>RXCIE)&1U) && ((DM(UCSRA)>>RXC)&1U)) {
-		mcu->intr->irq[USART_RXC_vect_num-1] = 1;
+		mcu->intr.irq[USART_RXC_vect_num-1] = 1;
 		/* RXC flag should not be cleared automatically, but by
 		 * reading UDR register. This behavior will have to be
 		 * adjusted further.

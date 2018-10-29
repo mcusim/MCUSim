@@ -24,7 +24,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * This is a main header with a common function to initialize all AVR models.
+ * This header contains a model-independent function to initialize AVR models.
  */
 #ifndef MSIM_AVR_MCUINIT_H_
 #define MSIM_AVR_MCUINIT_H_ 1
@@ -32,27 +32,19 @@
 static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
 	uint32_t i;
-	uint8_t *pm;
-	uint8_t *dm;
-	uint64_t pmsz, pm_size;
-	uint64_t dmsz, dm_size;
-
-#ifdef VCD_DUMP_REGS
-	struct MSIM_AVR_VCDRegister known_regs[] = VCD_DUMP_REGS;
-	uint32_t known_regsn = sizeof known_regs/sizeof known_regs[0];
-	uint32_t avail_regsn;
+	uint32_t pmsz, pm_size;
+	uint32_t dmsz, dm_size;
+#ifdef AVR_INIT_IOREGS
+	struct MSIM_AVR_IOReg ioregs[] = AVR_INIT_IOREGS;
+	uint32_t ioregs_num = sizeof ioregs/sizeof ioregs[0];
 #endif
 
-	if (!mcu) {
-		fprintf(stderr, "[e]: MCU should not be NULL\n");
+	if (mcu == NULL) {
+		MSIM_LOG_FATAL("MCU instance should not be null");
 		return 255;
 	}
-
-	pm = args->pm;
-	dm = args->dm;
 	pm_size = args->pmsz;
 	dm_size = args->dmsz;
-
 	strcpy(mcu->name, MCU_NAME);
 	mcu->signature[0] = SIGNATURE_0;
 	mcu->signature[1] = SIGNATURE_1;
@@ -67,7 +59,13 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 #else
 	mcu->reduced_core = 0;
 #endif
-
+#if defined(SPMCSR)
+	mcu->spmcsr = &mcu->dm[_SFR_IO8(SPMCSR)];
+#elif defined(SPMCR)
+	mcu->spmcsr = &mcu->dm[_SFR_IO8(SPMCR)];
+#else
+	mcu->spmcsr = NULL;
+#endif
 	mcu->spm_pagesize = SPM_PAGESIZE;
 	mcu->flashstart = FLASHSTART;
 	mcu->flashend = FLASHEND;
@@ -78,41 +76,36 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	mcu->e2end = E2END;
 	mcu->e2size = E2SIZE;
 	mcu->e2pagesize = E2PAGESIZE;
-
 	mcu->lockbits = LBITS_DEFAULT;
 	mcu->sfr_off = __SFR_OFFSET;
-	mcu->regs = GP_REGS;
-	mcu->io_regs = IO_REGS;
+	mcu->regs_num = GP_REGS;
+	mcu->ioregs_num = IO_REGS;
 
 	/* Program memory */
-	pmsz = (mcu->flashend - mcu->flashstart) + 1;
+	pmsz = mcu->flashend - mcu->flashstart + 1;
 	if (pm_size < pmsz) {
-		fprintf(stderr, "[e]: Program memory is limited by %" PRIu64
-		        " bytes, %" PRIu64 " bytes is not enough\n",
-		        pmsz, pm_size);
+		snprintf(mcu->log, sizeof mcu->log, "program memory is "
+		         "limited by %" PRIu32 " bytes, %" PRIu32 " bytes is "
+		         "not enough", pmsz, pm_size);
+		MSIM_LOG_FATAL(mcu->log);
 		return 255;
 	}
-	mcu->pm = pm;
 	mcu->pm_size = pm_size;
-	/* END Program memory */
 
 	/* Data memory */
-	dmsz = mcu->regs + mcu->io_regs + mcu->ramsize;
+	dmsz = mcu->regs_num + mcu->ioregs_num + mcu->ramsize;
 	if (dm_size < dmsz) {
-		fprintf(stderr, "[e]: Data memory is limited by %" PRIu64
-		        " bytes, %" PRIu64 " bytes is not enough\n",
-		        dmsz, dm_size);
+		snprintf(mcu->log, sizeof mcu->log, "data memory is limited "
+		         "by %" PRIu32 " bytes, %" PRIu32 " bytes is not "
+		         "enough", dmsz, dm_size);
+		MSIM_LOG_FATAL(mcu->log);
 		return 255;
 	}
-	mcu->dm = dm;
 	mcu->dm_size = dm_size;
-	/* END Data memory */
 
 	mcu->sreg = &mcu->dm[SREG];
 	mcu->sph = &mcu->dm[SPH];
 	mcu->spl = &mcu->dm[SPL];
-
-	/* Extended registers */
 #ifdef EIND
 	mcu->eind = &mcu->dm[_SFR_IO8(EIND)];
 #else
@@ -138,9 +131,6 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 #else
 	mcu->rampd = NULL;
 #endif
-	/* END Extended registers */
-
-	/* Fuses */
 #ifdef EFUSE_DEFAULT
 	mcu->fuse[2] = EFUSE_DEFAULT;
 #endif
@@ -149,6 +139,7 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 #endif
 	mcu->fuse[0] = LFUSE_DEFAULT;
 
+	/* MCU-specific functions */
 #ifdef SET_FUSE_F
 	mcu->set_fusef = SET_FUSE_F;
 #else
@@ -159,55 +150,59 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 #else
 	mcu->set_lockf = NULL;
 #endif
-	/* END Fuses */
-
-	/* MCU peripherals */
 #ifdef TICK_PERF_F
 	mcu->tick_perf = TICK_PERF_F;
 #else
 	mcu->tick_perf = NULL;
 #endif
-	/* END MCU peripherals */
+#ifdef PASS_IRQS_F
+	mcu->pass_irqs = PASS_IRQS_F;
+#else
+	mcu->pass_irqs = NULL;
+#endif
 
 #ifdef BLS_START
-	mcu->bls->start = BLS_START;
-	mcu->bls->end = BLS_END;
-	mcu->bls->size = BLS_SIZE;
+	mcu->bls.start = BLS_START;
+	mcu->bls.end = BLS_END;
+	mcu->bls.size = BLS_SIZE;
 #else
-	mcu->bls->start = 0;
-	mcu->bls->end = 0;
-	mcu->bls->size = 0;
+	mcu->bls.start = 0;
+	mcu->bls.end = 0;
+	mcu->bls.size = 0;
 #endif
 
-#if defined(SPMCSR)
-	mcu->spmcsr = &mcu->dm[_SFR_IO8(SPMCSR)];
-#elif defined(SPMCR)
-	mcu->spmcsr = &mcu->dm[_SFR_IO8(SPMCR)];
-#else
-	mcu->spmcsr = NULL;
+#ifdef AVR_INIT_IOREGS
+	/* Fill descriptors of the available I/O registers */
+	for (i = 0; i < ioregs_num; i++) {
+		if (ioregs[i].off > 0) {
+			mcu->ioregs[ioregs[i].off] = ioregs[i];
+		}
+	}
 #endif
 
-	/* Do not include any register into dump by default */
-	for (i = 0; i < sizeof mcu->vcdd->bit/sizeof mcu->vcdd->bit[0]; i++) {
-		mcu->vcdd->bit[i].regi = -1;
-		mcu->vcdd->bit[i].reg_lowi = -1;
+	/* Fill registers to be included into VCD dump */
+	/*
+	for (i = 0; i < sizeof mcu->vcd->bit/sizeof mcu->vcd->bit[0]; i++) {
+		mcu->vcd->bit[i].regi = -1;
+		mcu->vcd->bit[i].reg_lowi = -1;
 	}
-	for (i = 0; i < sizeof mcu->vcdd->regs/
-	                sizeof mcu->vcdd->regs[0]; i++) {
-		mcu->vcdd->regs[i].off = -1;
+	for (i = 0; i < sizeof mcu->vcd->regs/
+	                sizeof mcu->vcd->regs[0]; i++) {
+		mcu->vcd->regs[i].off = -1;
 	}
-#ifdef VCD_DUMP_REGS
-	avail_regsn = sizeof mcu->vcdd->regs/sizeof mcu->vcdd->regs[0];
+	#ifdef AVR_INIT_IOREGS
+	avail_regsn = sizeof mcu->vcd->regs/sizeof mcu->vcd->regs[0];
 	for (i = 0; i < avail_regsn; i++) {
 		if (i < known_regsn) {
 			known_regs[i].addr = &mcu->dm[known_regs[i].off];
 			known_regs[i].oldv = *known_regs[i].addr;
-			mcu->vcdd->regs[i] = known_regs[i];
+			mcu->vcd->regs[i] = known_regs[i];
 		} else {
 			break;
 		}
 	}
-#endif
+	#endif
+	*/
 
 	mcu->clk_source = CLK_SOURCE;
 	mcu->freq = CLK_FREQ;
@@ -215,13 +210,8 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	mcu->pc = RESET_PC;
 
 	/* Set up interrupts and IRQs */
-	mcu->intr->reset_pc = RESET_PC;
-	mcu->intr->ivt = IVT_ADDR;
-#ifdef PASS_IRQS_F
-	mcu->pass_irqs = PASS_IRQS_F;
-#else
-	mcu->pass_irqs = NULL;
-#endif
+	mcu->intr.reset_pc = RESET_PC;
+	mcu->intr.ivt = IVT_ADDR;
 
 	return 0;
 }

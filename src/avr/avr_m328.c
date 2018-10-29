@@ -30,7 +30,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "mcusim/avr/sim/m328.h"
+#include "mcusim/mcusim.h"
+#include "mcusim/log.h"
+#include "mcusim/avr/sim/m328/m328.h"
 #include "mcusim/avr/sim/mcu_init.h"
 
 int MSIM_M328Init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)

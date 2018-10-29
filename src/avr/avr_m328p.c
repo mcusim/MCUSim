@@ -31,7 +31,9 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include "mcusim/avr/sim/m328p.h"
+#include "mcusim/mcusim.h"
+#include "mcusim/log.h"
+#include "mcusim/avr/sim/m328/m328p.h"
 #include "mcusim/avr/sim/mcu_init.h"
 
 #define FUSE_LOW		0
@@ -321,24 +323,24 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 
 			switch (bootsz) {
 			case 3:
-				mcu->bls->start = 0x7E00; /* first byte */
-				mcu->bls->end = 0x7FFF; /* last byte */
-				mcu->bls->size = 512; /* bytes! */
+				mcu->bls.start = 0x7E00; /* first byte */
+				mcu->bls.end = 0x7FFF; /* last byte */
+				mcu->bls.size = 512; /* bytes! */
 				break;
 			case 2:
-				mcu->bls->start = 0x7C00;
-				mcu->bls->end = 0x7FFF;
-				mcu->bls->size = 1024; /* bytes */
+				mcu->bls.start = 0x7C00;
+				mcu->bls.end = 0x7FFF;
+				mcu->bls.size = 1024; /* bytes */
 				break;
 			case 1:
-				mcu->bls->start = 0x7800;
-				mcu->bls->end = 0x7FFF;
-				mcu->bls->size = 2048; /* bytes */
+				mcu->bls.start = 0x7800;
+				mcu->bls.end = 0x7FFF;
+				mcu->bls.size = 2048; /* bytes */
 				break;
 			case 0:
-				mcu->bls->start = 0x7000;
-				mcu->bls->end = 0x7FFF;
-				mcu->bls->size = 4096; /* bytes */
+				mcu->bls.start = 0x7000;
+				mcu->bls.end = 0x7FFF;
+				mcu->bls.size = 4096; /* bytes */
 				break;
 			default:
 				/* Should not happen! */
@@ -350,11 +352,11 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 			}
 
 			if ((fuse_v&1U) == 1U) {
-				mcu->intr->reset_pc = 0x0000;
+				mcu->intr.reset_pc = 0x0000;
 				mcu->pc = 0x0000;
 			} else {
-				mcu->intr->reset_pc = mcu->bls->start;
-				mcu->pc = mcu->bls->start;
+				mcu->intr.reset_pc = mcu->bls.start;
+				mcu->pc = mcu->bls.start;
 			}
 
 			break;
