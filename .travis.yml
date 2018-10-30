@@ -1,11 +1,5 @@
 language: c
 
-matrix:
-        include:
-                - os: linux
-                  dist: trusty
-                  sudo: false
-
 compiler:
         - clang
         - gcc
@@ -24,7 +18,7 @@ before_script:
         - cmake -DWITH_LUA=True -DWITH_POSIX_PTY=True ..
 
 script:
-        - make
+        - make VERBOSE=1
         - make tests
 
 before_install:

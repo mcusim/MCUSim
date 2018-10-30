@@ -30,7 +30,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0114")
+set(MSIM_VERSION "0.1.0115")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -54,10 +54,9 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
 	message(STATUS "[OPTION] Building MCUSim ${MSIM_VERSION}, debug version")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDEBUG")
 	if (CMAKE_COMPILER_IS_GNUCC OR
-			${CMAKE_C_COMPILER_ID} MATCHES "Clang" OR
-			${CMAKE_C_COMPILER_ID} MATCHES "GNU")
+			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
-		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=c99")
+		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic -std=iso9899:1999")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wshadow -Wpointer-arith -Wcast-qual")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wcast-align -Wstrict-prototypes")
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wmissing-prototypes -Wconversion")
@@ -66,10 +65,8 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
 else()
 	message(STATUS "[OPTION] Building MCUSim ${MSIM_VERSION}, release version")
 	if (CMAKE_COMPILER_IS_GNUCC OR
-			${CMAKE_C_COMPILER_ID} MATCHES "Clang" OR
-			${CMAKE_C_COMPILER_ID} MATCHES "GNU")
-		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2")
-		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wall -pedantic -std=c99")
+			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
+		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wall -pedantic -std=iso9899:1999")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wshadow -Wpointer-arith -Wcast-qual")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wcast-align -Wstrict-prototypes")
 		set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wmissing-prototypes -Wconversion")
