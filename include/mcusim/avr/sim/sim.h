@@ -105,74 +105,143 @@ struct MSIM_AVR_MemOp {
 	char format;			/* Optional, value format */
 };
 
-/* Instance of the AVR microcontroller. */
+/* Instance of the AVR microcontroller.
+ *
+ * name			Name of the MCU.
+ * log			Buffer to print a log message.
+ * signature		Signature of the MCU.
+ * xmega		Flag of the XMega AVR microcontroller.
+ * reduced_core		Flag of the reduced AVR core.
+ *
+ * flashstart		First byte of the program memory.
+ * flashend		Last byte of the program memory.
+ * ramstart		First byte of the on-chip SRAM.
+ * ramend		Last byte of the on-chip SRAM.
+ * ramsize		Size of the on-chip SRAM (in bytes).
+ * e2start		First EEPROM byte.
+ * e2end		Last EEPROM byte.
+ * e2size		EEPROM size (in bytes).
+ * e2pagesize		EEPROM page size (in bytes).
+ * lockbits		Lock bits of the MCU.
+ * fuse			Fuse bytes of the MCU.
+ *
+ * spm_pagesize		Flash page size (in bytes) for SPM instruction.
+ * spmcsr		Address of the SPMCSR register in data memory.
+ *
+ * freq			Current MCU clock frequency (in Hz).
+ * pc			Current program counter (in bytes).
+ * pc_bits		Number of PC bits (16-bit, 22-bit, etc.)
+ * ic_left		Clock cycles left to finish current instruction.
+ * in_mcinst		Multi-cycle instruction flag.
+ *
+ * sreg			Address of SREG register in data memory.
+ * sph			Address of SPH register in data memory.
+ * spl			Address of SPL register in data memory.
+ * eind			Address of extended indirect register in DM.
+ * rampz		Address of extended Z-pointer register in DM.
+ * rampy		Address of extended Y-pointer register in DM.
+ * rampx		Address of extended X-pointer register in DM.
+ * rampd		Address of extended direct register in DM.
+ *
+ * pm			Program memory.
+ * pmp			Page buffer for program memory.
+ * mpm			Match points memory. It contains actual instructions
+ * 			from program memory which were replaced by breakpoints.
+ * dm			Data memory (general purpose registers, I/O registers
+ * 			and SRAM).
+ * pm_size		Size of the program memory.
+ * dm_size		Size of the data memory.
+ * read_from_mpm	Flag to read instruction from match points memory.
+ * writ_io		I/O registers written on a previous step.
+ * read_io		I/O registers read on a previous step.
+ *
+ * sfr_off		Offset to I/O registers in data memory.
+ * regs_num		Number of general purpose registers.
+ * ioregs_num		Number of I/O registers.
+ *
+ * set_fusef		Function to configure AVR fuse bytes.
+ * set_lockf		Function to configure AVR lock bits.
+ * tick_perf		Function to tick AVR peripherals.
+ * pass_irqs		Function to set IRQs according to the flags.
+
+ * state		State of the MCU
+ * clk_source		Current MCU clock source
+ *
+ * ioregs		Descriptors of the I/O registers. Each register can
+ * 			be addressed by the same offset as in the data memory.
+ * bls			Bootloader section details.
+ * intr			Details to work with MCU interrupts and IRQs.
+ * wdt			Watchdog timer of the MCU.
+ * vcd			Array of I/O registers to be dumped into VCD file.
+ * pty			Details to work with POSIX pseudo-terminals.
+ * usart		Details to work with USART.
+ */
 struct MSIM_AVR {
-	char name[20];			/* Name of the MCU */
-	char log[1024];			/* Buffer to print a log message */
-	uint8_t signature[3];		/* Signature of the MCU */
-	uint8_t xmega;			/* XMEGA flag */
-	uint8_t reduced_core;		/* Reduced core flag */
+	char name[20];
+	char log[1024];
+	uint8_t signature[3];
+	uint8_t xmega;
+	uint8_t reduced_core;
 
-	uint32_t flashstart;		/* First program memory byte */
-	uint32_t flashend;		/* Last program memory byte */
-	uint32_t ramstart;		/* First on-chip SRAM byte */
-	uint32_t ramend;		/* Last on-chip SRAM byte */
-	uint32_t ramsize;		/* On-chip SRAM size, in bytes */
-	uint32_t e2start;		/* First EEPROM byte */
-	uint32_t e2end;			/* Last EEPROM byte */
-	uint32_t e2size;		/* EEPROM size, in bytes */
-	uint32_t e2pagesize;		/* EEPROM page size, in bytes */
-	uint8_t lockbits;		/* Lock bits of the MCU */
-	uint8_t fuse[6];		/* Fuse bytes of the MCU */
+	uint32_t flashstart;
+	uint32_t flashend;
+	uint32_t ramstart;
+	uint32_t ramend;
+	uint32_t ramsize;
+	uint32_t e2start;
+	uint32_t e2end;
+	uint32_t e2size;
+	uint32_t e2pagesize;
+	uint8_t lockbits;
+	uint8_t fuse[6];
 
-	uint32_t spm_pagesize;		/* Flash pagesize (in bytes) for SPM */
-	uint8_t *spmcsr;		/* SPMCSR Register (address in DM) */
+	uint32_t spm_pagesize;
+	uint8_t *spmcsr;
 
-	uint32_t freq;			/* Current MCU frequency, Hz */
-	uint32_t pc;			/* Current program counter */
-	uint8_t pc_bits;		/* 16-bit PC, 22-bit PC, etc. */
-	uint8_t ic_left;		/* Cycles left to finish opcode */
-	uint8_t in_mcinst;		/* Multi-cycle instruction flag */
+	uint32_t freq;
+	uint32_t pc;
+	uint8_t pc_bits;
+	uint8_t ic_left;
+	uint8_t in_mcinst;
 
-	uint8_t *sreg;			/* SREG address (in DM) */
-	uint8_t *sph;			/* SPH address (in DM) */
-	uint8_t *spl;			/* SPL address (in DM) */
-	uint8_t *eind;			/* Extended indirect reg (in DM) */
-	uint8_t *rampz;			/* Extended Z-pointer reg (in DM) */
-	uint8_t *rampy;			/* Extended Y-pointer reg (in DM) */
-	uint8_t *rampx;			/* Extended X-pointer reg (in DM) */
-	uint8_t *rampd;			/* Extended direct reg (in DM) */
+	uint8_t *sreg;
+	uint8_t *sph;
+	uint8_t *spl;
+	uint8_t *eind;
+	uint8_t *rampz;
+	uint8_t *rampy;
+	uint8_t *rampx;
+	uint8_t *rampd;
 
-	uint8_t pm[MSIM_AVR_PMSZ];	/* Program memory (PM) */
-	uint8_t pmp[MSIM_AVR_PM_PAGESZ];/* Page buffer for PM */
-	uint8_t mpm[MSIM_AVR_PMSZ];	/* Match points memory, MPM */
-	uint8_t dm[MSIM_AVR_DMSZ];	/* Data memory (GP, I/O regs, SRAM) */
-	uint32_t pm_size;		/* Size of PM */
-	uint32_t dm_size;		/* Size of the data memory */
-	uint8_t read_from_mpm;		/* 1 - read opcode from MPM */
-	int32_t writ_io[4];		/* I/O regs written (previous tick) */
-	int32_t read_io[4];		/* I/O regs read (previous tick) */
+	uint8_t pm[MSIM_AVR_PMSZ];
+	uint8_t pmp[MSIM_AVR_PM_PAGESZ];
+	uint8_t mpm[MSIM_AVR_PMSZ];
+	uint8_t dm[MSIM_AVR_DMSZ];
+	uint32_t pm_size;
+	uint32_t dm_size;
+	uint8_t read_from_mpm;
+	uint32_t writ_io[4];
+	uint32_t read_io[4];
 
-	uint32_t sfr_off;		/* Offset to SFR (I/0 registers) */
-	uint32_t regs_num;		/* Number of GP registers */
-	uint32_t ioregs_num;		/* Number of all I/O registers */
+	uint32_t sfr_off;
+	uint32_t regs_num;
+	uint32_t ioregs_num;
 
-	MSIM_AVR_SetFuse_f set_fusef;	/* Function to set AVR fuse byte */
-	MSIM_AVR_SetLock_f set_lockf;	/* Function to set AVR lock byte */
-	MSIM_AVR_TickPerf_f tick_perf;	/* Function to tick 8-bit timers */
-	MSIM_AVR_PassIRQs_f pass_irqs;	/* Function to set IRQs */
+	MSIM_AVR_SetFuse_f set_fusef;
+	MSIM_AVR_SetLock_f set_lockf;
+	MSIM_AVR_TickPerf_f tick_perf;
+	MSIM_AVR_PassIRQs_f pass_irqs;
 
-	enum MSIM_AVR_State state;	 /* State of the MCU */
-	enum MSIM_AVR_ClkSource clk_source; /* Clock source */
+	enum MSIM_AVR_State state;
+	enum MSIM_AVR_ClkSource clk_source;
 
-	struct MSIM_AVR_IOReg
-		ioregs[MSIM_AVR_DMSZ]; /* Descriptors of the I/O registers */
-	struct MSIM_AVR_Bld bls;	/* Bootloader Section */
-	struct MSIM_AVR_Int intr;	/* Interrupts and IRQs */
-	struct MSIM_AVR_Wdt wdt;	/* Watchdog Timer */
-	struct MSIM_AVR_VCDReg vcd[MSIM_AVR_VCD_REGS]; /* VCD (dump) file details */
-	struct MSIM_AVR_Pty pty;	/* Details to work with pseudo-term */
-	struct MSIM_AVR_Usart usart;	/* Details to work with USART */
+	struct MSIM_AVR_IOReg ioregs[MSIM_AVR_DMSZ];
+	struct MSIM_AVR_BLD bls;
+	struct MSIM_AVR_INT intr;
+	struct MSIM_AVR_WDT wdt;
+	struct MSIM_AVR_VCDReg vcd[MSIM_AVR_VCD_REGS];
+	struct MSIM_AVR_PTY pty;
+	struct MSIM_AVR_USART usart;
 };
 
 #ifdef __cplusplus

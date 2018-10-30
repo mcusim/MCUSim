@@ -40,7 +40,7 @@ extern "C" {
  * instance. */
 struct MSIM_AVR;
 
-struct MSIM_AVR_Pty {
+struct MSIM_AVR_PTY {
 	int32_t master_fd;
 	int32_t slave_fd;
 	char slave_name[128];

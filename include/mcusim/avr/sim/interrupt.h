@@ -45,7 +45,7 @@ struct MSIM_AVR;
 
 /* Main structure to describe AVR interrupts within the simulated AVR
  * instance (reset address, IRQs, etc.) */
-struct MSIM_AVR_Int {
+struct MSIM_AVR_INT {
 	uint32_t reset_pc;		/* Reset address */
 	uint32_t ivt;			/* Interrupt vectors table address */
 	uint8_t irq[MSIM_AVR_IRQNUM];	/* Flags for interrupt requests */

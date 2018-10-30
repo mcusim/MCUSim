@@ -42,14 +42,13 @@ extern "C" {
 struct MSIM_AVR;
 
 /* AVR instructions are 16-bits or 32-bits wide. This is why AVR program
- * memory (bootloader is a part this memory) is a linear and regular array of
- * 16-bits words. However, mcusim treats program memory as an array of
- * bytes.
+ * memory is a linear and regular array of 16-bits words. However, MCUSim
+ * treats program memory as an array of bytes.
  *
  * AVR program memory is little endian, so "start" is an address of the LSB
  * of the first instruction in bootloader, "end" - address of the MSB of
  * the last bootloader instruction. */
-struct MSIM_AVR_Bld {
+struct MSIM_AVR_BLD {
 	uint32_t start;		/* First Bootloader byte in PM, in bytes */
 	uint32_t end;		/* Last Bootloader byte in PM, in bytes */
 	uint32_t size;		/* Bootloader size, in bytes */

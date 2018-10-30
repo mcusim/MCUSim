@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <fcntl.h>
+#include <inttypes.h>
 
 #include "mcusim/mcusim.h"
 #include "mcusim/getopt.h"
@@ -247,7 +248,7 @@ int main(int argc, char *argv[])
 			if (mcu.ioregs[i].off < 0) {
 				continue;
 			}
-			snprintf(log, sizeof log, "%s (0x%2lX)",
+			snprintf(log, sizeof log, "%s (0x%2" PRIX32 ")",
 			         mcu.ioregs[i].name,
 			         mcu.ioregs[i].off);
 			MSIM_LOG_INFO(log);
@@ -453,8 +454,8 @@ static void print_config(const struct MSIM_AVR *m)
 	         m->name, m->signature[0], m->signature[1], m->signature[2]);
 	MSIM_LOG_INFO(log);
 
-	snprintf(log, sizeof log, "clock frequency: %lu.%lu kHz",
-	         m->freq/1000, m->freq%1000);
+	snprintf(log, sizeof log, "clock frequency: %" PRIu32 ".%" PRIu32
+	         " kHz", m->freq/1000, m->freq%1000);
 	MSIM_LOG_INFO(log);
 
 	snprintf(log, sizeof log, "fuses: EXT=0x%02X, HIGH=0x%02X, "

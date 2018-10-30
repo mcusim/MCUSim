@@ -32,7 +32,7 @@
 extern "C" {
 #endif
 
-struct MSIM_AVR_Usart {
+struct MSIM_AVR_USART {
 	uint32_t baud;		/* Current baud rate value */
 	uint8_t txb;		/* Transmit Buffer */
 	uint32_t rx_ticks;	/* USART ticks passed since last Rx */

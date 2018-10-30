@@ -35,7 +35,7 @@ extern "C" {
 
 #include <stdlib.h>
 
-struct MSIM_AVR_Wdt {
+struct MSIM_AVR_WDT {
 	uint64_t sys_presc;	/* Prescaler from system clock to WDT clock */
 	uint64_t sys_ticks;	/* System cycles passed since last WDT tick */
 	uint64_t presc;		/* Number of WDT oscillator cycles */
