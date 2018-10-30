@@ -1,8 +1,14 @@
 language: c
 
+matrix:
+        include:
+                - os: linux
+                  dist: trusty
+                  sudo: false
+
 compiler:
-        - gcc
         - clang
+        - gcc
 
 env:
   global:
