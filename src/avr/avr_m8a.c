@@ -746,7 +746,7 @@ static void usart_transmit(struct MSIM_AVR *mcu)
 	uint32_t buf_len = 1;
 	uint8_t ucsz;
 	uint8_t err = 0;
-	ssize_t written;
+	int written;
 
 	/* Find how many bits to transmit */
 	if (((DM(UBRRH)>>UMSEL)&1) == 0U) {
@@ -824,8 +824,8 @@ static void usart_receive(struct MSIM_AVR *mcu)
 	uint32_t buf_len = 1;
 	uint32_t mask;
 	uint8_t ucsz;
-	ssize_t recv;
 	uint8_t err = 0;
+	int recv;
 
 	/* Find how many bits to receive */
 	if (((DM(UBRRH)>>UMSEL)&1) == 0U) {
