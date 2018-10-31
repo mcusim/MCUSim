@@ -92,6 +92,8 @@
 #define OSCCAL_MASK	0xFF
 #define SFIOR_RES	0x00
 #define SFIOR_MASK	0x0F /* 0000 1111 */
+#define TCCR0_RES	0x00
+#define TCCR0_MASK	0x07 /* 0000 0111 */
 #define TCCR1A_RES	0x00
 #define TCCR1A_MASK	0xFF
 #define TCCR1B_RES	0x00

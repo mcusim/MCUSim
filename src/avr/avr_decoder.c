@@ -35,6 +35,18 @@
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
 
+#define DM(v)			(mcu->dm[v])
+#define SFR			(mcu->sfr_off)
+
+/* Macro to provide a result of writing value to I/O register with its
+ * access mask applied.
+ *
+ * io		Address of an I/O register in data space.
+ * v		Value to write to the register.
+ */
+#define IO(io, v)		((mcu->dm[io])&(~(mcu->ioregs[io].mask))) | \
+				((v)&(mcu->ioregs[io].mask))
+
 /* Macro to help opcode function to skip required number of clock cycles
  * required to execute instruction on a real hardware.
  *
@@ -61,7 +73,42 @@
 		}							\
 	}								\
 	mcu->in_mcinst = 0;						\
-} while(0)
+} while (0)
+
+/* Write value to the data space. Location will be checked against space of
+ * I/O registers and access mask will be applied if necessary. */
+#ifndef DEBUG
+#define WRITE_DS(loc, v) do {						\
+	if ((mcu->regs_num <= loc) &&					\
+	                (loc < (mcu->regs_num+mcu->ioregs_num))) {	\
+		DM(loc) = IO(loc, v);					\
+		mcu->writ_io[0] = loc;					\
+	} else {							\
+		DM(loc) = v;						\
+	}								\
+} while (0)
+#endif
+
+/* NOTE: Debug only. Write value to the data space. Location will be checked
+ * against space of I/O registers and access mask will be applied if
+ * necessary. */
+#ifdef DEBUG
+#define WRITE_DS(loc, v) do {						\
+	if ((mcu->regs_num <= loc) &&					\
+	                (loc < (mcu->regs_num+mcu->ioregs_num))) {	\
+		if (mcu->ioregs[loc].off < 0) {				\
+			snprintf(mcu->log, sizeof mcu->log, "firmware "	\
+			         "is trying to write to unknown I/O "	\
+			         "register: 0x%04" PRIX32, loc);	\
+			MSIM_LOG_DEBUG(mcu->log);			\
+		}							\
+		DM(loc) = IO(loc, v);					\
+		mcu->writ_io[0] = loc;					\
+	} else {							\
+		DM(loc) = v;						\
+	}								\
+} while (0)
+#endif
 
 static int decode_inst(struct MSIM_AVR *mcu, unsigned int inst);
 
@@ -757,8 +804,7 @@ static void exec_in_out(struct MSIM_AVR *mcu, unsigned int inst,
 		break;
 	/* OUT – Store Register to I/O Location */
 	case 0xB800:
-		mcu->dm[io_loc + mcu->sfr_off] = mcu->dm[reg];
-		mcu->writ_io[0] = io_loc + mcu->sfr_off;
+		WRITE_DS(io_loc+SFR, DM(reg));
 		break;
 	}
 	mcu->pc += 2;
@@ -941,16 +987,14 @@ static void exec_st(struct MSIM_AVR *mcu, unsigned int inst,
 			SKIP_CYCLES(mcu, 1, 1);
 		}
 
-		mcu->dm[addr] = mcu->dm[r];
-		mcu->writ_io[0] = addr;
+		WRITE_DS(addr, DM(r));
 		break;
 	case 0x01:	/*	(X) ← Rr, X ← X+1	X: Post incremented */
 		if (!mcu->xmega && !mcu->reduced_core) {
 			SKIP_CYCLES(mcu, 1, 1);
 		}
 
-		mcu->dm[addr] = mcu->dm[r];
-		mcu->writ_io[0] = addr;
+		WRITE_DS(addr, DM(r));
 		addr++;
 		*addr_low = (unsigned char) (addr & 0xFF);
 		*addr_high = (unsigned char) (addr >> 8);
@@ -961,8 +1005,7 @@ static void exec_st(struct MSIM_AVR *mcu, unsigned int inst,
 		addr--;
 		*addr_low = (unsigned char) (addr & 0xFF);
 		*addr_high = (unsigned char) (addr >> 8);
-		mcu->dm[addr] = mcu->dm[r];
-		mcu->writ_io[0] = addr;
+		WRITE_DS(addr, DM(r));
 		break;
 	}
 	mcu->pc += 2;
@@ -984,8 +1027,7 @@ static void exec_st_ydisp(struct MSIM_AVR *mcu, unsigned int inst)
 	                       ((inst & 0x0C00) >> 7) |
 	                       ((inst & 0x2000) >> 8));
 
-	mcu->dm[addr + disp] = mcu->dm[regr];
-	mcu->writ_io[0] = addr + disp;
+	WRITE_DS(addr+disp, DM(regr));
 	mcu->pc += 2;
 }
 
@@ -1005,8 +1047,7 @@ static void exec_st_zdisp(struct MSIM_AVR *mcu, unsigned int inst)
 	                       ((inst & 0x0C00) >> 7) |
 	                       ((inst & 0x2000) >> 8));
 
-	mcu->dm[addr + disp] = mcu->dm[regr];
-	mcu->writ_io[0] = addr + disp;
+	WRITE_DS(addr+disp, DM(regr));
 	mcu->pc += 2;
 }
 
@@ -1051,8 +1092,7 @@ static void exec_sts(struct MSIM_AVR *mcu, unsigned int inst)
 	addr = (unsigned int) (((addr_msb<<8)&0xFF00) | (addr_lsb&0xFF));
 
 	rr = (unsigned char)((inst & 0x01F0) >> 4);
-	mcu->dm[addr] = mcu->dm[rr];
-	mcu->writ_io[0] = addr;
+	WRITE_DS(addr, DM(rr));
 	mcu->pc += 4;
 }
 
@@ -1105,11 +1145,10 @@ static void exec_sbi_cbi(struct MSIM_AVR *mcu, unsigned int inst,
 	reg = (unsigned char)((inst & 0x00F8) >> 3);
 	b = inst & 0x07;
 	if (set_bit) {
-		mcu->dm[reg+0x20] |= (unsigned char)(1 << b);
+		WRITE_DS(reg+SFR, DM(reg+SFR) | (uint8_t)(1<<b));
 	} else {
-		mcu->dm[reg+0x20] &= (unsigned char)(~(1 << b));
+		WRITE_DS(reg+SFR, DM(reg+SFR) & (uint8_t)(~(1<<b)));
 	}
-	mcu->writ_io[0] = reg+0x20;
 
 	mcu->pc += 2;
 }
@@ -2383,11 +2422,10 @@ static void exec_lac(struct MSIM_AVR *mcu, unsigned int inst)
 	rd_addr = (inst>>4)&0x1F;
 	rd = mcu->dm[rd_addr];
 
-	mcu->dm[rd_addr] = mcu->dm[z];
-	mcu->dm[z] &= (unsigned char)(~rd);
+	WRITE_DS(rd_addr, DM(z));
+	WRITE_DS(z, DM(z) & (uint8_t)(~rd));
 	mcu->pc += 2;
 	mcu->read_io[0] = z;
-	mcu->writ_io[0] = z;
 }
 
 static void exec_las(struct MSIM_AVR *mcu, unsigned int inst)
@@ -2404,11 +2442,10 @@ static void exec_las(struct MSIM_AVR *mcu, unsigned int inst)
 	rd_addr = (inst>>4)&0x1F;
 	rd = mcu->dm[rd_addr];
 
-	mcu->dm[rd_addr] = mcu->dm[z];
-	mcu->dm[z] |= rd;
+	WRITE_DS(rd_addr, DM(z));
+	WRITE_DS(z, DM(z) | (uint8_t)rd);
 	mcu->pc += 2;
 	mcu->read_io[0] = z;
-	mcu->writ_io[0] = z;
 }
 
 static void exec_lat(struct MSIM_AVR *mcu, unsigned int inst)
@@ -2425,11 +2462,10 @@ static void exec_lat(struct MSIM_AVR *mcu, unsigned int inst)
 	rd_addr = (inst>>4)&0x1F;
 	rd = mcu->dm[rd_addr];
 
-	mcu->dm[rd_addr] = mcu->dm[z];
-	mcu->dm[z] ^= rd;
+	WRITE_DS(rd_addr, DM(z));
+	WRITE_DS(z, DM(z) ^ rd);
 	mcu->pc += 2;
 	mcu->read_io[0] = z;
-	mcu->writ_io[0] = z;
 }
 
 static void exec_lds(struct MSIM_AVR *mcu, unsigned int inst)
@@ -2639,11 +2675,10 @@ static void exec_xch(struct MSIM_AVR *mcu, unsigned int inst)
 	v = mcu->dm[z];
 	rd_addr = (inst>>4)&0x1F;
 
-	mcu->dm[z] = mcu->dm[rd_addr];
-	mcu->dm[rd_addr] = v;
+	WRITE_DS(z, DM(rd_addr));
+	WRITE_DS(rd_addr, v);
 	mcu->pc += 2;
 	mcu->read_io[0] = z;
-	mcu->writ_io[0] = z;
 }
 
 static void exec_ror(struct MSIM_AVR *mcu, unsigned int inst)

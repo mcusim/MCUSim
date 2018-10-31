@@ -796,7 +796,7 @@ static void usart_transmit(struct MSIM_AVR *mcu)
 	if ((err == 0) && (IS_CLEAR(DM(UCSRA), UDRE) == 1)) {
 		if (mcu->pty.master_fd >= 0) {
 			written = MSIM_AVR_PTYWrite(mcu, buf, buf_len);
-			if (written != buf_len) {
+			if (written != (int)buf_len) {
 				snprintf(mcu->log, sizeof mcu->log, "failed "
 				         "to feed PTY master with USART data, "
 				         "slave=%s", mcu->pty.slave_name);
@@ -873,7 +873,7 @@ static void usart_receive(struct MSIM_AVR *mcu)
 	if ((err == 0) && (IS_CLEAR(DM(UCSRA), RXC) == 1)) {
 		if (mcu->pty.master_fd >= 0) {
 			recv = MSIM_AVR_PTYRead(mcu, buf, buf_len);
-			if (recv != buf_len) {
+			if (recv != (int)buf_len) {
 				snprintf(mcu->log, sizeof mcu->log, "failed "
 				         "to read USART data from PTY master, "
 				         "slave=%s", mcu->pty.slave_name);

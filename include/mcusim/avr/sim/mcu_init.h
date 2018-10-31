@@ -188,6 +188,8 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 			mcu->ioregs[ioregs[i].off] = ioregs[i];
 			mcu->ioregs[ioregs[i].off].addr =
 			        &mcu->dm[ioregs[i].off];
+			/* Write reset/default value of the register */
+			mcu->dm[ioregs[i].off] = ioregs[i].reset;
 		}
 	}
 #endif
