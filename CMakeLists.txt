@@ -26,11 +26,13 @@
 #
 # MCUSim build configuration file.
 #
+# Verbose output of the build process can be activated using 'make VERBOSE=1'.
+#
 cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0118")
+set(MSIM_VERSION "0.1.0119")
 
 # Program name
 set(MCUSIM "mcusim")

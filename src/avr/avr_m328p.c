@@ -123,7 +123,7 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 				/* Reset Timer/Counter0 */
 				DM(TCNT0) = 0;
 				/* Timer/Counter0 overflow occured */
-				DM(TIFR) |= (1<<TOV0);
+				DM(TIFR0) |= (1<<TOV0);
 			} else {	/* Count UP on tick */
 				DM(TCNT0)++;
 			}
@@ -138,7 +138,7 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 				/* Reset Timer/Counter0 */
 				DM(TCNT0) = 0;
 				/* Timer/Counter0 overflow occured */
-				DM(TIFR) |= (1<<TOV0);
+				DM(TIFR0) |= (1<<TOV0);
 			} else {	/* Count UP on tick */
 				DM(TCNT0)++;
 			}
@@ -166,7 +166,7 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 			/* Reset Timer/Counter0 */
 			DM(TCNT0) = 0;
 			/* Timer/Counter0 overflow occured */
-			DM(TIFR) |= (1<<TOV0);
+			DM(TIFR0) |= (1<<TOV0);
 		} else {		/* Count UP on tick */
 			DM(TCNT0)++;
 		}
@@ -212,13 +212,13 @@ static void timer0_normal(struct MSIM_AVR *mcu,
 		        "(prescaler-1)=%" PRIu32 ". Timer1 will not "
 		        "be updated!\n", *ticks, (presc-1U));
 	} else {
-		if (mcu->dm[TCNT0] == 0xFF) {
+		if (DM(TCNT0) == 0xFF) {
 			/* Reset Timer/Counter0 */
-			mcu->dm[TCNT0] = 0;
+			DM(TCNT0) = 0;
 			/* Set Timer/Counter0 overflow flag */
-			mcu->dm[TIFR] |= (1<<TOV0);
+			DM(TIFR0) |= (1<<TOV0);
 		} else {
-			mcu->dm[TCNT0]++;
+			DM(TCNT0)++;
 		}
 		*ticks = 0;
 		return;
