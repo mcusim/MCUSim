@@ -38,70 +38,73 @@
 #define SPL_MASK	0xFF
 /* NOTE: The following values should be assigned according to the
  * datasheet. */
-#define PORTB_RES		0x00
-#define PORTB_MASK		0x00
-#define DDRB_RES		0x00
-#define DDRB_MASK		0x00
-#define PINB_RES		0x00
-#define PINB_MASK		0x00
-#define PORTC_RES		0x00
-#define PORTC_MASK		0x00
-#define DDRC_RES		0x00
-#define DDRC_MASK		0x00
-#define PINC_RES		0x00
-#define PINC_MASK		0x00
-#define PORTD_RES		0x00
-#define PORTD_MASK		0x00
-#define DDRD_RES		0x00
-#define DDRD_MASK		0x00
-#define PIND_RES		0x00
-#define PIND_MASK		0x00
-#define SPMCSR_RES		0x00
-#define SPMCSR_MASK		0x00
-#define MCUCR_RES		0x00
-#define MCUCR_MASK		0x00
-#define MCUSR_RES		0x00
-#define MCUSR_MASK		0x00
-#define SMCR_RES		0x00
-#define SMCR_MASK		0x00
-#define ACSR_RES		0x00
-#define ACSR_MASK		0x00
-#define SPDR_RES		0x00
-#define SPDR_MASK		0x00
-#define SPSR_RES		0x00
-#define SPSR_MASK		0x00
-#define SPCR_RES		0x00
-#define SPCR_MASK		0x00
-#define GPIOR2_RES		0x00
-#define GPIOR2_MASK		0x00
-#define GPIOR1_RES		0x00
-#define GPIOR1_MASK		0x00
-#define GPIOR0_RES		0x00
-#define GPIOR0_MASK		0x00
-#define OCR0B_RES		0x00
-#define OCR0B_MASK		0x00
-#define OCR0A_RES		0x00
-#define OCR0A_MASK		0x00
-#define TCNT0_RES		0x00
-#define TCNT0_MASK		0x00
-#define TCCR0B_RES		0x00
-#define TCCR0B_MASK		0x00
-#define TCCR0A_RES		0x00
-#define TCCR0A_MASK		0x00
-#define GTCCR_RES		0x00
-#define GTCCR_MASK		0x00
-#define EEARH_RES		0x00
-#define EEARH_MASK		0x00
-#define EEARL_RES		0x00
-#define EEARL_MASK		0x00
-#define EEDR_RES		0x00
-#define EEDR_MASK		0x00
-#define EECR_RES		0x00
-#define EECR_MASK		0x00
-#define EIMSK_RES		0x00
-#define EIMSK_MASK		0x00
-#define EIFR_RES		0x00
-#define EIFR_MASK		0x00
+#define PORTB_RES	0x00
+#define PORTB_MASK	0xFF
+#define DDRB_RES	0x00
+#define DDRB_MASK	0xFF
+#define PINB_RES	0x00
+#define PINB_MASK	0xFF /* See 14.2.2 Toggling the Pin */
+#define PORTC_RES	0x00
+#define PORTC_MASK	0x7F /* 0111 1111 */
+#define DDRC_RES	0x00
+#define DDRC_MASK	0x7F /* 0111 1111 */
+#define PINC_RES	0x00
+#define PINC_MASK	0x7F /* See 14.2.2 Toggling the Pin */
+#define PORTD_RES	0x00
+#define PORTD_MASK	0xFF
+#define DDRD_RES	0x00
+#define DDRD_MASK	0xFF
+#define PIND_RES	0x00
+#define PIND_MASK	0xFF /* See 14.2.2 Toggling the Pin */
+#define SPMCSR_RES	0x00
+#define SPMCSR_MASK	0xBF /* 1011 1111 */
+#define MCUCR_RES	0x00
+#define MCUCR_MASK	0x73 /* 0111 0011 */
+#define MCUSR_RES	0x02 /* 0000 0010 - External reset by default */
+#define MCUSR_MASK	0x0F /* 0000 1111 */
+#define SMCR_RES	0x00
+#define SMCR_MASK	0x0F /* 0000 1111 */
+#define ACSR_RES	0x00
+#define ACSR_MASK	0xDF /* 1101 1111 */
+#define SPDR_RES	0x00
+#define SPDR_MASK	0xFF
+#define SPSR_RES	0x00
+#define SPSR_MASK	0x01 /* 0000 0001 */
+#define SPCR_RES	0x00
+#define SPCR_MASK	0xFF
+#define GPIOR2_RES	0x00
+#define GPIOR2_MASK	0xFF
+#define GPIOR1_RES	0x00
+#define GPIOR1_MASK	0xFF
+#define GPIOR0_RES	0x00
+#define GPIOR0_MASK	0xFF
+#define OCR0B_RES	0x00
+#define OCR0B_MASK	0xFF
+#define OCR0A_RES	0x00
+#define OCR0A_MASK	0xFF
+#define TCNT0_RES	0x00
+#define TCNT0_MASK	0xFF
+#define TCCR0B_RES	0x00
+#define TCCR0B_MASK	0xCF /* 1100 1111 */
+#define TCCR0A_RES	0x00
+#define TCCR0A_MASK	0xF3 /* 1111 0011 */
+#define GTCCR_RES	0x00
+#define GTCCR_MASK	0x83 /* 1000 0011 */
+#define EEARH_RES	0x00
+#define EEARH_MASK	0x03 /* 0000 0011 - It looks like a mistake in
+				datasheet. EEAR9 bit should be read/written as
+				a part of address. */
+#define EEARL_RES	0x00
+#define EEARL_MASK	0xFF
+#define EEDR_RES	0x00
+#define EEDR_MASK	0xFF
+#define EECR_RES	0x00
+#define EECR_MASK	0x3F /* 0011 1111 */
+#define EIMSK_RES	0x00
+#define EIMSK_MASK	0x03 /* 0000 0011 */
+#define EIFR_RES	0x00
+#define EIFR_MASK	0x03 /* 0000 0011 */
+/* PART I */
 #define PCIFR_RES		0x00
 #define PCIFR_MASK		0x00
 #define TIFR2_RES		0x00
