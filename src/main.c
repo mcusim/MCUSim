@@ -234,10 +234,12 @@ int main(int argc, char *argv[])
 	fclose(fp);
 
 	/* Create a pseudo-terminal for this MCU */
+#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
 	mcu.pty.master_fd = -1;
 	mcu.pty.slave_fd = -1;
 	mcu.pty.slave_name[0] = 0;
-	MSIM_AVR_PTYOpen(&mcu);
+	MSIM_PTY_Open(&mcu.pty);
+#endif
 
 	/* Do we have to print available registers only? */
 	if (print_regs != 0) {
@@ -372,7 +374,9 @@ int main(int argc, char *argv[])
 	sim_retcode = MSIM_AVR_Simulate(
 	                      &mcu, 0, mcu.flashend+1, firmware_test);
 
-	MSIM_AVR_PTYClose(&mcu);
+#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
+	MSIM_PTY_Close(&mcu.pty);
+#endif
 	MSIM_AVR_LUACleanModels();
 	if (!firmware_test) {
 		MSIM_AVR_RSPClose();

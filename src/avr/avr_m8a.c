@@ -32,7 +32,6 @@
 #include <inttypes.h>
 
 #include "mcusim/mcusim.h"
-#include "mcusim/log.h"
 #include "mcusim/avr/sim/m8/m8a.h"
 #include "mcusim/avr/sim/mcu_init.h"
 
@@ -100,8 +99,10 @@ static void tick_timer2(struct MSIM_AVR *mcu);
 static void update_watched(struct MSIM_AVR *mcu);
 
 static void tick_usart(struct MSIM_AVR *mcu);
+#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
 static void usart_transmit(struct MSIM_AVR *mcu);
 static void usart_receive(struct MSIM_AVR *mcu);
+#endif /* defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY) */
 
 static void tick_wdt(struct MSIM_AVR *mcu);
 
@@ -549,7 +550,7 @@ static void tick_usart(struct MSIM_AVR *mcu)
 	 * It is running at the system clock (Fosc) and is loaded with the
 	 * 12-bit UBRR register value each time the counter has counted down
 	 * to zero or when the UBRRL register is written.
-	 * (see 24.3.1. Internal Clock Generation...) */
+	 * (see 24.3.1. Internal Clock Generation... for details) */
 	uint32_t *rx_ticks = &mcu->usart.rx_ticks;
 	uint32_t *tx_ticks = &mcu->usart.tx_ticks;
 	uint32_t *baud = &mcu->usart.baud;
@@ -615,7 +616,9 @@ static void tick_usart(struct MSIM_AVR *mcu)
 	}
 	if ((*rx_ticks == 0U) && (((DM(UCSRB)>>RXEN)&1) == 1U)) {
 		/* Generate Rx clock */
+#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
 		usart_receive(mcu);
+#endif
 		*rx_ticks = *rx_presc;
 	} else {
 		/* USART Rx inactive, do nothing */
@@ -627,7 +630,9 @@ static void tick_usart(struct MSIM_AVR *mcu)
 	}
 	if ((*tx_ticks == 0U) && (((DM(UCSRB)>>TXEN)&1) == 1U)) {
 		/* Generate Tx clock */
+#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
 		usart_transmit(mcu);
+#endif
 	} else {
 		/* USART Tx inactive, do nothing */
 	}
@@ -740,6 +745,7 @@ static void tick_wdt(struct MSIM_AVR *mcu)
 	}
 }
 
+#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
 static void usart_transmit(struct MSIM_AVR *mcu)
 {
 	uint8_t buf[2];
@@ -795,7 +801,7 @@ static void usart_transmit(struct MSIM_AVR *mcu)
 
 	if ((err == 0) && (IS_CLEAR(DM(UCSRA), UDRE) == 1)) {
 		if (mcu->pty.master_fd >= 0) {
-			written = MSIM_AVR_PTYWrite(mcu, buf, buf_len);
+			written = MSIM_PTY_Write(&mcu->pty, buf, buf_len);
 			if (written != (int)buf_len) {
 				snprintf(mcu->log, sizeof mcu->log, "failed "
 				         "to feed PTY master with USART data, "
@@ -803,8 +809,8 @@ static void usart_transmit(struct MSIM_AVR *mcu)
 				MSIM_LOG_ERROR(mcu->log);
 			}
 #ifdef DEBUG
-			snprintf(mcu->log, sizeof mcu->log, "-> 0x%" PRIX8
-			         ", pc=0x%06" PRIX32, buf[0], mcu->pc);
+			snprintf(mcu->log, sizeof mcu->log, "USART -> 0x%02"
+			         PRIX8 ", pc=0x%06" PRIX32, buf[0], mcu->pc);
 			MSIM_LOG_DEBUG(mcu->log);
 #endif
 			/* Set UDRE flag */
@@ -872,31 +878,30 @@ static void usart_receive(struct MSIM_AVR *mcu)
 
 	if ((err == 0) && (IS_CLEAR(DM(UCSRA), RXC) == 1)) {
 		if (mcu->pty.master_fd >= 0) {
-			recv = MSIM_AVR_PTYRead(mcu, buf, buf_len);
-			if (recv != (int)buf_len) {
-				snprintf(mcu->log, sizeof mcu->log, "failed "
-				         "to read USART data from PTY master, "
-				         "slave=%s", mcu->pty.slave_name);
-				MSIM_LOG_ERROR(mcu->log);
-			}
+			recv = MSIM_PTY_Read(&mcu->pty, buf, buf_len);
+
+			if (recv == (int)buf_len) {
 #ifdef DEBUG
-			snprintf(mcu->log, sizeof mcu->log, "<- 0x%" PRIX8
-			         ", mask 0x%" PRIX32, buf[0], mask);
-			MSIM_LOG_DEBUG(mcu->log);
+				snprintf(mcu->log, sizeof mcu->log, "USART <- "
+				         "0x%02" PRIX8 ", mask 0x%02" PRIX32,
+				         buf[0], mask);
+				MSIM_LOG_DEBUG(mcu->log);
 #endif
-			DM(UDR) = 0;
-			DM(UDR) |= buf[0]&mask;
-			DM(UCSRB) &= ~(1<<TXB8);
-			if ((buf_len == 2U) && ((buf[1]&1) == 1U)) {
-				DM(UCSRB) |= (1<<TXB8);
+				DM(UDR) = 0;
+				DM(UDR) |= buf[0]&mask;
+				DM(UCSRB) &= ~(1<<TXB8);
+				if ((buf_len == 2U) && ((buf[1]&1) == 1U)) {
+					DM(UCSRB) |= (1<<TXB8);
+				}
+				DM(UCSRA) |= (1<<RXC);
 			}
-			DM(UCSRA) |= (1<<RXC);
 		} else {
 			MSIM_LOG_DEBUG("cannot read USART data from PTY "
 			               "master: master_fd < 0");
 		}
 	}
 }
+#endif /* defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY) */
 
 static void timer1_normal(struct MSIM_AVR *mcu,
                           uint32_t presc, uint32_t *ticks,

@@ -27,43 +27,48 @@
  * There are some declarations and functions to pair a master pseudo-terminal
  * device (in POSIX terms) with USART within a simulated AVR microcontroller.
  */
-#ifndef MSIM_AVR_PTY_H_
-#define MSIM_AVR_PTY_H_ 1
+#ifndef MSIM_PTY_H_
+#define MSIM_PTY_H_ 1
+
+#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <stdlib.h>
+#include <pthread.h>
 
-/* Forward declaration of the structure to describe AVR microcontroller
- * instance. */
-struct MSIM_AVR;
+/* Size of the buffers to read/write data from/to pty. */
+#define MSIM_PTY_BUFSIZE	4096
 
-struct MSIM_AVR_PTY {
-	int32_t master_fd;
-	int32_t slave_fd;
-	char slave_name[128];
+/* Thread with buffer to read/write data from/to pty. */
+struct MSIM_PTY_Thread {
+	pthread_mutex_t mutex;		/* Lock before accessing any fields */
+	pthread_t thread;		/* Current thread handle */
+	uint8_t stop_thr;		/* Flag to exit the thread */
+	uint8_t buf[MSIM_PTY_BUFSIZE];	/* Buffer to read/write pty data */
+	uint32_t len;			/* Length of the data in buffer */
 };
 
-#ifdef MSIM_POSIX_PTY
+/* A single pseudo-terminal (with master and slave parts) and additional data
+ * to handle a separate thread to read from the master part of pty. */
+struct MSIM_PTY {
+	char slave_name[128];
+	int32_t master_fd;
+	int32_t slave_fd;
+	struct MSIM_PTY_Thread read_thr;
+};
 
-int MSIM_AVR_PTYOpen(struct MSIM_AVR *mcu);
-int MSIM_AVR_PTYClose(struct MSIM_AVR *mcu);
-int MSIM_AVR_PTYWrite(struct MSIM_AVR *mcu, uint8_t *buf, uint32_t len);
-int MSIM_AVR_PTYRead(struct MSIM_AVR *mcu, uint8_t *buf, uint32_t len);
-
-#else
-
-#define MSIM_AVR_PTYOpen(mcu)			((int)0)
-#define MSIM_AVR_PTYClose(mcu)			((int)0)
-#define MSIM_AVR_PTYWrite(mcu, buf, len)	((int)-1)
-#define MSIM_AVR_PTYRead(mcu, buf, len)		((int)-1)
-
-#endif
+int MSIM_PTY_Open(struct MSIM_PTY *pty);
+int MSIM_PTY_Close(struct MSIM_PTY *pty);
+int MSIM_PTY_Write(struct MSIM_PTY *pty, uint8_t *buf, uint32_t len);
+int MSIM_PTY_Read(struct MSIM_PTY *pty, uint8_t *buf, uint32_t len);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* MSIM_AVR_PTY_H_ */
+#endif /* defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY) */
+
+#endif /* MSIM_PTY_H_ */

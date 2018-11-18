@@ -37,9 +37,11 @@
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simcore.h"
 #include "mcusim/avr/sim/vcd.h"
-#include "mcusim/avr/sim/pty.h"
 #include "mcusim/avr/sim/wdt.h"
 #include "mcusim/avr/sim/usart.h"
 #include "mcusim/avr/sim/io.h"
+
+#include "mcusim/pty.h"
+#include "mcusim/log.h"
 
 #endif /* MSIM_MAIN_HEADER_H_ */

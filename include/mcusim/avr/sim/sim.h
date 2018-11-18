@@ -43,10 +43,10 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "mcusim/pty.h"
 #include "mcusim/avr/sim/vcd.h"
 #include "mcusim/avr/sim/io.h"
 #include "mcusim/avr/sim/wdt.h"
-#include "mcusim/avr/sim/pty.h"
 #include "mcusim/avr/sim/usart.h"
 
 /* Forward declaration of the structure to describe AVR microcontroller
@@ -240,7 +240,9 @@ struct MSIM_AVR {
 	struct MSIM_AVR_INT intr;
 	struct MSIM_AVR_WDT wdt;
 	struct MSIM_AVR_VCDReg vcd[MSIM_AVR_VCD_REGS];
-	struct MSIM_AVR_PTY pty;
+#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
+	struct MSIM_PTY pty;
+#endif
 	struct MSIM_AVR_USART usart;
 };
 

@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0120")
+set(MSIM_VERSION "0.1.0121")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -84,10 +84,10 @@ set(MCUSIM_LIB_SRC	src/avr/avr_simcore.c
 			src/avr/avr_decoder.c
 			src/avr/avr_gdb.c
 			src/avr/avr_vcd.c
-			src/avr/avr_pty.c
 			src/msim_getopt.c
 			src/msim_ihex.c
-			src/msim_log.c)
+			src/msim_log.c
+			src/msim_pty.c)
 
 # Look for libraries, packages, etc.
 if (WITH_LUA)
@@ -95,6 +95,15 @@ if (WITH_LUA)
 	find_package(Lua REQUIRED)
 else()
 	find_package(Lua)
+endif()
+
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+if (WITH_POSIX_THREADS)
+	message(STATUS "[OPTION] POSIX threads support is strictly required")
+	find_package(Threads REQUIRED)
+else()
+	find_package(Threads)
 endif()
 
 # Set target libraries here
@@ -111,6 +120,10 @@ else()
 	else()
 		message(STATUS "[OPTION] Building without Lua-based models")
 	endif()
+endif()
+
+if (CMAKE_USE_PTHREADS_INIT)
+	set(TARGET_LIBS ${TARGET_LIBS} Threads::Threads)
 endif()
 
 # Check functions, include files here
@@ -174,8 +187,12 @@ if (NOT CYGWIN)
 	    HAVE_ERRNO_H AND
 	    HAVE_POLL_H AND
 	    HAVE_NETINET_IN_H AND
-	    HAVE_NETINET_TCP_H)
+	    HAVE_NETINET_TCP_H AND
+	    CMAKE_USE_PTHREADS_INIT)
 		add_definitions(-DMSIM_POSIX=1)
+		message(STATUS "[OPTION] Building with MSIM_POSIX defined")
+	else()
+		message(STATUS "[OPTION] Building without MSIM_POSIX defined")
 	endif()
 else()
 	# CMake cannot find netinet/tcp.h under CYGWIN and it's not
@@ -187,9 +204,15 @@ else()
 	    HAVE_UNISTD_H AND
 	    HAVE_ERRNO_H AND
 	    HAVE_POLL_H AND
-	    HAVE_NETINET_IN_H)
+	    HAVE_NETINET_IN_H AND
+	    CMAKE_USE_PTHREADS_INIT)
 		add_definitions(-DMSIM_POSIX=1)
 		add_definitions(-DMSIM_POSIX_CYGWIN=1)
+		message(STATUS "[OPTION] Building with MSIM_POSIX defined")
+		message(STATUS "[OPTION] Building with MSIM_POSIX_CYGWIN defined")
+	else()
+		message(STATUS "[OPTION] Building without MSIM_POSIX defined")
+		message(STATUS "[OPTION] Building without MSIM_POSIX_CYGWIN defined")
 	endif()
 endif()
 

@@ -34,7 +34,6 @@
 
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
-
 #define DM(v)			(mcu->dm[v])
 #define SFR			(mcu->sfr_off)
 
@@ -89,9 +88,10 @@
 } while (0)
 #endif
 
-/* NOTE: Debug only. Write value to the data space. Location will be checked
- * against space of I/O registers and access mask will be applied if
- * necessary. */
+/* NOTE: Debug only.
+ *
+ * Write value to the data space. Location will be checked against space of
+ * I/O registers and access mask will be applied if necessary. */
 #ifdef DEBUG
 #define WRITE_DS(loc, v) do {						\
 	if ((mcu->regs_num <= loc) &&					\
