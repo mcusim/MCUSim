@@ -154,9 +154,9 @@ static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, uint8_t com2,
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
-	int r;
+	int r = mcu_init(mcu, args);
+	int rc;
 
-	r = mcu_init(mcu, args);
 	if (r == 0) {
 		/* I/O ports have internal pull-up resistors */
 		DM(PORTB) = 0xFF;
@@ -179,6 +179,19 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 
 		/* Set USART registers */
 		ubrrh_buf = 0;
+
+#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
+		/* Create a pseudo-terminal for this MCU */
+		mcu->pty.master_fd = -1;
+		mcu->pty.slave_fd = -1;
+		mcu->pty.slave_name[0] = 0;
+		rc = MSIM_PTY_Open(&mcu->pty);
+		if (rc == 0) {
+			snprintf(mcu->log, sizeof mcu->log, "USART is "
+			         "available via: %s", mcu->pty.slave_name);
+			MSIM_LOG_INFO(mcu->log);
+		}
+#endif
 	}
 	return r;
 }

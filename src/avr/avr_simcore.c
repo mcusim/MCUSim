@@ -70,16 +70,11 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
                       unsigned long addr, unsigned char firmware_test)
 {
-	FILE *vcd_f;		/* File to write VCD dump to */
-	uint64_t tick;		/* # of ticks (rises+falls) sinse start */
-	uint8_t tick_ovf;	/* Ticks overflow flag */
-	int ret_code;		/* Return code */
+	FILE *vcd_f = NULL;	/* File to write VCD dump to */
+	uint64_t tick = 0;	/* # of ticks (rises+falls) sinse start */
+	uint8_t tick_ovf = 0;	/* Ticks overflow flag */
+	int ret_code = 0;	/* Return code */
 	char dump_name[256];	/* Name of a VCD dump file */
-
-	tick = 0;
-	tick_ovf = 0;
-	vcd_f = NULL;
-	ret_code = 0;
 
 	/* Do we have registers to dump? */
 	if (mcu->vcd->i >= 0) {
@@ -123,8 +118,7 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 	while (1) {
 		/* The main simulation loop can be terminated by setting
 		 * MCU state to AVR_MSIM_STOP. The primary (and maybe only)
-		 * source of this state setting is a command from debugger.
-		 */
+		 * source of this state setting is a command from debugger. */
 		if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_STOP)) {
 			if (MSIM_LOG_ISDEBUG) {
 				snprintf(mcu->log, sizeof mcu->log, "simulation "

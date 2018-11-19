@@ -33,7 +33,6 @@
 
 #include "mcusim/mcusim.h"
 #include "mcusim/getopt.h"
-#include "mcusim/log.h"
 
 #define FUSE_LOW		0
 #define FUSE_HIGH		1
@@ -232,14 +231,6 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	fclose(fp);
-
-	/* Create a pseudo-terminal for this MCU */
-#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
-	mcu.pty.master_fd = -1;
-	mcu.pty.slave_fd = -1;
-	mcu.pty.slave_name[0] = 0;
-	MSIM_PTY_Open(&mcu.pty);
-#endif
 
 	/* Do we have to print available registers only? */
 	if (print_regs != 0) {

@@ -68,10 +68,6 @@ int MSIM_PTY_Open(struct MSIM_PTY *pty)
 		pty_err = 1;
 		MSIM_LOG_ERROR("failed to setup pty master device");
 	} else {
-		snprintf(log, sizeof log, "slave pty device is: %s",
-		         slavedevice);
-		MSIM_LOG_INFO(log);
-
 		slavefd = open(slavedevice, O_RDWR|O_NOCTTY);
 		pty->slave_fd = slavefd;
 		snprintf(pty->slave_name, sizeof pty->slave_name, "%s",
@@ -103,12 +99,33 @@ int MSIM_PTY_Open(struct MSIM_PTY *pty)
 
 int MSIM_PTY_Close(struct MSIM_PTY *pty)
 {
+	struct MSIM_PTY_Thread *t = &pty->read_thr;
+	char log[1024];
+	void *status;
+	int rc;
+
+	/* Mark the reading thread to be stopped */
+	pthread_mutex_lock(&t->mutex);
+	t->stop_thr = 1;
+	pthread_mutex_unlock(&t->mutex);
+
+	/* Close PTY files */
 	if (pty->slave_fd >= 0) {
 		close(pty->slave_fd);
 	}
 	if (pty->master_fd >= 0) {
 		close(pty->master_fd);
 	}
+
+	/* Wait for the reading thread and clear its mutex */
+	rc = pthread_join(t->thread, &status);
+	if (rc != 0) {
+		snprintf(log, sizeof log, "pthread_join() finished "
+		         "incorrectly with a return code: %d", rc);
+		MSIM_LOG_ERROR(log);
+	}
+	pthread_mutex_destroy(&t->mutex);
+
 	return 0;
 }
 
@@ -153,7 +170,7 @@ static void *read_from_pty(void *arg)
 
 		/* Lock the basic thread mutex */
 		pthread_mutex_lock(&t->mutex);
-		/* Should thread be terminated? */
+		/* Check the thread termination flag */
 		if (t->stop_thr > 0) {
 			stop = 1;
 		}
