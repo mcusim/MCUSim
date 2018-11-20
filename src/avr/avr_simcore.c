@@ -44,6 +44,17 @@
 #define CLK_FALL		1
 #define TICKS_MAX		UINT64_MAX
 
+/* Macros to read and update AVR status register (SREG) */
+#define GLOB_INT	7
+#define UPDATE_SREG(mcu, flag, set_f) do {				\
+	if ((set_f) == 0) {						\
+		*mcu->sreg &= (uint8_t)~(1<<(flag));			\
+	} else {							\
+		*mcu->sreg |= (uint8_t)(1<<(flag));			\
+	}								\
+} while (0)
+#define READ_SREG(mcu, flag) ((uint8_t)((*mcu->sreg>>(flag))&1))
+
 typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 
 /* Function to process interrupt request according to the order */
@@ -226,7 +237,7 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		if (mcu->pass_irqs != NULL) {
 			mcu->pass_irqs(mcu);
 		}
-		if (MSIM_AVR_ReadSREGFlag(mcu, AVR_SREG_GLOB_INT) &&
+		if (READ_SREG(mcu, GLOB_INT) &&
 		                (!mcu->ic_left) && (!mcu->intr.exec_main) &&
 		                (mcu->state == AVR_RUNNING ||
 		                 mcu->state == AVR_MSIM_STEP)) {
@@ -389,7 +400,7 @@ static int handle_irq(struct MSIM_AVR *mcu)
 		/* Disable interrupts globally.
 		 * NOTE: It isn't applicable for AVR XMEGA cores. */
 		if (!mcu->xmega) {
-			MSIM_AVR_UpdateSREGFlag(mcu, AVR_SREG_GLOB_INT, 0);
+			UPDATE_SREG(mcu, GLOB_INT, 0);
 		}
 
 		/* Push PC onto the stack */
@@ -412,90 +423,6 @@ static int handle_irq(struct MSIM_AVR *mcu)
 		ret = 2;
 	}
 	return ret;
-}
-
-void MSIM_AVR_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVR_SREGFlag flag,
-                             unsigned char set_f)
-{
-	unsigned char v;
-
-	if (!mcu) {
-		MSIM_LOG_ERROR("illegal MCU descriptor");
-		return;
-	}
-
-	switch (flag) {
-	case AVR_SREG_CARRY:
-		v = 0x01;
-		break;
-	case AVR_SREG_ZERO:
-		v = 0x02;
-		break;
-	case AVR_SREG_NEGATIVE:
-		v = 0x04;
-		break;
-	case AVR_SREG_TWOSCOM_OF:
-		v = 0x08;
-		break;
-	case AVR_SREG_SIGN:
-		v = 0x10;
-		break;
-	case AVR_SREG_HALF_CARRY:
-		v = 0x20;
-		break;
-	case AVR_SREG_T_BIT:
-		v = 0x40;
-		break;
-	case AVR_SREG_GLOB_INT:
-		v = 0x80;
-		break;
-	}
-
-	if (set_f) {
-		*mcu->sreg |= v;
-	} else {
-		*mcu->sreg &= (unsigned char)~v;
-	}
-}
-
-uint8_t MSIM_AVR_ReadSREGFlag(struct MSIM_AVR *mcu,
-                              enum MSIM_AVR_SREGFlag flag)
-{
-	unsigned char pos;
-
-	if (!mcu) {
-		MSIM_LOG_ERROR("illegal MCU descriptor");
-		return UINT8_MAX;
-	}
-
-	switch (flag) {
-	case AVR_SREG_CARRY:
-		pos = 0;
-		break;
-	case AVR_SREG_ZERO:
-		pos = 1;
-		break;
-	case AVR_SREG_NEGATIVE:
-		pos = 2;
-		break;
-	case AVR_SREG_TWOSCOM_OF:
-		pos = 3;
-		break;
-	case AVR_SREG_SIGN:
-		pos = 4;
-		break;
-	case AVR_SREG_HALF_CARRY:
-		pos = 5;
-		break;
-	case AVR_SREG_T_BIT:
-		pos = 6;
-		break;
-	case AVR_SREG_GLOB_INT:
-		pos = 7;
-		break;
-	}
-
-	return (unsigned char)((*mcu->sreg >> pos) & 0x01);
 }
 
 void MSIM_AVR_StackPush(struct MSIM_AVR *mcu, unsigned char val)

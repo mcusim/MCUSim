@@ -38,14 +38,12 @@
 #define _XOPEN_SOURCE		600
 
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <inttypes.h>
 
 #include "mcusim/mcusim.h"
-#include "mcusim/log.h"
 
 /* Thread function to read data from pty and populate a buffer. */
 static void *read_from_pty(void *arg);
@@ -77,6 +75,8 @@ int MSIM_PTY_Open(struct MSIM_PTY *pty)
 			snprintf(log, sizeof log, "cannot open pty slave "
 			         "device: %s", slavedevice);
 			MSIM_LOG_ERROR(log);
+		} else {
+			/* Slave device was opened correctly, do nothing */
 		}
 	}
 
@@ -137,16 +137,16 @@ int MSIM_PTY_Write(struct MSIM_PTY *pty, uint8_t *buf, uint32_t len)
 int MSIM_PTY_Read(struct MSIM_PTY *pty, uint8_t *buf, uint32_t len)
 {
 	struct MSIM_PTY_Thread *t = &pty->read_thr;
-	uint32_t l;
+	uint32_t i, l;
 
 	/* Lock the basic thread mutex */
 	pthread_mutex_lock(&t->mutex);
 
-	l = len < t->len ? len : t->len;
-	for (uint32_t i = 0; i < l; i++) {
+	l = (len < (t->len)) ? len : t->len;
+	for (i = 0; i < l; i++) {
 		buf[i] = t->buf[i];
 	}
-	for (uint32_t i = 0; i < (t->len-l); i++) {
+	for (i = 0; i < (t->len-l); i++) {
 		t->buf[i] = t->buf[i+l];
 	}
 	t->len -= l;
@@ -162,10 +162,10 @@ static void *read_from_pty(void *arg)
 	struct MSIM_PTY *pty = (struct MSIM_PTY *)arg;
 	struct MSIM_PTY_Thread *t = &pty->read_thr;
 	uint8_t stop = 0;
-	uint8_t buf[16];
+	uint8_t buf[1024];
 	int res = -1;
 
-	while (stop == 0) {
+	while (stop == 0U) {
 		res = (int)read(pty->master_fd, buf, sizeof buf);
 
 		/* Lock the basic thread mutex */

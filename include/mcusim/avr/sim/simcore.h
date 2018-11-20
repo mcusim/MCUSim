@@ -70,12 +70,6 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
 void MSIM_AVR_StackPush(struct MSIM_AVR *mcu, unsigned char val);
 uint8_t MSIM_AVR_StackPop(struct MSIM_AVR *mcu);
 
-/* Functions to update/read SREG bits */
-void MSIM_AVR_UpdateSREGFlag(struct MSIM_AVR *mcu, enum MSIM_AVR_SREGFlag flag,
-                             unsigned char set_f);
-uint8_t MSIM_AVR_ReadSREGFlag(struct MSIM_AVR *mcu,
-                              enum MSIM_AVR_SREGFlag flag);
-
 /* Prints supported AVR parts. */
 void MSIM_AVR_PrintParts(void);
 

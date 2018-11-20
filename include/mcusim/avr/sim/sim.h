@@ -86,17 +86,6 @@ enum MSIM_AVR_ClkSource {
 	AVR_INT_128K_RC_CLK		/* Internal 128kHz RC Oscillator*/
 };
 
-enum MSIM_AVR_SREGFlag {
-	AVR_SREG_CARRY,
-	AVR_SREG_ZERO,
-	AVR_SREG_NEGATIVE,
-	AVR_SREG_TWOSCOM_OF,
-	AVR_SREG_SIGN,
-	AVR_SREG_HALF_CARRY,
-	AVR_SREG_T_BIT,
-	AVR_SREG_GLOB_INT
-};
-
 /* Structure to describe a memory operation requested by user. */
 struct MSIM_AVR_MemOp {
 	char memtype[16];		/* Type of MCU memory */

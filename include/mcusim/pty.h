@@ -40,7 +40,7 @@ extern "C" {
 #include <pthread.h>
 
 /* Size of the buffers to read/write data from/to pty. */
-#define MSIM_PTY_BUFSIZE	4096
+#define MSIM_PTY_BUFSIZE	16384
 
 /* Thread with buffer to read/write data from/to pty. */
 struct MSIM_PTY_Thread {
