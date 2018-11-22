@@ -67,7 +67,7 @@ struct init_func_info {
 	init_func f;
 };
 
-/* Init functions for supported AVR MCUs. */
+/* Init functions for the supported AVR MCUs. */
 static struct init_func_info init_funcs[] = {
 	{ "m8",		"ATmega8",	MSIM_M8AInit },
 	{ "m8a",	"ATmega8A",	MSIM_M8AInit },
@@ -393,22 +393,20 @@ static int handle_irq(struct MSIM_AVR *mcu)
 
 	ret = 0;
 	if (i != MSIM_AVR_IRQNUM) {
-		/* Execute ISR */
 		/* Clear selected IRQ */
 		mcu->intr.irq[i] = 0;
 
 		/* Disable interrupts globally.
-		 * NOTE: It isn't applicable for AVR XMEGA cores. */
+		 * It is not applicable for the AVR XMEGA cores. */
 		if (!mcu->xmega) {
 			UPDATE_SREG(mcu, GLOB_INT, 0);
 		}
 
 		/* Push PC onto the stack */
-		MSIM_AVR_StackPush(mcu, (unsigned char)(mcu->pc & 0xFF));
-		MSIM_AVR_StackPush(mcu, (unsigned char)((mcu->pc >> 8)&0xFF));
+		MSIM_AVR_StackPush(mcu, (uint8_t)(mcu->pc & 0xFF));
+		MSIM_AVR_StackPush(mcu, (uint8_t)((mcu->pc >> 8)&0xFF));
 		if (mcu->pc_bits > 16) {
-			MSIM_AVR_StackPush(mcu, (unsigned char)
-			                   ((mcu->pc >> 16) & 0xFF));
+			MSIM_AVR_StackPush(mcu, (uint8_t)((mcu->pc>>16)&0xFF));
 		}
 
 		/* Load interrupt vector to PC */

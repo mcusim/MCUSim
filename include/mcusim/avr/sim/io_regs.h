@@ -161,6 +161,21 @@
 #define RAMPZ_RES	0x00
 #define RAMPZ_MASK	0x00
 #endif
+#ifndef RAMPY
+#define RAMPY		NO_REG
+#define RAMPY_RES	0x00
+#define RAMPY_MASK	0x00
+#endif
+#ifndef RAMPX
+#define RAMPX		NO_REG
+#define RAMPX_RES	0x00
+#define RAMPX_MASK	0x00
+#endif
+#ifndef RAMPD
+#define RAMPD		NO_REG
+#define RAMPD_RES	0x00
+#define RAMPD_MASK	0x00
+#endif
 #ifndef SPMCSR
 #define SPMCSR		NO_REG
 #define SPMCSR_RES	0x00

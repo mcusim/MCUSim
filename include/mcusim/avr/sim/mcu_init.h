@@ -59,13 +59,14 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 #else
 	mcu->reduced_core = 0;
 #endif
-#if defined(SPMCSR)
-	mcu->spmcsr = &mcu->dm[_SFR_IO8(SPMCSR)];
-#elif defined(SPMCR)
-	mcu->spmcsr = &mcu->dm[_SFR_IO8(SPMCR)];
-#else
-	mcu->spmcsr = NULL;
-#endif
+
+	if (SPMCSR > 0) {
+		mcu->spmcsr = &mcu->dm[SPMCSR];
+	} else if (SPMCR > 0) {
+		mcu->spmcsr = &mcu->dm[SPMCR];
+	} else {
+		mcu->spmcsr = NULL;
+	}
 	mcu->spm_pagesize = SPM_PAGESIZE;
 	mcu->flashstart = FLASHSTART;
 	mcu->flashend = FLASHEND;
@@ -106,31 +107,32 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	mcu->sreg = &mcu->dm[SREG];
 	mcu->sph = &mcu->dm[SPH];
 	mcu->spl = &mcu->dm[SPL];
-#ifdef EIND
-	mcu->eind = &mcu->dm[_SFR_IO8(EIND)];
-#else
-	mcu->eind = NULL;
-#endif
-#ifdef RAMPZ
-	mcu->rampz = &mcu->dm[_SFR_IO8(RAMPZ)];
-#else
-	mcu->rampz = NULL;
-#endif
-#ifdef RAMPY
-	mcu->rampy = &mcu->dm[_SFR_IO8(RAMPY)];
-#else
-	mcu->rampy = NULL;
-#endif
-#ifdef RAMPX
-	mcu->rampx = &mcu->dm[_SFR_IO8(RAMPX)];
-#else
-	mcu->rampx = NULL;
-#endif
-#ifdef RAMPD
-	mcu->rampd = &mcu->dm[_SFR_IO8(RAMPD)];
-#else
-	mcu->rampd = NULL;
-#endif
+	if (EIND > 0) {
+		mcu->eind = &mcu->dm[EIND];
+	} else {
+		mcu->eind = NULL;
+	}
+	if (RAMPZ > 0) {
+		mcu->rampz = &mcu->dm[RAMPZ];
+	} else {
+		mcu->rampz = NULL;
+	}
+	if (RAMPY > 0) {
+		mcu->rampy = &mcu->dm[RAMPY];
+	} else {
+		mcu->rampy = NULL;
+	}
+	if (RAMPX > 0) {
+		mcu->rampx = &mcu->dm[RAMPX];
+	} else {
+		mcu->rampx = NULL;
+	}
+	if (RAMPD > 0) {
+		mcu->rampd = &mcu->dm[RAMPD];
+	} else {
+		mcu->rampd = NULL;
+	}
+
 #ifdef EFUSE_DEFAULT
 	mcu->fuse[2] = EFUSE_DEFAULT;
 #endif
@@ -159,6 +161,11 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	mcu->pass_irqs = PASS_IRQS_F;
 #else
 	mcu->pass_irqs = NULL;
+#endif
+#ifdef RESET_SPM_F
+	mcu->reset_spm = RESET_SPM_F;
+#else
+	mcu->reset_spm = NULL;
 #endif
 
 #ifdef BLS_START
@@ -202,7 +209,6 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	/* Set up interrupts and IRQs */
 	mcu->intr.reset_pc = RESET_PC;
 	mcu->intr.ivt = IVT_ADDR;
-
 	return 0;
 }
 

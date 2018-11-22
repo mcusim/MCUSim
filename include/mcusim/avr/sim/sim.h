@@ -25,7 +25,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * This is a main header file which contains declarations to describe the
- * whole simulated microcontroller, and it's supposed to be AVR-agnostic.
+ * whole simulated microcontroller, and it is supposed to be AVR-agnostic.
  * It means that each declaration should be suitable for every available AVR
  * model.
  */
@@ -60,6 +60,7 @@ typedef int (*MSIM_AVR_SetFuse_f)(struct MSIM_AVR *mcu, uint32_t fuse_n,
 typedef int (*MSIM_AVR_SetLock_f)(struct MSIM_AVR *mcu, uint8_t lock_v);
 typedef int (*MSIM_AVR_TickPerf_f)(struct MSIM_AVR *mcu);
 typedef int (*MSIM_AVR_PassIRQs_f)(struct MSIM_AVR *mcu);
+typedef int (*MSIM_AVR_ResetSPM_f)(struct MSIM_AVR *mcu);
 
 /* State of a simulated AVR microcontroller. Some of these states are
  * AVR-native, others - added by the simulator to manipulate a simulation
@@ -152,7 +153,8 @@ struct MSIM_AVR_MemOp {
  * set_lockf		Function to configure AVR lock bits.
  * tick_perf		Function to tick AVR peripherals.
  * pass_irqs		Function to set IRQs according to the flags.
-
+ * reset_spm		Function to reset SPM instruction.
+ *
  * state		State of the MCU
  * clk_source		Current MCU clock source
  *
@@ -220,6 +222,7 @@ struct MSIM_AVR {
 	MSIM_AVR_SetLock_f set_lockf;
 	MSIM_AVR_TickPerf_f tick_perf;
 	MSIM_AVR_PassIRQs_f pass_irqs;
+	MSIM_AVR_ResetSPM_f reset_spm;
 
 	enum MSIM_AVR_State state;
 	enum MSIM_AVR_ClkSource clk_source;

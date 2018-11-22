@@ -93,6 +93,10 @@ static uint32_t ocr1b_buf;
  * this case. */
 static uint8_t missed_cm = 0;
 
+static uint8_t spmcr_buf;	/* SPM Control Register */
+static uint8_t spmen_cycles = 0; /* Clean SPMEN bit in this number of cycles */
+static uint8_t spmen_clear = 0;	/* Flag to clear SPMEN in # of cycles */
+
 static void tick_timer0(struct MSIM_AVR *mcu);
 static void tick_timer1(struct MSIM_AVR *mcu);
 static void tick_timer2(struct MSIM_AVR *mcu);
@@ -102,7 +106,7 @@ static void tick_usart(struct MSIM_AVR *mcu);
 #if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
 static void usart_transmit(struct MSIM_AVR *mcu);
 static void usart_receive(struct MSIM_AVR *mcu);
-#endif /* defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY) */
+#endif
 
 static void tick_wdt(struct MSIM_AVR *mcu);
 
@@ -175,6 +179,11 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 		DM(UCSRA) = 0x20;
 		DM(UCSRC) = 0x82;
 
+		/* Keep previous value of SPMCR */
+		if (mcu->spmcsr != NULL) {
+			spmcr_buf = *mcu->spmcsr;
+		}
+
 		update_watched(mcu);
 
 		/* Set USART registers */
@@ -210,6 +219,14 @@ int MSIM_M8ATickPerf(struct MSIM_AVR *mcu)
 	return 0;
 }
 
+int MSIM_M8AResetSPM(struct MSIM_AVR *mcu)
+{
+	if (mcu->spmcsr != NULL) {
+		*mcu->spmcsr &= ~(1<<SPMEN);
+	}
+	return 0;
+}
+
 static void update_watched(struct MSIM_AVR *mcu)
 {
 	init_portd = DM(PORTD);
@@ -231,6 +248,23 @@ static void update_watched(struct MSIM_AVR *mcu)
 	udr_buf = DM(UDR);
 
 	wdtcr_buf = DM(WDTCR);
+
+	/* Update SPMCR value and reset SPMEN bit if necessary */
+	if (mcu->spmcsr != NULL) {
+		if (spmen_clear == 1U) {
+			if (spmen_cycles == 0U) {
+				*mcu->spmcsr &= ~(1<<SPMEN);
+				spmen_clear = 0;
+			} else {
+				spmen_cycles--;
+			}
+		}
+		if (IS_RISE(spmcr_buf, *mcu->spmcsr, SPMEN)) {
+			spmen_cycles = 4;
+			spmen_clear = 1;
+		}
+		spmcr_buf = *mcu->spmcsr;
+	}
 }
 
 static void tick_timer0(struct MSIM_AVR *mcu)

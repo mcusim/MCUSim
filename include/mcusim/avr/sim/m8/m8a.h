@@ -57,11 +57,13 @@
 #define SET_LOCK_F	MSIM_M8ASetLock
 #define TICK_PERF_F	MSIM_M8ATickPerf
 #define PASS_IRQS_F	MSIM_M8APassIRQs
+#define RESET_SPM_F	MSIM_M8AResetSPM
 
 int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v);
 int MSIM_M8ASetLock(struct MSIM_AVR *mcu, uint8_t lock_v);
 int MSIM_M8ATickPerf(struct MSIM_AVR *mcu);
 int MSIM_M8APassIRQs(struct MSIM_AVR *mcu);
+int MSIM_M8AResetSPM(struct MSIM_AVR *mcu);
 
 #endif /* MSIM_AVR_M8A_H_ */
 

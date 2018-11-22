@@ -286,7 +286,7 @@ int MSIM_AVR_Step(struct MSIM_AVR *mcu)
 
 	if (decode_inst(mcu, inst)) {
 		snprintf(mcu->log, sizeof mcu->log, "unknown instruction: "
-		         "0x%04X", inst);
+		         "0x%04" PRIX16 ", pc=0x%06" PRIX32, inst, mcu->pc);
 		MSIM_LOG_FATAL(mcu->log);
 		return -1;
 	}
@@ -2965,6 +2965,11 @@ static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst)
 			memcpy(&mcu->pm[z], mcu->pmp, mcu->spm_pagesize);
 		}
 		mcu->pc += 2;
+
+		/* Reset state of the SPM instruction */
+		if (mcu->reset_spm != NULL) {
+			mcu->reset_spm(mcu);
+		}
 
 		if (inst == 0x95F8) {
 			z += 2;
