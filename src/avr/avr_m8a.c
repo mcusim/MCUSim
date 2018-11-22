@@ -223,6 +223,10 @@ int MSIM_M8AResetSPM(struct MSIM_AVR *mcu)
 {
 	if (mcu->spmcsr != NULL) {
 		*mcu->spmcsr &= ~(1<<SPMEN);
+		/* Generate SPM_RDY interrupt */
+		if ((*mcu->spmcsr>>SPMIE)&1U) {
+			mcu->intr.irq[SPM_RDY_vect_num-1] = 1;
+		}
 	}
 	return 0;
 }
@@ -255,6 +259,10 @@ static void update_watched(struct MSIM_AVR *mcu)
 			if (spmen_cycles == 0U) {
 				*mcu->spmcsr &= ~(1<<SPMEN);
 				spmen_clear = 0;
+				/* Generate SPM_RDY interrupt */
+				if ((*mcu->spmcsr>>SPMIE)&1U) {
+					mcu->intr.irq[SPM_RDY_vect_num-1] = 1;
+				}
 			} else {
 				spmen_cycles--;
 			}
