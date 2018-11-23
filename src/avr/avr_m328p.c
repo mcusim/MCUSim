@@ -77,9 +77,8 @@ static void timer0_normal(struct MSIM_AVR *mcu,
                           uint8_t wgm0, uint8_t com0a, uint8_t com0b);
 
 /* Timer/Counter1 helper functions */
-static void timer0_pcpwm(struct MSIM_AVR mcu,
-                          uint32_t presc, uint8_t ticks,
-                          uint8_t wgm0, uint8_t com0a, uint8_t com0b);
+static void timer1_oc0_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
+                              uint8_t com0b, uint8_t chan);
 
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
@@ -106,13 +105,13 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 	uint32_t presc;			/* Prescaler value */
 
 	cs0 = DM(TCCR0B)&0x7;
-	wgm0 = ((DM(TCCR0A)>>WGM00)&1) |
-	       ((DM(TCCR0A)>>WGM01)&2) |
-	       ((DM(TCCR0B)>>WGM02)&8);
-	com0a = ((DM(TCCR0A)>>COM0A0)&6) |
-	        ((DM(TCCR0A)>>COM0A1)&7);
-	com0b = ((DM(TCCR0A)>>COM0B0)&4) |
-	        ((DM(TCCR0A)>>COM0B1)&5);
+	wgm0 = (uint8_t) ((DM(TCCR0A)>>WGM00)&1) |
+	       (uint8_t) ((DM(TCCR0A)>>WGM01)&2) |
+	       (uint8_t) ((DM(TCCR0B)>>WGM02)&8);
+	com0a = (uint8_t) ((DM(TCCR0A)>>COM0A0)&6) |
+	        (uint8_t) ((DM(TCCR0A)>>COM0A1)&7);
+	com0b = (uint8_t) ((DM(TCCR0A)>>COM0B0)&4) |
+	        (uint8_t) ((DM(TCCR0A)>>COM0B1)&5);
 
 	switch (cs0) {
 	case 0x1:
@@ -230,19 +229,19 @@ static void timer0_normal(struct MSIM_AVR *mcu,
 			/* Reset TimerCounter0  */
 			DM(TCNT0) = 0;
 			/* Set TimerCounter0 overflow flag  */
-			DM(TIFR0) = DM(1TOV0);
+			DM(TIFR0) |= DM(1<<TOV0);
 		} else if (DM(TCNT0) == DM(OCR0A)) {
 			/* Set TC0 Output Compare A Flag  */
-			DM(TIFR0) = (DM(OCF0A));
+			DM(TIFR0) |= (DM(1<<OCF0A));
 			/* Manipulate on the OCR0A (PD6) pin  */
-			timer1_oc1_nonpwm(mcu, com0a, com0b, A_CHAN);
+			timer1_oc0_nonpwm(mcu, com0a, com0b, A_CHAN);
 			DM(TCNT0)++;
 
 		} else if (DM(TCNT0) == DM(OCR0B)) {
 			/* Set TC0 Output Compare B Flag */ 
-			DM(TIFR0) = (DM(OCR0B));
+			DM(TIFR0) |= (DM(1<<OCF0B));
 			/* Manipulate on the OCR0A (PD5) pin  */
-			timer1_oc1_nonpwm(mcu, com0a, com0b, B_CHAN);
+			timer1_oc0_nonpwm(mcu, com0a, com0b, B_CHAN);
 			DM(TCNT0)++;
 
 		} else {
@@ -253,7 +252,7 @@ static void timer0_normal(struct MSIM_AVR *mcu,
 	}
 }
 
-static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
+static void timer1_oc0_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
                               uint8_t com0b, uint8_t chan)
 {
 	uint8_t pin, com;
@@ -267,9 +266,9 @@ static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
 		pin = PD5;
 		com = com0b;
 	} else {
-		MSIM_LOG_ERROR("unsupported channel of Output Compare unit is 
-		               used in timer0; It looks like a bug (please 
-		               report it at trac.mcusim.org)");
+		MSIM_LOG_ERROR("unsupported channel of Output Compare unit is" 
+		               "used in timer0; It looks like a bug (please" 
+		               "report it at trac.mcusim.org)");
 		com = NOT_CONNECTED;
 	}
 
@@ -283,28 +282,28 @@ static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
 	/* Update Output Compare pin (OC0A or OC0B) */ 
 	if (com != NOT_CONNECTED) {
 		switch (com) {
-		case 1  Toggle pin 
+		case 1:  /* Toggle pin  */
 			if (IS_SET(DM(PORTD), pin) == 1) {
 				CLEAR(DM(PORTD), pin);
 			} else {
 				SET(DM(PORTD), pin);
 			}
 			break;
-		case 2
+		case 2:
 			CLEAR(DM(PORTD), pin);
 			break;
-		case 3
+		case 3:
 			SET(DM(PORTD), pin);
 			break;
-		case 0
-		default
+		case 0:
+		default:
 			/* OC0AOC0B disconnected, do nothing  */
 			break;
 		}
 	}
 }
 
-int MSIM_M328PSetFuse(struct MSIM_AVR mcu, uint32_t fuse_n, uint8_t fuse_v)
+int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 {
 	uint8_t cksel, bootsz;
 	uint8_t err;
