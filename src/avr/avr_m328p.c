@@ -47,24 +47,38 @@
 
 #define DM(v)			(mcu->dm[v])
 
-/* Initial PORTD and PIND values and to track T0/PD4 and T1/PD5. */
+#define NOT_CONNECTED 0xFFU
+
+/*  Two arbitrary constants to mark two distinct output compare channels
+  of the microcontroller. A_CHAN - OCRnA  B_CHAN - OCRnB  */
+#define A_CHAN			79
+#define B_CHAN			80
+
+/*  Initial PORTD and PIND values and to track T0PD4 and T1PD5.  */
 static uint8_t init_portd;
 static uint8_t init_pind;
 
 
-/* The OCR0 Compare Register is double buffered when using any of
- * the PWM modes and updated during either TOP or BOTTOM of the counting
- * sequence. */
-static unsigned char ocr0_buf;
-/* Timer may start counting from a value higher then the one on OCR0 and
- * for that reason misses the Compare Match. This flag is set in this case. */
-static unsigned char missed_cm = 0;
+/*   The OCR0 Compare Register is double buffered when using any of
+  the PWM modes and updated during either TOP or BOTTOM of the counting
+  sequence.  */
+uint8_t ocr0a_buf;
+uint8_t ocr0b_buf;
+
+/*  Timer may start counting from a value higher then the one on OCR0 and
+  for that reason misses the Compare Match. This flag is set in this case.  */
+uint8_t missed_cm = 0;
 
 static void tick_timer0(struct MSIM_AVR *mcu);
 
 /* Timer/Counter0 modes of operation */
 static void timer0_normal(struct MSIM_AVR *mcu,
                           uint32_t presc, uint8_t *ticks,
+                          uint8_t wgm0, uint8_t com0a, uint8_t com0b);
+
+/* Timer/Counter1 helper functions */
+static void timer0_pcpwm(struct MSIM_AVR mcu,
+                          uint32_t presc, uint8_t ticks,
                           uint8_t wgm0, uint8_t com0a, uint8_t com0b);
 
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
@@ -176,7 +190,7 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 
 	switch (wgm0) {
 	case 0:
-		/* timer0 normal mode */
+		timer0_normal(mcu, tc0_presc, tc0_ticks, wgm0, com0a, com0b);
 		break;
 	case 1:
 		/* timer0 pcpwm mode */
@@ -213,10 +227,24 @@ static void timer0_normal(struct MSIM_AVR *mcu,
 		        "be updated!\n", *ticks, (presc-1U));
 	} else {
 		if (DM(TCNT0) == 0xFF) {
-			/* Reset Timer/Counter0 */
+			/* Reset TimerCounter0  */
 			DM(TCNT0) = 0;
-			/* Set Timer/Counter0 overflow flag */
-			DM(TIFR0) |= (1<<TOV0);
+			/* Set TimerCounter0 overflow flag  */
+			DM(TIFR0) = DM(1TOV0);
+		} else if (DM(TCNT0) == DM(OCR0A)) {
+			/* Set TC0 Output Compare A Flag  */
+			DM(TIFR0) = (DM(OCF0A));
+			/* Manipulate on the OCR0A (PD6) pin  */
+			timer1_oc1_nonpwm(mcu, com0a, com0b, A_CHAN);
+			DM(TCNT0)++;
+
+		} else if (DM(TCNT0) == DM(OCR0B)) {
+			/* Set TC0 Output Compare B Flag */ 
+			DM(TIFR0) = (DM(OCR0B));
+			/* Manipulate on the OCR0A (PD5) pin  */
+			timer1_oc1_nonpwm(mcu, com0a, com0b, B_CHAN);
+			DM(TCNT0)++;
+
 		} else {
 			DM(TCNT0)++;
 		}
@@ -225,7 +253,58 @@ static void timer0_normal(struct MSIM_AVR *mcu,
 	}
 }
 
-int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
+static void timer1_oc1_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
+                              uint8_t com0b, uint8_t chan)
+{
+	uint8_t pin, com;
+
+	/* 	 Check Data Direction Register first. DDRB1 or DDRB2 should
+		be set to enable the output driver (according to a datasheet).  */
+	if (chan == (uint8_t)A_CHAN) {
+		pin = PD6;
+		com = com0a;
+	} else if (chan == (uint8_t)B_CHAN) {
+		pin = PD5;
+		com = com0b;
+	} else {
+		MSIM_LOG_ERROR("unsupported channel of Output Compare unit is 
+		               used in timer0; It looks like a bug (please 
+		               report it at trac.mcusim.org)");
+		com = NOT_CONNECTED;
+	}
+
+	/* Note that the Data Direction Register (DDR)
+	   bit corresponding to the OCR0x pin must be set in
+	   order to enable the output driver.  */
+	if ((com != NOT_CONNECTED) && (!IS_SET(DM(DDRB), pin))) {
+		com = NOT_CONNECTED;
+	}
+
+	/* Update Output Compare pin (OC0A or OC0B) */ 
+	if (com != NOT_CONNECTED) {
+		switch (com) {
+		case 1  Toggle pin 
+			if (IS_SET(DM(PORTD), pin) == 1) {
+				CLEAR(DM(PORTD), pin);
+			} else {
+				SET(DM(PORTD), pin);
+			}
+			break;
+		case 2
+			CLEAR(DM(PORTD), pin);
+			break;
+		case 3
+			SET(DM(PORTD), pin);
+			break;
+		case 0
+		default
+			/* OC0AOC0B disconnected, do nothing  */
+			break;
+		}
+	}
+}
+
+int MSIM_M328PSetFuse(struct MSIM_AVR mcu, uint32_t fuse_n, uint8_t fuse_v)
 {
 	uint8_t cksel, bootsz;
 	uint8_t err;
