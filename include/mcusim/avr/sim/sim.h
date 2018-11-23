@@ -205,7 +205,7 @@ struct MSIM_AVR {
 	uint8_t *rampd;
 
 	uint8_t pm[MSIM_AVR_PMSZ];
-	uint8_t pmp[MSIM_AVR_PM_PAGESZ];
+	uint8_t pmp[MSIM_AVR_PMSZ];
 	uint8_t mpm[MSIM_AVR_PMSZ];
 	uint8_t dm[MSIM_AVR_DMSZ];
 	uint32_t pm_size;

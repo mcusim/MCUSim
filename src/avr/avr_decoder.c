@@ -2529,8 +2529,8 @@ static void exec_lpm(struct MSIM_AVR *mcu, unsigned int inst)
 	 * type II, Rd <- (Z)
 	 * type III, Rd <- (Z), Z++
 	 */
-	unsigned short rd_addr, z;
-	unsigned char zh, zl;
+	uint32_t rd_addr, z;
+	uint8_t zh, zl;
 
 	SKIP_CYCLES(mcu, 1, 2);
 
@@ -2962,7 +2962,7 @@ static void exec_spm(struct MSIM_AVR *mcu, unsigned int inst)
 		} else if (c == 0x1) {		/* fill the buffer */
 			memcpy(&mcu->pmp[z], &mcu->dm[0], 2);
 		} else if (c == 0x5) {		/* write a page */
-			memcpy(&mcu->pm[z], mcu->pmp, mcu->spm_pagesize);
+			memcpy(&mcu->pm[z], &mcu->pmp[z], mcu->spm_pagesize);
 		}
 		mcu->pc += 2;
 
