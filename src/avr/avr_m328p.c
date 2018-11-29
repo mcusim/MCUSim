@@ -1,7 +1,5 @@
 /*
- * Copyright (c) 2017, 2018,
- * Dmitry Salychev <darkness.bsd@gmail.com>,
- * Alexander Salychev <ppsalex@rambler.ru> et al.
+ * Copyright (c) 2017, 2018, The MCUSim Contributors
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -11,21 +9,20 @@
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <organization> nor the
+ *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
- *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdlib.h>
 #include <string.h>
@@ -47,34 +44,55 @@
 
 #define DM(v)			(mcu->dm[v])
 
-/* Initial PORTD and PIND values and to track T0/PD4 and T1/PD5. */
+#define NOT_CONNECTED		0xFFU
+
+/* Two arbitrary constants to mark two distinct output compare channels of
+ * the microcontroller. A_CHAN - OCRnA  B_CHAN - OCRnB */
+#define A_CHAN			79
+#define B_CHAN			80
+
+/* Initial PORTD and PIND values and to track PD4(T0) and PD5(T1). */
 static uint8_t init_portd;
 static uint8_t init_pind;
 
+/* The OCR0 Compare Register is double buffered when using any of the PWM
+ * modes and updated during either TOP or BOTTOM of the counting sequence. */
+uint8_t ocr0a_buf;
+uint8_t ocr0b_buf;
 
-/* The OCR0 Compare Register is double buffered when using any of
- * the PWM modes and updated during either TOP or BOTTOM of the counting
- * sequence. */
-static unsigned char ocr0_buf;
 /* Timer may start counting from a value higher then the one on OCR0 and
  * for that reason misses the Compare Match. This flag is set in this case. */
-static unsigned char missed_cm = 0;
+uint8_t missed_cm = 0;
 
 static void tick_timer0(struct MSIM_AVR *mcu);
+static void update_watched(struct MSIM_AVR *mcu);
 
 /* Timer/Counter0 modes of operation */
 static void timer0_normal(struct MSIM_AVR *mcu,
-                          uint32_t presc, uint8_t *ticks,
+                          uint32_t presc, uint32_t *ticks,
                           uint8_t wgm0, uint8_t com0a, uint8_t com0b);
+
+/* Timer/Counter0 helper functions */
+static void timer0_oc0_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
+                              uint8_t com0b, uint8_t chan);
 
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
-	return mcu_init(mcu, args);
+	int r = mcu_init(mcu, args);
+
+	if (r == 0) {
+		update_watched(mcu);
+	}
+	return r;
 }
 
 int MSIM_M328PTickPerf(struct MSIM_AVR *mcu)
 {
 	tick_timer0(mcu);
+
+	/* Update watched values after all of the peripherals. */
+	update_watched(mcu);
+
 	return 0;
 }
 
@@ -92,13 +110,13 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 	uint32_t presc;			/* Prescaler value */
 
 	cs0 = DM(TCCR0B)&0x7;
-	wgm0 = ((DM(TCCR0A)>>WGM00)&1) |
-	       ((DM(TCCR0A)>>WGM01)&2) |
-	       ((DM(TCCR0B)>>WGM02)&8);
-	com0a = ((DM(TCCR0A)>>COM0A0)&6) |
-	        ((DM(TCCR0A)>>COM0A1)&7);
-	com0b = ((DM(TCCR0A)>>COM0B0)&4) |
-	        ((DM(TCCR0A)>>COM0B1)&5);
+	wgm0 = (uint8_t) ((DM(TCCR0A)>>WGM00)&1) |
+	       (uint8_t) ((DM(TCCR0A)>>WGM01)&2) |
+	       (uint8_t) ((DM(TCCR0B)>>WGM02)&8);
+	com0a = (uint8_t) ((DM(TCCR0A)>>COM0A0)&6) |
+	        (uint8_t) ((DM(TCCR0A)>>COM0A1)&7);
+	com0b = (uint8_t) ((DM(TCCR0A)>>COM0B0)&4) |
+	        (uint8_t) ((DM(TCCR0A)>>COM0B1)&5);
 
 	switch (cs0) {
 	case 0x1:
@@ -176,7 +194,7 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 
 	switch (wgm0) {
 	case 0:
-		/* timer0 normal mode */
+		timer0_normal(mcu, tc0_presc, &tc0_ticks, wgm0, com0a, com0b);
 		break;
 	case 1:
 		/* timer0 pcpwm mode */
@@ -189,9 +207,10 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 		break;
 	default:
 		if (wgm0 != old_wgm0) {
-			fprintf(stderr, "[!]: Selected mode WGM21:20 = %u "
-			        "of the Timer/Counter2 is not supported\n",
-			        wgm0);
+			snprintf(mcu->log, sizeof mcu->log, "selected mode "
+			         "WGM21:20 = %u of the Timer/Counter2 is not "
+			         "supported", wgm0);
+			MSIM_LOG_WARN(mcu->log);
 			old_wgm0 = wgm0;
 		}
 		tc0_presc = 0;
@@ -201,28 +220,100 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 }
 
 static void timer0_normal(struct MSIM_AVR *mcu,
-                          uint32_t presc, uint8_t *ticks,
+                          uint32_t presc, uint32_t *ticks,
                           uint8_t wgm0, uint8_t com0a, uint8_t com0b)
 {
 	if ((*ticks) < (presc-1U)) {
 		(*ticks)++;
 	} else if ((*ticks) > (presc-1U)) {
-		fprintf(stderr, "[e]: Number of Timer1 ticks=%" PRIu32
-		        " should be less then or equal to "
-		        "(prescaler-1)=%" PRIu32 ". Timer1 will not "
-		        "be updated!\n", *ticks, (presc-1U));
+		snprintf(mcu->log, sizeof mcu->log, "number of Timer1 "
+		         "ticks=%" PRIu32 " should be <= (prescaler-1)=%"
+		         PRIu32 "; timer1 will not be updated!",
+		         *ticks, (presc-1U));
+		MSIM_LOG_ERROR(mcu->log);
 	} else {
 		if (DM(TCNT0) == 0xFF) {
-			/* Reset Timer/Counter0 */
+			/* Reset TimerCounter0  */
 			DM(TCNT0) = 0;
-			/* Set Timer/Counter0 overflow flag */
-			DM(TIFR0) |= (1<<TOV0);
+			/* Set TimerCounter0 overflow flag  */
+			DM(TIFR0) |= DM(1<<TOV0);
+		} else if (DM(TCNT0) == DM(OCR0A)) {
+			/* Set TC0 Output Compare A Flag  */
+			DM(TIFR0) |= (DM(1<<OCF0A));
+			/* Manipulate on the OCR0A (PD6) pin  */
+			timer0_oc0_nonpwm(mcu, com0a, com0b, A_CHAN);
+			DM(TCNT0)++;
+
+		} else if (DM(TCNT0) == DM(OCR0B)) {
+			/* Set TC0 Output Compare B Flag */
+			DM(TIFR0) |= (DM(1<<OCF0B));
+			/* Manipulate on the OCR0A (PD5) pin  */
+			timer0_oc0_nonpwm(mcu, com0a, com0b, B_CHAN);
+			DM(TCNT0)++;
+
 		} else {
 			DM(TCNT0)++;
 		}
 		*ticks = 0;
 		return;
 	}
+}
+
+static void timer0_oc0_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
+                              uint8_t com0b, uint8_t chan)
+{
+	uint8_t pin, com;
+
+	/* 	 Check Data Direction Register first. DDRB1 or DDRB2 should
+		be set to enable the output driver (according to a datasheet).  */
+	if (chan == (uint8_t)A_CHAN) {
+		pin = PD6;
+		com = com0a;
+	} else if (chan == (uint8_t)B_CHAN) {
+		pin = PD5;
+		com = com0b;
+	} else {
+		MSIM_LOG_ERROR("unsupported channel of Output Compare unit is"
+		               "used in timer0; It looks like a bug (please"
+		               "report it at trac.mcusim.org)");
+		com = NOT_CONNECTED;
+	}
+
+	/* Note that the Data Direction Register (DDR)
+	   bit corresponding to the OCR0x pin must be set in
+	   order to enable the output driver.  */
+	if ((com != NOT_CONNECTED) && (!IS_SET(DM(DDRB), pin))) {
+		com = NOT_CONNECTED;
+	}
+
+	/* Update Output Compare pin (OC0A or OC0B) */
+	if (com != NOT_CONNECTED) {
+		switch (com) {
+		case 1:  /* Toggle pin  */
+			if (IS_SET(DM(PORTD), pin) == 1) {
+				CLEAR(DM(PORTD), pin);
+			} else {
+				SET(DM(PORTD), pin);
+			}
+			break;
+		case 2:
+			CLEAR(DM(PORTD), pin);
+			break;
+		case 3:
+			SET(DM(PORTD), pin);
+			break;
+		case 0:
+		default:
+			/* OC0A/OC0B disconnected, do nothing  */
+			break;
+		}
+	}
+}
+
+static void update_watched(struct MSIM_AVR *mcu)
+{
+	init_portd = DM(PORTD);
+	init_pind = DM(PIND);
 }
 
 int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
