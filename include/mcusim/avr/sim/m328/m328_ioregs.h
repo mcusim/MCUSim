@@ -106,51 +106,51 @@
 #define EIFR_MASK	0x03 /* 0000 0011 */
 /* PART I */
 #define PCIFR_RES		0x00
-#define PCIFR_MASK		0x00
+#define PCIFR_MASK		0x07 /* 0000 0111 */
 #define TIFR2_RES		0x00
-#define TIFR2_MASK		0x00
+#define TIFR2_MASK		0x07 /* 0000 0111 */
 #define TIFR1_RES		0x00
-#define TIFR1_MASK		0x00
+#define TIFR1_MASK		0x27 /* 0010 0111 */
 #define TIFR0_RES		0x00
-#define TIFR0_MASK		0x00
+#define TIFR0_MASK		0x07 /* 0000 0111 */
 #define TWCR_RES		0x00
-#define TWCR_MASK		0x00
+#define TWCR_MASK		0xF5 /* 1111 0101 */
 #define OSCCAL_RES		0x00
-#define OSCCAL_MASK		0x00
+#define OSCCAL_MASK		0xFF /* 1111 1111 */
 #define TCCR1A_RES		0x00
-#define TCCR1A_MASK		0x00
+#define TCCR1A_MASK		0xF3 /* 1111 0011 */
 #define TCCR1B_RES		0x00
-#define TCCR1B_MASK		0x00
+#define TCCR1B_MASK		0xDF /* 1101 1111 */
 #define TCNT1H_RES		0x00
-#define TCNT1H_MASK		0x00
+#define TCNT1H_MASK		0xFF /* 1111 1111 */
 #define TCNT1L_RES		0x00
-#define TCNT1L_MASK		0x00
+#define TCNT1L_MASK		0xFF /* 1111 1111 */
 #define OCR1AH_RES		0x00
-#define OCR1AH_MASK		0x00
+#define OCR1AH_MASK		0xFF /* 1111 1111 */
 #define OCR1AL_RES		0x00
-#define OCR1AL_MASK		0x00
+#define OCR1AL_MASK		0xFF /* 1111 1111 */
 #define OCR1BH_RES		0x00
-#define OCR1BH_MASK		0x00
+#define OCR1BH_MASK		0xFF /* 1111 1111 */
 #define OCR1BL_RES		0x00
-#define OCR1BL_MASK		0x00
+#define OCR1BL_MASK		0xFF /* 1111 1111 */
 #define ICR1H_RES		0x00
-#define ICR1H_MASK		0x00
+#define ICR1H_MASK		0xFF /* 1111 1111 */
 #define ICR1L_RES		0x00
-#define ICR1L_MASK		0x00
+#define ICR1L_MASK		0xFF /* 1111 1111 */
 #define TCNT2_RES		0x00
-#define TCNT2_MASK		0x00
+#define TCNT2_MASK		0xFF /* 1111 1111 */
 #define ASSR_RES		0x00
-#define ASSR_MASK		0x00
+#define ASSR_MASK		0x60 /* 0110 0000 */
 #define ADMUX_RES		0x00
-#define ADMUX_MASK		0x00
+#define ADMUX_MASK		0xEF /* 1110 1111 */
 #define ADCSRA_RES		0x00
-#define ADCSRA_MASK		0x00
+#define ADCSRA_MASK		0xFF /* 1111 1111 */
 #define ADCH_RES		0x00
-#define ADCH_MASK		0x00
+#define ADCH_MASK		0x00 /* 0000 0000 */
 #define ADCL_RES		0x00
-#define ADCL_MASK		0x00
+#define ADCL_MASK		0x00 /* 0000 0000 */
 #define TWDR_RES		0x00
-#define TWDR_MASK		0x00
+#define TWDR_MASK		0xFF /* 1111 1111 */
 #define TWAR_RES		0x00
 #define TWAR_MASK		0x00
 #define TWSR_RES		0x00
