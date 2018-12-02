@@ -150,7 +150,7 @@
 #define ADCL_MASK		0x00 /* 0000 0000 */
 #define TWDR_RES		0x00
 #define TWDR_MASK		0xFF /* 1111 1111 */
-#define TWAR_RES		0x01 
+#define TWAR_RES		0x01
 #define TWAR_MASK		0xFF /* 1111 1111 */
 #define TWSR_RES		0xF8 /* 1111 1000 */
 #define TWSR_MASK		0x03 /* 0000 0011 */
@@ -159,7 +159,7 @@
 #define UDR0_RES		0x00
 #define UDR0_MASK		0xFF /* 1111 1111 */
 #define UBRR0H_RES		0x00
-#define UBRR0H_MASK		0x0F /* 0000 1111 */ 
+#define UBRR0H_MASK		0x0F /* 0000 1111 */
 #define UBRR0L_RES		0x00
 #define UBRR0L_MASK		0xFF /* 1111 1111 */
 #define UCSR0C_RES		0x06 /* 0000 0110 */
@@ -168,7 +168,7 @@
 #define UCSR0B_MASK		0xFD /* 1111 1101 */
 #define UCSR0A_RES		0x20 /* 0010 0000 */
 #define UCSR0A_MASK		0x43 /* 0100 0011 */
-#define TWAMR_RES		0x00 
+#define TWAMR_RES		0x00
 #define TWAMR_MASK		0xFE /* 1111 1110 */
 #define OCR2B_RES		0x00
 #define OCR2B_MASK		0xFF
@@ -206,6 +206,6 @@
 #define CLKPR_MASK		0x8F /* 1000 1111 */
 #define WDTCSR_RES		0x08 /* 0000 1000 */
 #define WDTCSR_MASK		0xFF /* 1111 1111 */
-#define PRR_RES			0x00 /* please explain abbreviation */ 
+#define PRR_RES			0x00 /* please explain abbreviation */
 #define PRR_MASK		0x00 /* please explain abbreviation */
 
