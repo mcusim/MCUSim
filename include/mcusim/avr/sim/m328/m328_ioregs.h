@@ -202,10 +202,10 @@
 #define EICRA_MASK		0x0F /* 0000 1111 */
 #define PCICR_RES		0x00
 #define PCICR_MASK		0x07 /* 0000 0111 */
-#define CLKPR_RES		0x0F /* 0000 1111 - see 6.12.2 datasheet */
+#define CLKPR_RES		0x03
 #define CLKPR_MASK		0x8F /* 1000 1111 */
 #define WDTCSR_RES		0x08 /* 0000 1000 */
 #define WDTCSR_MASK		0xFF /* 1111 1111 */
-#define PRR_RES			0x00 /* please explain abbreviation */
-#define PRR_MASK		0x00 /* please explain abbreviation */
+#define PRR_RES			0x00
+#define PRR_MASK		0xEF /* 1110 1111 */
 
