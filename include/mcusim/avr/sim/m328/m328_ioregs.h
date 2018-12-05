@@ -104,109 +104,107 @@
 #define EIMSK_MASK	0x03 /* 0000 0011 */
 #define EIFR_RES	0x00
 #define EIFR_MASK	0x03 /* 0000 0011 */
-/* PART I */
-#define PCIFR_RES		0x00
-#define PCIFR_MASK		0x00
-#define TIFR2_RES		0x00
-#define TIFR2_MASK		0x00
-#define TIFR1_RES		0x00
-#define TIFR1_MASK		0x00
-#define TIFR0_RES		0x00
-#define TIFR0_MASK		0x00
-#define TWCR_RES		0x00
-#define TWCR_MASK		0x00
-#define OSCCAL_RES		0x00
-#define OSCCAL_MASK		0x00
-#define TCCR1A_RES		0x00
-#define TCCR1A_MASK		0x00
-#define TCCR1B_RES		0x00
-#define TCCR1B_MASK		0x00
-#define TCNT1H_RES		0x00
-#define TCNT1H_MASK		0x00
-#define TCNT1L_RES		0x00
-#define TCNT1L_MASK		0x00
-#define OCR1AH_RES		0x00
-#define OCR1AH_MASK		0x00
-#define OCR1AL_RES		0x00
-#define OCR1AL_MASK		0x00
-#define OCR1BH_RES		0x00
-#define OCR1BH_MASK		0x00
-#define OCR1BL_RES		0x00
-#define OCR1BL_MASK		0x00
-#define ICR1H_RES		0x00
-#define ICR1H_MASK		0x00
-#define ICR1L_RES		0x00
-#define ICR1L_MASK		0x00
-#define TCNT2_RES		0x00
-#define TCNT2_MASK		0x00
-#define ASSR_RES		0x00
-#define ASSR_MASK		0x00
-#define ADMUX_RES		0x00
-#define ADMUX_MASK		0x00
-#define ADCSRA_RES		0x00
-#define ADCSRA_MASK		0x00
-#define ADCH_RES		0x00
-#define ADCH_MASK		0x00
-#define ADCL_RES		0x00
-#define ADCL_MASK		0x00
-#define TWDR_RES		0x00
-#define TWDR_MASK		0x00
-#define TWAR_RES		0x00
-#define TWAR_MASK		0x00
-#define TWSR_RES		0x00
-#define TWSR_MASK		0x00
-#define TWBR_RES		0x00
-#define TWBR_MASK		0x00
-#define UDR0_RES		0x00
-#define UDR0_MASK		0x00
-#define UBRR0H_RES		0x00
-#define UBRR0H_MASK		0x00
-#define UBRR0L_RES		0x00
-#define UBRR0L_MASK		0x00
-#define UCSR0C_RES		0x00
-#define UCSR0C_MASK		0x00
-#define UCSR0B_RES		0x00
-#define UCSR0B_MASK		0x00
-#define UCSR0A_RES		0x00
-#define UCSR0A_MASK		0x00
-#define TWAMR_RES		0x00
-#define TWAMR_MASK		0x00
-#define OCR2B_RES		0x00
-#define OCR2B_MASK		0x00
-#define OCR2A_RES		0x00
-#define OCR2A_MASK		0x00
-#define TCCR2B_RES		0x00
-#define TCCR2B_MASK		0x00
-#define TCCR2A_RES		0x00
-#define TCCR2A_MASK		0x00
-#define TCCR1C_RES		0x00
-#define TCCR1C_MASK		0x00
-#define DIDR1_RES		0x00
-#define DIDR1_MASK		0x00
-#define DIDR0_RES		0x00
-#define DIDR0_MASK		0x00
-#define ADCSRB_RES		0x00
-#define ADCSRB_MASK		0x00
-#define TIMSK2_RES		0x00
-#define TIMSK2_MASK		0x00
-#define TIMSK1_RES		0x00
-#define TIMSK1_MASK		0x00
-#define TIMSK0_RES		0x00
-#define TIMSK0_MASK		0x00
-#define PCMSK2_RES		0x00
-#define PCMSK2_MASK		0x00
-#define PCMSK1_RES		0x00
-#define PCMSK1_MASK		0x00
-#define PCMSK0_RES		0x00
-#define PCMSK0_MASK		0x00
-#define EICRA_RES		0x00
-#define EICRA_MASK		0x00
-#define PCICR_RES		0x00
-#define PCICR_MASK		0x00
-#define CLKPR_RES		0x00
-#define CLKPR_MASK		0x00
-#define WDTCSR_RES		0x00
-#define WDTCSR_MASK		0x00
-#define PRR_RES			0x00
-#define PRR_MASK		0x00
-
+#define PCIFR_RES	0x00
+#define PCIFR_MASK	0x07 /* 0000 0111 */
+#define TIFR2_RES	0x00
+#define TIFR2_MASK	0x07 /* 0000 0111 */
+#define TIFR1_RES	0x00
+#define TIFR1_MASK	0x27 /* 0010 0111 */
+#define TIFR0_RES	0x00
+#define TIFR0_MASK	0x07 /* 0000 0111 */
+#define TWCR_RES	0x00
+#define TWCR_MASK	0xF5 /* 1111 0101 */
+#define OSCCAL_RES	0x00
+#define OSCCAL_MASK	0xFF
+#define TCCR1A_RES	0x00
+#define TCCR1A_MASK	0xF3 /* 1111 0011 */
+#define TCCR1B_RES	0x00
+#define TCCR1B_MASK	0xDF /* 1101 1111 */
+#define TCNT1H_RES	0x00
+#define TCNT1H_MASK	0xFF
+#define TCNT1L_RES	0x00
+#define TCNT1L_MASK	0xFF
+#define OCR1AH_RES	0x00
+#define OCR1AH_MASK	0xFF
+#define OCR1AL_RES	0x00
+#define OCR1AL_MASK	0xFF
+#define OCR1BH_RES	0x00
+#define OCR1BH_MASK	0xFF
+#define OCR1BL_RES	0x00
+#define OCR1BL_MASK	0xFF
+#define ICR1H_RES	0x00
+#define ICR1H_MASK	0xFF
+#define ICR1L_RES	0x00
+#define ICR1L_MASK	0xFF
+#define TCNT2_RES	0x00
+#define TCNT2_MASK	0xFF
+#define ASSR_RES	0x00
+#define ASSR_MASK	0x60 /* 0110 0000 */
+#define ADMUX_RES	0x00
+#define ADMUX_MASK	0xEF /* 1110 1111 */
+#define ADCSRA_RES	0x00
+#define ADCSRA_MASK	0xFF
+#define ADCH_RES	0x00
+#define ADCH_MASK	0x00 /* 0000 0000 */
+#define ADCL_RES	0x00
+#define ADCL_MASK	0x00 /* 0000 0000 */
+#define TWDR_RES	0x00
+#define TWDR_MASK	0xFF
+#define TWAR_RES	0x01
+#define TWAR_MASK	0xFF
+#define TWSR_RES	0xF8 /* 1111 1000 */
+#define TWSR_MASK	0x03 /* 0000 0011 */
+#define TWBR_RES	0x00
+#define TWBR_MASK	0xFF
+#define UDR0_RES	0x00
+#define UDR0_MASK	0xFF
+#define UBRR0H_RES	0x00
+#define UBRR0H_MASK	0x0F /* 0000 1111 */
+#define UBRR0L_RES	0x00
+#define UBRR0L_MASK	0xFF
+#define UCSR0C_RES	0x06 /* 0000 0110 */
+#define UCSR0C_MASK	0xFF
+#define UCSR0B_RES	0x00
+#define UCSR0B_MASK	0xFD /* 1111 1101 */
+#define UCSR0A_RES	0x20 /* 0010 0000 */
+#define UCSR0A_MASK	0x43 /* 0100 0011 */
+#define TWAMR_RES	0x00
+#define TWAMR_MASK	0xFE /* 1111 1110 */
+#define OCR2B_RES	0x00
+#define OCR2B_MASK	0xFF
+#define OCR2A_RES	0x00
+#define OCR2A_MASK	0xFF
+#define TCCR2B_RES	0x00
+#define TCCR2B_MASK	0xCF /* 1100 1111 */
+#define TCCR2A_RES	0x00
+#define TCCR2A_MASK	0xF3 /* 1111 0011 */
+#define TCCR1C_RES	0x00
+#define TCCR1C_MASK	0xC0 /* 1100 0000 */
+#define DIDR1_RES	0x00
+#define DIDR1_MASK	0x03 /* 0000 0011 */
+#define DIDR0_RES	0x00
+#define DIDR0_MASK	0x3F /* 0011 1111 */
+#define ADCSRB_RES	0x00
+#define ADCSRB_MASK	0x47 /* 0100 0111 */
+#define TIMSK2_RES	0x00
+#define TIMSK2_MASK	0x07 /* 0000 0111 */
+#define TIMSK1_RES	0x00
+#define TIMSK1_MASK	0x27 /* 0010 0111 */
+#define TIMSK0_RES	0x00
+#define TIMSK0_MASK	0x07 /* 0000 0111 */
+#define PCMSK2_RES	0x00
+#define PCMSK2_MASK	0xFF
+#define PCMSK1_RES	0x00
+#define PCMSK1_MASK	0x7F /* 0111 1111 */
+#define PCMSK0_RES	0x00
+#define PCMSK0_MASK	0xFF
+#define EICRA_RES	0x00
+#define EICRA_MASK	0x0F /* 0000 1111 */
+#define PCICR_RES	0x00
+#define PCICR_MASK	0x07 /* 0000 0111 */
+#define CLKPR_RES	0x03 /* 0000 0011 */
+#define CLKPR_MASK	0x8F /* 1000 1111 */
+#define WDTCSR_RES	0x08 /* 0000 1000 */
+#define WDTCSR_MASK	0xFF
+#define PRR_RES		0x00
+#define PRR_MASK	0xEF /* 1110 1111 */

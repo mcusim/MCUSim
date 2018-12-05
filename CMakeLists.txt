@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0127")
+set(MSIM_VERSION "0.1.0128")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -224,7 +224,7 @@ endif()
 
 # Compile MCUSim library and executable
 add_library(${MCUSIM_LIB} STATIC ${MCUSIM_LIB_SRC})
-add_executable(${MCUSIM} src/main.c)
+add_executable(${MCUSIM} src/msim_main.c)
 set_target_properties(${MCUSIM_LIB} PROPERTIES OUTPUT_NAME "mcusim")
 if ((WITH_FPIC MATCHES FALSE) OR
     (WITH_FPIC MATCHES false) OR
