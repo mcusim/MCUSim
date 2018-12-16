@@ -1,9 +1,9 @@
 #
-# Copyright (c) 2017, 2018, The MCUSim Contributors
-# All rights reserved.
+# Copyright 2017-2018 The MCUSim Project.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
+#
 #     * Redistributions of source code must retain the above copyright
 #       notice, this list of conditions and the following disclaimer.
 #     * Redistributions in binary form must reproduce the above copyright
@@ -12,6 +12,7 @@
 #     * Neither the name of the MCUSim or its parts nor the
 #       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
 # THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -32,11 +33,12 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0128")
+set(MSIM_VERSION "0.1.0129")
 
 # Program name
 set(MCUSIM "mcusim")
-set(MCUSIM_LIB "libmcusim")
+set(MCUSIM_LIB "libmsim")
+set(MCUSIM_LIB_NAME "msim")
 
 # Load modules from our source tree too
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -225,7 +227,7 @@ endif()
 # Compile MCUSim library and executable
 add_library(${MCUSIM_LIB} STATIC ${MCUSIM_LIB_SRC})
 add_executable(${MCUSIM} src/msim_main.c)
-set_target_properties(${MCUSIM_LIB} PROPERTIES OUTPUT_NAME "mcusim")
+set_target_properties(${MCUSIM_LIB} PROPERTIES OUTPUT_NAME ${MCUSIM_LIB_NAME})
 if ((WITH_FPIC MATCHES FALSE) OR
     (WITH_FPIC MATCHES false) OR
     (WITH_FPIC MATCHES False))

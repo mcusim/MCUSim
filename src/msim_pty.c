@@ -42,6 +42,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <inttypes.h>
+#include <errno.h>
 
 #include "mcusim/mcusim.h"
 
@@ -59,13 +60,37 @@ int MSIM_PTY_Open(struct MSIM_PTY *pty)
 
 	masterfd = posix_openpt(O_RDWR|O_NOCTTY);
 	pty->master_fd = masterfd;
-
-	if ((masterfd == -1) || (grantpt(masterfd) == -1) ||
-	                (unlockpt(masterfd) == -1) ||
-	                ((slavedevice = ptsname(masterfd)) == NULL)) {
+	if (masterfd == -1) {
 		pty_err = 1;
-		MSIM_LOG_ERROR("failed to setup pty master device");
-	} else {
+		MSIM_LOG_ERROR("failed to connect pseudo-terminal master "
+		               "device and file descriptor");
+	}
+
+	if (pty_err == 0) {
+		pty_err = grantpt(masterfd);
+		if (pty_err == -1) {
+			MSIM_LOG_ERROR("failed to change the mode and "
+			               "ownership of the slave pseudo-"
+			               "terminal device");
+		}
+	}
+	if (pty_err == 0) {
+		pty_err = unlockpt(masterfd);
+		if (pty_err == -1) {
+			MSIM_LOG_ERROR("failed to unlock the slave pseudo-"
+			               "terminal device");
+		}
+	}
+	if (pty_err == 0) {
+		slavedevice = ptsname(masterfd);
+		if (slavedevice == NULL) {
+			pty_err = 1;
+			MSIM_LOG_ERROR("failed to obtain the name of the "
+			               "slave pseudo-terminal device");
+		}
+	}
+
+	if (pty_err == 0) {
 		slavefd = open(slavedevice, O_RDWR|O_NOCTTY);
 		pty->slave_fd = slavefd;
 		snprintf(pty->slave_name, sizeof pty->slave_name, "%s",
@@ -94,6 +119,15 @@ int MSIM_PTY_Open(struct MSIM_PTY *pty)
 		pthread_attr_destroy(&attr);
 	}
 
+	/* Close master and slave devices in case of error */
+	if (pty_err != 0) {
+		if (pty->slave_fd >= 0) {
+			close(pty->slave_fd);
+		}
+		if (pty->master_fd >= 0) {
+			close(pty->master_fd);
+		}
+	}
 	return pty_err;
 }
 
