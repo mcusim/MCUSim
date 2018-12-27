@@ -29,18 +29,15 @@
 # MCUSim tests configuration file
 #
 cmake_minimum_required(VERSION 3.2)
-project(MCUSim-tests NONE)
+project(mcusim-tests NONE)
 
 # Version
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
-configure_file(
-	${CMAKE_CURRENT_SOURCE_DIR}/tests.cmake.in
-	${CMAKE_CURRENT_BINARY_DIR}/tests.cmake
-	@ONLY
-)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tests.cmake.in
+               ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake @ONLY)
+
 add_custom_command(
 	OUTPUT TESTS
-	COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake
-)
+	COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake)
 add_custom_target(tests DEPENDS TESTS)

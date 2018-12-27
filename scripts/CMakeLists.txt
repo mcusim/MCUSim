@@ -34,5 +34,10 @@ project(mcusim-scripts NONE)
 # Version
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
-install(PROGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/mcusim-config
-	DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/mcusim.conf.in
+               ${CMAKE_BINARY_DIR}/mcusim.conf @ONLY)
+
+# Install configuration file
+install(FILES ${CMAKE_BINARY_DIR}/mcusim.conf DESTINATION etc)
+# Install script models
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/models DESTINATION share/mcusim)

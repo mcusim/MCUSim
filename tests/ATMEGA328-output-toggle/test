@@ -36,7 +36,8 @@
 #
 
 # Append models to the list in order to load them during simulation.
-MODELS="./check-output.lua"
+MODELS="./stop-in-5s.lua\n"
+MODELS="$MODELS./check-output.lua"
 
 # File to keep list of the models
 MDL_LIST=$(mktemp /tmp/mcusim-modlist.XXXXXXX)

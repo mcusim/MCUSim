@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2017, 2018, The MCUSim Contributors
- * All rights reserved.
+ * Copyright 2017-2018 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -12,6 +12,7 @@
  *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -30,10 +31,11 @@
 #include <limits.h>
 #include <fcntl.h>
 #include <inttypes.h>
-
 #include "mcusim/mcusim.h"
 #include "mcusim/getopt.h"
+#include "mcusim/config.h"
 
+/* Local macro definitions */
 #define FUSE_LOW		0
 #define FUSE_HIGH		1
 #define FUSE_EXT		2
@@ -43,10 +45,11 @@
 #define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
 #define SET(byte, bit)		((byte)|=(1<<(bit)))
 
-#define GDB_RSP_PORT		12750		/* Default GDB RSP port */
-#define MAX_MEMOPS		16		/* Maximum MCU memory
-						   modifications during
-						   initialization */
+/* Default GDB RSP port */
+#define GDB_RSP_PORT		12750
+
+/* Maximum memory modifications during the MCU initialization process. */
+#define MAX_MEMOPS		16
 
 /* Command line options */
 #define CLI_OPTIONS		":p:U:r:P:f:"
@@ -57,6 +60,7 @@
 #define SHORT_VERSION_OPT	7579
 #define PRINT_USAGE_OPT		7580
 #define FIRMWARE_TEST_OPT	7581
+/* END Local macro definitions */
 
 /* Long command line options */
 static struct option longopts[] = {
@@ -69,18 +73,21 @@ static struct option longopts[] = {
 	{ "firmware-test", no_argument, NULL, FIRMWARE_TEST_OPT }
 };
 
-static struct MSIM_AVR mcu;		/* AVR MCU descriptor */
+/* AVR MCU descriptor */
+static struct MSIM_AVR mcu;
 
-/* VCD dump options */
-static char vcd_regs[MSIM_AVR_VCD_REGS][16]; /* MCU registers to dump */
-static unsigned int vcd_rn;		/* Number of registers */
-static char print_regs;			/* Print available registers
-					   which can be dumped */
+/* MCU registers for VCD dump */
+static char vcd_regs[MSIM_AVR_VCD_REGS][16];
+/* Number of the registers to be dumped */
+static unsigned int vcd_rn;
+/* Flag to print registers which can be dumped */
+static char print_regs;
 
 /* MCU memory operations */
 static struct MSIM_AVR_MemOp memops[MAX_MEMOPS];
 static unsigned short memops_num;
 
+/* Prototypes of the local functions */
 static void print_usage(void);
 static void print_short_usage(void);
 static void print_config(const struct MSIM_AVR *m);
@@ -93,7 +100,9 @@ static int apply_memop(struct MSIM_AVR *m, struct MSIM_AVR_MemOp *mo);
 static int set_fuse(struct MSIM_AVR *m, struct MSIM_AVR_MemOp *mo,
                     unsigned int fuse_n);
 static int set_lock(struct MSIM_AVR *m, struct MSIM_AVR_MemOp *mo);
+/* END Prototypes of the local functions */
 
+/* Entry point of the 'mcusim' simulator */
 int main(int argc, char *argv[])
 {
 	extern char *optarg;
@@ -223,8 +232,8 @@ int main(int argc, char *argv[])
 
 	/* Initialize MCU as one of AVR models */
 	mcu.intr.trap_at_isr = trap_at_isr;
-	if (MSIM_AVR_Init(&mcu, partno, NULL, MSIM_AVR_PMSZ, NULL, MSIM_AVR_DMSZ, NULL,
-	                  fp) != 0) {
+	if (MSIM_AVR_Init(&mcu, partno, NULL, MSIM_AVR_PMSZ, NULL,
+	                  MSIM_AVR_DMSZ, NULL, fp) != 0) {
 		snprintf(log, sizeof log, "MCU model %s cannot be initialized",
 		         partno);
 		MSIM_LOG_FATAL(log);
@@ -417,14 +426,14 @@ static void print_version(void)
 {
 #ifndef DEBUG
 	printf("MCUSim %s : Microcontroller-based circuit simulator\n"
-	       "        Copyright (c) 2017, 2018, The MCUSim Contributors\n"
+	       "        Copyright 2017-2018 The MCUSim Project.\n"
 	       "        Please find documentation at https://trac.mcusim.org\n"
 	       "        Please file your bug-reports at "
 	       "https://trac.mcusim.org/newticket\n", MSIM_VERSION);
 #else
 	printf("MCUSim %s : Microcontroller-based circuit simulator "
-	       "(Debug version)\n"
-	       "        Copyright (c) 2017, 2018, The MCUSim Contributors\n"
+	       "(debug)\n"
+	       "        Copyright 2017-2018 The MCUSim Project.\n"
 	       "        Please find documentation at https://trac.mcusim.org\n"
 	       "        Please file your bug-reports at "
 	       "https://trac.mcusim.org/newticket\n", MSIM_VERSION);

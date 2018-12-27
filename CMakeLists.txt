@@ -28,12 +28,11 @@
 # MCUSim build configuration file.
 #
 # Verbose output of the build process can be activated using 'make VERBOSE=1'.
-#
 cmake_minimum_required(VERSION 3.2)
-project(MCUSim C)
+project(mcusim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0129")
+set(MSIM_VERSION "0.1.0130")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -45,7 +44,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Filename.cmake)
 
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
-add_subdirectory(scripts)	# Helper scripts and script-based MCUSim models
+add_subdirectory(scripts)	# Scripts and script-based MCUSim models
 add_subdirectory(tests)		# MCUSim simulation tests
 add_subdirectory(misra)		# Configuration to check MISRA C rules
 add_subdirectory(xspice)	# Compile MCUSim as XSPICE .cm library
@@ -55,7 +54,7 @@ include(CheckIncludeFiles)
 
 # Set flags here
 if (CMAKE_BUILD_TYPE MATCHES Debug)
-	message(STATUS "[OPTION] Building MCUSim ${MSIM_VERSION}, debug version")
+	message(STATUS "[OPTION] Building MCUSim ${MSIM_VERSION} (debug)")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDEBUG")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
@@ -65,7 +64,7 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
 		add_definitions(" -Wmissing-prototypes -Wconversion -Wsign-compare")
 	endif()
 else()
-	message(STATUS "[OPTION] Building MCUSim ${MSIM_VERSION}, release version")
+	message(STATUS "[OPTION] Building MCUSim ${MSIM_VERSION} (release)")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		add_definitions(" -Wall -pedantic -std=iso9899:1999")
@@ -76,7 +75,7 @@ else()
 endif()
 
 # Set sources here
-set(MCUSIM_LIB_SRC	src/avr/avr_simcore.c
+set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
 			src/avr/avr_m8a.c
 			src/avr/avr_m328p.c
 			src/avr/avr_m328.c
@@ -218,14 +217,20 @@ else()
 	endif()
 endif()
 
-# Define include files and directories here
-include_directories("include/")
+# Prepare headers.
+file(COPY ${CMAKE_SOURCE_DIR}/include DESTINATION ${CMAKE_BINARY_DIR}
+     FILES_MATCHING PATTERN "*.h")
+configure_file(${CMAKE_SOURCE_DIR}/include/mcusim/config.h.in
+               ${CMAKE_BINARY_DIR}/include/mcusim/config.h @ONLY)
+
+# Define include files and directories here.
+include_directories("${CMAKE_BINARY_DIR}/include/")
 if (LUA_FOUND)
 	include_directories(${LUA_INCLUDE_DIR})
 endif()
 
 # Compile MCUSim library and executable
-add_library(${MCUSIM_LIB} STATIC ${MCUSIM_LIB_SRC})
+add_library(${MCUSIM_LIB} STATIC ${MCUSIM_LIB_SOURCES})
 add_executable(${MCUSIM} src/msim_main.c)
 set_target_properties(${MCUSIM_LIB} PROPERTIES OUTPUT_NAME ${MCUSIM_LIB_NAME})
 if ((WITH_FPIC MATCHES FALSE) OR
@@ -244,7 +249,8 @@ define_filename_for_sources(${MCUSIM})
 target_link_libraries(${MCUSIM} ${MCUSIM_LIB})
 target_link_libraries(${MCUSIM} ${TARGET_LIBS})
 
-# Install MCUSim executable
+# Install MCUSim executable, library and headers.
 install(TARGETS ${MCUSIM} DESTINATION bin)
-
-file(COPY ${CMAKE_SOURCE_DIR}/include DESTINATION ${CMAKE_BINARY_DIR})
+install(TARGETS ${MCUSIM_LIB} DESTINATION lib)
+install(DIRECTORY ${CMAKE_BINARY_DIR}/include/mcusim DESTINATION include
+        FILES_MATCHING PATTERN "*.h")

@@ -56,8 +56,8 @@ int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *file)
 
 	f = fopen(file, "r");
 	if (f == NULL) {
-		fprintf(stderr, "[e]: Cannot load Lua peripherals "
-		        "from: %s\n", file);
+		fprintf(stderr, "[e]: Cannot load Lua peripherals from: %s\n",
+		        file);
 		err = 1;
 	}
 
