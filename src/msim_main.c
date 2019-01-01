@@ -425,13 +425,13 @@ static void print_short_usage(void)
 static void print_version(void)
 {
 #ifndef DEBUG
-	printf("MCUSim %s : Microcontroller-based circuit simulator\n"
+	printf("MCUSim %s: Microcontroller-based circuit simulator\n"
 	       "        Copyright 2017-2018 The MCUSim Project.\n"
 	       "        Please find documentation at https://trac.mcusim.org\n"
 	       "        Please file your bug-reports at "
 	       "https://trac.mcusim.org/newticket\n", MSIM_VERSION);
 #else
-	printf("MCUSim %s : Microcontroller-based circuit simulator "
+	printf("MCUSim %s: Microcontroller-based circuit simulator "
 	       "(debug)\n"
 	       "        Copyright 2017-2018 The MCUSim Project.\n"
 	       "        Please find documentation at https://trac.mcusim.org\n"

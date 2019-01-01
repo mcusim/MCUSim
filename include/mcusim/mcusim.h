@@ -43,5 +43,6 @@
 
 #include "mcusim/pty.h"
 #include "mcusim/log.h"
+#include "mcusim/config.h"
 
 #endif /* MSIM_MAIN_HEADER_H_ */

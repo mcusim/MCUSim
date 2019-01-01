@@ -34,11 +34,24 @@
 # ATmega328p: mcu m328p
 mcu m8a
 
+# Microcontroller clock frequency (in Hz).
+mcu_freq 16000000
+
+# Microcontroller fuse bytes.
+#mcu_efuse 0xFF
+mcu_hfuse 0xC9
+mcu_lfuse 0xEF
+
 # File to load a content of flash memory from.
 firmware_file firmware.hex
 
 # Reset flash memory flag. Flash memory of the microcontrollers can be
 # preserved between the different simulations by default.
+#
+# It generally means that flash memory can be saved in a separate utility
+# file before the end of a simulation and loaded back during the next one.
+# Default (no) value means that the utility file has a priority over the one
+# provided by the 'firmware_file' option.
 #reset_flash yes
 reset_flash no
 
@@ -51,3 +64,21 @@ lua_model	@CMAKE_INSTALL_PREFIX@/share/mcusim/models/avr/stop-in-5s.lua
 # from debugger) to continue with the simulation.
 #firmware_test no
 firmware_test yes
+
+# Name of the VCD (Value Change Dump) file to be generated during the
+# simulation process.
+vcd_file trace.vcd
+
+# Microcontroller registers to be dumped to the VCD file.
+#dump_reg TCNT1
+dump_reg PORTA
+dump_reg PORTB
+dump_reg PORTC
+
+# Port of the RSP target. AVR GDB can be used to connect to the port and
+# debug firmware of the microcontroller.
+rsp_port 12750
+
+# Flag to trap AVR GDB when interrupt occured.
+#trap_at_isr yes
+trap_at_isr no
