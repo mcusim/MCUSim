@@ -43,23 +43,35 @@ extern "C" {
 /* This is a basic structure to describe an MCUSim configuration.
  * See mcusim.conf or mcusim.conf.in for detailed description of the fields. */
 struct MSIM_CFG {
+	char mcu[64];
 	uint64_t mcu_freq;
+
+	uint8_t mcu_lockbits;
+	uint8_t has_lockbits;
 	uint8_t mcu_efuse;
+	uint8_t has_efuse;
 	uint8_t mcu_hfuse;
+	uint8_t has_hfuse;
 	uint8_t mcu_lfuse;
+	uint8_t has_lfuse;
+
+	char firmware_file[4096];
+	uint8_t has_firmware_file;
+
 	uint8_t reset_flash;
 	uint8_t firmware_test;
 	uint8_t trap_at_isr;
 	uint32_t rsp_port;
 
-	char mcu[64];
-	char firmware_file[4096];
-	char vcd_file[4096];
 	char lua_models[MSIM_AVR_LUAMODELS][4096];
-	char dump_regs[MSIM_AVR_VCD_REGS][4096];
+	uint32_t lua_models_num;
+
+	char vcd_file[4096];
+	char dump_regs[MSIM_AVR_VCD_REGS][16];
+	uint32_t dump_regs_num;
 };
 
-int MSIM_CFG_Read(struct MSIM_CFG *cfg, const uint8_t *filename);
+int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename);
 
 #ifdef __cplusplus
 }

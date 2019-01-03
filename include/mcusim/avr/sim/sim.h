@@ -36,13 +36,13 @@
 #define MSIM_AVR_PMSZ		(256*1024)	/* for program memory */
 #define MSIM_AVR_DMSZ		(64*1024)	/* for data memory */
 #define MSIM_AVR_PM_PAGESZ	(1024)		/* for PM page */
+#define MSIM_AVR_LOGSZ		1024		/* log buffer, in bytes */
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <stdint.h>
-
 #include "mcusim/pty.h"
 #include "mcusim/avr/sim/vcd.h"
 #include "mcusim/avr/sim/io.h"
@@ -85,14 +85,6 @@ enum MSIM_AVR_ClkSource {
 	AVR_EXT_RC_CLK,			/* External RC */
 	AVR_EXT_CRYSTAL,		/* External crystal/ceramic resonator*/
 	AVR_INT_128K_RC_CLK		/* Internal 128kHz RC Oscillator*/
-};
-
-/* Structure to describe a memory operation requested by user. */
-struct MSIM_AVR_MemOp {
-	char memtype[16];		/* Type of MCU memory */
-	char operation;			/* Memory operation */
-	char operand[4096];		/* Path to file, value, etc. */
-	char format;			/* Optional, value format */
 };
 
 /* Instance of the AVR microcontroller.
@@ -169,7 +161,7 @@ struct MSIM_AVR_MemOp {
  */
 struct MSIM_AVR {
 	char name[20];
-	char log[1024];
+	char log[MSIM_AVR_LOGSZ];
 	uint8_t signature[3];
 	uint8_t xmega;
 	uint8_t reduced_core;
@@ -236,6 +228,7 @@ struct MSIM_AVR {
 	struct MSIM_PTY pty;
 #endif
 	struct MSIM_AVR_USART usart;
+	char vcd_file[4096];
 };
 
 #ifdef __cplusplus

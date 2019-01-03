@@ -31,62 +31,43 @@
  * simulation in order to substitute important parts (external RAM,
  * displays, etc.) connected to the simulated microcontroller.
  *
- * This file provides basic functions to load, run and unload these models.
+ * This file provides basic functions to load, run and unload these models.
  */
 #include <stdint.h>
 
 #include "mcusim/avr/sim/luaapi.h"
 #include "mcusim/mcusim.h"
+#include "mcusim/log.h"
 #ifdef LUA_FOUND
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
 
+#define LOGSZ			MSIM_AVR_LOGSZ
+#define LOG			(mcu->log)
+
 static lua_State *lua_states[MSIM_AVR_LUAMODELS];
+static uint64_t models_num;
 
-int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *file)
+int MSIM_AVR_LUALoadModel(struct MSIM_AVR *mcu, char *model)
 {
-	static char path[4096];
-	uint32_t i, j, ci;
-	uint8_t err;
-	FILE *f;
+	uint8_t err = 0;
+	uint64_t i = models_num;
 
-	i = 0;
-	err = 0;
+	/* Initialize Lua */
+	lua_states[i] = luaL_newstate();
+	/* Load various Lua libraries */
+	luaL_openlibs(lua_states[i]);
 
-	f = fopen(file, "r");
-	if (f == NULL) {
-		fprintf(stderr, "[e]: Cannot load Lua peripherals from: %s\n",
-		        file);
+	/* Load peripheral */
+	if (luaL_loadfile(lua_states[i], model) ||
+	                lua_pcall(lua_states[i], 0, 0, 0)) {
+		snprintf(LOG, LOGSZ, "cannot load model: %s, reason: %s",
+		         model, lua_tostring(lua_states[i], -1));
+		MSIM_LOG_ERROR(LOG);
 		err = 1;
-	}
-
-	while ((err == 0U) && (fgets(path, sizeof path, f) != NULL)) {
-		/* Skip comment lines */
-		if (path[0] == '#') {
-			continue;
-		}
-		for (ci = 0U; ci < 4096U; ci++) {
-			if (path[ci] == '\n') {
-				path[ci] = 0;
-				break;
-			}
-		}
-		/* Initialize Lua */
-		lua_states[i] = luaL_newstate();
-
-		/* Load various Lua libraries */
-		luaL_openlibs(lua_states[i]);
-
-		/* Load peripheral */
-		if (luaL_loadfile(lua_states[i], path) ||
-		                lua_pcall(lua_states[i], 0, 0, 0)) {
-			fprintf(stderr, "[e]: Cannot load device model : %s, "
-			        "reason: %s\n", path,
-			        lua_tostring(lua_states[i], -1));
-			break;
-		}
-
+	} else {
+		models_num++;
 		/* Register MCUSim API functions */
 		lua_pushcfunction(lua_states[i], flua_AVR_IOBit);
 		lua_setglobal(lua_states[i], "AVR_IOBit");
@@ -114,7 +95,7 @@ int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *file)
 
 		/* Add registers available for the current MCU model to
 		 * the Lua state. */
-		for (j = 0; j < MSIM_AVR_DMSZ; j++) {
+		for (uint32_t j = 0; j < MSIM_AVR_DMSZ; j++) {
 			if (mcu->ioregs[j].off < 0) {
 				continue;
 			}
@@ -146,35 +127,29 @@ int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *file)
 		lua_getglobal(lua_states[i], "module_conf");
 		lua_pushlightuserdata(lua_states[i], mcu);
 		if (lua_pcall(lua_states[i], 1, 0, 0) != 0) {
-			printf("[I]: Model %s doesn't provide configuration "
-			       "function: %s\n",
-			       path, lua_tostring(lua_states[i], -1));
+			snprintf(LOG, LOGSZ, "model %s does not provide "
+			         "configuration function: %s", model,
+			         lua_tostring(lua_states[i], -1));
+			MSIM_LOG_INFO(LOG);
 		}
-
-		i++;
 	}
 
-	if (err == 0U) {
-		fclose(f);
-	}
 	return err;
 }
 
 void MSIM_AVR_LUACleanModels(void)
 {
-	unsigned int i;
-	for (i = 0; i < MSIM_AVR_LUAMODELS; i++) {
+	for (uint64_t i = 0; i < models_num; i++) {
 		if (lua_states[i] != NULL) {
 			lua_close(lua_states[i]);
 		}
 	}
+	models_num = 0;
 }
 
 void MSIM_AVR_LUATickModels(struct MSIM_AVR *mcu)
 {
-	unsigned int i;
-
-	for (i = 0; i < MSIM_AVR_LUAMODELS; i++) {
+	for (uint32_t i = 0; i < models_num; i++) {
 		if (lua_states[i] == NULL) {
 			continue;
 		}
@@ -182,9 +157,9 @@ void MSIM_AVR_LUATickModels(struct MSIM_AVR *mcu)
 		lua_getglobal(lua_states[i], "module_tick");
 		lua_pushlightuserdata(lua_states[i], mcu);
 		if (lua_pcall(lua_states[i], 1, 0, 0) != 0) {
-			fprintf(stderr, "[e]: Error running function "
-			        "module_tick(): %s\n",
-			        lua_tostring(lua_states[i], -1));
+			snprintf(LOG, LOGSZ, "cannot run module_tick(): %s",
+			         lua_tostring(lua_states[i], -1));
+			MSIM_LOG_ERROR(LOG);
 		}
 	}
 }

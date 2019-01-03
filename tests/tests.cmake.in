@@ -28,13 +28,13 @@
 #
 # CMake script to run tests by "make tests" command
 #
-file(GLOB_RECURSE MSIM_TESTS "@CMAKE_CURRENT_SOURCE_DIR@/*test")
+file(GLOB_RECURSE MSIM_TESTS "@CMAKE_CURRENT_SOURCE_DIR@/mcusim.conf")
 
 foreach(MSIM_TEST ${MSIM_TESTS})
 	message(STATUS "[TEST]: ${MSIM_TEST}")
 	get_filename_component(TEST_WORKING_DIR ${MSIM_TEST} DIRECTORY)
 	execute_process(
-		COMMAND ${MSIM_TEST} @CMAKE_CURRENT_BINARY_DIR@/../mcusim
+		COMMAND @CMAKE_CURRENT_BINARY_DIR@/../mcusim
 		RESULT_VARIABLE test_res
 		WORKING_DIRECTORY ${TEST_WORKING_DIR}
 	)

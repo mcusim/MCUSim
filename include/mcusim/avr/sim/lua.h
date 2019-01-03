@@ -47,7 +47,7 @@ extern "C" {
 #ifdef LUA_FOUND
 
 /* Load peripherals written in Lua from a given list file. */
-int MSIM_AVR_LUALoadModels(struct MSIM_AVR *mcu, const char *);
+int MSIM_AVR_LUALoadModel(struct MSIM_AVR *mcu, char *model);
 /* Close previously created Lua states. */
 void MSIM_AVR_LUACleanModels(void);
 /* Call a "tick" function of the models during each cycle of simulation. */

@@ -29,66 +29,219 @@
  */
 #include <stdio.h>
 #include <inttypes.h>
+#include <string.h>
 #include "mcusim/config.h"
 #include "mcusim/log.h"
 
-int MSIM_CFG_Read(struct MSIM_CFG *cfg, const uint8_t *filename)
+static int read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,
+                      FILE *file, const char *filename);
+static int read_line(struct MSIM_CFG *cfg, char *parm, char *val,
+                     uint32_t plen, uint32_t vlen);
+
+static void parse_bool(char *buf, uint32_t len, uint8_t *val);
+
+int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename)
 {
 	char buf[4096];
-	char parm[4096];
-	char val[4096];
-	char *str;
 	uint32_t buflen = sizeof buf/sizeof buf[0];
-	uint32_t line = 1U;
 	int rc = 0;
 
 	FILE *f = fopen(filename, "r");
 	if (f == NULL) {
-		snprintf(buf, buflen, "failed to load %s configuration file",
-		         filename);
-		MSIM_LOG_ERROR(buf);
 		rc = 1;
 	} else {
-		while (1) {
-			str = fgets(buf, buflen, f);
-			if (str == NULL) {
-				if (feof(f) == 0) {
-					snprintf(buf, buflen, "cannot read "
-					         "line #%" PRIu32 " from %s",
-					         line, filename);
-					MSIM_LOG_ERROR(buf);
-					rc = 1;
-				} else {
-					rc = 0;
-				}
-				break;
-			} else {
-				line++;
-			}
-
-			/* Skip comment line in the configuration file. */
-			if (buf[0] == '#') {
-				continue;
-			}
-			/* Try to parse a configuration line. */
-			rc = sscanf(buf, "%4096s %4096s", &parm, &val);
-			if (rc != 2) {
-#ifdef DEBUG
-				snprintf(buf, buflen, "incorrect format of "
-				         "line #%" PRIu32 " from %s",
-				         line, filename);
-				MSIM_LOG_DEBUG(buf);
-#endif
-				rc = 0;
-				continue;
-			} else {
-				/* Line is correct. */
-			}
-		}
+		cfg->lua_models_num = 0;
+		cfg->dump_regs_num = 0;
+		cfg->has_lockbits = 0;
+		cfg->has_efuse = 0;
+		cfg->has_hfuse = 0;
+		cfg->has_lfuse = 0;
+		cfg->has_firmware_file = 0;
+		cfg->firmware_test = 0;
+		rc = read_lines(cfg, buf, buflen, f, filename);
 	}
 
 	if (f != NULL) {
 		fclose(f);
 	}
 	return rc;
+}
+
+static int read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,
+                      FILE *file, const char *filename)
+{
+	const uint32_t len = 4096;
+	uint32_t line = 1U;
+	char parm[len];
+	char val[len];
+	char *str;
+	int rc = 0;
+
+	while (1) {
+		str = fgets(buf, (int) buflen, file);
+		if (str == NULL) {
+			if (feof(file) == 0) {
+				snprintf(buf, buflen, "cannot read line #%"
+				         PRIu32 " from %s", line, filename);
+				MSIM_LOG_ERROR(buf);
+				rc = 1;
+			} else {
+				rc = 0;
+			}
+			break;
+		} else {
+			line++;
+		}
+
+		/* Skip comment line in the configuration file. */
+		if ((buf[0] == '#') || (buf[0] == '\n') || (buf[0] == '\r')) {
+			continue;
+		}
+		/* Try to parse a configuration line. */
+		rc = sscanf(buf, "%4096s %4096s", parm, val);
+		if (rc != 2) {
+			snprintf(buf, buflen, "incorrect format of line #%"
+			         PRIu32 " from %s", line, filename);
+			MSIM_LOG_DEBUG(buf);
+			rc = 0;
+			continue;
+		} else { /* Line is correct. */
+			rc = read_line(cfg, parm, val, len, len);
+			if (rc != 0) {
+				snprintf(buf, buflen, "cannot read option at "
+				         "line #%" PRIu32 " from %s",
+				         line, filename);
+				MSIM_LOG_ERROR(buf);
+				break;
+			}
+		}
+	}
+	return rc;
+}
+
+static int read_line(struct MSIM_CFG *cfg, char *parm, char *val,
+                     uint32_t plen, uint32_t vlen)
+{
+	const uint32_t buflen = 4096;
+	char buf[buflen];
+	int rc = 0;
+	int cmp_rc = 0;
+
+	if (strncmp(parm, "mcu", plen) == 0) {
+		cmp_rc = sscanf(val, "%64s", &cfg->mcu[0]);
+		if (cmp_rc != 1) {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "mcu_freq", plen) == 0) {
+		cmp_rc = sscanf(val, "%" SCNu64, &cfg->mcu_freq);
+		if (cmp_rc != 1) {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "mcu_lockbits", plen) == 0) {
+		cmp_rc = sscanf(val, "0x%" SCNx8, &cfg->mcu_lockbits);
+		if (cmp_rc == 1) {
+			cfg->has_lockbits = 1;
+		} else {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "mcu_efuse", plen) == 0) {
+		cmp_rc = sscanf(val, "0x%" SCNx8, &cfg->mcu_efuse);
+		if (cmp_rc == 1) {
+			cfg->has_efuse = 1;
+		} else {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "mcu_hfuse", plen) == 0) {
+		cmp_rc = sscanf(val, "0x%" SCNx8, &cfg->mcu_hfuse);
+		if (cmp_rc == 1) {
+			cfg->has_hfuse = 1;
+		} else {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "mcu_lfuse", plen) == 0) {
+		cmp_rc = sscanf(val, "0x%" SCNx8, &cfg->mcu_lfuse);
+		if (cmp_rc == 1) {
+			cfg->has_lfuse = 1;
+		} else {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "firmware_file", plen) == 0) {
+		cmp_rc = sscanf(val, "%4096s", &cfg->firmware_file[0]);
+		if (cmp_rc == 1) {
+			cfg->has_firmware_file = 1;
+		} else {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "firmware_test", plen) == 0) {
+		cmp_rc = sscanf(val, "%4096s", buf);
+		if (cmp_rc == 1) {
+			parse_bool(buf, buflen, &cfg->firmware_test);
+		} else {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "reset_flash", plen) == 0) {
+		cmp_rc = sscanf(val, "%4096s", buf);
+		if (cmp_rc == 1) {
+			parse_bool(buf, buflen, &cfg->reset_flash);
+		} else {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "lua_model", plen) == 0) {
+		cmp_rc = sscanf(val, "%4096s",
+		                &cfg->lua_models[cfg->lua_models_num][0]);
+		if (cmp_rc == 1) {
+			cfg->lua_models_num++;
+		} else {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "vcd_file", plen) == 0) {
+		cmp_rc = sscanf(val, "%4096s", &cfg->vcd_file[0]);
+		if (cmp_rc != 1) {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "dump_reg", plen) == 0) {
+		cmp_rc = sscanf(val, "%16s",
+		                &cfg->dump_regs[cfg->dump_regs_num][0]);
+		if (cmp_rc == 1) {
+			cfg->dump_regs_num++;
+		} else {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "rsp_port", plen) == 0) {
+		uint32_t old_port = cfg->rsp_port;
+		cmp_rc = sscanf(val, "%" SCNu32, &cfg->rsp_port);
+		if (cmp_rc == 1) {
+			if ((cfg->rsp_port <= 1024) ||
+			                (cfg->rsp_port >= 65536)) {
+				MSIM_LOG_WARN("GDB RSP port should be in "
+				              "[1025, 65535]!");
+				cfg->rsp_port = old_port;
+			}
+		} else {
+			rc = 2;
+		}
+	} else if (strncmp(parm, "trap_at_isr", plen) == 0) {
+		cmp_rc = sscanf(val, "%4096s", buf);
+		if (cmp_rc == 1) {
+			parse_bool(buf, buflen, &cfg->trap_at_isr);
+		} else {
+			rc = 2;
+		}
+	} else {
+		rc = 1;
+		snprintf(buf, buflen, "unknown option %s", parm);
+		MSIM_LOG_ERROR(buf);
+	}
+
+	return rc;
+}
+
+static void parse_bool(char *buf, uint32_t len, uint8_t *val)
+{
+	if (strncmp(buf, "no", len) == 0) {
+		*val = 0;
+	}
+	if (strncmp(buf, "yes", len) == 0) {
+		*val = 1;
+	}
 }

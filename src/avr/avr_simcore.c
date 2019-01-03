@@ -85,16 +85,13 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 	uint64_t tick = 0;	/* # of ticks (rises+falls) sinse start */
 	uint8_t tick_ovf = 0;	/* Ticks overflow flag */
 	int ret_code = 0;	/* Return code */
-	char dump_name[256];	/* Name of a VCD dump file */
 
 	/* Do we have registers to dump? */
 	if (mcu->vcd->i >= 0) {
-		snprintf(&dump_name[0], sizeof dump_name, "%s-trace.vcd",
-		         mcu->name);
-		vcd_f = MSIM_AVR_VCDOpenDump(mcu, dump_name);
-		if (!vcd_f) {
+		vcd_f = MSIM_AVR_VCDOpenDump(mcu, mcu->vcd_file);
+		if (vcd_f == NULL) {
 			snprintf(mcu->log, sizeof mcu->log, "failed to open a "
-			         "VCD file %s to write to", dump_name);
+			         "VCD file %s to write to", mcu->vcd_file);
 			MSIM_LOG_FATAL(mcu->log);
 			return -1;
 		}

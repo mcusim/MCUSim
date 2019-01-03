@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0131")
+set(MSIM_VERSION "0.1.0132")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -85,6 +85,7 @@ set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
 			src/avr/avr_decoder.c
 			src/avr/avr_gdb.c
 			src/avr/avr_vcd.c
+			src/msim_config.c
 			src/msim_getopt.c
 			src/msim_ihex.c
 			src/msim_log.c
