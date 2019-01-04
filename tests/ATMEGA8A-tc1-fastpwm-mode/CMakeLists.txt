@@ -26,7 +26,7 @@
 # OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 # SUCH DAMAGE.
 #
-# Test to check normal mode of ATMEGA8A Timer/Counter1.
+# Test to check fastpwm mode of ATmega8A's Timer/Counter1.
 #
 cmake_minimum_required(VERSION 3.2)
 project(mcusim-test-atmega8a-tc1-normal-mode)
@@ -105,8 +105,7 @@ set(SRCS		fuse.c
 
 add_executable(${TARGET_OUTPUT_FILE} ${SRCS})
 add_custom_target("upload")
-file(COPY "test.in" DESTINATION ${CMAKE_BINARY_DIR})
-file(RENAME ${CMAKE_BINARY_DIR}/test.in ${CMAKE_BINARY_DIR}/test)
+file(COPY "mcusim.conf" DESTINATION ${CMAKE_BINARY_DIR})
 file(COPY "stop-test.lua" DESTINATION ${CMAKE_BINARY_DIR})
 
 # Prepare files for MCU

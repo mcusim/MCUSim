@@ -208,14 +208,14 @@ static int read_line(struct MSIM_CFG *cfg, char *parm, char *val,
 			rc = 2;
 		}
 	} else if (strncmp(parm, "rsp_port", plen) == 0) {
-		uint32_t old_port = cfg->rsp_port;
-		cmp_rc = sscanf(val, "%" SCNu32, &cfg->rsp_port);
+		uint32_t port;
+		cmp_rc = sscanf(val, "%" SCNu32, &port);
 		if (cmp_rc == 1) {
-			if ((cfg->rsp_port <= 1024) ||
-			                (cfg->rsp_port >= 65536)) {
+			if ((port <= 1024) || (port >= 65536)) {
 				MSIM_LOG_WARN("GDB RSP port should be in "
-				              "[1025, 65535]!");
-				cfg->rsp_port = old_port;
+				              "[1025, 65535]");
+			} else {
+				cfg->rsp_port = port;
 			}
 		} else {
 			rc = 2;

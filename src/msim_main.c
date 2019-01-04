@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 	/* Initialize MCU as one of AVR models */
 	mcu.intr.trap_at_isr = conf.trap_at_isr;
 	strncpy(mcu.vcd_file, conf.vcd_file,
-	        sizeof mcu.vcd_file/sizeof mcu.vcd_file[0]);
+	        sizeof mcu.vcd_file/sizeof mcu.vcd_file[0] - 1);
 	if (MSIM_AVR_Init(&mcu, conf.mcu, NULL, MSIM_AVR_PMSZ, NULL,
 	                  MSIM_AVR_DMSZ, NULL, fp) != 0) {
 		snprintf(mcu.log, LOGSZ, "MCU model %s cannot be initialized",
