@@ -376,8 +376,9 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 
 	err = 0;
 	if (fuse_n > 2U) {
-		fprintf(stderr, "[!]: Fuse #%u is not supported by %s\n",
-		        fuse_n, mcu->name);
+		snprintf(mcu->log, sizeof mcu->log, "fuse #%u is not "
+		         "supported by %s", fuse_n, mcu->name);
+		MSIM_LOG_ERROR(mcu->log);
 		err = 1;
 	}
 
@@ -391,9 +392,10 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 			if (cksel == 0U) {
 				mcu->clk_source = AVR_EXT_CLK;
 			} else if (cksel == 1U) {
-				fprintf(stderr, "[e]: CKSEL3:0 = %" PRIu8
-				        " is reserved on %s\n",
-				        cksel, mcu->name);
+				snprintf(mcu->log, sizeof mcu->log,
+						"CKSEL = %" PRIu8 ", is  "
+						"reserved on ", cksel);
+				MSIM_LOG_ERROR(mcu->log);
 				err = 1;
 				break;
 			} else if (cksel == 2U) {
@@ -417,10 +419,11 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 					break;
 				default:
 					/* Should not happen! */
-					fprintf(stderr, "[e]: CKSEL3:0 = %"
-					        PRIu8 ", but it should be "
-					        "in [4,5] inclusively!\n",
-					        cksel);
+					snprintf(mcu->log, sizeof mcu->log,
+					         "CKSEL = %" PRIu8 ", but it "
+					         "should be within [4,5] "
+					         "inclusively", cksel);
+					MSIM_LOG_ERROR(mcu->log);
 					err = 1;
 					break;
 				}
@@ -450,11 +453,12 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 					break;
 				default:
 					/* Should not happen! */
-					fprintf(stderr, "[e]: CKSEL3:1 = %"
-					        PRIu8 ", but it should be 8, "
-					        "10, 12 or 14 to select a "
-					        "correct frequency range!\n",
-					        cksel);
+					snprintf(mcu->log, sizeof mcu->log,
+					         "CKSEL = %" PRIu8 ", but it "
+					         "should be 8, 11, 13 or 14"
+					         "to select a correct frequency"
+							 "range", cksel);
+					MSIM_LOG_ERROR(mcu->log);
 					err = 1;
 					break;
 				}
@@ -488,9 +492,11 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 				break;
 			default:
 				/* Should not happen! */
-				fprintf(stderr, "[e]: BOOTSZ1:0 = %" PRIu8
-				        ", but it should be in [0,3] "
-				        "inclusively!\n", bootsz);
+					snprintf(mcu->log, sizeof mcu->log,
+					         "BOOTSZ1:0 = %" PRIu8 ", but it "
+					         "should be in [0,3] "
+					         "inclusively", bootsz);
+					MSIM_LOG_ERROR(mcu->log);
 				err = 1;
 				break;
 			}
