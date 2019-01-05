@@ -46,6 +46,9 @@
 
 #define NOT_CONNECTED		0xFFU
 
+static const uint8_t max_8bit = 0xFF;
+static const uint8_t bottom_8bit = 0x00;
+
 /* Two arbitrary constants to mark two distinct output compare channels of
  * the microcontroller. A_CHAN - OCRnA  B_CHAN - OCRnB */
 #define A_CHAN			79
@@ -69,6 +72,10 @@ static void update_watched(struct MSIM_AVR *mcu);
 
 /* Timer/Counter0 modes of operation */
 static void timer0_normal(struct MSIM_AVR *mcu,
+                          uint32_t presc, uint32_t *ticks,
+                          uint8_t wgm0, uint8_t com0a, uint8_t com0b);
+
+static void timer0_ctc(struct MSIM_AVR *mcu,
                           uint32_t presc, uint32_t *ticks,
                           uint8_t wgm0, uint8_t com0a, uint8_t com0b);
 
@@ -200,7 +207,7 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 		/* timer0 pcpwm mode */
 		break;
 	case 2:
-		/* timer0 ctc mode */
+		timer0_ctc(mcu, tc0_presc, &tc0_ticks, wgm0, com0a, com0b);
 		break;
 	case 3:
 		/* timer0 fastpwm mode */
@@ -232,7 +239,7 @@ static void timer0_normal(struct MSIM_AVR *mcu,
 		         *ticks, (presc-1U));
 		MSIM_LOG_ERROR(mcu->log);
 	} else {
-		if (DM(TCNT0) == 0xFF) {
+		if (DM(TCNT0) == max_8bit) {
 			/* Reset TimerCounter0  */
 			DM(TCNT0) = 0;
 			/* Set TimerCounter0 overflow flag  */
@@ -258,6 +265,52 @@ static void timer0_normal(struct MSIM_AVR *mcu,
 		return;
 	}
 }
+
+static void timer0_ctc(struct MSIM_AVR *mcu,
+                          uint32_t presc, uint32_t *ticks,
+                          uint8_t wgm0, uint8_t com0a, uint8_t com0b)
+{
+	uint8_t top = DM(OCR0A);
+
+	switch(wgm0)
+	if ((*ticks) < (presc-1U)) {
+		(*ticks)++;
+	} else if ((*ticks) > (presc-1U)) {
+		snprintf(mcu->log, sizeof mcu->log, "number of Timer1 "
+		         "ticks=%" PRIu32 " should be <= (prescaler-1)=%"
+		         PRIu32 "; timer1 will not be updated!",
+		         *ticks, (presc-1U));
+		MSIM_LOG_ERROR(mcu->log);
+	} else {
+		if (DM(TCNT0) == max_8bit || DM(TCNT0) == top) {
+			/* Generate TOV flag always and only on 0xFF */
+			if(DM(TCNT0) == max_8bit) {
+				/* Set TimerCounter0 overflow flag  */
+				DM(TIFR0) |= DM(1<<TOV0);
+			}
+			/* Generate Interrupt on TOP value */
+			if (DM(TCNT0) == DM(OCR0A)) {
+				/* Set TC0 Output Compare A Flag */
+				DM(TIFR) |= (1<<OCF0A);
+				/* Manipulate on the OCR0A (PD6) pin  */
+				timer0_oc0_nonpwm(mcu, com0a, com0b, A_CHAN);
+			} else if (DM(TCNT0) == DM(OCR0B)) {
+				/* Set TC0 Output Compare B Flag */
+				DM(TIFR) |= (1<<OCF0B);
+				/* Manipulate on the OCR0B (PD5) pin  */
+				timer0_oc0_nonpwm(mcu, com0a, com0b, B_CHAN);
+			}
+			/* Reset TimerCounter0  */
+			DM(TCNT0) = 0;
+
+		} else {
+			DM(TCNT0)++;
+		}
+	*ticks = 0;
+		return;
+	}
+}
+
 
 static void timer0_oc0_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
                               uint8_t com0b, uint8_t chan)
