@@ -45,6 +45,8 @@
 #define DM(v)			(mcu->dm[v])
 
 #define NOT_CONNECTED		0xFFU
+#define TC0_TOP			0xFFU
+#define TC0_BOTTOM		0x00U
 
 /* Two arbitrary constants to mark two distinct output compare channels of
  * the microcontroller. A_CHAN - OCRnA  B_CHAN - OCRnB */
@@ -71,6 +73,10 @@ static void update_watched(struct MSIM_AVR *mcu);
 static void timer0_normal(struct MSIM_AVR *mcu,
                           uint32_t presc, uint32_t *ticks,
                           uint8_t wgm0, uint8_t com0a, uint8_t com0b);
+
+static void timer0_ctc(struct MSIM_AVR *mcu,
+                       uint32_t presc, uint32_t *ticks,
+                       uint8_t wgm0, uint8_t com0a, uint8_t com0b);
 
 /* Timer/Counter0 helper functions */
 static void timer0_oc0_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
@@ -200,7 +206,7 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 		/* timer0 pcpwm mode */
 		break;
 	case 2:
-		/* timer0 ctc mode */
+		timer0_ctc(mcu, tc0_presc, &tc0_ticks, wgm0, com0a, com0b);
 		break;
 	case 3:
 		/* timer0 fastpwm mode */
@@ -232,9 +238,9 @@ static void timer0_normal(struct MSIM_AVR *mcu,
 		         *ticks, (presc-1U));
 		MSIM_LOG_ERROR(mcu->log);
 	} else {
-		if (DM(TCNT0) == 0xFF) {
+		if (DM(TCNT0) == TC0_TOP) {
 			/* Reset TimerCounter0  */
-			DM(TCNT0) = 0;
+			DM(TCNT0) = TC0_BOTTOM;
 			/* Set TimerCounter0 overflow flag  */
 			DM(TIFR0) |= DM(1<<TOV0);
 		} else if (DM(TCNT0) == DM(OCR0A)) {
@@ -255,9 +261,50 @@ static void timer0_normal(struct MSIM_AVR *mcu,
 			DM(TCNT0)++;
 		}
 		*ticks = 0;
-		return;
 	}
 }
+
+static void timer0_ctc(struct MSIM_AVR *mcu,
+                       uint32_t presc, uint32_t *ticks,
+                       uint8_t wgm0, uint8_t com0a, uint8_t com0b)
+{
+	if ((*ticks) < (presc-1U)) {
+		(*ticks)++;
+	} else if ((*ticks) > (presc-1U)) {
+		snprintf(mcu->log, sizeof mcu->log, "number of Timer1 "
+		         "ticks=%" PRIu32 " should be <= (prescaler-1)=%"
+		         PRIu32 "; timer1 will not be updated!",
+		         *ticks, (presc-1U));
+		MSIM_LOG_ERROR(mcu->log);
+	} else {
+		/* Max Timer/Counter value or value defined by user */
+		if ((DM(TCNT0) == TC0_TOP) || (DM(TCNT0) == DM(OCR0A))) {
+			/* Generate TOV flag always and only on 0xFF */
+			if (DM(TCNT0) == TC0_TOP) {
+				/* Set TimerCounter0 overflow flag  */
+				DM(TIFR0) |= DM(1<<TOV0);
+			}
+			/* Generate Interrupt on TOP value */
+			if (DM(TCNT0) == DM(OCR0A)) {
+				/* Set TC0 Output Compare A Flag */
+				DM(TIFR0) |= (1<<OCF0A);
+				/* Manipulate on the OCR0A (PD6) pin  */
+				timer0_oc0_nonpwm(mcu, com0a, com0b, A_CHAN);
+			} else if (DM(TCNT0) == DM(OCR0B)) {
+				/* Set TC0 Output Compare B Flag */
+				DM(TIFR0) |= (1<<OCF0B);
+				/* Manipulate on the OCR0B (PD5) pin  */
+				timer0_oc0_nonpwm(mcu, com0a, com0b, B_CHAN);
+			}
+			/* Reset TimerCounter0  */
+			DM(TCNT0) = TC0_BOTTOM;
+		} else {
+			DM(TCNT0)++;
+		}
+		*ticks = 0;
+	}
+}
+
 
 static void timer0_oc0_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
                               uint8_t com0b, uint8_t chan)
@@ -323,8 +370,9 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 
 	err = 0;
 	if (fuse_n > 2U) {
-		fprintf(stderr, "[!]: Fuse #%u is not supported by %s\n",
-		        fuse_n, mcu->name);
+		snprintf(mcu->log, sizeof mcu->log, "fuse #%u is not "
+		         "supported by %s", fuse_n, mcu->name);
+		MSIM_LOG_ERROR(mcu->log);
 		err = 1;
 	}
 
@@ -338,9 +386,10 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 			if (cksel == 0U) {
 				mcu->clk_source = AVR_EXT_CLK;
 			} else if (cksel == 1U) {
-				fprintf(stderr, "[e]: CKSEL3:0 = %" PRIu8
-				        " is reserved on %s\n",
-				        cksel, mcu->name);
+				snprintf(mcu->log, sizeof mcu->log,
+				         "CKSEL = %" PRIu8 ", is  "
+				         "reserved on ", cksel);
+				MSIM_LOG_ERROR(mcu->log);
 				err = 1;
 				break;
 			} else if (cksel == 2U) {
@@ -364,10 +413,11 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 					break;
 				default:
 					/* Should not happen! */
-					fprintf(stderr, "[e]: CKSEL3:0 = %"
-					        PRIu8 ", but it should be "
-					        "in [4,5] inclusively!\n",
-					        cksel);
+					snprintf(mcu->log, sizeof mcu->log,
+					         "CKSEL = %" PRIu8 ", but it "
+					         "should be within [4,5] "
+					         "inclusively", cksel);
+					MSIM_LOG_ERROR(mcu->log);
 					err = 1;
 					break;
 				}
@@ -397,11 +447,12 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 					break;
 				default:
 					/* Should not happen! */
-					fprintf(stderr, "[e]: CKSEL3:1 = %"
-					        PRIu8 ", but it should be 8, "
-					        "10, 12 or 14 to select a "
-					        "correct frequency range!\n",
-					        cksel);
+					snprintf(mcu->log, sizeof mcu->log,
+					         "CKSEL = %" PRIu8 ", but it "
+					         "should be 8, 11, 13 or 14"
+					         "to select a correct frequency"
+					         "range", cksel);
+					MSIM_LOG_ERROR(mcu->log);
 					err = 1;
 					break;
 				}
@@ -435,9 +486,11 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 				break;
 			default:
 				/* Should not happen! */
-				fprintf(stderr, "[e]: BOOTSZ1:0 = %" PRIu8
-				        ", but it should be in [0,3] "
-				        "inclusively!\n", bootsz);
+				snprintf(mcu->log, sizeof mcu->log,
+				         "BOOTSZ1:0 = %" PRIu8 ", but it "
+				         "should be in [0,3] "
+				         "inclusively", bootsz);
+				MSIM_LOG_ERROR(mcu->log);
 				err = 1;
 				break;
 			}
