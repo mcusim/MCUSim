@@ -46,9 +46,6 @@
 
 #define NOT_CONNECTED		0xFFU
 
-static const uint8_t max_8bit = 0xFF;
-static const uint8_t bottom_8bit = 0x00;
-
 /* Two arbitrary constants to mark two distinct output compare channels of
  * the microcontroller. A_CHAN - OCRnA  B_CHAN - OCRnB */
 #define A_CHAN			79
@@ -239,7 +236,7 @@ static void timer0_normal(struct MSIM_AVR *mcu,
 		         *ticks, (presc-1U));
 		MSIM_LOG_ERROR(mcu->log);
 	} else {
-		if (DM(TCNT0) == max_8bit) {
+		if (DM(TCNT0) == 0xFF) {
 			/* Reset TimerCounter0  */
 			DM(TCNT0) = 0;
 			/* Set TimerCounter0 overflow flag  */
@@ -270,9 +267,6 @@ static void timer0_ctc(struct MSIM_AVR *mcu,
                           uint32_t presc, uint32_t *ticks,
                           uint8_t wgm0, uint8_t com0a, uint8_t com0b)
 {
-	uint8_t top = DM(OCR0A);
-
-	switch(wgm0)
 	if ((*ticks) < (presc-1U)) {
 		(*ticks)++;
 	} else if ((*ticks) > (presc-1U)) {
@@ -282,21 +276,22 @@ static void timer0_ctc(struct MSIM_AVR *mcu,
 		         *ticks, (presc-1U));
 		MSIM_LOG_ERROR(mcu->log);
 	} else {
-		if (DM(TCNT0) == max_8bit || DM(TCNT0) == top) {
+		/* Max Timer/Counter value or value defined by user */
+		if (DM(TCNT0) == 0xFF || DM(TCNT0) == DM(OCR0A)) {
 			/* Generate TOV flag always and only on 0xFF */
-			if(DM(TCNT0) == max_8bit) {
+			if(DM(TCNT0) == 0xFF) {
 				/* Set TimerCounter0 overflow flag  */
 				DM(TIFR0) |= DM(1<<TOV0);
 			}
 			/* Generate Interrupt on TOP value */
 			if (DM(TCNT0) == DM(OCR0A)) {
 				/* Set TC0 Output Compare A Flag */
-				DM(TIFR) |= (1<<OCF0A);
+				DM(TIFR0) |= (1<<OCF0A);
 				/* Manipulate on the OCR0A (PD6) pin  */
 				timer0_oc0_nonpwm(mcu, com0a, com0b, A_CHAN);
 			} else if (DM(TCNT0) == DM(OCR0B)) {
 				/* Set TC0 Output Compare B Flag */
-				DM(TIFR) |= (1<<OCF0B);
+				DM(TIFR0) |= (1<<OCF0B);
 				/* Manipulate on the OCR0B (PD5) pin  */
 				timer0_oc0_nonpwm(mcu, com0a, com0b, B_CHAN);
 			}
