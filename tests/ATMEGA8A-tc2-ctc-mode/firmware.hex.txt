@@ -1,0 +1,105 @@
+
+/home/dsl/git/mcusim/tests/ATMEGA8A-tc2-ctc-mode/build-release/firmware.hex:     file format ihex
+
+
+Disassembly of section .sec1:
+
+00000000 <.sec1>:
+   0:	12 c0       	rjmp	.+36     	;  0x26
+   2:	21 c0       	rjmp	.+66     	;  0x46
+   4:	20 c0       	rjmp	.+64     	;  0x46
+   6:	41 c0       	rjmp	.+130    	;  0x8a
+   8:	1e c0       	rjmp	.+60     	;  0x46
+   a:	1d c0       	rjmp	.+58     	;  0x46
+   c:	1c c0       	rjmp	.+56     	;  0x46
+   e:	1b c0       	rjmp	.+54     	;  0x46
+  10:	1a c0       	rjmp	.+52     	;  0x46
+  12:	19 c0       	rjmp	.+50     	;  0x46
+  14:	18 c0       	rjmp	.+48     	;  0x46
+  16:	17 c0       	rjmp	.+46     	;  0x46
+  18:	16 c0       	rjmp	.+44     	;  0x46
+  1a:	15 c0       	rjmp	.+42     	;  0x46
+  1c:	14 c0       	rjmp	.+40     	;  0x46
+  1e:	13 c0       	rjmp	.+38     	;  0x46
+  20:	12 c0       	rjmp	.+36     	;  0x46
+  22:	11 c0       	rjmp	.+34     	;  0x46
+  24:	10 c0       	rjmp	.+32     	;  0x46
+  26:	11 24       	eor	r1, r1
+  28:	1f be       	out	0x3f, r1	; 63
+  2a:	cf e5       	ldi	r28, 0x5F	; 95
+  2c:	d4 e0       	ldi	r29, 0x04	; 4
+  2e:	de bf       	out	0x3e, r29	; 62
+  30:	cd bf       	out	0x3d, r28	; 61
+  32:	20 e0       	ldi	r18, 0x00	; 0
+  34:	a0 e6       	ldi	r26, 0x60	; 96
+  36:	b0 e0       	ldi	r27, 0x00	; 0
+  38:	01 c0       	rjmp	.+2      	;  0x3c
+  3a:	1d 92       	st	X+, r1
+  3c:	a2 36       	cpi	r26, 0x62	; 98
+  3e:	b2 07       	cpc	r27, r18
+  40:	e1 f7       	brne	.-8      	;  0x3a
+  42:	43 d0       	rcall	.+134    	;  0xca
+  44:	45 c0       	rjmp	.+138    	;  0xd0
+  46:	dc cf       	rjmp	.-72     	;  0x0
+  48:	85 b5       	in	r24, 0x25	; 37
+  4a:	88 60       	ori	r24, 0x08	; 8
+  4c:	85 bd       	out	0x25, r24	; 37
+  4e:	85 b5       	in	r24, 0x25	; 37
+  50:	8f 7b       	andi	r24, 0xBF	; 191
+  52:	85 bd       	out	0x25, r24	; 37
+  54:	bb 9a       	sbi	0x17, 3	; 23
+  56:	85 b5       	in	r24, 0x25	; 37
+  58:	8f 7d       	andi	r24, 0xDF	; 223
+  5a:	85 bd       	out	0x25, r24	; 37
+  5c:	85 b5       	in	r24, 0x25	; 37
+  5e:	80 61       	ori	r24, 0x10	; 16
+  60:	85 bd       	out	0x25, r24	; 37
+  62:	10 92 61 00 	sts	0x0061, r1	;  0x800061
+  66:	10 92 60 00 	sts	0x0060, r1	;  0x800060
+  6a:	14 bc       	out	0x24, r1	; 36
+  6c:	8f ea       	ldi	r24, 0xAF	; 175
+  6e:	83 bd       	out	0x23, r24	; 35
+  70:	89 b7       	in	r24, 0x39	; 57
+  72:	80 68       	ori	r24, 0x80	; 128
+  74:	89 bf       	out	0x39, r24	; 57
+  76:	85 b5       	in	r24, 0x25	; 37
+  78:	8b 7f       	andi	r24, 0xFB	; 251
+  7a:	85 bd       	out	0x25, r24	; 37
+  7c:	85 b5       	in	r24, 0x25	; 37
+  7e:	82 60       	ori	r24, 0x02	; 2
+  80:	85 bd       	out	0x25, r24	; 37
+  82:	85 b5       	in	r24, 0x25	; 37
+  84:	8e 7f       	andi	r24, 0xFE	; 254
+  86:	85 bd       	out	0x25, r24	; 37
+  88:	08 95       	ret
+  8a:	1f 92       	push	r1
+  8c:	0f 92       	push	r0
+  8e:	0f b6       	in	r0, 0x3f	; 63
+  90:	0f 92       	push	r0
+  92:	11 24       	eor	r1, r1
+  94:	8f 93       	push	r24
+  96:	9f 93       	push	r25
+  98:	80 91 60 00 	lds	r24, 0x0060	;  0x800060
+  9c:	90 91 61 00 	lds	r25, 0x0061	;  0x800061
+  a0:	03 97       	sbiw	r24, 0x03	; 3
+  a2:	54 f4       	brge	.+20     	;  0xb8
+  a4:	80 91 60 00 	lds	r24, 0x0060	;  0x800060
+  a8:	90 91 61 00 	lds	r25, 0x0061	;  0x800061
+  ac:	01 96       	adiw	r24, 0x01	; 1
+  ae:	90 93 61 00 	sts	0x0061, r25	;  0x800061
+  b2:	80 93 60 00 	sts	0x0060, r24	;  0x800060
+  b6:	02 c0       	rjmp	.+4      	;  0xbc
+  b8:	83 e4       	ldi	r24, 0x43	; 67
+  ba:	83 bd       	out	0x23, r24	; 35
+  bc:	9f 91       	pop	r25
+  be:	8f 91       	pop	r24
+  c0:	0f 90       	pop	r0
+  c2:	0f be       	out	0x3f, r0	; 63
+  c4:	0f 90       	pop	r0
+  c6:	1f 90       	pop	r1
+  c8:	18 95       	reti
+  ca:	be df       	rcall	.-132    	;  0x48
+  cc:	78 94       	sei
+  ce:	ff cf       	rjmp	.-2      	;  0xce
+  d0:	f8 94       	cli
+  d2:	ff cf       	rjmp	.-2      	;  0xd2

@@ -1516,32 +1516,31 @@ static void exec_and(struct MSIM_AVR *mcu, unsigned int inst)
 static void exec_sbiw(struct MSIM_AVR *mcu, unsigned int inst)
 {
 	/* SBIW – Subtract Immediate from Word */
-	const unsigned char regs[] = { 24, 26, 28, 30 };
-	unsigned char rdh_addr, rdl_addr;
-	unsigned int c, r, buf;
+	const uint8_t regs[] = { 24, 26, 28, 30 };
+	uint8_t rdh, rdl;
+	int16_t c, r, buf;
 
 	SKIP_CYCLES(mcu, 1, 1);
 
-	rdl_addr = regs[((inst>>4) & 0x03)];
-	rdh_addr = (uint8_t)(rdl_addr + 1);
+	rdl= regs[((inst>>4) & 0x03)];
+	rdh= (uint8_t)(rdl + 1);
 	c = ((inst>>2)&0x30) | (inst&0x0F);
 
-	buf = (uint32_t)((mcu->dm[rdh_addr]<<8) | (mcu->dm[rdl_addr]));
+	buf = (int16_t)((DM(rdh)<<8) | (DM(rdl)));
 	r = buf;
 	r -= c;
 	buf = r & ~buf;
 
-	UPDATE_SREG(mcu, CARRY, (buf >> 15) & 1);
-	UPDATE_SREG(mcu, NEGATIVE,
-	            (unsigned char)((r>>15)&1));
-	UPDATE_SREG(mcu, TWOSCOM_OF, (buf >> 15) & 1);
+	UPDATE_SREG(mcu, CARRY, (buf>>15) & 1);
+	UPDATE_SREG(mcu, NEGATIVE, (uint8_t)((r>>15)&1));
+	UPDATE_SREG(mcu, TWOSCOM_OF, ((DM(rdh)>>7)&1) & (~((r>>15)&1)));
 	UPDATE_SREG(mcu, SIGN,
 	            READ_SREG(mcu, NEGATIVE) ^
 	            READ_SREG(mcu, TWOSCOM_OF));
 	UPDATE_SREG(mcu, ZERO, !r ? 1 : 0);
 
-	mcu->dm[rdh_addr] = (r>>8) & 0xFF;
-	mcu->dm[rdl_addr] = r & 0xFF;
+	mcu->dm[rdh] = (r>>8) & 0xFF;
+	mcu->dm[rdl] = r & 0xFF;
 	mcu->pc += 2;
 }
 
