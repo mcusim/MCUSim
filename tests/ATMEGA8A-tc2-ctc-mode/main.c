@@ -13,8 +13,13 @@ static volatile int cmp_count;
 
 int main(void)
 {
+	/* Configure Timer/Counter2 before start. Global Interrupt Enable
+	 * bit is cleared by default (SREG I bit = 0). */
 	timer2_init();
+
+	/* Enable interrupts. */
 	sei();
+	/* Do nothing while waiting for the Timer/Counter2 interrupts. */
 	while (1) {
 	}
 	return 0;

@@ -1,0 +1,43 @@
+
+/Users/dsalychev/git/atmega8a-clock-pin/release/m8a-clockpin.hex:     file format ihex
+
+
+Disassembly of section .sec1:
+
+00000000 <.sec1>:
+   0:	12 c0       	rjmp	.+36     	;  0x26
+   2:	19 c0       	rjmp	.+50     	;  0x36
+   4:	18 c0       	rjmp	.+48     	;  0x36
+   6:	17 c0       	rjmp	.+46     	;  0x36
+   8:	16 c0       	rjmp	.+44     	;  0x36
+   a:	15 c0       	rjmp	.+42     	;  0x36
+   c:	14 c0       	rjmp	.+40     	;  0x36
+   e:	13 c0       	rjmp	.+38     	;  0x36
+  10:	12 c0       	rjmp	.+36     	;  0x36
+  12:	11 c0       	rjmp	.+34     	;  0x36
+  14:	10 c0       	rjmp	.+32     	;  0x36
+  16:	0f c0       	rjmp	.+30     	;  0x36
+  18:	0e c0       	rjmp	.+28     	;  0x36
+  1a:	0d c0       	rjmp	.+26     	;  0x36
+  1c:	0c c0       	rjmp	.+24     	;  0x36
+  1e:	0b c0       	rjmp	.+22     	;  0x36
+  20:	0a c0       	rjmp	.+20     	;  0x36
+  22:	09 c0       	rjmp	.+18     	;  0x36
+  24:	08 c0       	rjmp	.+16     	;  0x36
+  26:	11 24       	eor	r1, r1
+  28:	1f be       	out	0x3f, r1	; 63
+  2a:	cf e5       	ldi	r28, 0x5F	; 95
+  2c:	d4 e0       	ldi	r29, 0x04	; 4
+  2e:	de bf       	out	0x3e, r29	; 62
+  30:	cd bf       	out	0x3d, r28	; 61
+  32:	02 d0       	rcall	.+4      	;  0x38
+  34:	07 c0       	rjmp	.+14     	;  0x44
+  36:	e4 cf       	rjmp	.-56     	;  0x0
+  38:	11 ba       	out	0x11, r1	; 17
+  3a:	89 9a       	sbi	0x11, 1	; 17
+  3c:	91 9a       	sbi	0x12, 1	; 18
+  3e:	91 98       	cbi	0x12, 1	; 18
+  40:	91 9a       	sbi	0x12, 1	; 18
+  42:	fd cf       	rjmp	.-6      	;  0x3e
+  44:	f8 94       	cli
+  46:	ff cf       	rjmp	.-2      	;  0x46

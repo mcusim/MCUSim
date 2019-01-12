@@ -1,0 +1,112 @@
+Readme for ATmega8A simulated with optiboot
+===========================================
+
+ This directory contains a configuration file and a firmware to simulate an
+ ATmega8A microcontroller with the "optiboot" bootloader. It is also possible
+ to access the bootloader with pseudo-terminal provided by MCUSim during the
+ simulation process, and program an instance of the simulated microcontoller.
+
+ However, this bootloader will wait for a very limited period of time for an
+ external programmator to be connected. You will need to act quick to start
+ simulation and run the programmator.
+
+ This is an example of the command to start simulation:
+
+    $ mcusim -c mcusim.conf.off
+
+ and this one is to start the avrdude programmator:
+
+    $ avrdude -F -p m8 -b 57600 -P /dev/pts/4 -c avrisp -Uflash:w:m8a-clockpin.hex
+
+Troubleshooting
+---------------
+
+ You will have to be sure that you are using a correct pseudo-terminal device,
+ i.e. "/dev/pts/4" is an example. It may differ on your system. MCUSim output
+ will help you here to find a correct pseudo-terminal:
+
+    MCUSim 0.1.0135: Microcontroller-based circuit simulator (debug)
+            Copyright 2017-2018 The MCUSim Project.
+            Please find documentation at https://trac.mcusim.org
+            Please file your bug-reports at https://trac.mcusim.org/newticket
+    info msim_main[160]: using config file: mcusim.conf.off
+    info avr_m8a[201]: USART is available via: /dev/pts/4
+    error avr_m8a[2161]: CKSEL = 1, but it should be within [5,7] inclusively
+    info msim_main[390]: MCU model: ATmega8A (signature 1E9307)
+    info msim_main[394]: clock frequency: 16000.0 kHz
+    info msim_main[398]: fuses: EXT=0x00, HIGH=0xCC, LOW=0xEF
+    info msim_main[401]: lock bits: 0x3F
+    info msim_main[404]: reset vector address: 0x000F00
+    info msim_main[408]: interrupt vectors table address: 0x000001
+    info msim_main[412]: flash section: 0x000000-0x000FFF
+    info msim_main[416]: bootloader section: 0x000F00-0x000FFF
+    debug avr_simcore[102]: running in a firmware test mode
+    debug avr_m8a[712]: WDT is enabled
+    debug avr_m8a[943]: USART <- 0x30, mask 0xFF
+    debug avr_m8a[943]: USART <- 0x20, mask 0xFF
+    debug avr_m8a[869]: USART -> 0x14, pc=0x001F7A
+    ...
+    debug avr_m8a[943]: USART <- 0x20, mask 0xFF
+    debug avr_m8a[869]: USART -> 0x14, pc=0x001F7A
+    debug avr_m8a[869]: USART -> 0x10, pc=0x001F80
+    debug avr_m8a[796]: Watchdog MCU reset
+    debug avr_m8a[712]: WDT is enabled
+    debug avr_m8a[723]: WDT is disabled
+    debug avr_m8a[723]: WDT is disabled
+    debug avr_m8a[723]: WDT is disabled
+    debug avr_m8a[723]: WDT is disabled
+    debug avr_m8a[723]: WDT is disabled
+    debug avr_m8a[723]: WDT is disabled
+    debug avr_m8a[723]: WDT is disabled
+    fatal avr_simcore[182]: program counter is out of flash memory: pc=0x001000, flashend=0x000FFF
+
+ This is an example output of avrdude if everything went as expected, i.e.
+ simulated microcontroller works correctly, bootloader is available via the
+ pseudo-terminal device:
+
+    avrdude: AVR device initialized and ready to accept instructions
+
+    Reading | ################################################## | 100% 0.01s
+
+    avrdude: Device signature = 0x000000 (retrying)
+
+    Reading | ################################################## | 100% 0.01s
+
+    avrdude: Device signature = 0x000000 (retrying)
+
+    Reading | ################################################## | 100% 0.01s
+
+    avrdude: Device signature = 0x000000
+    avrdude: Yikes!  Invalid device signature.
+    avrdude: Expected signature for ATmega8 is 1E 93 07
+    avrdude: NOTE: "flash" memory has been specified, an erase cycle will be performed
+             To disable this feature, specify the -D option.
+    avrdude: erasing chip
+    avrdude: reading input file "m8a-clockpin.hex"
+    avrdude: input file m8a-clockpin.hex auto detected as Intel Hex
+    avrdude: writing flash (72 bytes):
+
+    Writing | ################################################## | 100% 0.03s
+
+    avrdude: 72 bytes of flash written
+    avrdude: verifying flash memory against m8a-clockpin.hex:
+    avrdude: load data flash data from input file m8a-clockpin.hex:
+    avrdude: input file m8a-clockpin.hex auto detected as Intel Hex
+    avrdude: input file m8a-clockpin.hex contains 72 bytes
+    avrdude: reading on-chip flash data:
+
+    Reading | ################################################## | 100% 0.19s
+
+    avrdude: verifying ...
+    avrdude: 72 bytes of flash verified
+
+    avrdude: safemode: Fuses OK (E:FF, H:00, L:00)
+
+    avrdude done.  Thank you.
+
+ Please, keep in mind that optiboot is a simple bootloader which implements
+ only a very limited subset of the STK 500 (version 1) protocol. This is why
+ you will be getting some warnings from avrdude like "Yikes! Invalid device
+ signature" and incorrect values of the fuse bytes.
+
+ Details are here: https://github.com/Optiboot/optiboot/wiki/HowOptibootWorks

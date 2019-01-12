@@ -1,0 +1,86 @@
+#
+# Copyright 2017-2018 The MCUSim Project.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#     * Redistributions of source code must retain the above copyright
+#       notice, this list of conditions and the following disclaimer.
+#     * Redistributions in binary form must reproduce the above copyright
+#       notice, this list of conditions and the following disclaimer in the
+#       documentation and/or other materials provided with the distribution.
+#     * Neither the name of the MCUSim or its parts nor the
+#       names of its contributors may be used to endorse or promote products
+#       derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# This is an MCUSim configuration file described in details. Please, adjust it
+# to modify the default configuration of the simulator.
+
+# Model of the simulated microcontroller.
+#
+# ATmega8: mcu m8
+# ATmega328: mcu m328
+# ATmega328p: mcu m328p
+mcu m8a
+
+# Microcontroller clock frequency (in Hz).
+mcu_freq 16000000
+
+# Microcontroller lock bits and fuse bytes.
+#
+#mcu_lockbits 0x00
+#mcu_efuse 0xFF
+mcu_hfuse 0xCC
+mcu_lfuse 0xEF
+
+# File to load a content of flash memory from.
+firmware_file optiboot_m8a_16MHz_57600.hex
+
+# Reset flash memory flag.
+#
+# Flash memory of the microcontrollers can be preserved between the different
+# simulations by default. Memory preserving means that the flash memory can be
+# saved in a separate utility file before the end of a simulation and
+# loaded back during the next one.
+#
+# Default value (no) means that the utility file has a priority over the one
+# provided by the 'firmware_file' option.
+reset_flash no
+
+# Lua models which will be loaded and used during the simulation.
+#lua_model stop-test.lua
+#lua_model check_OCR2_updated.lua
+
+# Firmware test flag. Simulation can be started in a firmware test mode in
+# which simulator will not be waiting for any external event (like a command
+# from debugger) to continue with the simulation.
+firmware_test yes
+
+# Name of the VCD (Value Change Dump) file to be generated during the
+# simulation process to collect data and trace signals after the simulation.
+vcd_file trace.vcd
+
+# Microcontroller registers to be dumped to the VCD file.
+#dump_reg TCNT2
+#dump_reg OCR2
+#dump_reg TIFR7
+#dump_reg PORTB3
+
+# Port of the RSP target. AVR GDB can be used to connect to the port and
+# debug firmware of the microcontroller.
+rsp_port 12750
+
+# Flag to trap AVR GDB when interrupt occured.
+trap_at_isr no
