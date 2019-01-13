@@ -92,9 +92,9 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 	if (mcu->vcd->i >= 0) {
 		vcd_f = MSIM_AVR_VCDOpenDump(mcu, mcu->vcd_file);
 		if (vcd_f == NULL) {
-			snprintf(mcu->log, sizeof mcu->log, "failed to open a "
-			         "VCD file %s to write to", mcu->vcd_file);
-			MSIM_LOG_FATAL(mcu->log);
+			snprintf(LOG, LOGSZ, "failed to open a VCD file %s to "
+			         "write to", mcu->vcd_file);
+			MSIM_LOG_FATAL(LOG);
 			return -1;
 		}
 	}
@@ -326,7 +326,8 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
 static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 {
 	IHexRecord rec, mem_rec;
-	char log[1024];
+	uint32_t base, addr;
+	uint8_t *pm;
 
 	if (fp == NULL) {
 		MSIM_LOG_FATAL("cannot read program memory from a file");
@@ -334,13 +335,22 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 	}
 
 	/* Copy HEX data to program memory of the MCU */
+	pm = mcu->pm;
+	base = 0;
+	addr = 0;
 	while (MSIM_IHEX_ReadRec(&rec, fp) == IHEX_OK) {
+		/* Should base address be re-calculated? */
+		if (rec.address < addr) {
+			base += addr;
+		}
+
 		switch (rec.type) {
 		case IHEX_TYPE_00:	/* Data */
-			memcpy(mcu->pm + rec.address,
-			       rec.data, (uint16_t) rec.dataLen);
+			addr = rec.address;
+			memcpy(pm+base+addr, rec.data, (uint16_t)rec.dataLen);
 			break;
 		case IHEX_TYPE_01:	/* End of File */
+			break;
 		default:		/* Other types, unlikely occured */
 			continue;
 		}
@@ -348,13 +358,23 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 
 	/* Verify checksum of the loaded data */
 	rewind(fp);
+	pm = mcu->pm;
+	base = 0;
+	addr = 0;
 	while (MSIM_IHEX_ReadRec(&rec, fp) == IHEX_OK) {
+		/* Should base address be re-calculated? */
+		if (rec.address < addr) {
+			base += addr;
+		}
+		if (rec.type == IHEX_TYPE_01) {
+			break;
+		}
 		if (rec.type != IHEX_TYPE_00) {
 			continue;
 		}
 
-		memcpy(mem_rec.data, mcu->pm + rec.address,
-		       (uint16_t) rec.dataLen);
+		addr = rec.address;
+		memcpy(mem_rec.data, pm+base+addr, (uint16_t)rec.dataLen);
 		mem_rec.address = rec.address;
 		mem_rec.dataLen = rec.dataLen;
 		mem_rec.type = rec.type;
@@ -362,14 +382,15 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 
 		mem_rec.checksum = MSIM_IHEX_CalcChecksum(&mem_rec);
 		if (mem_rec.checksum != rec.checksum) {
-			snprintf(log, sizeof log, "IHEX record checksum is "
-			         "not correct: 0x%X (memory) != 0x%X (file)",
+			snprintf(LOG, LOGSZ, "IHEX record checksum is not "
+			         "correct: 0x%X (memory) != 0x%X (file)",
 			         mem_rec.checksum, rec.checksum);
-			MSIM_LOG_FATAL(log);
+			MSIM_LOG_FATAL(LOG);
 			MSIM_LOG_FATAL("file record:");
 			MSIM_IHEX_PrintRec(&rec);
 			MSIM_LOG_FATAL("memory record:");
 			MSIM_IHEX_PrintRec(&mem_rec);
+
 			return -1;
 		}
 	}
@@ -460,7 +481,7 @@ int MSIM_AVR_DumpFlash(struct MSIM_AVR *mcu, const char *dump)
 	const uint32_t data_t = IHEX_TYPE_00;
 	const uint32_t eof_t = IHEX_TYPE_01;
 	uint8_t eof_byte;
-	uint32_t i, pmsz;
+	uint32_t pmsz, off;
 	int rc = 0;
 
 	out = fopen(dump, "w");
@@ -474,20 +495,23 @@ int MSIM_AVR_DumpFlash(struct MSIM_AVR *mcu, const char *dump)
 	if (rc == 0) {
 		/* Calculate actual size of the flash memory. */
 		pmsz = mcu->flashend - mcu->flashstart + 1;
-		if (pmsz > 65536) {
-			rc = 2;
-			MSIM_LOG_WARN("cannot dump flash above 64 KiB");
-		} else {
-			/* Write program memory to the file in 16 bytes
-			 * records. */
-			for (i = 0; i < pmsz; i += 16) {
-				MSIM_IHEX_NewRec(data_t, i, &mcu->pm[i],
-				                 16, &rec);
-				MSIM_IHEX_WriteRec(&rec, out);
+
+		/* Write program memory to the file in 16 bytes records. */
+		off = 0;
+		for (uint32_t i = 0; i < pmsz; i += 0x10) {
+			/* The physical address of the data is computed by
+			 * adding this offset to a previously established
+			 * base address, thus allowing memory addressing beyond
+			 * the 64 kilobyte limit of 16-bit addresses. */
+			if (off > 0xFFF0) {
+				off = 0x10;
 			}
-			MSIM_IHEX_NewRec(eof_t, 0, &eof_byte, 0, &rec);
+			MSIM_IHEX_NewRec(data_t, off, &mcu->pm[i], 0x10, &rec);
 			MSIM_IHEX_WriteRec(&rec, out);
+			off += 0x10;
 		}
+		MSIM_IHEX_NewRec(eof_t, 0, &eof_byte, 0, &rec);
+		MSIM_IHEX_WriteRec(&rec, out);
 	}
 	if (out != NULL) {
 		fclose(out);

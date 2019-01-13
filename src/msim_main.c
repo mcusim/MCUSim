@@ -25,6 +25,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+
+/* glibc (starting from 2.2) requires _XOPEN_SOURCE >= 600 to expose
+ * definitions for POSIX.1-2001 base specification plus XSI extension
+ * and C99 definitions.
+ *
+ * This definition is required to let 'sigaction' structure and required
+ * functions to be defined on GNU/Linux. */
+#define _XOPEN_SOURCE		600
+
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
@@ -34,6 +43,7 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/getopt.h"
 #include "mcusim/config.h"
+
 #ifdef MSIM_POSIX
 #include <signal.h>
 #endif
