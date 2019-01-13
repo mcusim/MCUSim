@@ -132,16 +132,14 @@ enum IHexErrors {
 	IHEX_ERROR_NEWLINE = -5
 };
 
-/*
- * Intel HEX8 Record Types 00-05
- */
+/* Intel HEX8 Record Types 00-05 */
 enum IHexRecordTypes {
-	IHEX_TYPE_00 = 0, /**< Data Record */
-	IHEX_TYPE_01, /**< End of File Record */
-	IHEX_TYPE_02, /**< Extended Segment Address Record */
-	IHEX_TYPE_03, /**< Start Segment Address Record */
-	IHEX_TYPE_04, /**< Extended Linear Address Record */
-	IHEX_TYPE_05  /**< Start Linear Address Record */
+	IHEX_TYPE_00 = 0,	/* Data Record */
+	IHEX_TYPE_01,		/* End of File Record */
+	IHEX_TYPE_02,		/* Extended Segment Address Record */
+	IHEX_TYPE_03,		/* Start Segment Address Record */
+	IHEX_TYPE_04,		/* Extended Linear Address Record */
+	IHEX_TYPE_05		/* Start Linear Address Record */
 };
 
 /*
@@ -176,9 +174,9 @@ typedef struct {
  *	   (less than zero or greater than the maximum data length allowed
  *	   by record specifications, see IHexRecord.data).
 */
-int New_IHexRecord(unsigned int type, unsigned int address,
-                   const unsigned char *data, unsigned int dataLen,
-                   IHexRecord *ihexRecord);
+int MSIM_IHEX_NewRec(uint32_t type, uint32_t address,
+                     const uint8_t *data, uint32_t dataLen,
+                     IHexRecord *ihexRecord);
 
 /**
  * Reads an Intel HEX8 record from an opened file.
@@ -196,7 +194,7 @@ int New_IHexRecord(unsigned int type, unsigned int address,
  *	   (record did not match specifications or record checksum
  *	   was invalid).
 */
-int Read_IHexRecord(IHexRecord *ihexRecord, FILE *in);
+int MSIM_IHEX_ReadRec(IHexRecord *ihexRecord, FILE *in);
 
 /**
  * Writes an Intel HEX8 record to an opened file.
@@ -212,7 +210,7 @@ int Read_IHexRecord(IHexRecord *ihexRecord, FILE *in);
  *	   record specifications, see IHexRecord.data).
  * \retval IHEX_ERROR_FILE if a file writing error has occured.
 */
-int Write_IHexRecord(const IHexRecord *ihexRecord, FILE *out);
+int MSIM_IHEX_WriteRec(const IHexRecord *ihexRecord, FILE *out);
 
 /**
  * Prints the contents of an Intel HEX8 record structure to stdout.
@@ -223,7 +221,7 @@ int Write_IHexRecord(const IHexRecord *ihexRecord, FILE *out);
  * \return Always returns IHEX_OK (success).
  * \retval IHEX_OK on success.
 */
-void MSIM_IHEX_PrintRecord(const IHexRecord *ihexRecord);
+void MSIM_IHEX_PrintRec(const IHexRecord *ihexRecord);
 
 /**
  * Calculates the checksum of an Intel HEX8 IHexRecord structure.
@@ -233,7 +231,7 @@ void MSIM_IHEX_PrintRecord(const IHexRecord *ihexRecord);
  * \param ihexRecord A pointer to the Intel HEX8 record structure.
  * \return The 8-bit checksum.
 */
-unsigned char Checksum_IHexRecord(const IHexRecord *ihexRecord);
+uint8_t MSIM_IHEX_CalcChecksum(const IHexRecord *ihexRecord);
 
 #ifdef __cplusplus
 }

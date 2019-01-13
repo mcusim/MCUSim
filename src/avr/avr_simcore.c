@@ -43,6 +43,8 @@
 #define CLK_RISE		0
 #define CLK_FALL		1
 #define TICKS_MAX		UINT64_MAX
+#define LOG			(mcu->log)
+#define LOGSZ			MSIM_AVR_LOGSZ
 
 /* Macros to read and update AVR status register (SREG) */
 #define GLOB_INT	7
@@ -332,7 +334,7 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 	}
 
 	/* Copy HEX data to program memory of the MCU */
-	while (Read_IHexRecord(&rec, fp) == IHEX_OK) {
+	while (MSIM_IHEX_ReadRec(&rec, fp) == IHEX_OK) {
 		switch (rec.type) {
 		case IHEX_TYPE_00:	/* Data */
 			memcpy(mcu->pm + rec.address,
@@ -346,7 +348,7 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 
 	/* Verify checksum of the loaded data */
 	rewind(fp);
-	while (Read_IHexRecord(&rec, fp) == IHEX_OK) {
+	while (MSIM_IHEX_ReadRec(&rec, fp) == IHEX_OK) {
 		if (rec.type != IHEX_TYPE_00) {
 			continue;
 		}
@@ -358,16 +360,16 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 		mem_rec.type = rec.type;
 		mem_rec.checksum = 0;
 
-		mem_rec.checksum = Checksum_IHexRecord(&mem_rec);
+		mem_rec.checksum = MSIM_IHEX_CalcChecksum(&mem_rec);
 		if (mem_rec.checksum != rec.checksum) {
 			snprintf(log, sizeof log, "IHEX record checksum is "
 			         "not correct: 0x%X (memory) != 0x%X (file)",
 			         mem_rec.checksum, rec.checksum);
 			MSIM_LOG_FATAL(log);
 			MSIM_LOG_FATAL("file record:");
-			MSIM_IHEX_PrintRecord(&rec);
+			MSIM_IHEX_PrintRec(&rec);
 			MSIM_LOG_FATAL("memory record:");
-			MSIM_IHEX_PrintRecord(&mem_rec);
+			MSIM_IHEX_PrintRec(&mem_rec);
 			return -1;
 		}
 	}
@@ -449,4 +451,46 @@ void MSIM_AVR_PrintParts(void)
 	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++) {
 		printf("%s %s\n", init_funcs[i].partno, init_funcs[i].name);
 	}
+}
+
+int MSIM_AVR_DumpFlash(struct MSIM_AVR *mcu, const char *dump)
+{
+	FILE *out;
+	IHexRecord rec;
+	const uint32_t data_t = IHEX_TYPE_00;
+	const uint32_t eof_t = IHEX_TYPE_01;
+	uint8_t eof_byte;
+	uint32_t i, pmsz;
+	int rc = 0;
+
+	out = fopen(dump, "w");
+	if (out == NULL) {
+		snprintf(LOG, LOGSZ, "failed to open %s to dump flash "
+		         "memory to", dump);
+		MSIM_LOG_ERROR(LOG);
+		rc = 1;
+	}
+
+	if (rc == 0) {
+		/* Calculate actual size of the flash memory. */
+		pmsz = mcu->flashend - mcu->flashstart + 1;
+		if (pmsz > 65536) {
+			rc = 2;
+			MSIM_LOG_WARN("cannot dump flash above 64 KiB");
+		} else {
+			/* Write program memory to the file in 16 bytes
+			 * records. */
+			for (i = 0; i < pmsz; i += 16) {
+				MSIM_IHEX_NewRec(data_t, i, &mcu->pm[i],
+				                 16, &rec);
+				MSIM_IHEX_WriteRec(&rec, out);
+			}
+			MSIM_IHEX_NewRec(eof_t, 0, &eof_byte, 0, &rec);
+			MSIM_IHEX_WriteRec(&rec, out);
+		}
+	}
+	if (out != NULL) {
+		fclose(out);
+	}
+	return rc;
 }

@@ -51,13 +51,13 @@ firmware_file firmware.hex
 # Reset flash memory flag.
 #
 # Flash memory of the microcontrollers can be preserved between the different
-# simulations by default. Memory preserving means that the flash memory can be
-# saved in a separate utility file before the end of a simulation and
-# loaded back during the next one.
+# simulations by default. It means that the flash memory can be saved in a
+# separate utility file before the end of a simulation and loaded back during
+# the next one.
 #
-# Default value (no) means that the utility file has a priority over the one
-# provided by the 'firmware_file' option.
-reset_flash no
+# Default value (yes) means that the firmware file has a priority over the
+# utility file.
+reset_flash yes
 
 # Lua models which will be loaded and used during the simulation.
 lua_model @CMAKE_INSTALL_PREFIX@/share/mcusim/models/avr/brief-usage.lua

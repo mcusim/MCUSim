@@ -58,6 +58,7 @@ int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename)
 		cfg->has_lfuse = 0;
 		cfg->has_firmware_file = 0;
 		cfg->firmware_test = 0;
+		cfg->reset_flash = 1;
 		rc = read_lines(cfg, buf, buflen, f, filename);
 	}
 

@@ -73,6 +73,12 @@ uint8_t MSIM_AVR_StackPop(struct MSIM_AVR *mcu);
 /* Prints supported AVR parts. */
 void MSIM_AVR_PrintParts(void);
 
+/* This function dumps a content of AVR flash memory to the 'dump' file.
+ *
+ * It can be loaded back instead of the regular AVR firmware specified by the
+ * configuration file. */
+int MSIM_AVR_DumpFlash(struct MSIM_AVR *mcu, const char *dump);
+
 #ifdef __cplusplus
 }
 #endif

@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0136")
+set(MSIM_VERSION "0.1.0137")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -179,6 +179,7 @@ check_include_files(unistd.h HAVE_UNISTD_H)
 check_include_files(errno.h HAVE_ERRNO_H)
 check_include_files(poll.h HAVE_POLL_H)
 check_include_files(netinet/in.h HAVE_NETINET_IN_H)
+check_include_files(signal.h HAVE_SIGNAL_H)
 if (NOT CYGWIN)
 	check_include_files(netinet/tcp.h HAVE_NETINET_TCP_H)
 	if (HAVE_NETDB_H AND
@@ -190,6 +191,7 @@ if (NOT CYGWIN)
 	    HAVE_POLL_H AND
 	    HAVE_NETINET_IN_H AND
 	    HAVE_NETINET_TCP_H AND
+	    HAVE_SIGNAL_H AND
 	    CMAKE_USE_PTHREADS_INIT)
 		add_definitions(-DMSIM_POSIX=1)
 		message(STATUS "[OPTION] Building with MSIM_POSIX defined")

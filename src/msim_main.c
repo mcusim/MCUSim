@@ -34,6 +34,9 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/getopt.h"
 #include "mcusim/config.h"
+#ifdef MSIM_POSIX
+#include <signal.h>
+#endif
 
 /* Local macro definitions */
 #define FUSE_EXT		2
@@ -44,10 +47,18 @@
 #define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
 #define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
 #define SET(byte, bit)		((byte)|=(1<<(bit)))
+#define LOG			(mcu.log)
 #define LOGSZ			MSIM_AVR_LOGSZ
 
 /* Default GDB RSP port */
 #define GDB_RSP_PORT		12750
+
+/* Utility files to store MCU memories. */
+#define FLASH_FILE		".mcusim.flash"
+#define EEP_FILE		".mcusim.eeprom"
+
+/* Configuration file (default name). */
+#define CFG_FILE		"mcusim.conf"
 
 /* Command line options */
 #define CLI_OPTIONS		":c:"
@@ -74,6 +85,10 @@ static void print_config(struct MSIM_AVR *m);
 static void print_version(void);
 static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val);
 static int set_lock(struct MSIM_AVR *m, uint8_t val);
+
+#ifdef MSIM_POSIX
+static void dump_flash_handler(int s);
+#endif
 /* END Prototypes of the local functions */
 
 /* Entry point of the simulator */
@@ -92,26 +107,40 @@ int main(int argc, char *argv[])
 	conf.firmware_test = 0;
 	conf.rsp_port = GDB_RSP_PORT;
 
-	print_version();
-
-#ifdef DEBUG
 	/* Adjust logging level in the debug version. */
+#ifdef DEBUG
 	MSIM_LOG_SetLevel(MSIM_LOG_LVLDEBUG);
 #endif
+
+	/* Set up signals handlers. */
+#ifdef MSIM_POSIX
+	struct sigaction dmpflash_act;
+
+	memset(&dmpflash_act, 0, sizeof dmpflash_act);
+	dmpflash_act.sa_handler = dump_flash_handler;
+	dmpflash_act.sa_flags = 0;
+	sigemptyset(&dmpflash_act.sa_mask);
+
+	sigaction(SIGABRT, &dmpflash_act, NULL);
+	sigaction(SIGKILL, &dmpflash_act, NULL);
+	sigaction(SIGQUIT, &dmpflash_act, NULL);
+	sigaction(SIGSEGV, &dmpflash_act, NULL);
+	sigaction(SIGTERM, &dmpflash_act, NULL);
+#endif
+
+	print_version();
 
 	/* Interpret command ling arguments */
 	c = getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
 	while (c != -1) {
 		switch (c) {
 		case ':':		/* Missing operand */
-			snprintf(mcu.log, LOGSZ, "Option -%c requires an "
-			         "operand", optopt);
-			MSIM_LOG_FATAL(mcu.log);
+			snprintf(LOG, LOGSZ, "-%c requires operand", optopt);
+			MSIM_LOG_FATAL(LOG);
 			return 1;
 		case '?':		/* Unknown option */
-			snprintf(mcu.log, LOGSZ, "Unknown option: -%c",
-			         optopt);
-			MSIM_LOG_FATAL(mcu.log);
+			snprintf(LOG, LOGSZ, "unknown option: -%c", optopt);
+			MSIM_LOG_FATAL(LOG);
 			return 1;
 		case 'c':
 			conf_file = optarg;
@@ -128,18 +157,17 @@ int main(int argc, char *argv[])
 			print_usage();
 			return 2;
 		default:
-			snprintf(mcu.log, LOGSZ, "Unknown option: -%c",
-			         optopt);
-			MSIM_LOG_WARN(mcu.log);
+			snprintf(LOG, LOGSZ, "unknown option: -%c", optopt);
+			MSIM_LOG_WARN(LOG);
 			break;
 		}
 		c = getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
 	}
 
-	/* Try to load a configuration file if it is not loaded yet. */
+	/* Try to load a configuration file if it has not been loaded yet. */
 	if (conf_rc != 0) {
 		/* Try to load from the working directory first.*/
-		conf_rc = MSIM_CFG_Read(&conf, "mcusim.conf");
+		conf_rc = MSIM_CFG_Read(&conf, CFG_FILE);
 		if (conf_rc != 0) {
 			/* Try to load a system-wide file at least. */
 			conf_rc = MSIM_CFG_Read(&conf, MSIM_CFG_FILE);
@@ -148,31 +176,64 @@ int main(int argc, char *argv[])
 				               "configuration files");
 				return 3;
 			} else {
-				snprintf(mcu.log, LOGSZ, "using config file: "
-				         "%s", MSIM_CFG_FILE);
-				MSIM_LOG_INFO(mcu.log);
+				snprintf(LOG, LOGSZ, "using config file: %s",
+				         MSIM_CFG_FILE);
+				MSIM_LOG_INFO(LOG);
 			}
 		} else {
-			MSIM_LOG_INFO("using config file: mcusim.conf");
+			MSIM_LOG_INFO("using config file: " CFG_FILE);
 		}
 	} else {
-		snprintf(mcu.log, LOGSZ, "using config file: %s", conf_file);
-		MSIM_LOG_INFO(mcu.log);
+		snprintf(LOG, LOGSZ, "using config file: %s", conf_file);
+		MSIM_LOG_INFO(LOG);
 	}
 
-	/* Try to open firmware file */
-	if (conf.has_firmware_file == 1) {
-		fp = fopen(conf.firmware_file, "r");
-		if (fp == NULL) {
-			snprintf(mcu.log, LOGSZ, "failed to read firmware "
-			         "file: %s", conf.firmware_file);
-			MSIM_LOG_FATAL(mcu.log);
+	/* Try to open a firmware file */
+	if (conf.reset_flash == 1U) {
+		/* Firmware file has the priority over the utility file. */
+		if (conf.has_firmware_file == 1) {
+			fp = fopen(conf.firmware_file, "r");
+			if (fp == NULL) {
+				snprintf(LOG, LOGSZ, "failed to read firmware "
+				         "file: %s", conf.firmware_file);
+				MSIM_LOG_FATAL(LOG);
+				return 1;
+			} else {
+				snprintf(LOG, LOGSZ, "firmware file used: %s",
+				         conf.firmware_file);
+				MSIM_LOG_INFO(LOG);
+			}
+		} else {
+			MSIM_LOG_FATAL("no firmware file specified in the "
+			               "configuration");
 			return 1;
 		}
 	} else {
-		MSIM_LOG_FATAL("no firmware file specified in the "
-		               "configuration");
-		return 1;
+		/* Try to load the utility file first. */
+		fp = fopen(FLASH_FILE, "r");
+		if (fp == NULL) {
+			MSIM_LOG_DEBUG("failed to read: " FLASH_FILE);
+			if (conf.has_firmware_file == 1) {
+				fp = fopen(conf.firmware_file, "r");
+				if (fp == NULL) {
+					snprintf(LOG, LOGSZ, "failed to read "
+					         "firmware file: %s",
+					         conf.firmware_file);
+					MSIM_LOG_FATAL(LOG);
+					return 1;
+				} else {
+					snprintf(LOG, LOGSZ, "using firmware "
+					         "file: %s", conf.firmware_file);
+					MSIM_LOG_INFO(LOG);
+				}
+			} else {
+				MSIM_LOG_FATAL("no firmware file specified "
+				               "in the configuration");
+				return 1;
+			}
+		} else {
+			MSIM_LOG_DEBUG("using firmware file: " FLASH_FILE);
+		}
 	}
 
 	/* Initialize MCU as one of AVR models */
@@ -181,9 +242,9 @@ int main(int argc, char *argv[])
 	        sizeof mcu.vcd_file/sizeof mcu.vcd_file[0] - 1);
 	if (MSIM_AVR_Init(&mcu, conf.mcu, NULL, MSIM_AVR_PMSZ, NULL,
 	                  MSIM_AVR_DMSZ, NULL, fp) != 0) {
-		snprintf(mcu.log, LOGSZ, "MCU model %s cannot be initialized",
+		snprintf(LOG, LOGSZ, "MCU model %s cannot be initialized",
 		         conf.mcu);
-		MSIM_LOG_FATAL(mcu.log);
+		MSIM_LOG_FATAL(LOG);
 		return 1;
 	}
 	fclose(fp);
@@ -272,18 +333,18 @@ int main(int argc, char *argv[])
 
 	/* Try to set required frequency */
 	if (conf.mcu_freq > mcu.freq) {
-		snprintf(mcu.log, LOGSZ, "clock frequency %" PRIu64 ".%" PRIu64
+		snprintf(LOG, LOGSZ, "clock frequency %" PRIu64 ".%" PRIu64
 		         " kHz is above maximum %lu.%lu kHz",
 		         conf.mcu_freq/1000U, conf.mcu_freq%1000U,
 		         mcu.freq/1000UL, mcu.freq%1000UL);
-		MSIM_LOG_WARN(mcu.log);
+		MSIM_LOG_WARN(LOG);
 	} else if (conf.mcu_freq > 0U) {
 		mcu.freq = (uint32_t)conf.mcu_freq;
 	} else {
-		snprintf(mcu.log, LOGSZ, "clock frequency %" PRIu64 ".%"
+		snprintf(LOG, LOGSZ, "clock frequency %" PRIu64 ".%"
 		         PRIu64 " kHz cannot be selected as clock source",
 		         conf.mcu_freq/1000U, conf.mcu_freq%1000U);
-		MSIM_LOG_WARN(mcu.log);
+		MSIM_LOG_WARN(LOG);
 	}
 
 	/* Print MCU configuration */
@@ -299,9 +360,9 @@ int main(int argc, char *argv[])
 
 	/* Prepare and run AVR simulation */
 	if (conf.firmware_test == 0) {
-		snprintf(mcu.log, LOGSZ, "Waiting for incoming GDB "
+		snprintf(LOG, LOGSZ, "Waiting for incoming GDB "
 		         "connections at localhost:%d...", conf.rsp_port);
-		MSIM_LOG_INFO(mcu.log);
+		MSIM_LOG_INFO(LOG);
 		MSIM_AVR_RSPInit(&mcu, (int)conf.rsp_port);
 	}
 
@@ -314,6 +375,14 @@ int main(int argc, char *argv[])
 	if (conf.firmware_test == 0) {
 		MSIM_AVR_RSPClose();
 	}
+
+#ifdef MSIM_POSIX
+	int dump_rc;
+	dump_rc = MSIM_AVR_DumpFlash(&mcu, FLASH_FILE);
+	if (dump_rc != 0) {
+		MSIM_LOG_ERROR("failed to dump memory to: " FLASH_FILE);
+	}
+#endif
 
 	return rc;
 }
@@ -437,3 +506,15 @@ static int set_lock(struct MSIM_AVR *m, uint8_t val)
 	m->set_lockf(m, val);
 	return 0;
 }
+
+#ifdef MSIM_POSIX
+static void dump_flash_handler(int s)
+{
+	int rc;
+
+	rc = MSIM_AVR_DumpFlash(&mcu, FLASH_FILE);
+	if (rc != 0) {
+		MSIM_LOG_ERROR("failed to dump memory to: " FLASH_FILE);
+	}
+}
+#endif

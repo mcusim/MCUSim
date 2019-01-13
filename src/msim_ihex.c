@@ -55,16 +55,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+#include <stdint.h>
 #include "mcusim/hex/ihex.h"
 
-/*
- * Initializes a new IHexRecord structure that the paramater
+/* Initializes a new IHexRecord structure that the paramater
  * ihexRecord points to with the passed record type, 16-bit
- * integer address, 8-bit data array, and size of 8-bit data array.
- */
-int New_IHexRecord(unsigned int type, unsigned int address,
-                   const unsigned char *data, unsigned int dataLen,
-                   IHexRecord *ihexRecord)
+ * integer address, 8-bit data array, and size of 8-bit data array. */
+int MSIM_IHEX_NewRec(uint32_t type, uint32_t address,
+                     const uint8_t *data, uint32_t dataLen,
+                     IHexRecord *ihexRecord)
 {
 	/* Data length size check, assertion of ihexRecord pointer */
 	if (dataLen > IHEX_MAX_DATA_LEN/2 || ihexRecord == NULL) {
@@ -75,15 +74,13 @@ int New_IHexRecord(unsigned int type, unsigned int address,
 	ihexRecord->address = address;
 	memcpy(ihexRecord->data, data, (size_t)dataLen);
 	ihexRecord->dataLen = dataLen;
-	ihexRecord->checksum = Checksum_IHexRecord(ihexRecord);
+	ihexRecord->checksum = MSIM_IHEX_CalcChecksum(ihexRecord);
 
 	return IHEX_OK;
 }
 
-/*
- * Utility function to read an Intel HEX8 record from a file.
- */
-int Read_IHexRecord(IHexRecord *ihexRecord, FILE *in)
+/* Utility function to read an Intel HEX8 record from a file. */
+int MSIM_IHEX_ReadRec(IHexRecord *ihexRecord, FILE *in)
 {
 	char recordBuff[IHEX_RECORD_BUFF_SIZE];
 	/*
@@ -185,15 +182,14 @@ int Read_IHexRecord(IHexRecord *ihexRecord, FILE *in)
 	hexBuff[IHEX_CHECKSUM_LEN] = 0;
 	ihexRecord->checksum = (uint8_t)strtol(hexBuff, (char **)NULL, 16);
 
-	if (ihexRecord->checksum != Checksum_IHexRecord(ihexRecord)) {
+	if (ihexRecord->checksum != MSIM_IHEX_CalcChecksum(ihexRecord)) {
 		return IHEX_ERROR_INVALID_RECORD;
 	}
 
 	return IHEX_OK;
 }
 
-/* Utility function to write an Intel HEX8 record to a file */
-int Write_IHexRecord(const IHexRecord *ihexRecord, FILE *out)
+int MSIM_IHEX_WriteRec(const IHexRecord *ihexRecord, FILE *out)
 {
 	unsigned int i;
 
@@ -222,14 +218,14 @@ int Write_IHexRecord(const IHexRecord *ihexRecord, FILE *out)
 	}
 
 	/* Calculate and write the checksum field */
-	if (fprintf(out, "%2.2X\r\n", Checksum_IHexRecord(ihexRecord)) < 0) {
+	if (fprintf(out, "%2.2X\r\n", MSIM_IHEX_CalcChecksum(ihexRecord)) < 0) {
 		return IHEX_ERROR_FILE;
 	}
 
 	return IHEX_OK;
 }
 
-void MSIM_IHEX_PrintRecord(const IHexRecord *ihexRecord)
+void MSIM_IHEX_PrintRec(const IHexRecord *ihexRecord)
 {
 	unsigned int i;
 	printf("Intel HEX8 Record Type: \t%d\n", ihexRecord->type);
@@ -248,7 +244,7 @@ void MSIM_IHEX_PrintRecord(const IHexRecord *ihexRecord)
 }
 
 /* Utility function to calculate the checksum of an Intel HEX8 record */
-unsigned char Checksum_IHexRecord(const IHexRecord *ihexRecord)
+uint8_t MSIM_IHEX_CalcChecksum(const IHexRecord *ihexRecord)
 {
 	unsigned long checksum;
 	unsigned int i;
@@ -264,6 +260,5 @@ unsigned char Checksum_IHexRecord(const IHexRecord *ihexRecord)
 
 	/* Two's complement on checksum */
 	checksum = ~checksum + 1;
-
-	return (unsigned char)(checksum & 0xFF);
+	return (uint8_t)(checksum & 0xFF);
 }
