@@ -57,7 +57,7 @@ void MSIM_AVR_LUATickModels(struct MSIM_AVR *mcu);
 
 /* Empty macros to replace function which cannot be implemented without
  * Lua library. */
-#define MSIM_AVR_LUALoadModels(mcu, file)	1
+#define MSIM_AVR_LUALoadModel(mcu, file)	1
 #define MSIM_AVR_LUACleanModels(void)
 #define MSIM_AVR_LUATickModels(mcu)
 

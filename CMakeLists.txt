@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0138")
+set(MSIM_VERSION "0.1.0139")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -67,7 +67,7 @@ else()
 	message(STATUS "[OPTION] Building MCUSim ${MSIM_VERSION} (release)")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
-		add_definitions(" -Wall -pedantic -std=iso9899:1999")
+		add_definitions(" -Wall -pedantic -std=iso9899:1999 -O3")
 		add_definitions(" -Wshadow -Wpointer-arith -Wcast-qual")
 		add_definitions(" -Wcast-align -Wstrict-prototypes")
 		add_definitions(" -Wmissing-prototypes -Wconversion -Wsign-compare")
@@ -92,11 +92,11 @@ set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
 			src/msim_pty.c)
 
 # Look for libraries, packages, etc.
-if (WITH_LUA)
+if (WITH_LUA MATCHES True)
 	message(STATUS "[OPTION] Lua-based models strictly required")
 	find_package(Lua REQUIRED)
 else()
-	find_package(Lua)
+	#find_package(Lua)
 endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)

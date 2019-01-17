@@ -38,7 +38,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <limits.h>
-#include <fcntl.h>
 #include <inttypes.h>
 #include "mcusim/mcusim.h"
 #include "mcusim/getopt.h"
