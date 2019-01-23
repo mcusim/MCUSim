@@ -5,17 +5,19 @@ Readme for MCUSim
  written from scratch to assist in circuit simulation, firmware debugging,
  testing, and signal tracing.
 
- Simulator can be extended by creating models written in Lua. They may affect
- state of a simulated MCU in several ways, e.g. access internal registers,
- generate signals on its pins or terminate the whole simulation, and play
- roles of the significant parts of a circuit connected to the microcontroller
- (external EEPROM, humidity sensor, MOSFET switch).
+ There is a configuration file "mcusim.conf" which is installed together with
+ the "mcusim" binary and "libmsim.a" library and can be used to tweak
+ a behavior of the simulator. It is carefully documented and the best way to
+ prepare your own simulation is to copy mcusim.conf to a new directory, adjust
+ the options and run mcusim. Firmware and Lua files can be placed in the same
+ working directory to be referenced by the relative paths, for instance.
 
- There is an interactive script also to prepare a simulated MCU instance
- which is installed together with the simulator executable. It is particularly
- helpful to set up microcontroller for a firmware debugging (via remote GDB
- target at localhost:12750) or create a firmware test with Lua models to check
- conditions and parameters.
+ Script files written in Lua can be used to represent models of the real
+ devices during a simulation process. They may affect state of an MCU in
+ several ways, e.g. access internal registers, generate signals on its pins or
+ terminate the whole simulation, and play roles of the significant parts of a
+ circuit connected to the microcontroller (external EEPROM, humidity sensor,
+ MOSFET switch, etc).
 
  Registers of a simulated MCU can be saved into a VCD (value change dump)
  file and read using GTKWave viewer.
@@ -68,6 +70,6 @@ Mailing lists
 Web sites
 ---------
 
- This project is hosted on Github.com.
- Home page, wiki and issue tracker is at https://trac.mcusim.org
+ Source code is hosted at https://github.com/dsalychev/mcusim.
+ Wiki and issue tracker are at https://trac.mcusim.org.
 

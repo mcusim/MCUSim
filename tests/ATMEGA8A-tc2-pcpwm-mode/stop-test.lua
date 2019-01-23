@@ -32,6 +32,7 @@ of a microcontroller to be incremented.
 
 VERBOSE = true			-- Switch on to enable verbose output
 TICK_TIME = 0.0			-- clock period, in us
+STOP_TICKS = 800000		-- Stop simulation after this number of ticks
 
 ticks_passed = 0
 check_point = 0			-- TCNT0 is 0 at start, count up to 255 then
@@ -54,7 +55,7 @@ end
 -- main simulation loop, i.e. time passed between two neighbor calls to the
 -- function is a period.
 function module_tick(mcu)
-	if ticks_passed > 800000 then
+	if ticks_passed > STOP_TICKS then
 		-- Test finished successfully
 		MSIM_SetState(mcu, AVR_MSIM_STOP)
 		print("[Test stopper] ticks passed: " .. ticks_passed)

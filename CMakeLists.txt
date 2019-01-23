@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0139")
+set(MSIM_VERSION "0.1.0140")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -89,24 +89,15 @@ set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
 			src/msim_getopt.c
 			src/msim_ihex.c
 			src/msim_log.c
-			src/msim_pty.c)
+			src/msim_pty.c
+			src/msim_tsq.c)
 
 # Look for libraries, packages, etc.
-if (WITH_LUA MATCHES True)
-	message(STATUS "[OPTION] Lua-based models strictly required")
-	find_package(Lua REQUIRED)
-else()
-	#find_package(Lua)
-endif()
+find_package(Lua REQUIRED)
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
-if (WITH_POSIX_THREADS)
-	message(STATUS "[OPTION] POSIX threads support is strictly required")
-	find_package(Threads REQUIRED)
-else()
-	find_package(Threads)
-endif()
+find_package(Threads REQUIRED)
 
 # Set target libraries here
 set(TARGET_LIBS "")
@@ -117,11 +108,7 @@ if (LUA_FOUND AND
 	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
 	message(STATUS "[OPTION] Building with Lua-based models")
 else()
-	if (WITH_LUA)
-		message(FATAL_ERROR "[OPTION] Building without Lua-based models")
-	else()
-		message(STATUS "[OPTION] Building without Lua-based models")
-	endif()
+	message(FATAL_ERROR "[OPTION] Building without Lua-based models")
 endif()
 
 if (CMAKE_USE_PTHREADS_INIT)

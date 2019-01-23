@@ -45,15 +45,19 @@ struct MSIM_AVR;
 
 /* Structure to describe an AVR I/O register to be tracked in a VCD file.
  *
- * i		Offset of the register (or MSB of 16-bit register) in data
- * 		memory. Can be negative to show this instance of the structure
- * 		does not describe any register.
- * reg_lowi	Offset of the LSB register part in data memory (usually
+ * i		Offset to the register (or MSB of 16-bit register) in the data
+ * 		memory. It can be negative to show this instance of the
+ *		structure does not describe any register.
+ *
+ * reg_lowi	Offset to the LSB register part in data memory (usually
  * 		followed by L suffix, like TCNT1L). Can be negative in case
  * 		of 8-bit register.
+ *
  * n		Number of a specific bit to track only. Can be negative to
  * 		include all bits of the register.
+ *
  * old_val	Previous value of the register (8-bit or 16-bit).
+ *
  * name		Name of a register requested by user (TCNT1 instead of TCNT1H,
  * 		for example). */
 struct MSIM_AVR_VCDReg {
@@ -68,8 +72,8 @@ FILE *MSIM_AVR_VCDOpenDump(struct MSIM_AVR *mcu, const char *dumpname);
 
 /* Function to dump MCU registers to VCD file.
  * This one is usually called each iteration of the main simulation loop. */
-void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, unsigned long tick,
-                           unsigned char fall);
+void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, uint64_t tick,
+                           uint8_t fall);
 
 #ifdef __cplusplus
 }

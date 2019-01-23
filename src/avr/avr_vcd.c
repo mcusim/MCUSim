@@ -28,9 +28,12 @@
 #include <stdint.h>
 #include <time.h>
 #include "mcusim/mcusim.h"
+#include "mcusim/tsq.h"
 
 #define TERA			1000000000000.0
 #define MAX_CLK_PRINTS		50
+#define LOG			(mcu.log)
+#define LOGSZ			MSIM_AVR_LOGSZ
 
 static void print_reg16(char *buf, uint32_t len, uint8_t hr, uint8_t lr);
 static void print_reg(char *buf, unsigned int len, unsigned char r);
@@ -41,16 +44,16 @@ FILE *MSIM_AVR_VCDOpenDump(struct MSIM_AVR *mcu, const char *dumpname)
 {
 	FILE *f;
 	time_t timer;
-	char buf[32];
 	struct tm *tm_info;
-	unsigned int i, regs;
+	uint32_t regs = MSIM_AVR_VCD_REGS;
 	struct MSIM_AVR_VCDReg *reg;
 	uint8_t rh, rl;
 	uint32_t reg_val;
+	char buf[32];
+	int rc;
 
-	regs = MSIM_AVR_VCD_REGS;
 	f = fopen(dumpname, "w");
-	if (!f) {
+	if (f == NULL) {
 		return NULL;
 	}
 
@@ -68,7 +71,7 @@ FILE *MSIM_AVR_VCDOpenDump(struct MSIM_AVR *mcu, const char *dumpname)
 
 	/* Declare VCD variables to dump */
 	fprintf(f, "$var reg 1 CLK_IO CLK_IO $end\n");
-	for (i = 0; i < regs; i++) {
+	for (uint32_t i = 0; i < regs; i++) {
 		if (mcu->vcd[i].i < 0) {
 			break;
 		}
@@ -94,7 +97,7 @@ FILE *MSIM_AVR_VCDOpenDump(struct MSIM_AVR *mcu, const char *dumpname)
 	/* Dumping initial register values to VCD file */
 	fprintf(f, "$dumpvars\n");
 	fprintf(f, "b0 CLK_IO\n");
-	for (i = 0; i < regs; i++) {
+	for (uint32_t i = 0; i < regs; i++) {
 		if (mcu->vcd[i].i < 0) {
 			break;
 		}
@@ -123,26 +126,33 @@ FILE *MSIM_AVR_VCDOpenDump(struct MSIM_AVR *mcu, const char *dumpname)
 	}
 	fprintf(f, "$end\n");
 
+	/* Initialize queue to keep VCD dump frames. */
+	rc = MSIM_TSQ_Init(&mcu->vcd_queue);
+	if (rc != MSIM_TSQ_OK) {
+		fclose(f);
+		f = NULL;
+		MSIM_LOG_ERROR("failed to initialize a queue for VCD dump "
+		               "frames");
+	}
+
 	return f;
 }
 
-void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, unsigned long tick,
-                           unsigned char fall)
+void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, uint64_t tick,
+                           uint8_t fall)
 {
-	static unsigned int clk_prints_left = 0;
-	unsigned int i, regs;
-	char buf[32], print_tick, new_value;
-	struct MSIM_AVR_VCDReg *reg;
+	static uint32_t clk_prints_left = 0;
+	uint32_t regs = MSIM_AVR_VCD_REGS;
+	uint8_t print_tick = 1;
+	uint8_t new_value = 0;
 	uint8_t rh, rl;
 	uint32_t reg_val;
-
-	regs = MSIM_AVR_VCD_REGS;
-	print_tick = 1;
-	new_value = 0;
+	struct MSIM_AVR_VCDReg *reg;
+	char buf[32];
 
 	/* Do we have at least one register which value has changed? */
-	for (i = 0; i < regs; i++) {
-		int8_t n;		/* Bit index of a register */
+	for (uint32_t i = 0; i < regs; i++) {
+		int8_t n; /* Bit index of a register */
 
 		/* There should be no register changes on fall */
 		if (fall == 1U) {
@@ -188,9 +198,8 @@ void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, unsigned long tick,
 		return;
 	}
 
-	/* We've at least one register which value changed.
-	 * Let's print it. */
-	for (i = 0; i < regs; i++) {
+	/* We've at least one register which value changed. Let's print it. */
+	for (uint32_t i = 0; i < regs; i++) {
 		/* Only requested registers to be dumped only */
 		if (mcu->vcd[i].i < 0) {
 			break;
@@ -209,7 +218,7 @@ void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, unsigned long tick,
 			continue;
 		}
 
-		/* Print current tick and main clock only once */
+		/* Print current tick and a main clock only once. */
 		if (print_tick) {
 			print_tick = 0;
 			fprintf(f, "#%lu\n", tick);
@@ -233,7 +242,7 @@ void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, unsigned long tick,
 	}
 
 	/* Update previous values of the registers */
-	for (i = 0; i < regs; i++) {
+	for (uint32_t i = 0; i < regs; i++) {
 		/* Only requested registers to be dumped only */
 		if (mcu->vcd[i].i < 0) {
 			break;

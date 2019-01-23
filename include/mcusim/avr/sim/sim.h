@@ -44,6 +44,7 @@ extern "C" {
 
 #include <stdint.h>
 #include "mcusim/pty.h"
+#include "mcusim/tsq.h"
 #include "mcusim/avr/sim/vcd.h"
 #include "mcusim/avr/sim/io.h"
 #include "mcusim/avr/sim/wdt.h"
@@ -156,6 +157,7 @@ enum MSIM_AVR_ClkSource {
  * intr			Details to work with MCU interrupts and IRQs.
  * wdt			Watchdog timer of the MCU.
  * vcd			Array of I/O registers to be dumped into VCD file.
+ * vcd_queue		Queue to keep VCD dump frames.
  * pty			Details to work with POSIX pseudo-terminals.
  * usart		Details to work with USART.
  */
@@ -224,6 +226,7 @@ struct MSIM_AVR {
 	struct MSIM_AVR_INT intr;
 	struct MSIM_AVR_WDT wdt;
 	struct MSIM_AVR_VCDReg vcd[MSIM_AVR_VCD_REGS];
+	struct MSIM_TSQ vcd_queue;
 #if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
 	struct MSIM_PTY pty;
 #endif

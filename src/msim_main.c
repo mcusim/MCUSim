@@ -27,25 +27,23 @@
  */
 
 /* glibc (starting from 2.2) requires _XOPEN_SOURCE >= 600 to expose
- * definitions for POSIX.1-2001 base specification plus XSI extension
- * and C99 definitions.
+ * definitions for POSIX.1-2001 base specification plus XSI extension and
+ * C99 definitions.
  *
  * This definition is required to let 'sigaction' structure and required
  * functions to be defined on GNU/Linux. */
-#define _XOPEN_SOURCE		600
+#define _POSIX_C_SOURCE 200112L
+#define _XOPEN_SOURCE 600
 
 #include <stdint.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <limits.h>
 #include <inttypes.h>
+#include <signal.h>
 #include "mcusim/mcusim.h"
 #include "mcusim/getopt.h"
 #include "mcusim/config.h"
-
-#ifdef MSIM_POSIX
-#include <signal.h>
-#endif
 
 /* Local macro definitions */
 #define FUSE_EXT		2
@@ -94,10 +92,7 @@ static void print_config(struct MSIM_AVR *m);
 static void print_version(void);
 static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val);
 static int set_lock(struct MSIM_AVR *m, uint8_t val);
-
-#ifdef MSIM_POSIX
 static void dump_flash_handler(int s);
-#endif
 /* END Prototypes of the local functions */
 
 /* Entry point of the simulator */
@@ -110,6 +105,7 @@ int main(int argc, char *argv[])
 	uint32_t i, j;
 	uint32_t dump_regs;	/* # of registers to store in VCD dump. */
 	char *conf_file;
+	int rc2;
 
 	conf.mcu_freq = 0;
 	conf.trap_at_isr = 0;
@@ -122,20 +118,16 @@ int main(int argc, char *argv[])
 #endif
 
 	/* Set up signals handlers. */
-#ifdef MSIM_POSIX
 	struct sigaction dmpflash_act;
-
 	memset(&dmpflash_act, 0, sizeof dmpflash_act);
 	dmpflash_act.sa_handler = dump_flash_handler;
 	dmpflash_act.sa_flags = 0;
 	sigemptyset(&dmpflash_act.sa_mask);
-
 	sigaction(SIGABRT, &dmpflash_act, NULL);
 	sigaction(SIGKILL, &dmpflash_act, NULL);
 	sigaction(SIGQUIT, &dmpflash_act, NULL);
 	sigaction(SIGSEGV, &dmpflash_act, NULL);
 	sigaction(SIGTERM, &dmpflash_act, NULL);
-#endif
 
 	print_version();
 
@@ -377,21 +369,23 @@ int main(int argc, char *argv[])
 
 	rc = MSIM_AVR_Simulate(&mcu, 0, mcu.flashend+1, conf.firmware_test);
 
-#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
 	MSIM_PTY_Close(&mcu.pty);
-#endif
 	MSIM_AVR_LUACleanModels();
 	if (conf.firmware_test == 0) {
 		MSIM_AVR_RSPClose();
 	}
 
-#ifdef MSIM_POSIX
-	int dump_rc;
-	dump_rc = MSIM_AVR_DumpFlash(&mcu, FLASH_FILE);
-	if (dump_rc != 0) {
+	rc2 = MSIM_AVR_DumpFlash(&mcu, FLASH_FILE);
+	if (rc2 != 0) {
 		MSIM_LOG_ERROR("failed to dump memory to: " FLASH_FILE);
 	}
-#endif
+
+	/* Destroy a queue for VCD dump frames. */
+	rc2 = MSIM_TSQ_Destroy(&mcu.vcd_queue);
+	if (rc2 == MSIM_TSQ_NOTINIT) {
+		MSIM_LOG_WARN("cannot destroy a queue for VCD dump frames: "
+		              "it is not initialized");
+	}
 
 	return rc;
 }
@@ -516,7 +510,6 @@ static int set_lock(struct MSIM_AVR *m, uint8_t val)
 	return 0;
 }
 
-#ifdef MSIM_POSIX
 static void dump_flash_handler(int s)
 {
 	int rc;
@@ -526,4 +519,3 @@ static void dump_flash_handler(int s)
 		MSIM_LOG_ERROR("failed to dump memory to: " FLASH_FILE);
 	}
 }
-#endif

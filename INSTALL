@@ -6,14 +6,17 @@ How to install MCUSim
 Prerequisites
 -------------
 
- MCUSim is written in C99 on FreeBSD and macOS operating systems, and thus a
- complete C compilation environment is needed. CMake build system is required
- to generate build files for various operating systems including GNU/Linux
- and Windows.
+ MCUSim is written in C99 on FreeBSD and macOS operating systems with
+ POSIX.1-2001 and X/Open System Interfaces (XSI) extension in mind. CMake
+ build system is required to generate build files for the various operating
+ systems including GNU/Linux and Windows.
 
- If you want to enable additional features (Lua-based models, XSPICE library,
- etc.) the following software should be installed: lua (5.2 or above),
- GNU make, readline, bison, flex, X11 headers and libs.
+ Lua 5.2 (or above) is the most important dependency and should be installed
+ in order to support Lua-based models.
+
+ If you want to compile MCUSim as an XSPICE code model library (.cm), the
+ following software should be installed: GNU make, readline, bison, flex,
+ X11 headers and libs.
 
  If you want to contribute to the project you will need the following
  software installed: astyle, python (2.7 or above), cppcheck (1.83 or above),

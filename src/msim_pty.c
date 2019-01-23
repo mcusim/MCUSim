@@ -30,12 +30,12 @@
  * These functions are generally useful to let an operating system to interact
  * with a simulated MCU using "serial port" backed by a pseudo-terminal.
  */
-#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
 
 /* glibc (starting from 2.2) requires _XOPEN_SOURCE >= 600 to expose
  * definitions for POSIX.1-2001 base specification plus XSI extension
  * and C99 definitions. */
-#define _XOPEN_SOURCE		600
+#define _POSIX_C_SOURCE 200112L
+#define _XOPEN_SOURCE 600
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -43,7 +43,6 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <errno.h>
-
 #include "mcusim/mcusim.h"
 
 /* Thread function to read data from pty and populate a buffer. */
@@ -227,5 +226,3 @@ static void *read_from_pty(void *arg)
 	}
 	pthread_exit(NULL);
 }
-
-#endif /* defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY) */
