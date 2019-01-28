@@ -28,8 +28,10 @@
  * Implementation of a simple and thread-safe queue (TSQ).
  */
 #include <stdint.h>
+#include <stdio.h>
 #include <pthread.h>
 #include <string.h>
+#include <inttypes.h>
 #include "mcusim/tsq.h"
 #include "mcusim/log.h"
 
@@ -80,10 +82,19 @@ int MSIM_TSQ_Init(struct MSIM_TSQ *q)
 int MSIM_TSQ_Destroy(struct MSIM_TSQ *q)
 {
 	int rc;
+	char buf[1024];
+
+	/* Lock the basic queue mutex */
+	pthread_mutex_lock(&q->mutex);
 
 	if (q->init != TSQ_INIT) {
 		return MSIM_TSQ_NOTINIT;
 	}
+	q->init = TSQ_NOTINIT;
+
+	/* Notify all of the blocked threads about a destroyed queue. */
+	pthread_cond_broadcast(&q->got_elem);
+	pthread_cond_broadcast(&q->got_space);
 
 	rc = pthread_cond_destroy(&q->got_elem);
 	if (rc != 0) {
@@ -93,22 +104,29 @@ int MSIM_TSQ_Destroy(struct MSIM_TSQ *q)
 	if (rc != 0) {
 		MSIM_LOG_WARN("cannot destroy conditional variable");
 	}
+	q->head = 0;
+	q->tail = 0;
+	if (q->length > 0) {
+		snprintf(buf, 1024, "destroying queue with length = %" PRIu32,
+		         q->length);
+		MSIM_LOG_WARN(buf);
+	}
+	q->length = 0;
+
+	/* Unlock the basic queue mutex */
+	pthread_mutex_unlock(&q->mutex);
+
 	rc = pthread_mutex_destroy(&q->mutex);
 	if (rc != 0) {
 		MSIM_LOG_WARN("cannot destroy mutex");
 	}
-
-	q->head = 0;
-	q->tail = 0;
-	q->length = 0;
-	q->init = TSQ_NOTINIT;
 
 	return MSIM_TSQ_OK;
 }
 
 int MSIM_TSQ_Enqb(struct MSIM_TSQ *q, uint8_t *e, uint32_t len)
 {
-	int rc = 0;
+	int rc = MSIM_TSQ_OK;
 
 	if (len > MSIM_TSQ_ELEMSZ) {
 		return MSIM_TSQ_TOOBIG;
@@ -120,8 +138,14 @@ int MSIM_TSQ_Enqb(struct MSIM_TSQ *q, uint8_t *e, uint32_t len)
 	 * there will be space for the element to enqueue. */
 	if ((q->length > 0) && (q->tail == q->head)) {
 		rc = pthread_cond_wait(&q->got_space, &q->mutex);
+		/* We may have a queue destroyed - check it first.*/
+		if (q->init == TSQ_NOTINIT) {
+			rc = MSIM_TSQ_NOTINIT;
+		} else {
+			rc = rc == 0 ? MSIM_TSQ_OK : MSIM_TSQ_ERR;
+		}
 	}
-	if (rc == 0) {
+	if ((rc == MSIM_TSQ_OK) && (q->init == TSQ_INIT)) {
 		memcpy(&q->array[q->tail][0], e, len);
 		q->length++;
 		if (q->tail == (MSIM_TSQ_SIZE-1)) {
@@ -136,14 +160,14 @@ int MSIM_TSQ_Enqb(struct MSIM_TSQ *q, uint8_t *e, uint32_t len)
 	/* Unlock the basic queue mutex */
 	pthread_mutex_unlock(&q->mutex);
 
-	return MSIM_TSQ_OK;
+	return rc;
 }
 
 int MSIM_TSQ_Deqb(struct MSIM_TSQ *q, uint8_t *e, uint32_t len)
 {
-	int rc = 0;
+	int rc = MSIM_TSQ_OK;
 
-	if (len < MSIM_TSQ_ELEMSZ) {
+	if (len == 0U) {
 		return MSIM_TSQ_ERR;
 	}
 	/* Lock the basic queue mutex */
@@ -153,8 +177,14 @@ int MSIM_TSQ_Deqb(struct MSIM_TSQ *q, uint8_t *e, uint32_t len)
 	 * there will be an element to dequeue. */
 	if ((q->length == 0) && (q->tail == q->head)) {
 		rc = pthread_cond_wait(&q->got_elem, &q->mutex);
+		/* We may have a queue destroyed - check it first.*/
+		if (q->init == TSQ_NOTINIT) {
+			rc = MSIM_TSQ_NOTINIT;
+		} else {
+			rc = rc == 0 ? MSIM_TSQ_OK : MSIM_TSQ_ERR;
+		}
 	}
-	if (rc == 0) {
+	if ((rc == MSIM_TSQ_OK) && (q->init == TSQ_INIT)) {
 		memcpy(e, &q->array[q->head][0], len);
 		q->length--;
 		if (q->head == (MSIM_TSQ_SIZE-1)) {
@@ -169,5 +199,5 @@ int MSIM_TSQ_Deqb(struct MSIM_TSQ *q, uint8_t *e, uint32_t len)
 	/* Unlock the basic queue mutex */
 	pthread_mutex_unlock(&q->mutex);
 
-	return MSIM_TSQ_OK;
+	return rc;
 }

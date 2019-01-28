@@ -94,7 +94,9 @@ int MSIM_TSQ_Destroy(struct MSIM_TSQ *q);
  *
  * Returns:
  * MSIM_TSQ_OK		If element was enqueued correctly.
- * MSIM_TSQ_TOOBIG	If element is too big. */
+ * MSIM_TSQ_TOOBIG	If element is too big.
+ * MSIM_TSQ_NOTINIT	If the queue was destroyed while a calling thread
+ * 			blocked. */
 int MSIM_TSQ_Enqb(struct MSIM_TSQ *q, uint8_t *e, uint32_t len);
 
 /* Obtain the head element of the queue and put it into 'e'.
@@ -105,7 +107,9 @@ int MSIM_TSQ_Enqb(struct MSIM_TSQ *q, uint8_t *e, uint32_t len);
  *
  * Returns:
  * MSIM_TSQ_OK		If element was dequeued correctly.
- * MSIM_TSQ_ERR		If element cannot handle MSIM_TSQ_ELEMSZ of bytes. */
+ * MSIM_TSQ_ERR		If element cannot handle MSIM_TSQ_ELEMSZ of bytes.
+ * MSIM_TSQ_NOTINIT	If the queue was destroyed while a calling thread
+ * 			blocked. */
 int MSIM_TSQ_Deqb(struct MSIM_TSQ *q, uint8_t *e, uint32_t len);
 
 #ifdef __cplusplus

@@ -43,6 +43,7 @@
 #include <unistd.h>
 #include <inttypes.h>
 #include <errno.h>
+#include <pthread.h>
 #include "mcusim/mcusim.h"
 
 /* Thread function to read data from pty and populate a buffer. */
@@ -153,9 +154,9 @@ int MSIM_PTY_Close(struct MSIM_PTY *pty)
 	/* Wait for the reading thread and clear its mutex */
 	rc = pthread_join(t->thread, &status);
 	if (rc != 0) {
-		snprintf(log, sizeof log, "pthread_join() finished "
-		         "incorrectly with a return code: %d", rc);
-		MSIM_LOG_ERROR(log);
+		snprintf(log, sizeof log, "failed to join a thread (may not "
+		         "be created), return code: %d", rc);
+		MSIM_LOG_WARN(log);
 	}
 	pthread_mutex_destroy(&t->mutex);
 
