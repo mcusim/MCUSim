@@ -100,12 +100,12 @@ int main(int argc, char *argv[])
 {
 	extern char *optarg;
 	FILE *fp;
-	int c, rc;
-	int conf_rc = 1;
+	int c, rc, rc2, conf_rc = 1;
 	uint32_t i, j;
-	uint32_t dump_regs;	/* # of registers to store in VCD dump. */
+	uint32_t dump_regs;
 	char *conf_file;
-	int rc2;
+	struct MSIM_AVR_VCD *vcd = &mcu.vcd;
+	const uint32_t dflen = sizeof vcd->dump_file/sizeof vcd->dump_file[0];
 
 	conf.mcu_freq = 0;
 	conf.trap_at_isr = 0;
@@ -239,8 +239,7 @@ int main(int argc, char *argv[])
 
 	/* Initialize MCU as one of AVR models */
 	mcu.intr.trap_at_isr = conf.trap_at_isr;
-	strncpy(mcu.vcd_file, conf.vcd_file,
-	        sizeof mcu.vcd_file/sizeof mcu.vcd_file[0] - 1);
+	strncpy(vcd->dump_file, conf.vcd_file, dflen - 1);
 	if (MSIM_AVR_Init(&mcu, conf.mcu, NULL, MSIM_AVR_PMSZ, NULL,
 	                  MSIM_AVR_DMSZ, NULL, fp) != 0) {
 		snprintf(LOG, LOGSZ, "MCU model %s cannot be initialized",
@@ -288,21 +287,21 @@ int main(int argc, char *argv[])
 			 * match of the register names? */
 			if ((cr != 0) && (pos != NULL)) {
 				if (mcu.ioregs[j].name[len-1] == 'H') {
-					mcu.vcd[dump_regs].i = (int32_t)j;
+					vcd->regs[dump_regs].i = (int32_t)j;
 				}
 				if (mcu.ioregs[j].name[len-1] == 'L') {
-					mcu.vcd[dump_regs].reg_lowi =
+					vcd->regs[dump_regs].reg_lowi =
 					        (int32_t)j;
 				}
 
-				if ((mcu.vcd[dump_regs].i >= 0) &&
-				                (mcu.vcd[dump_regs].
+				if ((vcd->regs[dump_regs].i >= 0) &&
+				                (vcd->regs[dump_regs].
 				                 reg_lowi >= 0)) {
-					mcu.vcd[dump_regs].n = -1;
-					strncpy(mcu.vcd[dump_regs].name,
+					vcd->regs[dump_regs].n = -1;
+					strncpy(vcd->regs[dump_regs].name,
 					        mcu.ioregs[j].name, sizeof
-					        mcu.vcd[dump_regs].name);
-					mcu.vcd[dump_regs].name[len-1] = 0;
+					        vcd->regs[dump_regs].name);
+					vcd->regs[dump_regs].name[len-1] = 0;
 
 					dump_regs++;
 					break;
@@ -320,11 +319,11 @@ int main(int argc, char *argv[])
 				}
 
 				/* Set index of a register to be dumped */
-				mcu.vcd[dump_regs].i = (int32_t)j;
-				mcu.vcd[dump_regs].n = (int8_t)bitn;
-				strncpy(mcu.vcd[dump_regs].name,
+				vcd->regs[dump_regs].i = (int32_t)j;
+				vcd->regs[dump_regs].n = (int8_t)bitn;
+				strncpy(vcd->regs[dump_regs].name,
 				        mcu.ioregs[j].name,
-				        sizeof mcu.vcd[dump_regs].name);
+				        sizeof vcd->regs[dump_regs].name);
 
 				dump_regs++;
 				break;
@@ -378,13 +377,6 @@ int main(int argc, char *argv[])
 	rc2 = MSIM_AVR_DumpFlash(&mcu, FLASH_FILE);
 	if (rc2 != 0) {
 		MSIM_LOG_ERROR("failed to dump memory to: " FLASH_FILE);
-	}
-
-	/* Destroy a queue for VCD dump frames. */
-	rc2 = MSIM_TSQ_Destroy(&mcu.vcd_queue);
-	if (rc2 == MSIM_TSQ_NOTINIT) {
-		MSIM_LOG_WARN("cannot destroy a queue for VCD dump frames: "
-		              "it is not initialized");
 	}
 
 	return rc;

@@ -37,8 +37,6 @@
 
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
-#define CLK_RISE		0
-#define CLK_FALL		1
 #define TICKS_MAX		UINT64_MAX
 #define LOG			(mcu->log)
 #define LOGSZ			MSIM_AVR_LOGSZ
@@ -77,51 +75,31 @@ static struct init_func_info init_funcs[] = {
 
 static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 
-int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
-                      unsigned long addr, unsigned char firmware_test)
+int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint64_t steps, uint64_t addr,
+                      uint8_t firmware_test)
 {
-	FILE *vcd_f = NULL;	/* File to write VCD dump to */
-	uint64_t tick = 0;	/* # of ticks (rises+falls) sinse start */
+	uint64_t tick = 0;	/* # of ticks sinse start */
 	uint8_t tick_ovf = 0;	/* Ticks overflow flag */
-	int ret_code = 0;	/* Return code */
+	int rc = 0;
+	struct MSIM_AVR_VCD *vcd = &mcu->vcd;
 
 	/* Do we have registers to dump? */
-	if (mcu->vcd->i >= 0) {
-		vcd_f = MSIM_AVR_VCDOpenDump(mcu, mcu->vcd_file);
-		if (vcd_f == NULL) {
+	if (vcd->regs[0].i >= 0) {
+		rc = MSIM_AVR_VCDOpen(mcu);
+		if (rc != 0) {
 			snprintf(LOG, LOGSZ, "failed to open a VCD file %s to "
-			         "write to", mcu->vcd_file);
+			         "write to", vcd->dump_file);
 			MSIM_LOG_FATAL(LOG);
 			return -1;
 		}
 	}
-
 	/* Force MCU to run in a firmware-test mode. */
 	if (firmware_test) {
 		MSIM_LOG_DEBUG("running in a firmware test mode");
 		mcu->state = AVR_RUNNING;
 	}
 
-	/* Main simulation loop. Each iteration represents both rise (R) and
-	 * fall (F) of the microcontroller's clock. It's necessary to dump
-	 * CLK_IO to the timing diagram in a pulse-accurate way.
-	 *
-	 *                          MAIN LOOP ITERATIONS
-	 *            R     F     R     F     R     F     R     F     R
-	 *           /     /     /     /     /     /     /     /     /
-	 *          |           |           |           |           |
-	 *          |_____      |_____      |_____      |_____      |_____
-	 *          |     |     |     |     |     |     |     |     |     |
-	 * CLK_IO   |     |     |     |     |     |     |     |     |     |
-	 *          |     |_____|     |_____|     |_____|     |_____|     |__
-	 *          |           |           |           |           |
-	 *          |           |___________|           |___________|
-	 *          |           |           |           |           |
-	 * CLK_IO/2 |           |           |           |           |
-	 *          |___________|           |___________|           |________
-	 *          |           |           |           |           |
-	 *          |           |           |           |           |
-	 */
+	/* Main simulation loop. */
 	while (1) {
 		/* The main simulation loop can be terminated by setting
 		 * MCU state to AVR_MSIM_STOP. The primary (and maybe only)
@@ -139,7 +117,7 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_TESTFAIL)) {
 			MSIM_LOG_DEBUG("simulation terminated because of a "
 			               "failed test");
-			ret_code = 1;
+			rc = 1;
 			break;
 		}
 
@@ -151,7 +129,7 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 			         "from GDB RSP client failed: pc=0x%06" PRIX32,
 			         mcu->pc);
 			MSIM_LOG_FATAL(mcu->log);
-			ret_code = 1;
+			rc = 1;
 			break;
 		}
 
@@ -169,8 +147,8 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 		MSIM_AVR_LUATickModels(mcu);
 
 		/* Dump registers to VCD */
-		if (vcd_f && !tick_ovf) {
-			MSIM_AVR_VCDDumpFrame(vcd_f, mcu, tick, CLK_RISE);
+		if (vcd->dump && !tick_ovf) {
+			MSIM_AVR_VCDDumpFrame(mcu, tick);
 		}
 
 		/* Test scope of a program counter within flash size */
@@ -180,7 +158,7 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 			         ", flashend=0x%06" PRIX32,
 			         mcu->pc>>1, mcu->flashend>>1);
 			MSIM_LOG_FATAL(mcu->log);
-			ret_code = 1;
+			rc = 1;
 			break;
 		}
 		/* Test scope of a program counter */
@@ -189,7 +167,7 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 			         "is out of scope: pc=0x%06" PRIX32 ", pm_size"
 			         "=0x%06" PRIX32, mcu->pc, mcu->pm_size);
 			MSIM_LOG_FATAL(mcu->log);
-			ret_code = 1;
+			rc = 1;
 			break;
 		}
 
@@ -220,7 +198,7 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 			         "instruction failed: pc=0x%06" PRIX32,
 			         mcu->pc);
 			MSIM_LOG_FATAL(mcu->log);
-			ret_code = 1;
+			rc = 1;
 			break;
 		}
 
@@ -261,24 +239,19 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
 			tick_ovf = 1;
 			MSIM_LOG_WARN("maximum amount of simulation ticks "
 			              "reached");
-			if (vcd_f != NULL) {
+			if (vcd->dump != NULL) {
 				MSIM_LOG_WARN("VCD dump will not be recorded "
 				              "further");
 			}
 		} else {
 			tick++;
 		}
-		/* Dump a fall to VCD */
-		if (vcd_f && !tick_ovf) {
-			MSIM_AVR_VCDDumpFrame(vcd_f, mcu, tick, CLK_FALL);
-		}
-		tick++;
 	}
 
-	if (vcd_f) {
-		fclose(vcd_f);
-	}
-	return ret_code;
+	/* We may need to close a previously initialized VCD dump. */
+	MSIM_AVR_VCDClose(mcu);
+
+	return rc;
 }
 
 int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,

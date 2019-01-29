@@ -225,13 +225,9 @@ struct MSIM_AVR {
 	struct MSIM_AVR_BLD bls;
 	struct MSIM_AVR_INT intr;
 	struct MSIM_AVR_WDT wdt;
-	struct MSIM_AVR_VCDReg vcd[MSIM_AVR_VCD_REGS];
-	struct MSIM_TSQ vcd_queue;
-#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
-	struct MSIM_PTY pty;
-#endif
+	struct MSIM_AVR_VCD vcd;
 	struct MSIM_AVR_USART usart;
-	char vcd_file[4096];
+	struct MSIM_PTY pty;
 };
 
 #ifdef __cplusplus

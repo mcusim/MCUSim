@@ -55,8 +55,8 @@ extern "C" {
  *
  * Simulator can be started in firmware test mode, i.e. no debuggers or
  * any external events are necessary to perform a simulation. */
-int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, unsigned long steps,
-                      unsigned long addr, unsigned char firmware_test);
+int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint64_t steps, uint64_t addr,
+                      uint8_t firmware_test);
 
 /* Initializes an MCU into specific model determined by the given name.
  * It is, generally, a good idea to prepare specific MCU model using this

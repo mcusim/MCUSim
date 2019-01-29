@@ -184,8 +184,8 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	}
 	/* Init registers to be included into VCD dump */
 	for (i = 0; i < MSIM_AVR_VCD_REGS; i++) {
-		mcu->vcd[i].i = -1;
-		mcu->vcd[i].reg_lowi = -1;
+		mcu->vcd.regs[i].i = -1;
+		mcu->vcd.regs[i].reg_lowi = -1;
 	}
 
 #ifdef AVR_INIT_IOREGS

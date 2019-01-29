@@ -68,16 +68,23 @@ struct MSIM_AVR_VCDReg {
 	char name[16];
 };
 
-FILE *MSIM_AVR_VCDOpenDump(struct MSIM_AVR *mcu, const char *dumpname);
+/* The main structure to describe a VCD dump. */
+struct MSIM_AVR_VCD {
+	FILE *dump;
+	struct MSIM_AVR_VCDReg regs[MSIM_AVR_VCD_REGS];
+	char dump_file[4096];
+};
+
+int MSIM_AVR_VCDOpen(struct MSIM_AVR *mcu);
+
+int MSIM_AVR_VCDClose(struct MSIM_AVR *mcu);
 
 /* Function to dump MCU registers to VCD file.
  * This one is usually called each iteration of the main simulation loop. */
-void MSIM_AVR_VCDDumpFrame(FILE *f, struct MSIM_AVR *mcu, uint64_t tick,
-                           uint8_t fall);
+void MSIM_AVR_VCDDumpFrame(struct MSIM_AVR *mcu, uint64_t tick);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* MSIM_AVR_VCD_H_ */
-
