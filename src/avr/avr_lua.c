@@ -127,10 +127,12 @@ int MSIM_AVR_LUALoadModel(struct MSIM_AVR *mcu, char *model)
 		lua_getglobal(lua_states[i], "module_conf");
 		lua_pushlightuserdata(lua_states[i], mcu);
 		if (lua_pcall(lua_states[i], 1, 0, 0) != 0) {
+#ifdef DEBUG
 			snprintf(LOG, LOGSZ, "model %s does not provide "
 			         "configuration function: %s", model,
 			         lua_tostring(lua_states[i], -1));
-			MSIM_LOG_INFO(LOG);
+			MSIM_LOG_DEBUG(LOG);
+#endif
 		}
 	}
 

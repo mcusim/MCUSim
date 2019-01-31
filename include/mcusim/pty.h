@@ -30,8 +30,6 @@
 #ifndef MSIM_PTY_H_
 #define MSIM_PTY_H_ 1
 
-#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -68,7 +66,5 @@ int MSIM_PTY_Read(struct MSIM_PTY *pty, uint8_t *buf, uint32_t len);
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY) */
 
 #endif /* MSIM_PTY_H_ */

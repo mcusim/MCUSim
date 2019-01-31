@@ -24,11 +24,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
+#define _POSIX_C_SOURCE 200112L
+#define _XOPEN_SOURCE 600
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
 

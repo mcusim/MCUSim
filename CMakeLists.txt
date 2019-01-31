@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0142")
+set(MSIM_VERSION "0.1.0143")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -93,6 +93,10 @@ set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
 			src/msim_tsq.c)
 
 # Look for libraries, packages, etc.
+option(LUA_USE_LUAJIT "Use LuaJIT instead of default Lua" ON)
+unset(LUA_FOUND CACHE)
+unset(LUA_INCLUDE_DIR CACHE)
+unset(LUA_LIBRARY CACHE)
 find_package(Lua REQUIRED)
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
@@ -101,9 +105,7 @@ find_package(Threads REQUIRED)
 
 # Set target libraries here
 set(TARGET_LIBS "")
-if (LUA_FOUND AND
-    ((LUA_VERSION_MAJOR EQUAL 5) OR (LUA_VERSION_MAJOR GREATER 5)) AND
-    ((LUA_VERSION_MINOR EQUAL 2) OR (LUA_VERSION_MINOR GREATER 2)))
+if (LUA_FOUND)
 	add_definitions(-DLUA_FOUND=1)
 	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
 	message(STATUS "[OPTION] Building with Lua-based models")

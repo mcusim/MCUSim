@@ -11,11 +11,12 @@ Prerequisites
  build system is required to generate build files for the various operating
  systems including GNU/Linux and Windows.
 
- Lua 5.2 (or above) is the most important dependency and should be installed
- in order to support Lua-based models.
+ LuaJIT 2.0 (or above) should be installed in order to support Lua-based
+ models. Lua 5.1 (or above) can also be used, but is not generally recommended
+ because it may affect a simulation peformance significantly.
 
  If you want to compile MCUSim as an XSPICE code model library (.cm), the
- following software should be installed: GNU make, readline, bison, flex,
+ following software should also be installed: GNU make, readline, bison, flex,
  X11 headers and libs.
 
  If you want to contribute to the project you will need the following

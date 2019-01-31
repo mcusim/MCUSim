@@ -36,7 +36,6 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/luaapi.h"
 #include "mcusim/log.h"
-#ifdef LUA_FOUND
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
@@ -249,6 +248,3 @@ int flua_AVR_WriteIO(lua_State *L)
 	mcu->dm[io_reg] = val;
 	return 0;
 }
-
-#endif /* LUA_FOUND */
-

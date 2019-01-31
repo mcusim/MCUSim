@@ -30,13 +30,8 @@
  * These functions are generally useful to let an operating system to interact
  * with a simulated MCU using "serial port" backed by a pseudo-terminal.
  */
-
-/* glibc (starting from 2.2) requires _XOPEN_SOURCE >= 600 to expose
- * definitions for POSIX.1-2001 base specification plus XSI extension
- * and C99 definitions. */
 #define _POSIX_C_SOURCE 200112L
 #define _XOPEN_SOURCE 600
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <fcntl.h>
