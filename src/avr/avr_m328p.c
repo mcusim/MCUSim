@@ -116,13 +116,16 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 	uint32_t presc;			/* Prescaler value */
 
 	cs0 = DM(TCCR0B)&0x7;
-	wgm0 = (uint8_t) ((DM(TCCR0A)>>WGM00)&1) |
-	       (uint8_t) ((DM(TCCR0A)>>WGM01)&2) |
-	       (uint8_t) ((DM(TCCR0B)>>WGM02)&8);
-	com0a = (uint8_t) ((DM(TCCR0A)>>COM0A0)&6) |
-	        (uint8_t) ((DM(TCCR0A)>>COM0A1)&7);
-	com0b = (uint8_t) ((DM(TCCR0A)>>COM0B0)&4) |
-	        (uint8_t) ((DM(TCCR0A)>>COM0B1)&5);
+
+	wgm0 = (uint8_t) ((DM(TCCR0A)>>WGM00)&1)      |
+	       (uint8_t) (((DM(TCCR0A)>>WGM01)&1)<<1) |
+	       (uint8_t) (((DM(TCCR0B)>>WGM02)&1)<<2);
+
+	com0a = (uint8_t) ((DM(TCCR0A)>>COM0A0)&1) |
+	        (uint8_t) (((DM(TCCR0A)>>COM0A1)&1)<<1);
+
+	com0b = (uint8_t) ((DM(TCCR0A)>>COM0B0)&1) |
+	        (uint8_t) (((DM(TCCR0A)>>COM0B1)&1)<<1);
 
 	switch (cs0) {
 	case 0x1:
@@ -183,19 +186,6 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 		}
 		tc0_presc = presc;
 		tc0_ticks = 0;
-	}
-	/* Timer Counting mechanism */
-	if (tc0_ticks == (tc0_presc-1)) {
-		if (DM(TCNT0) == 0xFF) {
-			/* Reset Timer/Counter0 */
-			DM(TCNT0) = 0;
-			/* Timer/Counter0 overflow occured */
-			DM(TIFR0) |= (1<<TOV0);
-		} else {		/* Count UP on tick */
-			DM(TCNT0)++;
-		}
-		tc0_ticks = 0;		/* Calculate next tick */
-		return;
 	}
 
 	switch (wgm0) {
@@ -290,7 +280,8 @@ static void timer0_ctc(struct MSIM_AVR *mcu,
 				DM(TIFR0) |= (1<<OCF0A);
 				/* Manipulate on the OCR0A (PD6) pin  */
 				timer0_oc0_nonpwm(mcu, com0a, com0b, A_CHAN);
-			} else if (DM(TCNT0) == DM(OCR0B)) {
+			}
+			if (DM(TCNT0) == DM(OCR0B)) {
 				/* Set TC0 Output Compare B Flag */
 				DM(TIFR0) |= (1<<OCF0B);
 				/* Manipulate on the OCR0B (PD5) pin  */
@@ -329,7 +320,7 @@ static void timer0_oc0_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
 	/* Note that the Data Direction Register (DDR)
 	   bit corresponding to the OCR0x pin must be set in
 	   order to enable the output driver.  */
-	if ((com != NOT_CONNECTED) && (!IS_SET(DM(DDRB), pin))) {
+	if ((com != NOT_CONNECTED) && (!IS_SET(DM(DDRD), pin))) {
 		com = NOT_CONNECTED;
 	}
 
