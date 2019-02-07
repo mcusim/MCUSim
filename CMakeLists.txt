@@ -32,7 +32,7 @@ cmake_minimum_required(VERSION 3.2)
 project(mcusim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0144")
+set(MSIM_VERSION "0.1.0145")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -240,6 +240,12 @@ define_filename_for_sources(${MCUSIM})
 # Link MCUSim executable
 target_link_libraries(${MCUSIM} ${MCUSIM_LIB})
 target_link_libraries(${MCUSIM} ${TARGET_LIBS})
+# Add LuaJIT-specific flags for 64-bit build on macOS
+if (APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+	message(STATUS "Linking MCUSim with LuaJIT-specific flags on macOS with 64-bit build")
+	target_link_libraries(${MCUSIM} "-pagezero_size 10000")
+	target_link_libraries(${MCUSIM} "-image_base 100000000")
+endif()
 
 # Install MCUSim executable, library and headers.
 install(TARGETS ${MCUSIM} DESTINATION bin)

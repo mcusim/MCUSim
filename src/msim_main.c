@@ -464,19 +464,20 @@ static void print_config(struct MSIM_AVR *m)
 	snprintf(m->log, LOGSZ, "lock bits: 0x%02X", m->lockbits);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "reset vector address: 0x%06lX", reset_pc);
+	snprintf(m->log, LOGSZ, "reset vector address: 0x%06" PRIX64,
+	         reset_pc);
 	MSIM_LOG_INFO(m->log);
 
 	snprintf(m->log, LOGSZ, "interrupt vectors table address: "
-	         "0x%06lX", ivt);
+	         "0x%06" PRIX64, ivt);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "flash section: 0x%06lX-0x%06lX",
+	snprintf(m->log, LOGSZ, "flash section: 0x%06" PRIX64 "-0x%06" PRIX64,
 	         flashstart, flashend);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "bootloader section: 0x%06lX-0x%06lX",
-	         blsstart, blsend);
+	snprintf(m->log, LOGSZ, "bootloader section: 0x%06" PRIX64 "-0x%06"
+	         PRIX64, blsstart, blsend);
 	MSIM_LOG_INFO(m->log);
 }
 
