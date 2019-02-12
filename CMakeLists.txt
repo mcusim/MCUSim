@@ -1,5 +1,5 @@
 #
-# Copyright 2017-2018 The MCUSim Project.
+# Copyright 2017-2019 The MCUSim Project.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -25,14 +25,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# MCUSim build configuration file.
+# Configuration file of the MCUSim build system.
 #
-# Verbose output of the build process can be activated using 'make VERBOSE=1'.
+# NOTE: Verbose output of the build process can be activated
+# using 'make VERBOSE=1'.
+#
 cmake_minimum_required(VERSION 3.2)
-project(mcusim C)
+project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0145")
+set(MSIM_VERSION "0.1.0146")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -54,23 +56,25 @@ include(CheckIncludeFiles)
 
 # Set flags here
 if (CMAKE_BUILD_TYPE MATCHES Debug)
-	message(STATUS "[OPTION] Building MCUSim ${MSIM_VERSION} (debug)")
+	message(STATUS "Building a debug version of MCUSim ${MSIM_VERSION}")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDEBUG")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		add_definitions(" -g -Wall -pedantic -std=iso9899:1999")
 		add_definitions(" -Wshadow -Wpointer-arith -Wcast-qual")
 		add_definitions(" -Wcast-align -Wstrict-prototypes")
-		add_definitions(" -Wmissing-prototypes -Wconversion -Wsign-compare")
+		add_definitions(" -Wmissing-prototypes -Wconversion")
+		add_definitions(" -Wsign-compare")
 	endif()
 else()
-	message(STATUS "[OPTION] Building MCUSim ${MSIM_VERSION} (release)")
+	message(STATUS "Building a release version of MCUSim ${MSIM_VERSION}")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		add_definitions(" -Wall -pedantic -std=iso9899:1999 -O3")
 		add_definitions(" -Wshadow -Wpointer-arith -Wcast-qual")
 		add_definitions(" -Wcast-align -Wstrict-prototypes")
-		add_definitions(" -Wmissing-prototypes -Wconversion -Wsign-compare")
+		add_definitions(" -Wmissing-prototypes -Wconversion")
+		add_definitions(" -Wsign-compare")
 	endif()
 endif()
 
@@ -108,9 +112,9 @@ set(TARGET_LIBS "")
 if (LUA_FOUND)
 	add_definitions(-DLUA_FOUND=1)
 	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
-	message(STATUS "[OPTION] Building with Lua-based models")
+	message(STATUS "Building with Lua-based models")
 else()
-	message(FATAL_ERROR "[OPTION] Building without Lua-based models")
+	message(FATAL_ERROR "Building without Lua-based models")
 endif()
 
 if (CMAKE_USE_PTHREADS_INIT)
@@ -134,10 +138,10 @@ check_function_exists(close HAVE_POSIX_CLOSE)
 check_function_exists(read HAVE_POSIX_READ)
 check_function_exists(write HAVE_POSIX_WRITE)
 if (WITH_POSIX_PTY MATCHES True)
-	message(STATUS "[OPTION] POSIX pseudo-terminals strictly required")
+	message(STATUS "POSIX pseudo-terminals strictly required")
 endif()
 if (WITH_POSIX_PTY MATCHES False)
-	message(STATUS "[OPTION] POSIX pseudo-terminals strictly not required")
+	message(STATUS "POSIX pseudo-terminals strictly not required")
 endif()
 if (HAVE_POSIX_OPENPT AND
     HAVE_POSIX_GRANTPT AND
@@ -148,16 +152,16 @@ if (HAVE_POSIX_OPENPT AND
     HAVE_POSIX_READ AND
     HAVE_POSIX_WRITE)
 	if (WITH_POSIX_PTY MATCHES False)
-		message(STATUS "[OPTION] Building without POSIX pseudo-terminals")
+		message(STATUS "Building without POSIX pseudo-terminals")
 	else(WITH_POSIX_PTY MATCHES False)
-		message(STATUS "[OPTION] Building with POSIX pseudo-terminals")
+		message(STATUS "Building with POSIX pseudo-terminals")
 		add_definitions(-DMSIM_POSIX_PTY=1)
 	endif(WITH_POSIX_PTY MATCHES False)
 else()
 	if (WITH_POSIX_PTY)
-		message(FATAL_ERROR "[OPTION] Building without POSIX pseudo-terminals")
+		message(FATAL_ERROR "Building without POSIX pseudo-terminals")
 	else()
-		message(STATUS "[OPTION] Building without POSIX pseudo-terminals")
+		message(STATUS "Building without POSIX pseudo-terminals")
 	endif()
 endif()
 check_include_files(netdb.h HAVE_NETDB_H)
@@ -183,9 +187,9 @@ if (NOT CYGWIN)
 	    HAVE_SIGNAL_H AND
 	    CMAKE_USE_PTHREADS_INIT)
 		add_definitions(-DMSIM_POSIX=1)
-		message(STATUS "[OPTION] Building with MSIM_POSIX defined")
+		message(STATUS "Building with MSIM_POSIX defined")
 	else()
-		message(STATUS "[OPTION] Building without MSIM_POSIX defined")
+		message(STATUS "Building without MSIM_POSIX defined")
 	endif()
 else()
 	# CMake cannot find netinet/tcp.h under CYGWIN and it's not
@@ -201,11 +205,11 @@ else()
 	    CMAKE_USE_PTHREADS_INIT)
 		add_definitions(-DMSIM_POSIX=1)
 		add_definitions(-DMSIM_POSIX_CYGWIN=1)
-		message(STATUS "[OPTION] Building with MSIM_POSIX defined")
-		message(STATUS "[OPTION] Building with MSIM_POSIX_CYGWIN defined")
+		message(STATUS "Building with MSIM_POSIX defined")
+		message(STATUS "Building with MSIM_POSIX_CYGWIN defined")
 	else()
-		message(STATUS "[OPTION] Building without MSIM_POSIX defined")
-		message(STATUS "[OPTION] Building without MSIM_POSIX_CYGWIN defined")
+		message(STATUS "Building without MSIM_POSIX defined")
+		message(STATUS "Building without MSIM_POSIX_CYGWIN defined")
 	endif()
 endif()
 
@@ -228,10 +232,10 @@ set_target_properties(${MCUSIM_LIB} PROPERTIES OUTPUT_NAME ${MCUSIM_LIB_NAME})
 if ((WITH_FPIC MATCHES FALSE) OR
     (WITH_FPIC MATCHES false) OR
     (WITH_FPIC MATCHES False))
-	message(STATUS "[OPTION] Building without position-independent code (-fPIC) option")
+	message(STATUS "Building without position-independent code (-fPIC) option")
 	set_target_properties(${MCUSIM_LIB} PROPERTIES POSITION_INDEPENDENT_CODE OFF)
 else()
-	message(STATUS "[OPTION] Building with position-independent code (-fPIC) option")
+	message(STATUS "Building with position-independent code (-fPIC) option")
 	set_target_properties(${MCUSIM_LIB} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
 define_filename_for_sources(${MCUSIM_LIB})

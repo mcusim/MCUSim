@@ -44,24 +44,12 @@ extern "C" {
  * during a simulation. */
 #define MSIM_AVR_LUAMODELS			256
 
-#ifdef LUA_FOUND
-
 /* Load peripherals written in Lua from a given list file. */
 int MSIM_AVR_LUALoadModel(struct MSIM_AVR *mcu, char *model);
 /* Close previously created Lua states. */
 void MSIM_AVR_LUACleanModels(void);
 /* Call a "tick" function of the models during each cycle of simulation. */
 void MSIM_AVR_LUATickModels(struct MSIM_AVR *mcu);
-
-#else
-
-/* Empty macros to replace function which cannot be implemented without
- * Lua library. */
-#define MSIM_AVR_LUALoadModel(mcu, file)	1
-#define MSIM_AVR_LUACleanModels(void)
-#define MSIM_AVR_LUATickModels(mcu)
-
-#endif /* LUA_FOUND */
 
 #ifdef __cplusplus
 }
