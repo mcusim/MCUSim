@@ -27,14 +27,14 @@
 # Configuration file to build MCUSim as XSPICE code model (mcusim.cm) library.
 #
 cmake_minimum_required(VERSION 3.2)
-project(MCUSim-xspice NONE)
+project(MCUSim-XSPICE NONE)
 
 # Version
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Default NGSpice tarball
-set(_NGSPICE_TARBALL "https://kent.dl.sourceforge.net/project/ngspice/ng-spice-rework/28/ngspice-28.tar.gz")
-set(_NGSPICE_TARBALL_MD5 5ee9c0a5f52d69ae20b8ef9b46608769)
+set(_NGSPICE_TARBALL "https://netix.dl.sourceforge.net/project/ngspice/ng-spice-rework/30/ngspice-30.tar.gz")
+set(_NGSPICE_TARBALL_MD5 272653b01dd4529c3c3a1dbd2e1588f1)
 
 if (WITH_XSPICE)
 	include(ExternalProject)

@@ -14,7 +14,7 @@
 +    EXTRA_CFLAGS = -KPIC @MSIM_CFLAGS@
 @@ -46 +46 @@
 -LIBS = -lm
-+LIBS = -lm -lmcusim
++LIBS = -lm -lmsim
 @@ -49 +49 @@
 -LDFLAGS = -shared
 +LDFLAGS = -shared @MSIM_LDFLAGS@
