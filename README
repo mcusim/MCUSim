@@ -1,75 +1,57 @@
 Readme for MCUSim
-=================
+-----------------
 
- MCUSim is a digital simulator of the 8-bit AVR microcontrollers. It is
- written from scratch to assist in circuit simulation, firmware debugging,
- testing, and signal tracing.
+ MCUSim is a digital simulator of the 8-bit microcontrollers. It is written
+ from scratch to assist in circuit simulation, firmware debugging, testing
+ and signal tracing.
 
- There is a configuration file "mcusim.conf" which is installed together with
- the "mcusim" binary and "libmsim.a" library and can be used to tweak
- a behavior of the simulator. It is carefully documented and the best way to
- prepare your own simulation is to copy mcusim.conf to a new directory, adjust
- the options and run mcusim. Firmware and Lua files can be placed in the same
- working directory to be referenced by the relative paths, for instance.
+ Please note that the AVR chips are aimed at the moment. Feel free to start
+ a discussion about a support of any other family or architecture of the
+ microcontrollers.
 
- Script files written in Lua can be used to represent models of the real
- devices during a simulation process. They may affect state of an MCU in
- several ways, e.g. access internal registers, generate signals on its pins or
+ There is an mcusim.conf configuration file installed together with the binary
+ and libmsim which can be used to tweak the program. The best way to prepare
+ your own simulation is to copy it to a new directory, adjust the options and
+ run mcusim. Firmware and Lua files can be placed there also.
+
+ Scripts written in Lua can be used to represent models of the real devices
+ during a simulation process. They may affect state of the chip in several
+ ways, e.g. access internal registers, generate signals on its pins or
  terminate the whole simulation, and play roles of the significant parts of a
- circuit connected to the microcontroller (external EEPROM, humidity sensor,
- MOSFET switch, etc).
+ circuit (external EEPROM, humidity sensor, MOSFET switch, etc).
 
- Registers of a simulated MCU can be saved into a VCD (value change dump)
+ Registers of the simulated MCU can be saved into a VCD (value change dump)
  file and read using GTKWave viewer.
 
 How can I start a discussion?
 -----------------------------
 
- Feel free to ask questions and start a discussion in the mailing lists for
- users or developers. There are no specific rules which one to choose, so
- subscribe and send a letter.
+ Feel free to ask questions and start a discussion in a mailing list for
+ developers. Just subscribe and send a letter.
 
 How can I join the development?
 -------------------------------
 
- To join the development just code the feature you want to add and send
- your patch to the mailing list. Before you start coding check the latest
- development release of MCUSim from our git repository or try to find a
- ticket at https://trac.mcusim.org/report. It might be that your feature has
+ You may drop a note in the mailing list first or just code the feature you
+ want to add and share your patch there. Before you start coding check the
+ latest development release of MCUSim from our git repository or try to find
+ a ticket at https://trac.mcusim.org/report. It might be that your feature has
  already been implemented.
 
  There is no bureaucracy here.
 
-Mailing lists
--------------
+Mailing list
+------------
 
- There are three mailing lists dedicated to the announces, use and development
- of MCUSim.
+ * mcusim-dev@freelists.org:
 
- * mcusim-announce@mcusim.org:
-   MCUSim announces. Subscribe to stay informed about new versions,
-   release notes, etc.
-
- * mcusim@mcusim.org:
-   This is a list for the users of the MCUSim simulator.
-
- * mcusim-dev@mcusim.org:
-   This is a list for developers and "want to be" developers. Subscribe to
-   discuss any development issues and share patches.
-
- To subscribe the list(s), send a message to:
-   <mcusim-announce-subscribe@mcusim.org>
-   <mcusim-subscribe@mcusim.org>
-   <mcusim-dev-subscribe@mcusim.org>
-
- To unsubscribe from the list(s), send a message to:
-   <mcusim-announce-unsubscribe@mcusim.org>
-   <mcusim-unsubscribe@mcusim.org>
-   <mcusim-dev-unsubscribe@mcusim.org>
+   This is a list for developers and anyone who is interested in MCUSim.
+   Subscribe by sending 'subscribe' to mcusim-dev-request@freelists.org or
+   visiting http://www.freelists.org/list/mcusim-dev.
 
 Web sites
 ---------
 
- Source code is hosted at https://github.com/dsalychev/mcusim.
+ Source code is hosted at https://github.com/mcusim/MCUSim.
  Wiki and issue tracker are at https://trac.mcusim.org.
-
+ Mailing list is at https://www.freelists.org/list/mcusim-dev.
