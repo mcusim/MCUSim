@@ -34,7 +34,8 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0147")
+set(MSIM_VERSION "0.1.0148")
+add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
 set(MCUSIM "mcusim")
@@ -45,11 +46,10 @@ set(MCUSIM_LIB_NAME "msim")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Filename.cmake)
 
-add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 add_subdirectory(scripts)	# Scripts and script-based MCUSim models
 add_subdirectory(tests)		# MCUSim simulation tests
 add_subdirectory(misra)		# Configuration to check MISRA C rules
-add_subdirectory(xspice)	# Compile MCUSim as XSPICE .cm library
+add_subdirectory(xspice)	# Compile MCUSim as XSPICE library
 
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
@@ -110,7 +110,6 @@ find_package(Threads REQUIRED)
 # Set target libraries here
 set(TARGET_LIBS "")
 if (LUA_FOUND)
-	add_definitions(-DLUA_FOUND=1)
 	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
 	message(STATUS "Building with Lua-based models")
 else()

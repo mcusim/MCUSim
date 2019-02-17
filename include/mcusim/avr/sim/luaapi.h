@@ -37,11 +37,10 @@
 extern "C" {
 #endif
 
-#include "mcusim/mcusim.h"
-#ifdef LUA_FOUND
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
+#include "mcusim/mcusim.h"
 
 /* Reads bit of a general purpose AVR register (from register file).
  *
@@ -154,8 +153,6 @@ int flua_MSIM_Freq(lua_State *L);
  * 	const char *message;
  */
 int flua_MSIM_Print(lua_State *L);
-
-#endif /* LUA_FOUND */
 
 #ifdef __cplusplus
 }

@@ -38,10 +38,9 @@ Install from tarball (e.g. mcusim-0.2.0.tar.gz)
  Now change directory in to the top-level source directory (where this
  INSTALL file can be found) and type:
 
-        $ mkdir build-release
-        $ cd build-release
-        $ cmake -DWITH_LUA=True -DWITH_POSIX_PTY=True -DWITH_POSIX_THREADS=True ..
-        $ make
+        $ mkdir build
+        $ cd build
+        $ cmake .. && make
 
  There are optional steps to run tests and install a library of the simulator
  (libmsim), headers, default configuration file (mcusim.conf) and executable
@@ -50,15 +49,9 @@ Install from tarball (e.g. mcusim-0.2.0.tar.gz)
 	$ make tests
         $ sudo make install
 
- The default install directory for executables is /usr/local/bin. These steps
- will be enough to compile a basic version of MCUSim. See the section titled
- 'Advanced install' for instructions about additional arguments that can be
- passed to cmake to customize the build and installation.
-
- Useful MCUSim version can be compiled with the prefered cmake arguments:
- -DWITH_LUA=True -DWITH_POSIX_PTY=True -DWITH_POSIX_THREADS=True
- -DWITH_XSPICE=True
- (see 'Advanced install' section for details).
+ The default install directory for executables is /usr/local/bin.
+ See the section titled 'Advanced install' for instructions about additional
+ arguments that can be passed to cmake to customize the build and installation.
 
  FreeBSD users may have to add "-I/usr/local/include" to the CFLAGS
  environment variable and "-L/usr/local/lib" to the LDFLAGS environment
@@ -71,7 +64,7 @@ Install from the git repository
  This part covers installation from sources taken directly from the git
  repository. You may wish to follow this way if you want to use the most
  recent version of MCUSim with the latest features or contribute to the
- repository.
+ project.
 
  Clone repository using:
 
@@ -95,18 +88,10 @@ Advanced install
 
  These options can be provided to CMake during 'cmake ..' configuration step:
 
- -DCMAKE_BUILD_TYPE=Release
-        Build a release version of MCUSim. This is a default option.
-        Executables will not have debug symbols included. Debug output will
-        be disabled.
-
  -DCMAKE_BUILD_TYPE=Debug
-        Build a debug version of MCUSim. Executables will have debug symbols
-        included.
-
- -DWITH_LUA=True
-        Build MCUSim with Lua-based models support. Configuration will not be
-        finished successfully if Lua is not installed.
+        Build a debug version of MCUSim. Debug symbols will be included into
+        a binary and library of MCUSim. Note that the release version can be
+        built by default.
 
  -DWITH_XSPICE=True
         Build MCUSim with XSPICE code model (i.e. mcusim.cm) library.
@@ -130,14 +115,3 @@ Advanced install
         Build MCUSim library with a position-independent code (-fPIC) option.
         This one is true by default and can be deactivated by providing a
         false value.
-
- -DWITH_POSIX_PTY=True
-        Build MCUSim with POSIX pseudo-terminals support. Configuration
-        will not be finished successfully if POSIX pseudo-terminals are not
-        supported by the host operating system. False value forces MCUSim to
-        not support pseudo-terminals even if they are available.
-
- -DWITH_POSIX_THREADS=True
-        Build MCUSim with POSIX threads. Configuration will not be finished
-        successfully if the POSIX threads are not supported by the host
-        operating system.

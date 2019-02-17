@@ -124,18 +124,16 @@ int MSIM_AVR_LUALoadModel(struct MSIM_AVR *mcu, char *model)
 		lua_pushlightuserdata(lua_states[i], mcu);
 		if (lua_pcall(lua_states[i], 1, 0, 0) != 0) {
 #ifdef DEBUG
-			snprintf(LOG, LOGSZ, "model %s does not provide "
+			snprintf(LOG, LOGSZ, "model %s does not provide a "
 			         "configuration function: %s", model,
 			         lua_tostring(lua_states[i], -1));
 			MSIM_LOG_DEBUG(LOG);
 #endif
 		}
-
 		/* Find a "module_tick" function and push it onto a stack.
 		 * This is a cache mechanism of the function value. */
 		lua_getglobal(lua_states[i], "module_tick");
 	}
-
 	return err;
 }
 
@@ -153,19 +151,23 @@ void MSIM_AVR_LUATickModels(struct MSIM_AVR *mcu)
 {
 	for (uint32_t i = 0; i < models_num; i++) {
 		if (lua_states[i] == NULL) {
-			continue;
+			break;
 		}
-
 		/* Push a cached value of the "module_tick" function onto
 		 * the stack. */
 		lua_pushvalue(lua_states[i], -1);
 		/* Push argument to call the "module_tick" function. */
 		lua_pushlightuserdata(lua_states[i], mcu);
-
+#ifndef DEBUG
+		/* Call the "module_tick" function. */
+		lua_call(lua_states[i], 1, 0);
+#else
+		/* Call the "module_tick" function (protected call). */
 		if (lua_pcall(lua_states[i], 1, 0, 0) != 0) {
 			snprintf(LOG, LOGSZ, "cannot run module_tick(): %s",
 			         lua_tostring(lua_states[i], -1));
-			MSIM_LOG_ERROR(LOG);
+			MSIM_LOG_DEBUG(LOG);
 		}
+#endif
 	}
 }

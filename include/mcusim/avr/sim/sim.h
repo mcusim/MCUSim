@@ -50,6 +50,8 @@ extern "C" {
 #include "mcusim/avr/sim/io.h"
 #include "mcusim/avr/sim/wdt.h"
 #include "mcusim/avr/sim/usart.h"
+#include "mcusim/avr/sim/interrupt.h"
+#include "mcusim/avr/sim/bootloader.h"
 
 /* Forward declaration of the structure to describe AVR microcontroller
  * instance. */
