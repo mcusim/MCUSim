@@ -117,30 +117,17 @@ matrix:
             - libluajit-5.1-dev
       env:
         - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
-# macOS with GCC --------------------------------------------------------------
-    - os: osx
-      osx_image: xcode8
-      env:
-        - MATRIX_EVAL="brew install luajit && CC=gcc-4.9 && CXX=g++-4.9"
-    - os: osx
-      osx_image: xcode8
-      env:
-        - MATRIX_EVAL="brew install gcc5 luajit && CC=gcc-5 && CXX=g++-5"
-    - os: osx
-      osx_image: xcode8
-      env:
-        - MATRIX_EVAL="brew install gcc6 luajit && CC=gcc-6 && CXX=g++-6"
-    - os: osx
-      osx_image: xcode8
-      env:
-        - MATRIX_EVAL="brew install gcc luajit && CC=gcc-7 && CXX=g++-7"
 # macOS with Clang ------------------------------------------------------------
     - os: osx
-      osx_image: xcode10.1
+      osx_image: xcode8
       env:
         - MATRIX_EVAL="brew install luajit"
     - os: osx
       osx_image: xcode9.4
+      env:
+        - MATRIX_EVAL="brew install luajit"
+    - os: osx
+      osx_image: xcode10.1
       env:
         - MATRIX_EVAL="brew install luajit"
 # -----------------------------------------------------------------------------
