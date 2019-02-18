@@ -36,6 +36,7 @@
 extern "C" {
 #endif
 
+#ifdef __FILENAME__
 /* Logging macros. This is a preferred way to log anything. */
 #define MSIM_LOG_FATAL(msg) MSIM_LOG_Log(MSIM_LOG_LVLFATAL,		\
                 "fatal", __FILENAME__, __LINE__, msg);
@@ -48,13 +49,33 @@ extern "C" {
 
 #define MSIM_LOG_INFO(msg) MSIM_LOG_Log(MSIM_LOG_LVLINFO,		\
                 "info", __FILENAME__, __LINE__, msg);
+#else /* __FILENAME __ is not defined */
+/* Logging macros. This is a preferred way to log anything. */
+#define MSIM_LOG_FATAL(msg) MSIM_LOG_Log(MSIM_LOG_LVLFATAL,		\
+                "fatal", __FILE__, __LINE__, msg);
 
-#ifdef DEBUG
+#define MSIM_LOG_ERROR(msg) MSIM_LOG_Log(MSIM_LOG_LVLERROR,		\
+                "error", __FILE__, __LINE__, msg);
+
+#define MSIM_LOG_WARN(msg) MSIM_LOG_Log(MSIM_LOG_LVLWARNING,		\
+                "warning", __FILE__, __LINE__, msg);
+
+#define MSIM_LOG_INFO(msg) MSIM_LOG_Log(MSIM_LOG_LVLINFO,		\
+                "info", __FILE__, __LINE__, msg);
+#endif /* __FILENAME__ */
+
+
+#if defined(DEBUG) && defined(__FILENAME__)
 #define MSIM_LOG_DEBUG(msg) MSIM_LOG_Log(MSIM_LOG_LVLDEBUG,		\
                 "debug", __FILENAME__, __LINE__, msg);
-#else /* DEBUG is not defined */
+#endif
+#if defined(DEBUG) && !defined(__FILENAME__)
+#define MSIM_LOG_DEBUG(msg) MSIM_LOG_Log(MSIM_LOG_LVLDEBUG,		\
+                "debug", __FILE__, __LINE__, msg);
+#endif
+#ifndef DEBUG
 #define MSIM_LOG_DEBUG(msg)
-#endif /* DEBUG */
+#endif
 
 /* Test logging level macros. This is a preferred way to check a current
  * logging level. */

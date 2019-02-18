@@ -33,7 +33,7 @@ project(MCUSim-XSPICE NONE)
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Default NGSpice tarball
-set(_NGSPICE_TARBALL "https://netix.dl.sourceforge.net/project/ngspice/ng-spice-rework/30/ngspice-30.tar.gz")
+set(_NGSPICE_TARBALL "ngspice-30.tar.gz")
 set(_NGSPICE_TARBALL_MD5 272653b01dd4529c3c3a1dbd2e1588f1)
 
 if (WITH_XSPICE)
@@ -48,7 +48,7 @@ if (WITH_XSPICE)
 		set(_NGSPICE_TARBALL_MD5 ${NGSPICE_TARBALL_MD5})
 	endif()
 
-	message(STATUS "Building with XSPICE code model library (i.e. mcusim.cm)")
+	message(STATUS "Building with XSPICE code model library")
 	message(STATUS "Building with NGSpice tarball: ${_NGSPICE_TARBALL}")
 	message(STATUS "Building with NGSpice tarball MD5: ${_NGSPICE_TARBALL_MD5}")
 	message(STATUS "Building with NGSpice configuration: --enable-xspice --disable-debug --with-readline=yes")
@@ -75,11 +75,26 @@ if (WITH_XSPICE)
 		set(MSIM_LDFLAGS "${MSIM_LDFLAGS} -L/usr/local/lib")
 	endif()
 
+	# Copy a tarball with NGSpice sources
+	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${_NGSPICE_TARBALL} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+
 	# Copy script to apply NGSpice patches
 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/patch-ngspice-sources DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches)
 
-	# Copy all sub-directories to the binary directory
-	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/src DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches)
+	# Copy and configure all of the XSPICE library files
+	file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches/src/xspice/icm/mcusim/msim)
+	configure_file(
+		src/xspice/icm/mcusim/modpath.lst
+		ngspice/patches/src/xspice/icm/mcusim/ @ONLY)
+	configure_file(
+		src/xspice/icm/mcusim/udnpath.lst
+		ngspice/patches/src/xspice/icm/mcusim/ @ONLY)
+	configure_file(
+		src/xspice/icm/mcusim/msim/cfunc.mod.c
+		ngspice/patches/src/xspice/icm/mcusim/msim/cfunc.mod @ONLY)
+	configure_file(
+		src/xspice/icm/mcusim/msim/ifspec.ifs
+		ngspice/patches/src/xspice/icm/mcusim/msim @ONLY)
 
 	# Copy and configure all patches to the binary directory
 	file(GLOB PATCHES ${CMAKE_CURRENT_SOURCE_DIR}/ngspice-*.patch)
@@ -93,13 +108,13 @@ if (WITH_XSPICE)
 
 	ExternalProject_Add(
 		mcusim-ngspice-codemodel
-		URL ${_NGSPICE_TARBALL}
+		URL ${CMAKE_CURRENT_BINARY_DIR}/${_NGSPICE_TARBALL}
 		URL_MD5 ${_NGSPICE_TARBALL_MD5}
 		PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ngspice
 		SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngspice/src
 		TMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngspice/tmp
 		STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngspice/stamp
-		BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngspice/release
+		BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngspice/bin
 		# Patch working directory: SOURCE_DIR
 		PATCH_COMMAND "../patches/patch-ngspice-sources"
 		# Configuration working directory: BINARY_DIR
@@ -110,5 +125,5 @@ if (WITH_XSPICE)
 		TEST_COMMAND ""
 	)
 else()
-	message(STATUS "Building without XSPICE code model library (i.e. mcusim.cm)")
+	message(STATUS "Building without XSPICE code model library")
 endif()

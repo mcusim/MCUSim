@@ -1,0 +1,174 @@
+/*
+ * Copyright 2017-2019 The MCUSim Project.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the MCUSim or its parts nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * SUMMARY
+ *
+ *	This file contains the interface specification file (IFS) for the
+ *	microcontrollers provided by MCUSim.
+ */
+
+NAME_TABLE:
+
+C_Function_Name:	MSIM_CM
+Spice_Model_Name:	msim
+Description:		"Microcontrollers provided by MCUSim"
+
+/* ---------------------------- Ports -------------------------------------- */
+PORT_TABLE:
+
+Port_Name:		clk		reset
+Description:		"clock"		"reset"
+Direction:		in		in
+Default_Type:		d		d
+Allowed_Types:		[d]		[d]
+Vector:			no		no
+Vector_Bounds:		-		-
+Null_Allowed:		no		yes
+
+PORT_TABLE:
+
+Port_Name:		Ain		Aout
+Description:		"port A (in)"	"port A (out)"
+Direction:		in		out
+Default_Type:		d		d
+Allowed_Types:		[d]		[d]
+Vector:			yes		yes
+Vector_Bounds:		[1 8]		[1 8]
+Null_Allowed:		yes		yes
+
+PORT_TABLE:
+
+Port_Name:		Bin		Bout
+Description:		"port B (in)"	"port B (out)"
+Direction:		in		out
+Default_Type:		d		d
+Allowed_Types:		[d]		[d]
+Vector:			yes		yes
+Vector_Bounds:		[1 8]		[1 8]
+Null_Allowed:		yes		yes
+
+PORT_TABLE:
+
+Port_Name:		Cin		Cout
+Description:		"port C (in)"	"port C (out)"
+Direction:		in		out
+Default_Type:		d		d
+Allowed_Types:		[d]		[d]
+Vector:			yes		yes
+Vector_Bounds:		[1 8]		[1 8]
+Null_Allowed:		yes		yes
+
+PORT_TABLE:
+
+Port_Name:		Din		Dout
+Description:		"port D (in)"	"port D (out)"
+Direction:		in		out
+Default_Type:		d		d
+Allowed_Types:		[d]		[d]
+Vector:			yes		yes
+Vector_Bounds:		[1 8]		[1 8]
+Null_Allowed:		yes		yes
+
+PORT_TABLE:
+
+Port_Name:		Ein		Eout
+Description:		"port E (in)"	"port E (out)"
+Direction:		in		out
+Default_Type:		d		d
+Allowed_Types:		[d]		[d]
+Vector:			yes		yes
+Vector_Bounds:		[1 8]		[1 8]
+Null_Allowed:		yes		yes
+
+PORT_TABLE:
+
+Port_Name:		Fin		Fout
+Description:		"port F (in)"	"port F (out)"
+Direction:		in		out
+Default_Type:		d		d
+Allowed_Types:		[d]		[d]
+Vector:			yes		yes
+Vector_Bounds:		[1 8]		[1 8]
+Null_Allowed:		yes		yes
+
+/* ---------------------------- Parameters --------------------------------- */
+PARAMETER_TABLE:
+
+Parameter_Name:		config_file
+Description:		"path to the MCUSim configuration file"
+Data_Type:		string
+Default_Value:		"mcusim.conf"
+Limits:			-
+Vector:			no
+Vector_Bounds:		-
+Null_Allowed:		no
+
+PARAMETER_TABLE:
+
+Parameter_Name:		input_load
+Description:		"input loading capacitance (F)"
+Data_Type:		real
+Default_Value:		1.0e-12
+Limits:			-
+Vector:			no
+Vector_Bounds:		-
+Null_Allowed:		no
+
+PARAMETER_TABLE:
+
+Parameter_Name:		clk_load
+Description:		"clock loading capacitance (F)"
+Data_Type:		real
+Default_Value:		1.0e-12
+Limits:			-
+Vector:			no
+Vector_Bounds:		-
+Null_Allowed:		no
+
+PARAMETER_TABLE:
+
+Parameter_Name:		reset_load
+Description:		"reset loading capacitance (F)"
+Data_Type:		real
+Default_Value:		1.0e-12
+Limits:			-
+Vector:			no
+Vector_Bounds:		-
+Null_Allowed:		no
+
+/* ---------------------------- Static variables --------------------------- */
+STATIC_VAR_TABLE:
+
+Static_Var_Name:	mcu
+Description:		"AVR MCU descriptor"
+Data_Type:		pointer
+
+STATIC_VAR_TABLE:
+
+Static_Var_Name:	cfg
+Description:		"Configuration of the simulator"
+Data_Type:		pointer
