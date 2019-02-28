@@ -72,6 +72,7 @@ struct MSIM_CFG {
 };
 
 int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename);
+int MSIM_CFG_PrintVersion(void);
 
 #ifdef __cplusplus
 }

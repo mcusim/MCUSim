@@ -46,6 +46,11 @@ int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename)
 	uint32_t buflen = sizeof buf/sizeof buf[0];
 	int rc = 0;
 
+#ifdef DEBUG
+	/* Adjust logging level in the debug version. */
+	MSIM_LOG_SetLevel(MSIM_LOG_LVLDEBUG);
+#endif
+
 	FILE *f = fopen(filename, "r");
 	if (f == NULL) {
 		rc = 1;
@@ -66,6 +71,27 @@ int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename)
 		fclose(f);
 	}
 	return rc;
+}
+
+int MSIM_CFG_PrintVersion(void)
+{
+#ifndef DEBUG
+	printf("MCUSim %s: Microcontroller-based circuit simulator\n"
+	       "        Copyright 2017-2019 The MCUSim Project.\n"
+	       "        Please find documentation at https://trac.mcusim.org\n"
+	       "        Please file your bug-reports at "
+	       "https://trac.mcusim.org/newticket\n", MSIM_VERSION);
+#else
+	/* Adjust logging level in the debug version. */
+	MSIM_LOG_SetLevel(MSIM_LOG_LVLDEBUG);
+	printf("MCUSim %s: Microcontroller-based circuit simulator "
+	       "(debug)\n"
+	       "        Copyright 2017-2019 The MCUSim Project.\n"
+	       "        Please find documentation at https://trac.mcusim.org\n"
+	       "        Please file your bug-reports at "
+	       "https://trac.mcusim.org/newticket\n", MSIM_VERSION);
+#endif
+	return 0;
 }
 
 static int read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,

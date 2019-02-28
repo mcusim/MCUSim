@@ -28,16 +28,18 @@
  * SUMMARY
  *
  *	This file contains the interface specification file (IFS) for the
- *	microcontrollers provided by MCUSim.
+ *	simulated microcontroller of ATmega8A provided by MCUSim.
  */
 
 NAME_TABLE:
 
-C_Function_Name:	MSIM_CM
-Spice_Model_Name:	msim
-Description:		"Microcontrollers provided by MCUSim"
+C_Function_Name:	MSIM_CM_M8A
+Spice_Model_Name:	msim_m8a
+Description:		"Simulated microcontroller of ATmega8A"
 
-/* ---------------------------- Ports -------------------------------------- */
+/* ------------------------------------------------------------------------- */
+/* Ports */
+/* ------------------------------------------------------------------------- */
 PORT_TABLE:
 
 Port_Name:		clk		reset
@@ -51,19 +53,8 @@ Null_Allowed:		no		yes
 
 PORT_TABLE:
 
-Port_Name:		Ain		Aout
-Description:		"port A (in)"	"port A (out)"
-Direction:		in		out
-Default_Type:		d		d
-Allowed_Types:		[d]		[d]
-Vector:			yes		yes
-Vector_Bounds:		[1 8]		[1 8]
-Null_Allowed:		yes		yes
-
-PORT_TABLE:
-
 Port_Name:		Bin		Bout
-Description:		"port B (in)"	"port B (out)"
+Description:		"port B"	"port B"
 Direction:		in		out
 Default_Type:		d		d
 Allowed_Types:		[d]		[d]
@@ -74,18 +65,18 @@ Null_Allowed:		yes		yes
 PORT_TABLE:
 
 Port_Name:		Cin		Cout
-Description:		"port C (in)"	"port C (out)"
+Description:		"port C"	"port C"
 Direction:		in		out
 Default_Type:		d		d
 Allowed_Types:		[d]		[d]
 Vector:			yes		yes
-Vector_Bounds:		[1 8]		[1 8]
+Vector_Bounds:		[1 6]		[1 6]
 Null_Allowed:		yes		yes
 
 PORT_TABLE:
 
 Port_Name:		Din		Dout
-Description:		"port D (in)"	"port D (out)"
+Description:		"port D"	"port D"
 Direction:		in		out
 Default_Type:		d		d
 Allowed_Types:		[d]		[d]
@@ -93,33 +84,13 @@ Vector:			yes		yes
 Vector_Bounds:		[1 8]		[1 8]
 Null_Allowed:		yes		yes
 
-PORT_TABLE:
-
-Port_Name:		Ein		Eout
-Description:		"port E (in)"	"port E (out)"
-Direction:		in		out
-Default_Type:		d		d
-Allowed_Types:		[d]		[d]
-Vector:			yes		yes
-Vector_Bounds:		[1 8]		[1 8]
-Null_Allowed:		yes		yes
-
-PORT_TABLE:
-
-Port_Name:		Fin		Fout
-Description:		"port F (in)"	"port F (out)"
-Direction:		in		out
-Default_Type:		d		d
-Allowed_Types:		[d]		[d]
-Vector:			yes		yes
-Vector_Bounds:		[1 8]		[1 8]
-Null_Allowed:		yes		yes
-
-/* ---------------------------- Parameters --------------------------------- */
+/* ------------------------------------------------------------------------- */
+/* Parameters */
+/* ------------------------------------------------------------------------- */
 PARAMETER_TABLE:
 
 Parameter_Name:		config_file
-Description:		"path to the MCUSim configuration file"
+Description:		"path to the configuration file of MCUSim"
 Data_Type:		string
 Default_Value:		"mcusim.conf"
 Limits:			-
@@ -160,15 +131,13 @@ Vector:			no
 Vector_Bounds:		-
 Null_Allowed:		no
 
-/* ---------------------------- Static variables --------------------------- */
-STATIC_VAR_TABLE:
+PARAMETER_TABLE:
 
-Static_Var_Name:	mcu
-Description:		"AVR MCU descriptor"
-Data_Type:		pointer
-
-STATIC_VAR_TABLE:
-
-Static_Var_Name:	cfg
-Description:		"Configuration of the simulator"
-Data_Type:		pointer
+Parameter_Name:		clk_delay		reset_delay
+Description:		"delay from CLK"	"delay from reset"
+Data_Type:		real			real
+Default_Value:		1.0e-12			1.0e-12
+Limits:			-			-
+Vector:			no			no
+Vector_Bounds:		-			-
+Null_Allowed:		yes			yes

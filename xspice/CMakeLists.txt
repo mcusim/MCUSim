@@ -1,9 +1,9 @@
 #
-# Copyright (c) 2018, The MCUSim Contributors
-# All rights reserved.
+# Copyright 2017-2019 The MCUSim Project.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
+#
 #     * Redistributions of source code must retain the above copyright
 #       notice, this list of conditions and the following disclaimer.
 #     * Redistributions in binary form must reproduce the above copyright
@@ -12,6 +12,7 @@
 #     * Neither the name of the MCUSim or its parts nor the
 #       names of its contributors may be used to endorse or promote products
 #       derived from this software without specific prior written permission.
+#
 # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
 # THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -48,10 +49,11 @@ if (WITH_XSPICE)
 		set(_NGSPICE_TARBALL_MD5 ${NGSPICE_TARBALL_MD5})
 	endif()
 
-	message(STATUS "Building with XSPICE code model library")
-	message(STATUS "Building with NGSpice tarball: ${_NGSPICE_TARBALL}")
-	message(STATUS "Building with NGSpice tarball MD5: ${_NGSPICE_TARBALL_MD5}")
-	message(STATUS "Building with NGSpice configuration: --enable-xspice --disable-debug --with-readline=yes")
+	if (CMAKE_BUILD_TYPE MATCHES Debug)
+		set(_NGSPICE_DEBUG "")
+	else()
+		set(_NGSPICE_DEBUG "--disable-debug")
+	endif()
 
 	if (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
 		find_program(_NGSPICE_MAKE gmake)
@@ -65,24 +67,31 @@ if (WITH_XSPICE)
 	if (NGSPICE_MAKE)
 		set(_NGSPICE_MAKE ${NGSPICE_MAKE})
 	endif()
+	message(STATUS "Building with XSPICE code model library: mcusim.cm")
+	message(STATUS "Building with NGSpice tarball: ${_NGSPICE_TARBALL}")
+	message(STATUS "Building with NGSpice tarball MD5: ${_NGSPICE_TARBALL_MD5}")
 	message(STATUS "Building with NGSpice make: ${_NGSPICE_MAKE}")
+	message(STATUS "Building with NGSpice configuration: --enable-xspice --with-readline=yes ${_NGSPICE_DEBUG}")
 
-	# Set flags to link code model library against MCUSim library
+	# Set flags to link code model library
 	set(MSIM_CFLAGS "$ENV{CFLAGS} -I${CMAKE_BINARY_DIR}/include")
+	set(MSIM_CFLAGS "${MSIM_CFLAGS} -DMSIM_VERSION=\"${MSIM_VERSION}\"")
 	set(MSIM_LDFLAGS "$ENV{LDFLAGS} -L${CMAKE_BINARY_DIR}")
 	if (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
 		set(MSIM_CFLAGS "${MSIM_CFLAGS} -I/usr/local/include")
 		set(MSIM_LDFLAGS "${MSIM_LDFLAGS} -L/usr/local/lib")
 	endif()
+	set(MSIM_LIBS "-lmsim -lluajit-5.1")
 
 	# Copy a tarball with NGSpice sources
 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${_NGSPICE_TARBALL} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-
 	# Copy script to apply NGSpice patches
 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/patch-ngspice-sources DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches)
 
 	# Copy and configure all of the XSPICE library files
-	file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches/src/xspice/icm/mcusim/msim)
+	file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches/src/xspice/icm/mcusim/m328)
+	file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches/src/xspice/icm/mcusim/m328p)
+	file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches/src/xspice/icm/mcusim/m8a)
 	configure_file(
 		src/xspice/icm/mcusim/modpath.lst
 		ngspice/patches/src/xspice/icm/mcusim/ @ONLY)
@@ -90,11 +99,11 @@ if (WITH_XSPICE)
 		src/xspice/icm/mcusim/udnpath.lst
 		ngspice/patches/src/xspice/icm/mcusim/ @ONLY)
 	configure_file(
-		src/xspice/icm/mcusim/msim/cfunc.mod.c
-		ngspice/patches/src/xspice/icm/mcusim/msim/cfunc.mod @ONLY)
+		src/xspice/icm/mcusim/m8a/cfunc.mod.c
+		ngspice/patches/src/xspice/icm/mcusim/m8a/cfunc.mod @ONLY)
 	configure_file(
-		src/xspice/icm/mcusim/msim/ifspec.ifs
-		ngspice/patches/src/xspice/icm/mcusim/msim @ONLY)
+		src/xspice/icm/mcusim/m8a/ifspec.ifs
+		ngspice/patches/src/xspice/icm/mcusim/m8a @ONLY)
 
 	# Copy and configure all patches to the binary directory
 	file(GLOB PATCHES ${CMAKE_CURRENT_SOURCE_DIR}/ngspice-*.patch)
@@ -118,7 +127,7 @@ if (WITH_XSPICE)
 		# Patch working directory: SOURCE_DIR
 		PATCH_COMMAND "../patches/patch-ngspice-sources"
 		# Configuration working directory: BINARY_DIR
-		CONFIGURE_COMMAND "../src/configure" CFLAGS=${MSIM_CFLAGS} LDFLAGS=${MSIM_LDFLAGS} --enable-xspice --disable-debug --with-readline=yes
+		CONFIGURE_COMMAND "../src/configure" CFLAGS=${MSIM_CFLAGS} LDFLAGS=${MSIM_LDFLAGS} --enable-xspice --with-readline=yes ${_NGSPICE_DEBUG}
 		# Build working directory: BINARY_DIR
 		BUILD_COMMAND "${_NGSPICE_MAKE}"
 		INSTALL_COMMAND ""

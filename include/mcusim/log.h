@@ -31,12 +31,24 @@
 #define MSIM_LOG_H_ 1
 
 #include <stdint.h>
+#include <string.h>
+
+/* Macro to denote a filename separator. */
+#if defined(_WIN64) || defined(_WIN32)
+#define __FILE_SEP__ '\\'
+#else
+#define __FILE_SEP__ '/'
+#endif
+
+#ifndef __FILENAME__
+#define __FILENAME__ ((strrchr(__FILE__,__FILE_SEP__)==NULL)		\
+                      ?(__FILE__):(strrchr(__FILE__,__FILE_SEP__)+1))
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef __FILENAME__
 /* Logging macros. This is a preferred way to log anything. */
 #define MSIM_LOG_FATAL(msg) MSIM_LOG_Log(MSIM_LOG_LVLFATAL,		\
                 "fatal", __FILENAME__, __LINE__, msg);
@@ -49,31 +61,13 @@ extern "C" {
 
 #define MSIM_LOG_INFO(msg) MSIM_LOG_Log(MSIM_LOG_LVLINFO,		\
                 "info", __FILENAME__, __LINE__, msg);
-#else /* __FILENAME __ is not defined */
-/* Logging macros. This is a preferred way to log anything. */
-#define MSIM_LOG_FATAL(msg) MSIM_LOG_Log(MSIM_LOG_LVLFATAL,		\
-                "fatal", __FILE__, __LINE__, msg);
 
-#define MSIM_LOG_ERROR(msg) MSIM_LOG_Log(MSIM_LOG_LVLERROR,		\
-                "error", __FILE__, __LINE__, msg);
-
-#define MSIM_LOG_WARN(msg) MSIM_LOG_Log(MSIM_LOG_LVLWARNING,		\
-                "warning", __FILE__, __LINE__, msg);
-
-#define MSIM_LOG_INFO(msg) MSIM_LOG_Log(MSIM_LOG_LVLINFO,		\
-                "info", __FILE__, __LINE__, msg);
-#endif /* __FILENAME__ */
-
-
-#if defined(DEBUG) && defined(__FILENAME__)
+#if defined(DEBUG)
+/* Print debug messages if DEBUG is defined only. */
 #define MSIM_LOG_DEBUG(msg) MSIM_LOG_Log(MSIM_LOG_LVLDEBUG,		\
                 "debug", __FILENAME__, __LINE__, msg);
-#endif
-#if defined(DEBUG) && !defined(__FILENAME__)
-#define MSIM_LOG_DEBUG(msg) MSIM_LOG_Log(MSIM_LOG_LVLDEBUG,		\
-                "debug", __FILE__, __LINE__, msg);
-#endif
-#ifndef DEBUG
+#else
+/* Print nothing otherwise. */
 #define MSIM_LOG_DEBUG(msg)
 #endif
 

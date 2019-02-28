@@ -189,7 +189,6 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 		/* Set USART registers */
 		ubrrh_buf = 0;
 
-#if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
 		/* Create a pseudo-terminal for this MCU */
 		mcu->pty.master_fd = -1;
 		mcu->pty.slave_fd = -1;
@@ -200,7 +199,6 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 			         "available via: %s", mcu->pty.slave_name);
 			MSIM_LOG_INFO(mcu->log);
 		}
-#endif
 	}
 	return r;
 }

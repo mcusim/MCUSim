@@ -89,7 +89,6 @@ static struct MSIM_CFG conf;
 static void print_usage(void);
 static void print_short_usage(void);
 static void print_config(struct MSIM_AVR *m);
-static void print_version(void);
 static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val);
 static int set_lock(struct MSIM_AVR *m, uint8_t val);
 static void dump_flash_handler(int s);
@@ -129,7 +128,7 @@ int main(int argc, char *argv[])
 	sigaction(SIGSEGV, &dmpflash_act, NULL);
 	sigaction(SIGTERM, &dmpflash_act, NULL);
 
-	print_version();
+	MSIM_CFG_PrintVersion();
 
 	/* Interpret command ling arguments */
 	c = getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
@@ -416,24 +415,6 @@ static void print_usage(void)
 static void print_short_usage(void)
 {
 	printf("Usage: mcusim --help\n");
-}
-
-static void print_version(void)
-{
-#ifndef DEBUG
-	printf("MCUSim %s: Microcontroller-based circuit simulator\n"
-	       "        Copyright 2017-2018 The MCUSim Project.\n"
-	       "        Please find documentation at https://trac.mcusim.org\n"
-	       "        Please file your bug-reports at "
-	       "https://trac.mcusim.org/newticket\n", MSIM_VERSION);
-#else
-	printf("MCUSim %s: Microcontroller-based circuit simulator "
-	       "(debug)\n"
-	       "        Copyright 2017-2018 The MCUSim Project.\n"
-	       "        Please find documentation at https://trac.mcusim.org\n"
-	       "        Please file your bug-reports at "
-	       "https://trac.mcusim.org/newticket\n", MSIM_VERSION);
-#endif
 }
 
 static void print_config(struct MSIM_AVR *m)

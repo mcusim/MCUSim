@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0149")
+set(MSIM_VERSION "0.1.0150")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -95,6 +95,9 @@ set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
 			src/msim_log.c
 			src/msim_pty.c
 			src/msim_tsq.c)
+
+# Prefer static libraries to link against
+set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 # Look for libraries, packages, etc.
 option(LUA_USE_LUAJIT "Use LuaJIT instead of default Lua" ON)
