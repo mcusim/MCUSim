@@ -159,8 +159,8 @@ matrix:
             - ubuntu-toolchain-r-test
           packages:
             - g++-7
-            - liblua-5.2
-            - liblua-5.2-dev
+            - liblua5.2-0
+            - liblua5.2-dev
             - libreadline6
             - libreadline6-dev
             - bison
