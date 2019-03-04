@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0152")
+set(MSIM_VERSION "0.1.0153")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -197,7 +197,7 @@ if (NOT CYGWIN)
 	endif()
 else()
 	# CMake cannot find netinet/tcp.h under CYGWIN and it's not
-	# required, to be honest. Let me ignore this header silently.
+	# required. Let it be ignored silently.
 	if (HAVE_NETDB_H AND
 	    HAVE_SYS_SOCKET_H AND
 	    HAVE_STRING_H AND
@@ -229,25 +229,20 @@ if (LUA_FOUND)
 	include_directories(${LUA_INCLUDE_DIR})
 endif()
 
-# Compile MCUSim library and executable
-add_library(${MCUSIM_LIB} STATIC ${MCUSIM_LIB_SOURCES})
+# Compile MCUSim libraries and executable
+add_library(objlib OBJECT ${MCUSIM_LIB_SOURCES})
+set_property(TARGET objlib PROPERTY POSITION_INDEPENDENT_CODE 1)
+add_library(${MCUSIM_LIB} SHARED $<TARGET_OBJECTS:objlib>)
+add_library("${MCUSIM_LIB}-static" STATIC $<TARGET_OBJECTS:objlib>)
 add_executable(${MCUSIM} src/msim_main.c)
 set_target_properties(${MCUSIM_LIB} PROPERTIES OUTPUT_NAME ${MCUSIM_LIB_NAME})
-if ((WITH_FPIC MATCHES FALSE) OR
-    (WITH_FPIC MATCHES false) OR
-    (WITH_FPIC MATCHES False))
-	message(STATUS "Building without position-independent code (-fPIC) option")
-	set_target_properties(${MCUSIM_LIB} PROPERTIES POSITION_INDEPENDENT_CODE OFF)
-else()
-	message(STATUS "Building with position-independent code (-fPIC) option")
-	set_target_properties(${MCUSIM_LIB} PROPERTIES POSITION_INDEPENDENT_CODE ON)
-endif()
+set_target_properties("${MCUSIM_LIB}-static" PROPERTIES OUTPUT_NAME ${MCUSIM_LIB_NAME})
 define_filename_for_sources(${MCUSIM_LIB})
 define_filename_for_sources(${MCUSIM})
 
 # Link MCUSim executable
+target_link_libraries(${MCUSIM_LIB} ${TARGET_LIBS})
 target_link_libraries(${MCUSIM} ${MCUSIM_LIB})
-target_link_libraries(${MCUSIM} ${TARGET_LIBS})
 if (APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND LUA_TYPE MATCHES "LuaJIT")
 	# Add LuaJIT-specific flags for 64-bit build on macOS
 	message(STATUS "Linking MCUSim with LuaJIT-specific flags on macOS with 64-bit build")
@@ -258,5 +253,6 @@ endif()
 # Install MCUSim executable, library and headers.
 install(TARGETS ${MCUSIM} DESTINATION bin)
 install(TARGETS ${MCUSIM_LIB} DESTINATION lib)
+install(TARGETS "${MCUSIM_LIB}-static" DESTINATION lib)
 install(DIRECTORY ${CMAKE_BINARY_DIR}/include/mcusim DESTINATION include
         FILES_MATCHING PATTERN "*.h")

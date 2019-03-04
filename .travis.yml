@@ -150,7 +150,32 @@ matrix:
             - libxinerama-dev
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
-        - CMAKE_PARAMS="-DCMAKE_BUILD_TYPE=Debug -DWITH_XSPICE=True"
+        - CMAKE_PARAMS="-DWITH_XSPICE=True"
+# GNU/Linux with liblua and XSPICE code model  --------------------------------
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+            - liblua-5.2
+            - liblua-5.2-dev
+            - libreadline6
+            - libreadline6-dev
+            - bison
+            - flex
+            - libx11-6
+            - libx11-dev
+            - libxau6
+            - libxau-dev
+            - libxext6
+            - libxext-dev
+            - libxinerama1
+            - libxinerama-dev
+      env:
+        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+        - CMAKE_PARAMS="-DWITH_LUA=True -DWITH_XSPICE=True"
 # -----------------------------------------------------------------------------
 
 # Build phases are defined according to their order in Travis CI.

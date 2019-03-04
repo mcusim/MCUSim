@@ -81,7 +81,7 @@ if (WITH_XSPICE)
 		set(MSIM_CFLAGS "${MSIM_CFLAGS} -I/usr/local/include")
 		set(MSIM_LDFLAGS "${MSIM_LDFLAGS} -L/usr/local/lib")
 	endif()
-	set(MSIM_LIBS "-lmsim -lluajit-5.1")
+	set(MSIM_LIBS "-lmsim")
 
 	# Copy a tarball with NGSpice sources
 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${_NGSPICE_TARBALL} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

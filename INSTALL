@@ -122,9 +122,3 @@ Advanced install
  -DNGSPICE_TARBALL_MD5=a11c1f99753934be7d60c0ab43821bbc
 
         MD5 hash of the NGSpice tarball provided via -DNGSPICE_TARBALL option.
-
- -DWITH_FPIC=True|False
-
-        Build MCUSim library with a position-independent code (-fPIC) option.
-        This one is true by default and can be deactivated by providing a
-        false value.
