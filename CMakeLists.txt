@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0151")
+set(MSIM_VERSION "0.1.0152")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -97,11 +97,16 @@ set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
 			src/msim_tsq.c)
 
 # Look for libraries, packages, etc.
-option(LUA_USE_LUAJIT "Use LuaJIT instead of default Lua" ON)
 unset(LUA_FOUND CACHE)
 unset(LUA_INCLUDE_DIR CACHE)
 unset(LUA_LIBRARY CACHE)
-find_package(Lua REQUIRED)
+if (WITH_LUA)
+	set(LUA_TYPE "Lua")
+	find_package(Lua REQUIRED)
+else()
+	set(LUA_TYPE "LuaJIT")
+	find_package(LuaJIT REQUIRED)
+endif()
 
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -243,8 +248,8 @@ define_filename_for_sources(${MCUSIM})
 # Link MCUSim executable
 target_link_libraries(${MCUSIM} ${MCUSIM_LIB})
 target_link_libraries(${MCUSIM} ${TARGET_LIBS})
-# Add LuaJIT-specific flags for 64-bit build on macOS
-if (APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8)
+if (APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND LUA_TYPE MATCHES "LuaJIT")
+	# Add LuaJIT-specific flags for 64-bit build on macOS
 	message(STATUS "Linking MCUSim with LuaJIT-specific flags on macOS with 64-bit build")
 	target_link_libraries(${MCUSIM} "-pagezero_size 10000")
 	target_link_libraries(${MCUSIM} "-image_base 100000000")

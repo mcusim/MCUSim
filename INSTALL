@@ -7,36 +7,34 @@ Prerequisites
 -------------
 
  MCUSim is written in C99 on FreeBSD and macOS operating systems with
- POSIX.1-2001 and X/Open System Interfaces (XSI) extension in mind. CMake
- build system is required to generate build files for the various operating
- systems including GNU/Linux and Windows.
+ POSIX.1-2001 in mind. CMake build system is required to generate build files
+ for the various operating systems including GNU/Linux and Windows.
 
- LuaJIT 2.0 (or above) should be installed in order to support Lua-based
- models. Lua 5.1 (or above) can also be used, but is not generally recommended
- because it may affect a simulation peformance significantly.
+ libluajit (2.0 or above) should be installed in order to support Lua-based
+ models. liblua (5.1 or above) can also be used, but is not generally
+ recommended because it may decrease a simulation peformance significantly.
 
- If you want to compile MCUSim as an XSPICE code model library (.cm), the
- following software should also be installed: GNU make, readline, bison, flex,
- X11 headers and libs.
+ If you want to compile MCUSim as an XSPICE library (mcusim.cm), the following
+ software should also be installed: GNU make, readline, bison, flex.
 
  If you want to contribute to the project you will need the following
  software installed: astyle, python (2.7 or above), cppcheck (1.83 or above),
  avr-libc (optional, to compile AVR tests firmware), srecord (optional,
  to compile AVR tests firmware).
 
-Install from tarball (e.g. mcusim-0.2.0.tar.gz)
-------------------------------------------------
+Install from tarball
+--------------------
 
- This part covers installation from a release distribution (for example
- mcusim-0.2.0.tar.gz). You may download tarball with the latest release
- version from http://mcusim.org.
+ This part covers installation from a release distribution
+ (MCUSim-0.2.0.tar.gz, for example). You may download a tarball with the
+ latest release version from http://mcusim.org.
 
- After downloading the tarball to a local directory unpack it using:
+ After downloading unpack it to a local directory:
 
-        $ tar -xvf mcusim-0.2.0.tar.gz
+        $ tar -xvf MCUSim-0.2.0.tar.gz
 
- Now change directory in to the top-level source directory (where this
- INSTALL file can be found) and type:
+ Now change the directory to the top-level source one (where this INSTALL file
+ can be found) and type:
 
         $ mkdir build
         $ cd build
@@ -49,14 +47,13 @@ Install from tarball (e.g. mcusim-0.2.0.tar.gz)
 	$ make tests
         $ sudo make install
 
- The default install directory for executables is /usr/local/bin.
+ The default installation directory is /usr/local.
  See the section titled 'Advanced install' for instructions about additional
  arguments that can be passed to cmake to customize the build and installation.
 
  FreeBSD users may have to add "-I/usr/local/include" to the CFLAGS
- environment variable and "-L/usr/local/lib" to the LDFLAGS environment
- variable to let MCUSim find GNU readline headers and libraries if
- -DWITH_XSPICE option has been enabled.
+ environment variable and "-L/usr/local/lib" to the LDFLAGS to let MCUSim find
+ GNU readline headers and libraries if -DWITH_XSPICE option has been enabled.
 
 Install from the git repository
 -------------------------------
@@ -68,7 +65,7 @@ Install from the git repository
 
  Clone repository using:
 
-        $ git clone git@github.com:dsalychev/mcusim.git
+        $ git clone git@github.com:mcusim/MCUSim.git
 
  And follow the steps after tarball unpacking described above, in the
  'Install from tarball' section. There are options which can be passed to
@@ -88,30 +85,46 @@ Advanced install
 
  These options can be provided to CMake during 'cmake ..' configuration step:
 
- -DCMAKE_BUILD_TYPE=Debug
+ -DCMAKE_BUILD_TYPE=Release|Debug
+
         Build a debug version of MCUSim. Debug symbols will be included into
-        a binary and library of MCUSim. Note that the release version can be
+        a binary and library of MCUSim. Note that the release version will be
         built by default.
 
- -DWITH_XSPICE=True
+ -DWITH_XSPICE=False|True
+
         Build MCUSim with XSPICE code model (i.e. mcusim.cm) library.
-        It is a shared object linked statically with MCUSim which contains
+        It is a shared object statically linked with MCUSim which contains
         NGSpice models of the supported microcontrollers.
-        Please, note that NGSpice tarball with source code will be downloaded,
-        patched and compiled to provide the library (see -DNGSPICE_TARBALL and
+
+        Please, note that NGSpice tarball with source code will be patched and
+        compiled to provide the library (see -DNGSPICE_TARBALL and
         -DNGSPICE_TARBALL_MD5 options also).
 
+ -DWITH_LUA=False|True
+
+        Build MCUSim with a standard Lua implementation (which affects
+        simulation performance, but can be the only option available on some
+        platforms).
+
+        True value means that MCUSim will be using LuaJIT as a main
+        implementation. It is a default behavior.
+
  -DNGSPICE_MAKE=/usr/bin/make
+
         Build NGSpice using specified make utility. It should be GNU make.
 
  -DNGSPICE_TARBALL=/home/dsl/ngspice-28.tar.gz
-        Full path to the NGSpice tarball. This option is useful if you are not
-        going to download tarball from the Web.
+
+        Full path to the NGSpice tarball. This option is useful if you are
+        going to use a custom tarball with NGSpice sources.
 
  -DNGSPICE_TARBALL_MD5=a11c1f99753934be7d60c0ab43821bbc
+
         MD5 hash of the NGSpice tarball provided via -DNGSPICE_TARBALL option.
 
- -DWITH_FPIC=False
+ -DWITH_FPIC=True|False
+
         Build MCUSim library with a position-independent code (-fPIC) option.
         This one is true by default and can be deactivated by providing a
         false value.
