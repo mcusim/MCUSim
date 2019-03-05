@@ -38,6 +38,15 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/mcusim.conf.in
                ${CMAKE_BINARY_DIR}/mcusim.conf @ONLY)
 
 # Install configuration file
-install(FILES ${CMAKE_BINARY_DIR}/mcusim.conf DESTINATION etc)
+if (NOT DEFINED MSIM_CONF_DIR)
+	set(MSIM_CONF_DIR "etc")
+endif()
+message(STATUS "Install config to: ${MSIM_CONF_DIR}")
+install(FILES ${CMAKE_BINARY_DIR}/mcusim.conf DESTINATION ${MSIM_CONF_DIR})
+
 # Install script models
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/models DESTINATION share/mcusim)
+if (NOT DEFINED MSIM_SCRIPT_DIR)
+	set(MSIM_SCRIPT_DIR "share/mcusim")
+endif()
+message(STATUS "Install scripts to: ${MSIM_SCRIPT_DIR}")
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/models DESTINATION ${MSIM_SCRIPT_DIR})

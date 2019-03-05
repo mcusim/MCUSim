@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.0153")
+set(MSIM_VERSION "0.1.0154")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -56,7 +56,7 @@ include(CheckIncludeFiles)
 
 # Set flags here
 if (CMAKE_BUILD_TYPE MATCHES Debug)
-	message(STATUS "Building a debug version of MCUSim ${MSIM_VERSION}")
+	message(STATUS "Building debug version of MCUSim ${MSIM_VERSION}")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDEBUG")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
@@ -67,7 +67,7 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
 		add_definitions(" -Wsign-compare")
 	endif()
 else()
-	message(STATUS "Building a release version of MCUSim ${MSIM_VERSION}")
+	message(STATUS "Building release version of MCUSim ${MSIM_VERSION}")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		add_definitions(" -Wall -pedantic -std=iso9899:1999 -O3")
@@ -125,7 +125,7 @@ if (CMAKE_USE_PTHREADS_INIT)
 	set(TARGET_LIBS ${TARGET_LIBS} Threads::Threads)
 endif()
 
-# Check functions, include files here
+# Check functions, headers here
 if (NOT MSVC)
 	check_function_exists(fmax RESULT)
 	if (NOT RESULT)
@@ -217,13 +217,13 @@ else()
 	endif()
 endif()
 
-# Prepare headers.
+# Prepare headers
 file(COPY ${CMAKE_SOURCE_DIR}/include DESTINATION ${CMAKE_BINARY_DIR}
      FILES_MATCHING PATTERN "*.h")
 configure_file(${CMAKE_SOURCE_DIR}/include/mcusim/config.h.in
                ${CMAKE_BINARY_DIR}/include/mcusim/config.h @ONLY)
 
-# Define include files and directories here.
+# Define include files and directories here
 include_directories("${CMAKE_BINARY_DIR}/include/")
 if (LUA_FOUND)
 	include_directories(${LUA_INCLUDE_DIR})
@@ -240,7 +240,7 @@ set_target_properties("${MCUSIM_LIB}-static" PROPERTIES OUTPUT_NAME ${MCUSIM_LIB
 define_filename_for_sources(${MCUSIM_LIB})
 define_filename_for_sources(${MCUSIM})
 
-# Link MCUSim executable
+# Link MCUSim
 target_link_libraries(${MCUSIM_LIB} ${TARGET_LIBS})
 target_link_libraries(${MCUSIM} ${MCUSIM_LIB})
 if (APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND LUA_TYPE MATCHES "LuaJIT")
@@ -250,9 +250,27 @@ if (APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND LUA_TYPE MATCHES "LuaJIT")
 	target_link_libraries(${MCUSIM} "-image_base 100000000")
 endif()
 
-# Install MCUSim executable, library and headers.
-install(TARGETS ${MCUSIM} DESTINATION bin)
-install(TARGETS ${MCUSIM_LIB} DESTINATION lib)
-install(TARGETS "${MCUSIM_LIB}-static" DESTINATION lib)
-install(DIRECTORY ${CMAKE_BINARY_DIR}/include/mcusim DESTINATION include
+# Install MCUSim executable, library and headers
+message(STATUS "Install to: ${CMAKE_INSTALL_PREFIX}")
+if (NOT DEFINED MSIM_BIN_DIR)
+	set(MSIM_BIN_DIR "bin")
+endif()
+message(STATUS "Install binaries to: ${MSIM_BIN_DIR}")
+if (NOT DEFINED MSIM_LIB_DIR)
+	set(MSIM_LIB_DIR "lib")
+endif()
+message(STATUS "Install shared libraries to: ${MSIM_LIB_DIR}")
+if (NOT DEFINED MSIM_SLIB_DIR)
+	set(MSIM_SLIB_DIR "lib")
+endif()
+message(STATUS "Install static libraries to: ${MSIM_SLIB_DIR}")
+if (NOT DEFINED MSIM_H_DIR)
+	set(MSIM_H_DIR "include")
+endif()
+message(STATUS "Install headers to: ${MSIM_H_DIR}")
+install(TARGETS ${MCUSIM} ${MCUSIM_LIB} "${MCUSIM_LIB}-static"
+	RUNTIME DESTINATION ${MSIM_BIN_DIR}
+	LIBRARY DESTINATION ${MSIM_LIB_DIR}
+	ARCHIVE DESTINATION ${MSIM_SLIB_DIR})
+install(DIRECTORY ${CMAKE_BINARY_DIR}/include/mcusim DESTINATION ${MSIM_H_DIR}
         FILES_MATCHING PATTERN "*.h")

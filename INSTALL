@@ -122,3 +122,42 @@ Advanced install
  -DNGSPICE_TARBALL_MD5=a11c1f99753934be7d60c0ab43821bbc
 
         MD5 hash of the NGSpice tarball provided via -DNGSPICE_TARBALL option.
+
+Install directory
+-----------------
+
+ -DCMAKE_INSTALL_PREFIX=/usr/local
+
+        Name of the directory to install MCUSim to.
+
+ -DMSIM_BIN_DIR=bin
+
+        Prefix to install binaries (and shared libraries on DLL platforms) to.
+        It should be a relative path to form a full one
+        <CMAKE_INSTALL_PREFIX>/<MSIM_BIN_DIR>.
+
+ -DMSIM_LIB_DIR=lib
+
+        Prefix to install shared libraries to (on non-DLL platforms).
+        It should be a relative path to form a full one
+        <CMAKE_INSTALL_PREFIX>/<MSIM_LIB_DIR>.
+
+ -DMSIM_SLIB_DIR=lib
+
+        Prefix to install static libraries to. It should be a relative path to
+        form a full one <CMAKE_INSTALL_PREFIX>/<MSIM_SLIB_DIR>.
+
+ -DMSIM_H_DIR=include
+
+        Prefix to install headers to. It should be a relative path to
+        form a full one <CMAKE_INSTALL_PREFIX>/<MSIM_H_DIR>.
+
+ -DMSIM_CONF_DIR=etc
+
+        Prefix to install configuration files to. It should be a relative path
+        to form a full one <CMAKE_INSTALL_PREFIX>/<MSIM_CONF_DIR>.
+
+ -DMSIM_SCRIPT_DIR=share/mcusim
+
+        Prefix to install scripts and Lua models to. It should be a relative
+        path to form a full one <CMAKE_INSTALL_PREFIX>/<MSIM_SCRIPT_DIR>.
