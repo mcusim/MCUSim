@@ -36,7 +36,7 @@
 #define MSIM_AVR_PMSZ		(256*1024)	/* for program memory */
 #define MSIM_AVR_DMSZ		(64*1024)	/* for data memory */
 #define MSIM_AVR_PM_PAGESZ	(1024)		/* for PM page */
-#define MSIM_AVR_LOGSZ		1024		/* log buffer, in bytes */
+#define MSIM_AVR_LOGSZ		(64*1024)	/* log buffer, in bytes */
 
 #ifdef __cplusplus
 extern "C" {

@@ -1,17 +1,14 @@
-This is a list of supported microcontrollers. Second columnt is a short
-form of MCU name which can be used as an argument to the -p flag of mcusim.
-Supported embedded peripherals are in a third column.
+ This is a list of microcontrollers supported by MCUSim.
 
+ Second column is a short form which can be used as an MCU name in the
+ configuration file. Supported peripherals are in a third column.
 
-ATmega8A        m8a        init, fuses, timer/counter0, timer/counter2,
-                           timer/counter1, interrupts (partially),
-                           USART (initial implementation)
+ Name            Part       Supported features
+ ------------------------------------------------------------------------------
+ ATmega8A        m8a        init, fuses, timers, interrupts (partially),
+ ATmega8         m8         USART (partially)
 
-ATmega8         m8         same as ATmega8A
+ ATmega328P      m328p      init, fuses, timers (partially)
 
-ATmega328P      m328p      init, fuses
-
-ATmega328       m328       init
-
-ATmega2560      m2560      init
+ ATmega328       m328       init
 

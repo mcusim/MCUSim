@@ -27,9 +27,7 @@
  * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
  * OF SUCH DAMAGE.
  *
- * Device models defined as Lua scripts can be used during a scheme
- * simulation in order to substitute important parts (external RAM,
- * displays, etc.) connected to the simulated microcontroller.
+ * Implementation of the MCUSim API for device models written in Lua.
  */
 #include <stdio.h>
 #include <stdint.h>
@@ -40,7 +38,7 @@
 #include "lualib.h"
 #include "lauxlib.h"
 
-int flua_MSIM_SetState(lua_State *L)
+int MSIM_LUAF_SetState(lua_State *L)
 {
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	unsigned int s = (unsigned int)lua_tointeger(L, 2);
@@ -49,21 +47,21 @@ int flua_MSIM_SetState(lua_State *L)
 	return 0; /* Number of results */
 }
 
-int flua_MSIM_Freq(lua_State *L)
+int MSIM_LUAF_Freq(lua_State *L)
 {
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	lua_pushinteger(L, (long)mcu->freq);
 	return 1; /* Number of results */
 }
 
-int flua_MSIM_Print(lua_State *L)
+int MSIM_LUAF_Print(lua_State *L)
 {
 	const char *msg = (const char *)lua_tostring(L, 1);
 	MSIM_LOG_INFO(msg);
 	return 0;
 }
 
-int flua_AVR_RegBit(lua_State *L)
+int MSIM_LUAF_AVRRegBit(lua_State *L)
 {
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	unsigned short reg = (unsigned short)lua_tointeger(L, 2);
@@ -89,7 +87,7 @@ int flua_AVR_RegBit(lua_State *L)
 	return 1;
 }
 
-int flua_AVR_IOBit(lua_State *L)
+int MSIM_LUAF_AVRIOBit(lua_State *L)
 {
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	unsigned short io_reg = (unsigned short)lua_tointeger(L, 2);
@@ -117,7 +115,7 @@ int flua_AVR_IOBit(lua_State *L)
 	return 1;
 }
 
-int flua_AVR_ReadReg(lua_State *L)
+int MSIM_LUAF_AVRReadReg(lua_State *L)
 {
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	unsigned short reg = (unsigned short)lua_tointeger(L, 2);
@@ -134,7 +132,7 @@ int flua_AVR_ReadReg(lua_State *L)
 	return 1;
 }
 
-int flua_AVR_ReadIO(lua_State *L)
+int MSIM_LUAF_AVRReadIO(lua_State *L)
 {
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	unsigned short io_reg = (unsigned short)lua_tointeger(L, 2);
@@ -153,7 +151,7 @@ int flua_AVR_ReadIO(lua_State *L)
 	return 1;
 }
 
-int flua_AVR_SetRegBit(lua_State *L)
+int MSIM_LUAF_AVRSetRegBit(lua_State *L)
 {
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	unsigned short reg = (unsigned short)lua_tointeger(L, 2);
@@ -182,7 +180,7 @@ int flua_AVR_SetRegBit(lua_State *L)
 	return 0;
 }
 
-int flua_AVR_SetIOBit(lua_State *L)
+int MSIM_LUAF_AVRSetIOBit(lua_State *L)
 {
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	unsigned short io_reg = (unsigned short)lua_tointeger(L, 2);
@@ -213,7 +211,7 @@ int flua_AVR_SetIOBit(lua_State *L)
 	return 0;
 }
 
-int flua_AVR_WriteReg(lua_State *L)
+int MSIM_LUAF_AVRWriteReg(lua_State *L)
 {
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	unsigned short reg = (unsigned short)lua_tointeger(L, 2);
@@ -230,7 +228,7 @@ int flua_AVR_WriteReg(lua_State *L)
 	return 0;
 }
 
-int flua_AVR_WriteIO(lua_State *L)
+int MSIM_LUAF_AVRWriteIO(lua_State *L)
 {
 	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
 	unsigned short io_reg = (unsigned short)lua_tointeger(L, 2);

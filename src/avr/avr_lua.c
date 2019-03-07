@@ -65,28 +65,28 @@ int MSIM_AVR_LUALoadModel(struct MSIM_AVR *mcu, char *model)
 	} else {
 		models_num++;
 		/* Register MCUSim API functions */
-		lua_pushcfunction(lua_states[i], flua_AVR_IOBit);
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRIOBit);
 		lua_setglobal(lua_states[i], "AVR_IOBit");
-		lua_pushcfunction(lua_states[i], flua_AVR_ReadIO);
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRReadIO);
 		lua_setglobal(lua_states[i], "AVR_ReadIO");
-		lua_pushcfunction(lua_states[i], flua_AVR_ReadReg);
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRReadReg);
 		lua_setglobal(lua_states[i], "AVR_ReadReg");
-		lua_pushcfunction(lua_states[i], flua_AVR_RegBit);
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRRegBit);
 		lua_setglobal(lua_states[i], "AVR_RegBit");
-		lua_pushcfunction(lua_states[i], flua_AVR_SetIOBit);
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRSetIOBit);
 		lua_setglobal(lua_states[i], "AVR_SetIOBit");
-		lua_pushcfunction(lua_states[i], flua_AVR_SetRegBit);
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRSetRegBit);
 		lua_setglobal(lua_states[i], "AVR_SetRegBit");
-		lua_pushcfunction(lua_states[i], flua_AVR_WriteIO);
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRWriteIO);
 		lua_setglobal(lua_states[i], "AVR_WriteIO");
-		lua_pushcfunction(lua_states[i], flua_AVR_WriteReg);
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRWriteReg);
 		lua_setglobal(lua_states[i], "AVR_WriteReg");
-		lua_pushcfunction(lua_states[i], flua_MSIM_SetState);
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_SetState);
 		lua_setglobal(lua_states[i], "MSIM_SetState");
-		lua_pushcfunction(lua_states[i], flua_MSIM_Freq);
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_Freq);
 		lua_setglobal(lua_states[i], "MSIM_Freq");
 		/* Override existing Lua functions */
-		lua_pushcfunction(lua_states[i], flua_MSIM_Print);
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_Print);
 		lua_setglobal(lua_states[i], "print");
 
 		/* Add registers available for the current MCU model to

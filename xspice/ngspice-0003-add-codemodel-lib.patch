@@ -1,0 +1,10 @@
+--- src/spinit.in	2018-05-15 22:15:14.000000000 +0200
++++ src/spinit.in	2019-03-06 23:15:45.783672000 +0100
+@@ -28,6 +28,7 @@
+ @XSPICEINIT@ codemodel @pkglibdir@/xtradev.cm
+ @XSPICEINIT@ codemodel @pkglibdir@/xtraevt.cm
+ @XSPICEINIT@ codemodel @pkglibdir@/table.cm
++@XSPICEINIT@ codemodel @pkglibdir@/mcusim.cm
+ 
+ end
+ unset __flag

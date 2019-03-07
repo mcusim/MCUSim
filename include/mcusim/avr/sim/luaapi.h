@@ -51,7 +51,7 @@ extern "C" {
  * Returns:
  * 	unsigned char val;
  */
-int flua_AVR_RegBit(lua_State *L);
+int MSIM_LUAF_AVRRegBit(lua_State *L);
 
 /* Reads bit of an I/O AVR register. I/O registers are addressed as
  * data space, i.e. offset of the special function registers should be added.
@@ -63,7 +63,7 @@ int flua_AVR_RegBit(lua_State *L);
  * Returns:
  * 	unsigned char val;
  */
-int flua_AVR_IOBit(lua_State *L);
+int MSIM_LUAF_AVRIOBit(lua_State *L);
 
 /* Reads value of a general purpose AVR register (from register file).
  *
@@ -73,7 +73,7 @@ int flua_AVR_IOBit(lua_State *L);
  * Returns:
  * 	unsigned char val;
  */
-int flua_AVR_ReadReg(lua_State *L);
+int MSIM_LUAF_AVRReadReg(lua_State *L);
 
 /* Reads value of an I/O AVR register. I/O registers are addressed as
  * data space, i.e. offset of the special function registers should be added.
@@ -84,7 +84,7 @@ int flua_AVR_ReadReg(lua_State *L);
  * Returns:
  * 	unsigned char val;
  */
-int flua_AVR_ReadIO(lua_State *L);
+int MSIM_LUAF_AVRReadIO(lua_State *L);
 
 /* Writes bit of a general purpose AVR register (from register file).
  *
@@ -94,7 +94,7 @@ int flua_AVR_ReadIO(lua_State *L);
  * 	unsigned char bit;
  * 	unsigned char val;
  */
-int flua_AVR_SetRegBit(lua_State *L);
+int MSIM_LUAF_AVRSetRegBit(lua_State *L);
 
 /* Writes bit of an I/O AVR register. I/O registers are addressed as
  * data space, i.e. offset of the special function registers should be added.
@@ -105,7 +105,7 @@ int flua_AVR_SetRegBit(lua_State *L);
  * 	unsigned char bit;
  * 	unsigned char val;
  */
-int flua_AVR_SetIOBit(lua_State *L);
+int MSIM_LUAF_AVRSetIOBit(lua_State *L);
 
 /* Writes value to general purpose AVR register (from register file).
  *
@@ -114,7 +114,7 @@ int flua_AVR_SetIOBit(lua_State *L);
  * 	unsigned short reg;
  * 	unsigned char val;
  */
-int flua_AVR_WriteReg(lua_State *L);
+int MSIM_LUAF_AVRWriteReg(lua_State *L);
 
 /* Writes value to I/O AVR register. I/O registers are addressed as
  * data space, i.e. offset of the special function registers should be added.
@@ -124,7 +124,7 @@ int flua_AVR_WriteReg(lua_State *L);
  * 	unsigned short reg;
  * 	unsigned char val;
  */
-int flua_AVR_WriteIO(lua_State *L);
+int MSIM_LUAF_AVRWriteIO(lua_State *L);
 
 /* Set state of a simulated AVR microcontroller. This function is helpful to
  * terminate simulation if it's necessary (test failure, etc.).
@@ -133,7 +133,7 @@ int flua_AVR_WriteIO(lua_State *L);
  * 	struct MSIM_AVR *mcu;
  * 	unsigned int state;
  */
-int flua_MSIM_SetState(lua_State *L);
+int MSIM_LUAF_SetState(lua_State *L);
 
 /* Function to retrieve frequency of the simulated microcontroller. It can be
  * helpful while configuring model.
@@ -143,7 +143,7 @@ int flua_MSIM_SetState(lua_State *L);
  * Returns:
  * 	unsigned long freq;		MCU frequency, in Hz
  */
-int flua_MSIM_Freq(lua_State *L);
+int MSIM_LUAF_Freq(lua_State *L);
 
 /* Function to print anything from a Lua model. It is supposed to be a
  * replacement of a Lua print() function and based on the MCUSim logging
@@ -152,7 +152,7 @@ int flua_MSIM_Freq(lua_State *L);
  * Lua parameters:
  * 	const char *message;
  */
-int flua_MSIM_Print(lua_State *L);
+int MSIM_LUAF_Print(lua_State *L);
 
 #ifdef __cplusplus
 }

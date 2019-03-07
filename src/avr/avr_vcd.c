@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 The MCUSim Project.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -36,17 +36,15 @@
 #define REG_NAMESZ		16
 
 static void print_reg16(char *buf, uint32_t len, uint8_t hr, uint8_t lr);
-static void print_reg(char *buf, unsigned int len, unsigned char r);
-static void print_regbit(char *buf, unsigned int len, unsigned char r,
-                         short bit);
+static void print_reg(char *buf, uint32_t len, uint8_t r);
+static void print_regbit(char *buf, uint32_t len, uint8_t r, int8_t bit);
 
 int MSIM_AVR_VCDOpen(struct MSIM_AVR *mcu)
 {
 	time_t timer;
 	struct tm *tm_info;
 	uint32_t regs = MSIM_AVR_VCD_REGS;
-	uint32_t reg_val;
-	uint8_t rh, rl;
+	uint8_t rh, rl, rv;
 	char buf[32];
 
 	struct MSIM_AVR_VCD *vcd = &mcu->vcd;
@@ -104,23 +102,21 @@ int MSIM_AVR_VCDOpen(struct MSIM_AVR *mcu)
 		}
 
 		reg = &vcd->regs[i];
-		reg_val = *mcu->ioregs[reg->i].addr;
 		if (vcd->regs[i].reg_lowi >= 0) {
 			rh = *mcu->ioregs[reg->i].addr;
 			rl = *mcu->ioregs[reg->reg_lowi].addr;
-			reg_val = ((uint16_t)(rh<<8)&0xFF00U)|
-			          (uint16_t)(rl&0x00FFU);
+		} else {
+			rv = *mcu->ioregs[reg->i].addr;
 		}
 
 		if (vcd->regs[i].reg_lowi >= 0) {
 			print_reg16(buf, sizeof buf, rh, rl);
 			fprintf(f, "b%s %s\n", buf, vcd->regs[i].name);
 		} else if (vcd->regs[i].n < 0) {
-			print_reg(buf, sizeof buf, *mcu->ioregs[reg->i].addr);
+			print_reg(buf, sizeof buf, rv);
 			fprintf(f, "b%s %s\n", buf, reg->name);
 		} else {
-			print_regbit(buf, sizeof buf, *mcu->ioregs[reg->i].addr,
-			             vcd->regs[i].n);
+			print_regbit(buf, sizeof buf, rv, vcd->regs[i].n);
 			fprintf(f, "b%s %s%d\n", buf, reg->name,
 			        vcd->regs[i].n);
 		}
@@ -273,7 +269,7 @@ static void print_reg16(char *buf, uint32_t len, uint8_t hr, uint8_t lr)
 	buf[j] = 0;
 }
 
-static void print_reg(char *buf, unsigned int len, unsigned char r)
+static void print_reg(char *buf, uint32_t len, uint8_t r)
 {
 	uint32_t i;
 	uint32_t j;
@@ -296,8 +292,7 @@ static void print_reg(char *buf, unsigned int len, unsigned char r)
 	buf[j] = 0;
 }
 
-static void print_regbit(char *buf, unsigned int len, unsigned char r,
-                         short bit)
+static void print_regbit(char *buf, uint32_t len, uint8_t r, int8_t bit)
 {
 	if (len < 2) {
 		buf[0] = 0;

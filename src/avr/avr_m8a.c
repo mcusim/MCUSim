@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2017, 2018, The MCUSim Contributors
- * All rights reserved.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -12,6 +12,7 @@
  *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -30,7 +31,6 @@
 #include <stdint.h>
 #include <string.h>
 #include <inttypes.h>
-
 #include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/m8/m8a.h"
 #include "mcusim/avr/sim/mcu_init.h"
@@ -42,8 +42,8 @@
 #define IS_CLEAR(byte, bit)	((~(((byte)>>(bit))&1))&1)
 #define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
 #define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
-#define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
-#define SET(byte, bit)		((byte)|=(1<<(bit)))
+#define CLEAR(byte, bit)	((byte)=(uint8_t)((byte)&(uint8_t)(~(1<<(bit)))))
+#define SET(byte, bit)		((byte)=(uint8_t)((byte)|(uint8_t)(1<<(bit))))
 
 #define IS_WRIT(mcu, byte)	(((mcu->writ_io[0]) == (byte)) ||	\
 				 ((mcu->writ_io[1]) == (byte)) ||	\
@@ -220,7 +220,8 @@ int MSIM_M8ATickPerf(struct MSIM_AVR *mcu)
 int MSIM_M8AResetSPM(struct MSIM_AVR *mcu)
 {
 	if (mcu->spmcsr != NULL) {
-		*mcu->spmcsr &= ~(1<<SPMEN);
+		(*mcu->spmcsr) = (uint8_t)((*mcu->spmcsr) &
+		                           (uint8_t)(~(1<<SPMEN)));
 		/* Generate SPM_RDY interrupt */
 		if ((*mcu->spmcsr>>SPMIE)&1U) {
 			mcu->intr.irq[SPM_RDY_vect_num-1] = 1;
@@ -255,7 +256,8 @@ static void update_watched(struct MSIM_AVR *mcu)
 	if (mcu->spmcsr != NULL) {
 		if (spmen_clear == 1U) {
 			if (spmen_cycles == 0U) {
-				*mcu->spmcsr &= ~(1<<SPMEN);
+				(*mcu->spmcsr) = (uint8_t)((*mcu->spmcsr) &
+				                (uint8_t)(~(1<<SPMEN)));
 				spmen_clear = 0;
 				/* Generate SPM_RDY interrupt */
 				if ((*mcu->spmcsr>>SPMIE)&1U) {
@@ -400,14 +402,14 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 	stop_mode = 0;
 
 	cs1 = DM(TCCR1B)&0x7;
-	wgm1 = (uint8_t) (((DM(TCCR1B)>>WGM13)&1)<<3) |
-	       (uint8_t) (((DM(TCCR1B)>>WGM12)&1)<<2) |
-	       (uint8_t) (((DM(TCCR1A)>>WGM11)&1)<<1) |
-	       (uint8_t) (((DM(TCCR1A)>>WGM10)&1));
-	com1a = (uint8_t) (((DM(TCCR1A)>>COM1A1)&1)<<1) |
-	        (uint8_t) ((DM(TCCR1A)>>COM1A0)&1);
-	com1b = (uint8_t) (((DM(TCCR1A)>>COM1B1)&1)<<1) |
-	        (uint8_t) ((DM(TCCR1A)>>COM1B0)&1);
+	wgm1 = (uint8_t)((uint8_t)(((DM(TCCR1B)>>WGM13)&1)<<3) |
+	                 (uint8_t)(((DM(TCCR1B)>>WGM12)&1)<<2) |
+	                 (uint8_t)(((DM(TCCR1A)>>WGM11)&1)<<1) |
+	                 (uint8_t)(((DM(TCCR1A)>>WGM10)&1)));
+	com1a = (uint8_t)((uint8_t)(((DM(TCCR1A)>>COM1A1)&1)<<1) |
+	                  (uint8_t)((DM(TCCR1A)>>COM1A0)&1));
+	com1b = (uint8_t)((uint8_t)(((DM(TCCR1A)>>COM1B1)&1)<<1) |
+	                  (uint8_t)((DM(TCCR1A)>>COM1B0)&1));
 
 	switch (cs1) {
 	case 0x1:
@@ -442,8 +444,10 @@ static void tick_timer1(struct MSIM_AVR *mcu)
 
 	if ((stop_mode == 0U) && (presc != tc1_presc)) {
 		tc1_presc = presc;
-		ocr1a_buf = ((DM(OCR1AH)<<8)&0xFF00) | (DM(OCR1AL)&0xFF);
-		ocr1b_buf = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL)&0xFF);
+		ocr1a_buf = (uint32_t)(((DM(OCR1AH)<<8)&0xFF00) |
+		                       (DM(OCR1AL)&0xFF));
+		ocr1b_buf = (uint32_t)(((DM(OCR1BH)<<8)&0xFF00) |
+		                       (DM(OCR1BL)&0xFF));
 		/* Should we really clean these ticks? */
 		tc1_ticks = 0;
 	}
@@ -519,8 +523,8 @@ static void tick_timer2(struct MSIM_AVR *mcu)
 	stop_mode = 0;
 
 	cs2 = DM(TCCR2)&0x7;
-	wgm2 = (((DM(TCCR2)>>WGM21)<<1)&2) | ((DM(TCCR2)>>WGM20)&1);
-	com2 = (((DM(TCCR2)>>COM21)<<1)&2) | ((DM(TCCR2)>>COM20)&1);
+	wgm2 = (uint8_t)((((DM(TCCR2)>>WGM21)<<1)&2)|((DM(TCCR2)>>WGM20)&1));
+	com2 = (uint8_t)((((DM(TCCR2)>>COM21)<<1)&2)|((DM(TCCR2)>>COM20)&1));
 
 	switch (cs2) {
 	case 0x1:
@@ -656,11 +660,11 @@ static void tick_usart(struct MSIM_AVR *mcu)
 	if ((IS_WRIT(mcu, UDR)) && (IS_SET(DM(UCSRA), UDRE) == 1U)) {
 		mcu->usart.txb = DM(UDR);
 		/* Clear UDRE flag */
-		DM(UCSRA) &= ~(1<<UDRE);
+		DM(UCSRA) = (uint8_t)(DM(UCSRA)&(uint8_t)(~(1<<UDRE)));
 	}
 
 	if (IS_READ(mcu, UDR)) {
-		DM(UCSRA) &= ~(1<<RXC);
+		DM(UCSRA) = (uint8_t)(DM(UCSRA)&(uint8_t)(~(1<<RXC)));
 	}
 
 	/* Count-down Rx ticks */
@@ -811,15 +815,15 @@ static void usart_transmit(struct MSIM_AVR *mcu)
 	if (((DM(UBRRH)>>UMSEL)&1) == 0U) {
 		/* There is a UBRRH value stored in data memory after
 		 * the last tick of the AVR decoder. */
-		ucsz = (uint8_t)(((DM(UCSRB)>>UCSZ2)&1U)<<2) |
-		       (uint8_t)(((ucsrc_buf>>UCSZ1)&1U)<<1) |
-		       (uint8_t)((ucsrc_buf>>UCSZ0)&1U);
+		ucsz = (uint8_t)((uint8_t)(((DM(UCSRB)>>UCSZ2)&1U)<<2) |
+		                 (uint8_t)(((ucsrc_buf>>UCSZ1)&1U)<<1) |
+		                 (uint8_t)((ucsrc_buf>>UCSZ0)&1U));
 	} else {
 		/* There is a UCSRC value stored in data memory after
 		 * the last tick of the AVR decoder. */
-		ucsz = (uint8_t)(((DM(UCSRB)>>UCSZ2)&1U)<<2) |
-		       (uint8_t)(((DM(UCSRC)>>UCSZ1)&1U)<<1) |
-		       (uint8_t)((DM(UCSRC)>>UCSZ0)&1U);
+		ucsz = (uint8_t)((uint8_t)(((DM(UCSRB)>>UCSZ2)&1U)<<2) |
+		                 (uint8_t)(((DM(UCSRC)>>UCSZ1)&1U)<<1) |
+		                 (uint8_t)((DM(UCSRC)>>UCSZ0)&1U));
 	}
 
 	buf[1] = 0;
@@ -840,7 +844,7 @@ static void usart_transmit(struct MSIM_AVR *mcu)
 		/* NOTE: Should all other bits of buf[1] be filled from the
 		 * next portion of USART transmit data (and not with zeroes)?*/
 		buf[0] = mcu->usart.txb;
-		buf[1] = (DM(UCSRB)>>TXB8)&1U;
+		buf[1] = (DM(UCSRB)>>TXB8)&1;
 		buf_len = 2;
 		break;
 	default:
@@ -890,15 +894,15 @@ static void usart_receive(struct MSIM_AVR *mcu)
 	if (((DM(UBRRH)>>UMSEL)&1) == 0U) {
 		/* There is a UBRRH value stored in data memory after
 		 * the last tick of the AVR decoder. */
-		ucsz = (uint8_t)(((DM(UCSRB)>>UCSZ2)&1U)<<2) |
-		       (uint8_t)(((ucsrc_buf>>UCSZ1)&1U)<<1) |
-		       (uint8_t)((ucsrc_buf>>UCSZ0)&1U);
+		ucsz = (uint8_t)((uint8_t)(((DM(UCSRB)>>UCSZ2)&1U)<<2) |
+		                 (uint8_t)(((ucsrc_buf>>UCSZ1)&1U)<<1) |
+		                 (uint8_t)((ucsrc_buf>>UCSZ0)&1U));
 	} else {
 		/* There is a UCSRC value stored in data memory after
 		 * the last tick of the AVR decoder. */
-		ucsz = (uint8_t)(((DM(UCSRB)>>UCSZ2)&1U)<<2) |
-		       (uint8_t)(((DM(UCSRC)>>UCSZ1)&1U)<<1) |
-		       (uint8_t)((DM(UCSRC)>>UCSZ0)&1U);
+		ucsz = (uint8_t)((uint8_t)(((DM(UCSRB)>>UCSZ2)&1U)<<2) |
+		                 (uint8_t)(((DM(UCSRC)>>UCSZ1)&1U)<<1) |
+		                 (uint8_t)((DM(UCSRC)>>UCSZ0)&1U));
 	}
 
 	switch (ucsz) {
@@ -941,8 +945,10 @@ static void usart_receive(struct MSIM_AVR *mcu)
 				MSIM_LOG_DEBUG(mcu->log);
 #endif
 				DM(UDR) = 0;
-				DM(UDR) |= buf[0]&mask;
-				DM(UCSRB) &= ~(1<<TXB8);
+				DM(UDR) = (uint8_t)(DM(UDR) |
+				                    (uint8_t)(buf[0]&mask));
+				DM(UCSRB) = (uint8_t)(DM(UCSRB) &
+				                      (uint8_t)(~(1<<TXB8)));
 				if ((buf_len == 2U) && ((buf[1]&1) == 1U)) {
 					DM(UCSRB) |= (1<<TXB8);
 				}
@@ -963,9 +969,9 @@ static void timer1_normal(struct MSIM_AVR *mcu,
 	uint32_t tcnt1;
 	uint32_t ocr1a, ocr1b;
 
-	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00) | (DM(TCNT1L)&0xFF);
-	ocr1a = ((DM(OCR1AH)<<8)&0xFF00) | (DM(OCR1AL)&0xFF);
-	ocr1b = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL)&0xFF);
+	tcnt1 = (uint32_t)(((DM(TCNT1H)<<8)&0xFF00)|(DM(TCNT1L)&0xFF));
+	ocr1a = (uint32_t)(((DM(OCR1AH)<<8)&0xFF00)|(DM(OCR1AL)&0xFF));
+	ocr1b = (uint32_t)(((DM(OCR1BH)<<8)&0xFF00)|(DM(OCR1BL)&0xFF));
 
 	if ((*ticks) < (presc-1U)) {
 		(*ticks)++;
@@ -1006,13 +1012,12 @@ static void timer1_ctc(struct MSIM_AVR *mcu, uint32_t presc,
 	uint32_t ocr1a, ocr1b;
 	uint32_t icr1;
 	uint32_t top;
-	uint8_t err;
+	uint8_t err = 0;
 
-	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00) | (DM(TCNT1L)&0xFF);
-	ocr1a = ((DM(OCR1AH)<<8)&0xFF00) | (DM(OCR1AL)&0xFF);
-	ocr1b = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL)&0xFF);
-	icr1 = (((DM(ICR1H)<<8)&0xFF00) | (DM(ICR1L)&0xFF));
-	err = 0;
+	tcnt1 = (uint32_t)(((DM(TCNT1H)<<8)&0xFF00)|(DM(TCNT1L)&0xFF));
+	ocr1a = (uint32_t)(((DM(OCR1AH)<<8)&0xFF00)|(DM(OCR1AL)&0xFF));
+	ocr1b = (uint32_t)(((DM(OCR1BH)<<8)&0xFF00)|(DM(OCR1BL)&0xFF));
+	icr1 = (uint32_t)(((DM(ICR1H)<<8)&0xFF00)|(DM(ICR1L)&0xFF));
 
 	switch (wgm1) {
 	case 4U:
@@ -1095,13 +1100,12 @@ static void timer1_fastpwm(struct MSIM_AVR *mcu, uint32_t presc,
 	uint32_t ocr1a, ocr1b;
 	uint32_t icr1;
 	uint32_t top;
-	uint8_t err;
+	uint8_t err = 0;
 
-	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00) | (DM(TCNT1L)&0xFF);
-	ocr1a = ((DM(OCR1AH)<<8)&0xFF00) | (DM(OCR1AL)&0xFF);
-	ocr1b = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL)&0xFF);
-	icr1 = (((DM(ICR1H)<<8)&0xFF00) | (DM(ICR1L)&0xFF));
-	err = 0;
+	tcnt1 = (uint32_t)(((DM(TCNT1H)<<8)&0xFF00)|(DM(TCNT1L)&0xFF));
+	ocr1a = (uint32_t)(((DM(OCR1AH)<<8)&0xFF00)|(DM(OCR1AL)&0xFF));
+	ocr1b = (uint32_t)(((DM(OCR1BH)<<8)&0xFF00)|(DM(OCR1BL)&0xFF));
+	icr1 = (uint32_t)(((DM(ICR1H)<<8)&0xFF00)|(DM(ICR1L)&0xFF));
 
 	switch (wgm1) {
 	case 5:
@@ -1230,15 +1234,12 @@ static void timer1_pcpwm(struct MSIM_AVR *mcu, uint32_t presc,
 	 * then from TOP back to the BOTTOM and start again. */
 	static uint8_t cnt_down = 0;
 	uint32_t tcnt1;
-	uint32_t ocr1a, ocr1b;
 	uint32_t icr1;
 	uint32_t top;
 	uint8_t err;
 
-	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00) | (DM(TCNT1L)&0xFF);
-	ocr1a = ((DM(OCR1AH)<<8)&0xFF00) | (DM(OCR1AL)&0xFF);
-	ocr1b = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL)&0xFF);
-	icr1 = (((DM(ICR1H)<<8)&0xFF00) | (DM(ICR1L)&0xFF));
+	tcnt1 = (uint32_t)(((DM(TCNT1H)<<8)&0xFF00)|(DM(TCNT1L)&0xFF));
+	icr1 = (uint32_t)(((DM(ICR1H)<<8)&0xFF00)|(DM(ICR1L)&0xFF));
 	err = 0;
 
 	switch (wgm1) {
@@ -1301,7 +1302,7 @@ static void timer1_pcpwm(struct MSIM_AVR *mcu, uint32_t presc,
 				timer1_oc1_pcpwm(mcu, com1a, com1b, A_CHAN,
 				                 COMP_MATCH_UPCNT);
 			}
-			if (tcnt1 == ocr1b) {
+			if (tcnt1 == ocr1b_buf) {
 				DM(TIFR) |= (1<<OCF1B);
 				timer1_oc1_pcpwm(mcu, com1a, com1b, B_CHAN,
 				                 COMP_MATCH_UPCNT);
@@ -1311,10 +1312,10 @@ static void timer1_pcpwm(struct MSIM_AVR *mcu, uint32_t presc,
 			}
 
 			cnt_down = 1;
-			ocr1a_buf = ((DM(OCR1AH)<<8)&0xFF00) |
-			            (DM(OCR1AL)&0x00FF);
-			ocr1b_buf = ((DM(OCR1BH)<<8)&0xFF00) |
-			            (DM(OCR1BL)&0x00FF);
+			ocr1a_buf = (uint32_t)(((DM(OCR1AH)<<8)&0xFF00) |
+			                       (DM(OCR1AL)&0x00FF));
+			ocr1b_buf = (uint32_t)(((DM(OCR1BH)<<8)&0xFF00) |
+			                       (DM(OCR1BL)&0x00FF));
 			tcnt1--;
 		} else if (tcnt1 == 0U) {
 			cnt_down = 0;
@@ -1382,15 +1383,12 @@ static void timer1_pfcpwm(struct MSIM_AVR *mcu, uint32_t presc,
 	 */
 	static uint8_t cnt_down = 0;
 	uint32_t tcnt1;
-	uint32_t ocr1a, ocr1b;
 	uint32_t icr1;
 	uint32_t top;
 	uint8_t err;
 
-	tcnt1 = ((DM(TCNT1H)<<8)&0xFF00) | (DM(TCNT1L)&0xFF);
-	ocr1a = ((DM(OCR1AH)<<8)&0xFF00) | (DM(OCR1AL)&0xFF);
-	ocr1b = ((DM(OCR1BH)<<8)&0xFF00) | (DM(OCR1BL)&0xFF);
-	icr1 = (((DM(ICR1H)<<8)&0xFF00) | (DM(ICR1L)&0xFF));
+	tcnt1 = (uint32_t)(((DM(TCNT1H)<<8)&0xFF00)|(DM(TCNT1L)&0xFF));
+	icr1 = (uint32_t)(((DM(ICR1H)<<8)&0xFF00)|(DM(ICR1L)&0xFF));
 	err = 0;
 
 	switch (wgm1) {
@@ -1444,7 +1442,7 @@ static void timer1_pfcpwm(struct MSIM_AVR *mcu, uint32_t presc,
 				timer1_oc1_pcpwm(mcu, com1a, com1b, A_CHAN,
 				                 COMP_MATCH_UPCNT);
 			}
-			if (tcnt1 == ocr1b) {
+			if (tcnt1 == ocr1b_buf) {
 				DM(TIFR) |= (1<<OCF1B);
 				timer1_oc1_pcpwm(mcu, com1a, com1b, B_CHAN,
 				                 COMP_MATCH_UPCNT);
@@ -1458,10 +1456,10 @@ static void timer1_pfcpwm(struct MSIM_AVR *mcu, uint32_t presc,
 		} else if (tcnt1 == 0U) {
 			cnt_down = 0;
 			/* Update OCR1x values at BOTTOM */
-			ocr1a_buf = ((DM(OCR1AH)<<8)&0xFF00) |
-			            (DM(OCR1AL)&0x00FF);
-			ocr1b_buf = ((DM(OCR1BH)<<8)&0xFF00) |
-			            (DM(OCR1BL)&0x00FF);
+			ocr1a_buf = (uint32_t)(((DM(OCR1AH)<<8)&0xFF00) |
+			                       (DM(OCR1AL)&0x00FF));
+			ocr1b_buf = (uint32_t)(((DM(OCR1BH)<<8)&0xFF00) |
+			                       (DM(OCR1BL)&0x00FF));
 			/* Set Timer/Counter1 overflow flag at BOTTOM only */
 			DM(TIFR) |= (1<<TOV1);
 			tcnt1++;
@@ -1559,10 +1557,10 @@ static void timer1_oc1_fastpwm(struct MSIM_AVR *mcu, uint8_t com1a,
 	uint8_t pin, com;
 	uint8_t wgm1;
 
-	wgm1 = (uint8_t) (((DM(TCCR1B)>>WGM13)&1)<<3) |
-	       (uint8_t) (((DM(TCCR1B)>>WGM12)&1)<<2) |
-	       (uint8_t) (((DM(TCCR1A)>>WGM11)&1)<<1) |
-	       (uint8_t) (((DM(TCCR1A)>>WGM10)&1));
+	wgm1 = (uint8_t)((uint8_t)(((DM(TCCR1B)>>WGM13)&1)<<3) |
+	                 (uint8_t)(((DM(TCCR1B)>>WGM12)&1)<<2) |
+	                 (uint8_t)(((DM(TCCR1A)>>WGM11)&1)<<1) |
+	                 (uint8_t)(((DM(TCCR1A)>>WGM10)&1)));
 
 	/* Check Data Direction Register first. DDRB1 or DDRB2 should
 	 * be set to enable the output driver (according to a datasheet). */
@@ -1626,10 +1624,10 @@ static void timer1_oc1_pcpwm(struct MSIM_AVR *mcu, uint8_t com1a,
 	uint8_t pin, com;
 	uint8_t wgm1;
 
-	wgm1 = (uint8_t) (((DM(TCCR1B)>>WGM13)&1)<<3) |
-	       (uint8_t) (((DM(TCCR1B)>>WGM12)&1)<<2) |
-	       (uint8_t) (((DM(TCCR1A)>>WGM11)&1)<<1) |
-	       (uint8_t) (((DM(TCCR1A)>>WGM10)&1));
+	wgm1 = (uint8_t)((uint8_t)(((DM(TCCR1B)>>WGM13)&1)<<3) |
+	                 (uint8_t)(((DM(TCCR1B)>>WGM12)&1)<<2) |
+	                 (uint8_t)(((DM(TCCR1A)>>WGM11)&1)<<1) |
+	                 (uint8_t)(((DM(TCCR1A)>>WGM10)&1)));
 
 	/* Check Data Direction Register first. DDRB1 or DDRB2 should
 	 * be set to enable the output driver (according to a datasheet). */
@@ -1853,18 +1851,16 @@ static void timer2_pcpwm(struct MSIM_AVR *mcu,
 
 static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, uint8_t com2)
 {
-	uint8_t com2_v;
+	uint8_t com2_v = com2;
 
 	/* Check Data Direction Register first. DDRB3 should be set to
 	 * enable the output driver (according to a datasheet). */
 	if (!IS_SET(DM(DDRB), PB3)) {
 		com2_v = NOT_CONNECTED;
-	} else {
-		com2_v = com2;
 	}
 
 	/* Update Output Compare pin (OC2) */
-	switch (com2) {
+	switch (com2_v) {
 	case 1:
 		if (IS_SET(DM(PORTB), PB3) == 1) {
 			CLEAR(DM(PORTB), PB3);
@@ -1889,18 +1885,16 @@ static void timer2_oc2_nonpwm(struct MSIM_AVR *mcu, uint8_t com2)
 static void timer2_oc2_fastpwm(struct MSIM_AVR *mcu, uint8_t com2,
                                uint8_t state)
 {
-	uint8_t com2_v;
+	uint8_t com2_v = com2;
 
 	/* Check Data Direction Register first. DDRB3 should be set to
 	 * enable the output driver (according to a datasheet). */
 	if (!IS_SET(DM(DDRB), PB3)) {
 		com2_v = NOT_CONNECTED;
-	} else {
-		com2_v = com2;
 	}
 
 	/* Update Output Compare pin (OC2) */
-	switch (com2) {
+	switch (com2_v) {
 	case 1:
 		if (state == (uint8_t)COMPARE_MATCH) {
 			if (IS_SET(DM(PORTB), PB3) == 1) {
@@ -2190,37 +2184,37 @@ int MSIM_M8APassIRQs(struct MSIM_AVR *mcu)
 	tifr = DM(TIFR);		/* Timer Interrupt Flag Register */
 
 	/* Timer0 interrupts */
-	if (((timsk>>TOIE0)&1U) && ((tifr>>TOV0)&1U)) {
+	if (((timsk>>TOIE0)&1) && ((tifr>>TOV0)&1)) {
 		mcu->intr.irq[TIMER0_OVF_vect_num-1] = 1;
-		mcu->dm[TIFR] &= ~(1<<TOV0);
+		DM(TIFR) = (uint8_t)(DM(TIFR)&(uint8_t)(~(1<<TOV0)));
 	}
 
 	/* Timer2 interrupts */
 	if (((timsk>>TOIE2)&1U) && ((tifr>>TOV2)&1U)) {
 		mcu->intr.irq[TIMER2_OVF_vect_num-1] = 1;
-		mcu->dm[TIFR] &= ~(1<<TOV2);
+		DM(TIFR) = (uint8_t)(DM(TIFR)&(uint8_t)(~(1<<TOV2)));
 	}
 	if (((timsk>>OCIE2)&1U) && ((tifr>>OCF2)&1U)) {
 		mcu->intr.irq[TIMER2_COMP_vect_num-1] = 1;
-		mcu->dm[TIFR] &= ~(1<<OCF2);
+		DM(TIFR) = (uint8_t)(DM(TIFR)&(uint8_t)(~(1<<OCF2)));
 	}
 
 	/* Timer1 interrupts */
 	if (((timsk>>TOIE1)&1U) && ((tifr>>TOV1)&1U)) {
 		mcu->intr.irq[TIMER1_OVF_vect_num-1] = 1;
-		mcu->dm[TIFR] &= ~(1<<TOV1);
+		DM(TIFR) = (uint8_t)(DM(TIFR)&(uint8_t)(~(1<<TOV1)));
 	}
 	if (((timsk>>OCIE1A)&1U) && ((tifr>>OCF1A)&1U)) {
 		mcu->intr.irq[TIMER1_COMPA_vect_num-1] = 1;
-		mcu->dm[TIFR] &= ~(1<<OCF1A);
+		DM(TIFR) = (uint8_t)(DM(TIFR)&(uint8_t)(~(1<<OCF1A)));
 	}
 	if (((timsk>>OCIE1B)&1U) && ((tifr>>OCF1B)&1U)) {
 		mcu->intr.irq[TIMER1_COMPB_vect_num-1] = 1;
-		mcu->dm[TIFR] &= ~(1<<OCF1B);
+		DM(TIFR) = (uint8_t)(DM(TIFR)&(uint8_t)(~(1<<OCF1B)));
 	}
 	if (((timsk>>TICIE1)&1U) && ((tifr>>ICF1)&1U)) {
 		mcu->intr.irq[TIMER1_CAPT_vect_num-1] = 1;
-		mcu->dm[TIFR] &= ~(1<<ICF1);
+		DM(TIFR) = (uint8_t)(DM(TIFR)&(uint8_t)(~(1<<ICF1)));
 	}
 
 	/* USART interrupts */
@@ -2238,7 +2232,7 @@ int MSIM_M8APassIRQs(struct MSIM_AVR *mcu)
 	}
 	if (((DM(UCSRB)>>TXCIE)&1U) && ((DM(UCSRA)>>TXC)&1U)) {
 		mcu->intr.irq[USART_TXC_vect_num-1] = 1;
-		DM(UCSRA) &= ~(1<<TXC);
+		DM(UCSRA) = (uint8_t)(DM(UCSRA)&(uint8_t)(~(1<<TXC)));
 	}
 	if (((DM(UCSRB)>>RXCIE)&1U) && ((DM(UCSRA)>>RXC)&1U)) {
 		mcu->intr.irq[USART_RXC_vect_num-1] = 1;
@@ -2246,7 +2240,7 @@ int MSIM_M8APassIRQs(struct MSIM_AVR *mcu)
 		 * reading UDR register. This behavior will have to be
 		 * adjusted further.
 		 * See 24.7.3. Receive Compete Flag and Interrupt */
-		DM(UCSRA) &= ~(1<<RXC);
+		DM(UCSRA) = (uint8_t)(DM(UCSRA)&(uint8_t)(~(1<<RXC)));
 	}
 
 	return 0;

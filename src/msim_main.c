@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
 		snprintf(LOG, LOGSZ, "Waiting for incoming GDB "
 		         "connections at localhost:%d...", conf.rsp_port);
 		MSIM_LOG_INFO(LOG);
-		MSIM_AVR_RSPInit(&mcu, (int)conf.rsp_port);
+		MSIM_AVR_RSPInit(&mcu, (uint16_t)conf.rsp_port);
 	}
 
 	rc = MSIM_AVR_Simulate(&mcu, 0, mcu.flashend+1, conf.firmware_test);

@@ -1,37 +1,34 @@
 /*
- * Copyright (c) 2017, 2018,
- * Dmitry Salychev <darkness.bsd@gmail.com>,
- * Alexander Salychev <ppsalex@rambler.ru> et al.
- * All rights reserved.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <organization> nor the
+ *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <string.h>
-#ifdef MSIM_POSIX
 #include <netdb.h>
 #include <sys/socket.h>
 #include <string.h>
@@ -40,20 +37,21 @@
 #include <errno.h>
 #include <poll.h>
 #include <netinet/in.h>
+#include "mcusim/mcusim.h"
+#include "mcusim/log.h"
+
 #ifndef MSIM_POSIX_CYGWIN
 #include <netinet/tcp.h>
 #endif
 
-#include "mcusim/mcusim.h"
-
 #define AVRSIM_RSP_PROTOCOL		"tcp"
-
 #define BREAK_LOW			0x98
 #define BREAK_HIGH			0x95
 #define BREAK				((BREAK_HIGH<<8)|BREAK_LOW)
-
 #define GDB_BUF_MAX			(16*1024)
 #define REG_BUF_MAX			32
+#define LOG				(mcu->log)
+#define LOGSZ				MSIM_AVR_LOGSZ
 
 enum mp_type {
 	BP_SOFTWARE	= 0,
@@ -113,7 +111,7 @@ static void rsp_write_reg(struct rsp_buf *buf);
 static size_t read_reg(int n, char *buf);
 static void write_reg(int n, char *buf);
 
-void MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, int portn)
+void MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn)
 {
 	struct protoent *protocol;	/* Protocol entry */
 	struct hostent *host;		/* Host entry */
@@ -516,52 +514,59 @@ static void rsp_client_request(void)
 
 static void rsp_read_reg(struct rsp_buf *buf)
 {
-	int regn;
+	uint32_t regn;
 	char val[REG_BUF_MAX];
+	int vals;
+	struct MSIM_AVR *mcu = rsp.mcu;
 
-	if (sscanf(buf->data, "p%x", &regn) != 1) {
-		fprintf(stderr, "Failed to recognize RSP read register "
-		        "command: %s\n", buf->data);
+	vals = sscanf(buf->data, "p%" SCNx32, &regn);
+	if (vals != 1) {
+		snprintf(LOG, LOGSZ, "Failed to recognize RSP read register "
+		         "command: %s\n", buf->data);
+		MSIM_LOG_ERROR(LOG);
 		put_str_packet("E01");
-		return;
+	} else {
+		val[0] = 0;
+		if (!read_reg((int)regn, val)) {
+			snprintf(LOG, LOGSZ, "Unknown register %" PRIu32
+			         ", empty response will be returned\n", regn);
+			MSIM_LOG_ERROR(LOG);
+		}
+		put_str_packet(val);
 	}
-
-	val[0] = 0;
-	if (!read_reg(regn, val)) {
-		fprintf(stderr, "Unknown register %u, empty response "
-		        "will be returned\n", regn);
-	}
-	put_str_packet(val);
 }
 
 static void rsp_write_reg(struct rsp_buf *buf)
 {
-	int regn;
+	uint32_t regn;
 	char val[REG_BUF_MAX];
+	int vals;
 
-	if (sscanf(buf->data, "P%x=%8s", &regn, val) != 2) {
+	vals = sscanf(buf->data, "P%" SCNx32 "=%8s", &regn, val);
+	if (vals != 2) {
 		fprintf(stderr, "Failed to recognize RSP write register "
 		        "command: %s\n", buf->data);
 		put_str_packet("E01");
-		return;
+	} else {
+		write_reg((int)regn, val);
+		put_str_packet("OK");
 	}
-	write_reg(regn, val);
-	put_str_packet("OK");
 }
 
 static void rsp_insert_matchpoint(struct rsp_buf *buf)
 {
 	enum mp_type type;
 	unsigned long addr;
-	int len;
+	int len, vals;
 	unsigned char llsb, lmsb, hlsb, hmsb;
 	unsigned short inst;
-	struct MSIM_AVR *mcu;
+	struct MSIM_AVR *mcu = rsp.mcu;
 
-	mcu = rsp.mcu;
-	if (sscanf(buf->data, "Z%1d,%lx,%1d", &type, &addr, &len) != 3) {
-		fprintf(stderr, "RSP matchpoint insertion request not "
-		        "recognized: %s\n", buf->data);
+	vals = sscanf(buf->data, "Z%1d,%lx,%1d", (int *)&type, &addr, &len);
+	if (vals != 3) {
+		snprintf(LOG, LOGSZ, "RSP matchpoint insertion request not "
+		         "recognized: %s\n", buf->data);
+		MSIM_LOG_ERROR(LOG);
 		put_str_packet("E01");
 		return;
 	}
@@ -615,15 +620,17 @@ static void rsp_remove_matchpoint(struct rsp_buf *buf)
 {
 	enum mp_type type;
 	unsigned long addr;
-	int len;
+	int len, vals;
 	unsigned char llsb, lmsb, hlsb, hmsb;
 	unsigned short inst;
 	struct MSIM_AVR *mcu;
 
 	mcu = rsp.mcu;
-	if (sscanf(buf->data, "z%1d,%lx,%1d", &type, &addr, &len) != 3) {
-		fprintf(stderr, "RSP matchpoint insertion request not "
+	vals = sscanf(buf->data, "z%1d,%lx,%1d", (int *)&type, &addr, &len);
+	if (vals != 3) {
+		snprintf(LOG, LOGSZ, "RSP matchpoint insertion request not "
 		        "recognized: %s\n", buf->data);
+		MSIM_LOG_ERROR(LOG);
 		put_str_packet("E01");
 		return;
 	}
@@ -676,27 +683,22 @@ static void rsp_remove_matchpoint(struct rsp_buf *buf)
 static struct rsp_buf *get_packet(void)
 {
 	static struct rsp_buf buf;
+	uint8_t checksum;
+	uint64_t count;			/* Index into the buffer */
+	int8_t ch;			/* Current character */
 
 	/* Keep getting packets, until one is found with a valid checksum */
 	while (1) {
-		unsigned char checksum;
-		unsigned long count;		/* Index into the buffer */
-		char ch;			/* Current character */
-
-		/*
-		 * Wait around for the start character ('$'). Ignore
-		 * all other characters
-		 */
+		/* Wait around for the start character ('$'). Ignore
+		 * all other characters. */
 		ch = (char)get_rsp_char();
 		while (ch != '$') {
 			if (ch == -1) {
 				return  NULL;
 			}
 
-			/*
-			 * 0x03 is a special case, an out-of-band break
-			 * when running
-			 */
+			/* 0x03 is a special case, an out-of-band break when
+			 * running */
 			if (ch == 0x03) {
 				buf.data[0] = ch;
 				buf.len = 1;
@@ -729,11 +731,8 @@ static struct rsp_buf *get_packet(void)
 			if (ch == '#') {
 				break;
 			}
-			/*
-			 * Update the checksum and add the char to
-			 * the buffer
-			 */
-			checksum = checksum + (unsigned char)ch;
+			/* Update checksum and add the char to the buffer. */
+			checksum = (uint8_t)(checksum + (uint8_t)ch);
 			buf.data[count] = (char)ch;
 			count++;
 		}
@@ -750,7 +749,7 @@ static struct rsp_buf *get_packet(void)
 		 * the checksum
 		 */
 		if (ch == '#') {
-			unsigned char xmitcsum;
+			uint8_t xmitcsum;
 
 			ch = (char)get_rsp_char();
 			if (ch == -1) {
@@ -764,7 +763,7 @@ static struct rsp_buf *get_packet(void)
 				return  NULL;
 			}
 
-			xmitcsum += hex(ch);
+			xmitcsum = (uint8_t)(xmitcsum + (uint8_t)hex(ch));
 
 			/*
 			 * If the checksums don't match print a warning,
@@ -898,11 +897,9 @@ static void put_str_packet(const char *str)
 	struct rsp_buf buf;
 	unsigned long len = strlen(str);
 
-	/*
-	 * Construct the packet to send, so long as string is not too big,
+	/* Construct the packet to send, so long as string is not too big,
 	 * otherwise truncate. Add EOS at the end for convenient debug
-	 * printout
-	 */
+	 * printout. */
 	if (len >= GDB_BUF_MAX) {
 		fprintf(stderr, "Warning: String %s too large for RSP "
 		        "packet: truncated\n", str);
@@ -918,30 +915,30 @@ static void put_str_packet(const char *str)
 
 static void put_packet(struct rsp_buf *buf)
 {
-	int ch;
+	int32_t ch;
+	uint8_t checksum;
+	uint32_t count;
+	int8_t c;
 
-	/*
-	 * Construct $<packet info>#<checksum>. Repeat until the GDB client
-	 * acknowledges satisfactory receipt.
-	 */
+	/* Construct $<packet info>#<checksum>. Repeat until the GDB client
+	 * acknowledges satisfactory receipt. */
 	do {
-		unsigned char checksum = 0;
-		unsigned int count = 0;
+		checksum = 0;
+		count = 0;
 
 		put_rsp_char('$');		/* Start of the packet */
 
 		/* Body of the packet */
 		for (count = 0; count < buf->len; count++) {
-			char c = buf->data[count];
-
+			c = buf->data[count];
 			/* Check for escaped chars */
 			if (('$' == c) || ('#' == c) ||
 			                ('*' == c) || ('}' == c)) {
 				c ^= 0x20;
-				checksum += (unsigned char)'}';
+				checksum = (uint8_t)(checksum + (uint8_t)'}');
 				put_rsp_char('}');
 			}
-			checksum += c;
+			checksum = (uint8_t)(checksum + (uint8_t)c);
 			put_rsp_char(c);
 		}
 
@@ -1243,14 +1240,13 @@ static void rsp_read_mem(struct rsp_buf *buf)
 
 static void rsp_write_mem(struct rsp_buf *buf)
 {
-	static unsigned char tmpbuf[GDB_BUF_MAX];
-
-	unsigned long addr, datlen;
-	unsigned int len;
+	static uint8_t tmpbuf[GDB_BUF_MAX];
+	uint64_t addr, datlen;
+	uint32_t len;
 	char *symdat;
-	unsigned int off;
-	unsigned char mnyb, lnyb;
-	unsigned char *dest;
+	uint32_t off;
+	uint8_t mnyb, lnyb;
+	uint8_t *dest;
 
 	if (sscanf(buf->data, "M%lx,%x:", &addr, &len) != 2) {
 		fprintf(stderr, "Failed to recognize RSP write memory "
@@ -1277,9 +1273,9 @@ static void rsp_write_mem(struct rsp_buf *buf)
 
 	/* Write bytes to memory */
 	for (off = 0; off < len; off++) {
-		mnyb = (unsigned char)hex(symdat[off*2]);
-		lnyb = (unsigned char)hex(symdat[off*2+1]);
-		tmpbuf[off] = ((mnyb<<4)&0xF0)|(lnyb&0x0F);
+		mnyb = (uint8_t) hex(symdat[off*2]);
+		lnyb = (uint8_t) hex(symdat[off*2+1]);
+		tmpbuf[off] = (uint8_t)(((mnyb<<4)&0xF0)|(lnyb&0x0F));
 	}
 	/* Find a memory to write to */
 	if (addr < rsp.mcu->flashend) {
@@ -1385,5 +1381,3 @@ static void rsp_step(struct rsp_buf *buf)
 	rsp.mcu->state = AVR_MSIM_STEP;
 	rsp.client_waiting = 1;
 }
-#endif /* MSIM_POSIX */
-

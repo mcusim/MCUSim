@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2017, 2018, The MCUSim Contributors
- * All rights reserved.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -12,6 +12,7 @@
  *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -27,7 +28,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
-
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
 #include "mcusim/avr/sim/m328/m328p.h"
@@ -39,8 +39,8 @@
 #define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
 #define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
 #define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
-#define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
-#define SET(byte, bit)		((byte)|=(1<<(bit)))
+#define CLEAR(byte, bit)	((byte)=(uint8_t)((byte)&(uint8_t)(~(1<<(bit)))))
+#define SET(byte, bit)		((byte)=(uint8_t)((byte)|(uint8_t)(1<<(bit))))
 
 #define DM(v)			(mcu->dm[v])
 
@@ -117,15 +117,15 @@ static void tick_timer0(struct MSIM_AVR *mcu)
 
 	cs0 = DM(TCCR0B)&0x7;
 
-	wgm0 = (uint8_t) ((DM(TCCR0A)>>WGM00)&1)      |
-	       (uint8_t) (((DM(TCCR0A)>>WGM01)&1)<<1) |
-	       (uint8_t) (((DM(TCCR0B)>>WGM02)&1)<<2);
+	wgm0 = (uint8_t)((uint8_t)((DM(TCCR0A)>>WGM00)&1) |
+	                 (uint8_t)(((DM(TCCR0A)>>WGM01)&1)<<1) |
+	                 (uint8_t)(((DM(TCCR0B)>>WGM02)&1)<<2));
 
-	com0a = (uint8_t) ((DM(TCCR0A)>>COM0A0)&1) |
-	        (uint8_t) (((DM(TCCR0A)>>COM0A1)&1)<<1);
+	com0a = (uint8_t)((uint8_t)((DM(TCCR0A)>>COM0A0)&1) |
+	                  (uint8_t)(((DM(TCCR0A)>>COM0A1)&1)<<1));
 
-	com0b = (uint8_t) ((DM(TCCR0A)>>COM0B0)&1) |
-	        (uint8_t) (((DM(TCCR0A)>>COM0B1)&1)<<1);
+	com0b = (uint8_t)((uint8_t)((DM(TCCR0A)>>COM0B0)&1) |
+	                  (uint8_t)(((DM(TCCR0A)>>COM0B1)&1)<<1));
 
 	switch (cs0) {
 	case 0x1:

@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2017, 2018, The MCUSim Contributors
- * All rights reserved.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -12,6 +12,7 @@
  *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -81,7 +82,7 @@
 #define WRITE_DS(loc, v) do {						\
 	if ((mcu->regs_num <= loc) &&					\
 	                (loc < (mcu->regs_num+mcu->ioregs_num))) {	\
-		DM(loc) = IO(loc, v);					\
+		DM(loc) = ((uint8_t)IO(loc, v));			\
 		mcu->writ_io[0] = loc;					\
 	} else {							\
 		DM(loc) = v;						\
@@ -1525,12 +1526,12 @@ static void exec_sbiw(struct MSIM_AVR *mcu, unsigned int inst)
 
 	rdl= regs[((inst>>4) & 0x03)];
 	rdh= (uint8_t)(rdl + 1);
-	c = ((inst>>2)&0x30) | (inst&0x0F);
+	c = (int16_t)(((inst>>2)&0x30U) | (inst&0x0FU));
 
 	buf = (int16_t)((DM(rdh)<<8) | (DM(rdl)));
 	r = buf;
-	r -= c;
-	buf = r & ~buf;
+	r = (int16_t)(r-c);
+	buf = (int16_t)(r & ((int16_t)~buf));
 
 	UPDATE_SREG(mcu, CARRY, (buf>>15) & 1);
 	UPDATE_SREG(mcu, NEGATIVE, (uint8_t)((r>>15)&1));
@@ -1540,8 +1541,8 @@ static void exec_sbiw(struct MSIM_AVR *mcu, unsigned int inst)
 	            READ_SREG(mcu, TWOSCOM_OF));
 	UPDATE_SREG(mcu, ZERO, !r ? 1 : 0);
 
-	mcu->dm[rdh] = (r>>8) & 0xFF;
-	mcu->dm[rdl] = r & 0xFF;
+	DM(rdh) = (uint8_t)((r>>8)&0xFF);
+	DM(rdl) = (uint8_t)(r&0xFF);
 	mcu->pc += 2;
 }
 

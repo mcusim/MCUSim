@@ -71,7 +71,7 @@ if (WITH_XSPICE)
 	message(STATUS "Building with NGSpice tarball: ${_NGSPICE_TARBALL}")
 	message(STATUS "Building with NGSpice tarball MD5: ${_NGSPICE_TARBALL_MD5}")
 	message(STATUS "Building with NGSpice make: ${_NGSPICE_MAKE}")
-	message(STATUS "Building with NGSpice configuration: --enable-xspice --with-readline=yes ${_NGSPICE_DEBUG}")
+	message(STATUS "Building with NGSpice configuration: --enable-xspice --with-readline=yes --with-ngshared ${_NGSPICE_DEBUG}")
 
 	# Set flags to link code model library
 	set(MSIM_CFLAGS "$ENV{CFLAGS} -I${CMAKE_BINARY_DIR}/include")
@@ -127,7 +127,7 @@ if (WITH_XSPICE)
 		# Patch working directory: SOURCE_DIR
 		PATCH_COMMAND "../patches/patch-ngspice-sources"
 		# Configuration working directory: BINARY_DIR
-		CONFIGURE_COMMAND "../src/configure" CFLAGS=${MSIM_CFLAGS} LDFLAGS=${MSIM_LDFLAGS} --enable-xspice --with-readline=yes ${_NGSPICE_DEBUG}
+		CONFIGURE_COMMAND "../src/configure" CFLAGS=${MSIM_CFLAGS} LDFLAGS=${MSIM_LDFLAGS} --enable-xspice --with-readline=yes --with-ngshared ${_NGSPICE_DEBUG}
 		# Build working directory: BINARY_DIR
 		BUILD_COMMAND "${_NGSPICE_MAKE}"
 		INSTALL_COMMAND ""
