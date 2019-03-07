@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 The MCUSim Project.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -57,7 +57,6 @@ typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 /* Function to process interrupt request according to the order */
 static int handle_irq(struct MSIM_AVR *mcu);
 
-/* Cell contains AVR MCU part and its init function. */
 struct init_func_info {
 	char partno[20];
 	char name[20];
@@ -75,32 +74,51 @@ static struct init_func_info init_funcs[] = {
 
 static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 
-int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint64_t steps, uint64_t addr,
-                      uint8_t firmware_test)
+int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint8_t frm_test)
 {
-	uint64_t tick = 0;	/* # of ticks sinse start */
-	uint8_t tick_ovf = 0;	/* Ticks overflow flag */
-	int rc = 0;
 	struct MSIM_AVR_VCD *vcd = &mcu->vcd;
+	uint64_t tick = 0;	/* # of cycles sinse start */
+	uint8_t tick_ovf = 0;	/* cycles overflow flag */
+	int rc = 0;
 
-	/* Do we have registers to dump? */
 	if (vcd->regs[0].i >= 0) {
+		/* Open a VCD file if there are registers to dump. */
 		rc = MSIM_AVR_VCDOpen(mcu);
 		if (rc != 0) {
-			snprintf(LOG, LOGSZ, "failed to open a VCD file %s to "
-			         "write to", vcd->dump_file);
+			snprintf(LOG, LOGSZ, "failed to open a VCD file %s",
+			         vcd->dump_file);
 			MSIM_LOG_FATAL(LOG);
 			return -1;
 		}
 	}
-	/* Force MCU to run in a firmware-test mode. */
-	if (firmware_test) {
+	if (frm_test) {
+		/* Force MCU to run in a firmware-test mode. */
 		MSIM_LOG_DEBUG("running in a firmware test mode");
 		mcu->state = AVR_RUNNING;
 	}
 
 	/* Main simulation loop. */
 	while (1) {
+		rc = MSIM_AVR_SimStep(mcu, &tick, &tick_ovf, frm_test);
+		if (rc != 0) {
+			rc = rc == 2 ? 0 : rc;
+			break;
+		}
+	}
+
+	/* We may need to close a previously initialized VCD dump. */
+	MSIM_AVR_VCDClose(mcu);
+
+	return rc;
+}
+
+int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
+                     uint8_t frm_test)
+{
+	struct MSIM_AVR_VCD *vcd = &mcu->vcd;
+	int rc = 0;
+
+	do {
 		/* The main simulation loop can be terminated by setting
 		 * MCU state to AVR_MSIM_STOP. The primary (and maybe only)
 		 * source of this state setting is a command from debugger. */
@@ -112,17 +130,18 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint64_t steps, uint64_t addr,
 				         mcu->pc);
 				MSIM_LOG_DEBUG(mcu->log);
 			}
+			rc = 2;
 			break;
 		}
 		if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_TESTFAIL)) {
-			MSIM_LOG_DEBUG("simulation terminated because of a "
-			               "failed test");
+			MSIM_LOG_WARN("simulation terminated because of a "
+			              "failed test");
 			rc = 1;
 			break;
 		}
 
 		/* Wait for request from GDB in MCU stopped mode */
-		if (!firmware_test && !mcu->ic_left &&
+		if (!frm_test && !mcu->ic_left &&
 		                (mcu->state == AVR_STOPPED) &&
 		                MSIM_AVR_RSPHandle()) {
 			snprintf(mcu->log, sizeof mcu->log, "handling message "
@@ -147,8 +166,8 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint64_t steps, uint64_t addr,
 		MSIM_AVR_LUATickModels(mcu);
 
 		/* Dump registers to VCD */
-		if (vcd->dump && !tick_ovf) {
-			MSIM_AVR_VCDDumpFrame(mcu, tick);
+		if (vcd->dump && !(*tick_ovf)) {
+			MSIM_AVR_VCDDumpFrame(mcu, *tick);
 		}
 
 		/* Test scope of a program counter within flash size */
@@ -235,8 +254,8 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint64_t steps, uint64_t addr,
 		/* Increment ticks or print a warning message in case of
 		 * maximum amount of ticks reached (extremely unlikely
 		 * if compiler supports "unsigned long long" type). */
-		if (tick == TICKS_MAX) {
-			tick_ovf = 1;
+		if ((*tick) == TICKS_MAX) {
+			*tick_ovf = 1;
 			MSIM_LOG_WARN("maximum amount of simulation ticks "
 			              "reached");
 			if (vcd->dump != NULL) {
@@ -244,20 +263,16 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint64_t steps, uint64_t addr,
 				              "further");
 			}
 		} else {
-			tick++;
+			(*tick)++;
 		}
-	}
-
-	/* We may need to close a previously initialized VCD dump. */
-	MSIM_AVR_VCDClose(mcu);
+	} while (0);
 
 	return rc;
 }
 
 int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
-                  unsigned char *pm, unsigned long pm_size,
-                  unsigned char *dm, unsigned long dm_size,
-                  unsigned char *mpm, FILE *fp)
+                  uint8_t *pm, uint32_t pm_size, uint8_t *dm, uint32_t dm_size,
+                  uint8_t *mpm, FILE *fp)
 {
 	unsigned int i;
 	char mcu_found = 0;
@@ -266,8 +281,8 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
 
 	args.pm = pm;
 	args.dm = dm;
-	args.pmsz = (uint32_t)pm_size;
-	args.dmsz = (uint32_t)dm_size;
+	args.pmsz = pm_size;
+	args.dmsz = dm_size;
 
 	for (i = 0; i < sizeof(init_funcs)/sizeof(init_funcs[0]); i++) {
 		if (!strcmp(init_funcs[i].partno, mcu_name)) {

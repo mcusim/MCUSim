@@ -97,13 +97,10 @@ static void ports_not_changed(ARGS);
 static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val);
 static int set_lock(struct MSIM_AVR *m, uint8_t val);
 static void print_config(struct MSIM_AVR *m);
-static int handle_irq(struct MSIM_AVR *mcu);
 static void update_bit(uint8_t *val, uint8_t i, uint8_t b);
 
 /* Local functions to setup and update a microcontroller. */
-static int avr_setup(ARGS, struct MSIM_AVR *mcu, struct MSIM_CFG *conf);
-static int avr_tick(ARGS, struct MSIM_AVR *mcu, uint64_t *tick,
-                    uint8_t *tick_ovf);
+static int setup_avr(ARGS, struct MSIM_AVR *mcu, struct MSIM_CFG *conf);
 
 void MSIM_CM_M8A(ARGS)
 {
@@ -141,7 +138,7 @@ void MSIM_CM_M8A(ARGS)
 		}
 
 		/* Set up an instance of ATmega8A. */
-		avr_setup(mif_private, mcu, cfg);
+		setup_avr(mif_private, mcu, cfg);
 	} else {
 		mcu = &_mcu;
 		cfg = &_cfg;
@@ -192,10 +189,8 @@ void MSIM_CM_M8A(ARGS)
 			DM(PIND) = pval & (~DM(DDRD));
 
 			/* Update the microcontroller */
-			rc = avr_tick(mif_private, mcu, tick, tick_ovf);
-			if (rc != 0) {
-				MSIM_LOG_FATAL("Failed to tick AVR");
-			}
+			MSIM_AVR_SimStep(mcu, tick, tick_ovf,
+			                 cfg->firmware_test);
 
 			/* Provide the updated values of the ports. */
 			for (uint32_t i = 0; i < PORT_SIZE(Bout); i++) {
@@ -287,8 +282,10 @@ static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val)
 	if (m->set_fusef == NULL) {
 		MSIM_LOG_WARN("cannot modify fuse (MCU-specific function is "
 		              "not available)");
+		rc = 1;
+	} else {
+		m->set_fusef(m, fuse, val);
 	}
-	m->set_fusef(m, fuse, val);
 	return rc;
 }
 
@@ -299,12 +296,14 @@ static int set_lock(struct MSIM_AVR *m, uint8_t val)
 	if (m->set_lockf == NULL) {
 		MSIM_LOG_WARN("cannot modify lock bits (MCU-specific function "
 		              "is not available)");
+		rc = 1;
+	} else {
+		m->set_lockf(m, val);
 	}
-	m->set_lockf(m, val);
 	return rc;
 }
 
-static int avr_setup(ARGS, struct MSIM_AVR *mcu, struct MSIM_CFG *conf)
+static int setup_avr(ARGS, struct MSIM_AVR *mcu, struct MSIM_CFG *conf)
 {
 	FILE *fp;
 	int rc = 0;
@@ -324,7 +323,7 @@ static int avr_setup(ARGS, struct MSIM_AVR *mcu, struct MSIM_CFG *conf)
 		snprintf(LOG, LOGSZ, "using config file: %s", conf_file);
 		MSIM_LOG_INFO(LOG);
 
-		/* Firmware file will be loaded only in case of XSPICE model.*/
+		/* Only a firmware file will be loaded in XSPICE model. */
 		if (conf->has_firmware_file == 1) {
 			fp = fopen(conf->firmware_file, "r");
 			if (fp == NULL) {
@@ -472,8 +471,8 @@ static int avr_setup(ARGS, struct MSIM_AVR *mcu, struct MSIM_CFG *conf)
 		if (vcd->regs[0].i >= 0) {
 			rc = MSIM_AVR_VCDOpen(mcu);
 			if (rc != 0) {
-				snprintf(LOG, LOGSZ, "failed to open a VCD file %s to "
-				         "write to", vcd->dump_file);
+				snprintf(LOG, LOGSZ, "failed to open a VCD "
+				         "file %s", vcd->dump_file);
 				MSIM_LOG_FATAL(LOG);
 				rc = 1;
 			}
@@ -532,184 +531,6 @@ static void print_config(struct MSIM_AVR *m)
 	snprintf(m->log, LOGSZ, "bootloader section: 0x%06" PRIX64 "-0x%06"
 	         PRIX64, blsstart, blsend);
 	MSIM_LOG_INFO(m->log);
-}
-
-static int avr_tick(ARGS, struct MSIM_AVR *mcu, uint64_t *tick,
-                    uint8_t *tick_ovf)
-{
-	struct MSIM_AVR_VCD *vcd = &mcu->vcd;
-	int rc = 0;
-
-	/* The main simulation loop can be terminated by setting
-	 * MCU state to AVR_MSIM_STOP. The primary (and maybe only)
-	 * source of this state setting is a command from debugger. */
-	if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_STOP)) {
-		if (MSIM_LOG_ISDEBUG) {
-			snprintf(mcu->log, sizeof mcu->log,
-			         "simulation terminated because of "
-			         "stopped mcu, pc=0x%06" PRIX32, mcu->pc);
-			MSIM_LOG_DEBUG(mcu->log);
-		}
-		return 0;
-	}
-	if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_TESTFAIL)) {
-		MSIM_LOG_DEBUG("simulation terminated because of a "
-		               "failed test");
-		return 1;
-	}
-
-	/* Tick MCU periferals.
-	 *
-	 * NOTE: It is important to tick MCU peripherals before
-	 * updating Lua models. One of the reasons is an accessing
-	 * mechanism of the registers which share the same I/O
-	 * location (UBRRH/UCSRC of ATmega8A for example). */
-	if (mcu->tick_perf != NULL) {
-		mcu->tick_perf(mcu);
-	}
-
-	/* Tick peripherals written in Lua */
-	MSIM_AVR_LUATickModels(mcu);
-
-	/* Dump registers to VCD */
-	if ((vcd->dump != NULL) && ((*tick_ovf) == 0U)) {
-		MSIM_AVR_VCDDumpFrame(mcu, *tick);
-	}
-
-	/* Test scope of a program counter within flash size */
-	if ((mcu->pc>>1) > (mcu->flashend>>1)) {
-		snprintf(mcu->log, sizeof mcu->log, "program counter "
-		         "is out of flash memory: pc=0x%06" PRIX32
-		         ", flashend=0x%06" PRIX32,
-		         mcu->pc>>1, mcu->flashend>>1);
-		MSIM_LOG_FATAL(mcu->log);
-		return 1;
-	}
-	/* Test scope of a program counter */
-	if ((mcu->pc+2) >= mcu->pm_size) {
-		snprintf(mcu->log, sizeof mcu->log, "program counter "
-		         "is out of scope: pc=0x%06" PRIX32 ", pm_size"
-		         "=0x%06" PRIX32, mcu->pc, mcu->pm_size);
-		MSIM_LOG_FATAL(mcu->log);
-		return 1;
-	}
-
-	/* Decode next instruction. It's usually hard to say in
-	 * which state the MCU registers will be between neighbor
-	 * cycles of a multi-cycle instruction. This talk may be
-	 * taken into account:
-	 *
-	 * https://electronics.stackexchange.com/questions/132171/
-	 * 	what-happens-to-avr-registers-during-multi-
-	 * 	cycle-instructions
-	 *
-	 * But this change of LSB and MSB mentioned above can be
-	 * MCU-specific and not a general way of how it really works.
-	 * Detailed information can be obtained directly from Atmel,
-	 * but there is no intention to do this in order not to
-	 * unveil their secrets. However, any details they're ready
-	 * to share are highly welcome.
-	 *
-	 * Simulator doesn't guarantee anything special here either.
-	 * The only thing you may rely on is the instruction which
-	 * will be completed _after all_ of these cycles required to
-	 * finish it. */
-	if ((mcu->ic_left || mcu->state == AVR_RUNNING ||
-	                mcu->state == AVR_MSIM_STEP) &&
-	                MSIM_AVR_Step(mcu)) {
-		snprintf(mcu->log, sizeof mcu->log, "decoding "
-		         "instruction failed: pc=0x%06" PRIX32,
-		         mcu->pc);
-		MSIM_LOG_FATAL(mcu->log);
-		return 1;
-	}
-
-	/* Provide IRQs based on the MCU flags and handle them if this
-	 * is possible.
-	 *
-	 * It's important to understand an interrupt may occur during
-	 * execution of a multi-cycle instruction. This instruction
-	 * is completed before the interrupt is served (according to
-	 * the multiple AVR datasheets). It means that we may provide
-	 * IRQs, but will have to wait required number of cycles
-	 * to serve them. */
-	if (mcu->pass_irqs != NULL) {
-		mcu->pass_irqs(mcu);
-	}
-	if (READ_SREG(mcu, GLOB_INT) &&
-	                (!mcu->ic_left) && (!mcu->intr.exec_main) &&
-	                (mcu->state == AVR_RUNNING ||
-	                 mcu->state == AVR_MSIM_STEP)) {
-		handle_irq(mcu);
-	}
-
-	/* All cycles of a single instruction from a main program
-	 * have to be performed. */
-	if (mcu->ic_left == 0) {
-		mcu->intr.exec_main = 0;
-	}
-
-	/* Increment ticks or print a warning message in case of
-	 * maximum amount of ticks reached (extremely unlikely
-	 * if compiler supports "unsigned long long" type). */
-	if (*tick == TICKS_MAX) {
-		*tick_ovf = 1;
-		MSIM_LOG_WARN("maximum amount of simulation ticks reached");
-		if (vcd->dump != NULL) {
-			MSIM_LOG_WARN("VCD dump recording stopped");
-		}
-	} else {
-		(*tick)++;
-	}
-
-	return rc;
-}
-
-/* Function to process interrupt request according to the order */
-static int handle_irq(struct MSIM_AVR *mcu)
-{
-	unsigned int i;
-	int ret;
-
-	/* Let's try to find IRQ with the highest priority:
-	 * i == 0		highest priority
-	 * i == AVR_IRQ_NUM-1	lowest priority */
-	for (i = 0; i < MSIM_AVR_IRQNUM; i++) {
-		if (mcu->intr.irq[i] > 0) {
-			break;
-		}
-	}
-
-	ret = 0;
-	if (i != MSIM_AVR_IRQNUM) {
-		/* Clear selected IRQ */
-		mcu->intr.irq[i] = 0;
-
-		/* Disable interrupts globally.
-		 * It is not applicable for the AVR XMEGA cores. */
-		if (!mcu->xmega) {
-			UPDATE_SREG(mcu, GLOB_INT, 0);
-		}
-
-		/* Push PC onto the stack */
-		MSIM_AVR_StackPush(mcu, (uint8_t)(mcu->pc & 0xFF));
-		MSIM_AVR_StackPush(mcu, (uint8_t)((mcu->pc >> 8)&0xFF));
-		if (mcu->pc_bits > 16) {
-			MSIM_AVR_StackPush(mcu, (uint8_t)((mcu->pc>>16)&0xFF));
-		}
-
-		/* Load interrupt vector to PC */
-		mcu->pc = mcu->intr.ivt+(i*2);
-
-		/* Switch MCU to step mode if it's necessary */
-		if (mcu->intr.trap_at_isr && mcu->state == AVR_RUNNING) {
-			mcu->state = AVR_MSIM_STEP;
-		}
-	} else {
-		/* No IRQ, do nothing */
-		ret = 2;
-	}
-	return ret;
 }
 
 static void update_bit(uint8_t *val, uint8_t i, uint8_t b)

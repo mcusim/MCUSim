@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 The MCUSim Project.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 	int c, rc, rc2, conf_rc = 1;
 	uint32_t i, j;
 	uint32_t dump_regs;
-	char *conf_file;
+	char *conf_file = NULL;
 	struct MSIM_AVR_VCD *vcd = &mcu.vcd;
 	const uint32_t dflen = sizeof vcd->dump_file/sizeof vcd->dump_file[0];
 
@@ -166,6 +166,11 @@ int main(int argc, char *argv[])
 
 	/* Try to load a configuration file if it has not been loaded yet. */
 	if (conf_rc != 0) {
+		if (conf_file != NULL) {
+			snprintf(LOG, LOGSZ, "failed to open config file: %s",
+			         conf_file);
+			MSIM_LOG_ERROR(LOG);
+		}
 		/* Try to load from the working directory first.*/
 		conf_rc = MSIM_CFG_Read(&conf, CFG_FILE);
 		if (conf_rc != 0) {
@@ -365,7 +370,7 @@ int main(int argc, char *argv[])
 		MSIM_AVR_RSPInit(&mcu, (uint16_t)conf.rsp_port);
 	}
 
-	rc = MSIM_AVR_Simulate(&mcu, 0, mcu.flashend+1, conf.firmware_test);
+	rc = MSIM_AVR_Simulate(&mcu, conf.firmware_test);
 
 	MSIM_PTY_Close(&mcu.pty);
 	MSIM_AVR_LUACleanModels();
@@ -386,30 +391,10 @@ static void print_usage(void)
 	/* Print usage and options */
 	printf("Usage: mcusim [options]\n"
 	       "Options:\n"
-	       "  -p <partno|?>              Specify AVR device "
-	       "(required).\n"
-	       "  -U <memtype>:w:<filename|value>[:<format>]\n"
-	       "                             Memory operation "
-	       "specification (required).\n"
-	       "  -r <filename>              Specify text file with "
-	       "simulated modules written in Lua.\n"
-	       "  --dump-regs=<reg0,reg1,...,regN|?>\n"
-	       "                             Dump specified registers "
-	       "into VCD file.\n"
-	       "  --help                     Print this message.\n");
-	printf("  -P <port>, --rsp-port=<port>\n"
-	       "                             Set port to listen to the "
-	       "incoming connections from GDB RSP.\n"
-	       "  -f <frequency>             MCU frequency, in Hz.\n"
-	       "  --trap-at-isr              Enter stopped mode when "
-	       "interrupt occured.\n");
-
-	/* Print examples */
-	printf("Examples:\n"
-	       "  mcusim -p m328p -U flash:w:./dhtc.hex -U "
-	       "hfuse:w:0x57:h -r ./lua-modules --dump-regs=PORTB,PORTC\n"
-	       "  mcusim -p m8a -U flash:w:./dhtc.hex "
-	       "-r ./lua-modules -f 1000000\n\n");
+	       "  -c <config_file>     Run with this configuration file.\n"
+	       "  --conf <config_file> Run with this configuration file.\n"
+	       "  --help               Print this message.\n"
+	       "  --version            Print version.\n");
 }
 
 static void print_short_usage(void)
