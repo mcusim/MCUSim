@@ -75,10 +75,10 @@
 /* END Local macro definitions */
 
 /* Long command line options */
-static struct option longopts[] = {
-	{ "version", no_argument, NULL, VERSION_OPT },
-	{ "help", no_argument, NULL, PRINT_USAGE_OPT },
-	{ "conf", required_argument, NULL, CONF_FILE_OPT },
+static struct MSIM_OPT_Option longopts[] = {
+	{ "version", MSIM_OPT_NO_ARGUMENT, NULL, VERSION_OPT },
+	{ "help", MSIM_OPT_NO_ARGUMENT, NULL, PRINT_USAGE_OPT },
+	{ "conf", MSIM_OPT_REQUIRED_ARGUMENT, NULL, CONF_FILE_OPT },
 };
 
 /* AVR MCU descriptor */
@@ -91,7 +91,9 @@ static void print_short_usage(void);
 static void print_config(struct MSIM_AVR *m);
 static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val);
 static int set_lock(struct MSIM_AVR *m, uint8_t val);
+#ifdef WITH_POSIX
 static void dump_flash_handler(int s);
+#endif
 /* END Prototypes of the local functions */
 
 /* Entry point of the simulator */
@@ -115,7 +117,7 @@ int main(int argc, char *argv[])
 #ifdef DEBUG
 	MSIM_LOG_SetLevel(MSIM_LOG_LVLDEBUG);
 #endif
-
+#ifdef WITH_POSIX
 	/* Set up signals handlers. */
 	struct sigaction dmpflash_act;
 	memset(&dmpflash_act, 0, sizeof dmpflash_act);
@@ -127,28 +129,31 @@ int main(int argc, char *argv[])
 	sigaction(SIGQUIT, &dmpflash_act, NULL);
 	sigaction(SIGSEGV, &dmpflash_act, NULL);
 	sigaction(SIGTERM, &dmpflash_act, NULL);
+#endif
 
 	MSIM_CFG_PrintVersion();
 
 	/* Interpret command ling arguments */
-	c = getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
+	c = MSIM_OPT_Getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
 	while (c != -1) {
 		switch (c) {
 		case ':':		/* Missing operand */
-			snprintf(LOG, LOGSZ, "-%c requires operand", optopt);
+			snprintf(LOG, LOGSZ, "-%c requires operand",
+			         MSIM_OPT_optopt);
 			MSIM_LOG_FATAL(LOG);
 			return 1;
 		case '?':		/* Unknown option */
-			snprintf(LOG, LOGSZ, "unknown option: -%c", optopt);
+			snprintf(LOG, LOGSZ, "unknown option: -%c",
+			         MSIM_OPT_optopt);
 			MSIM_LOG_FATAL(LOG);
 			return 1;
 		case 'c':
-			conf_file = optarg;
-			conf_rc = MSIM_CFG_Read(&conf, optarg);
+			conf_file = MSIM_OPT_optarg;
+			conf_rc = MSIM_CFG_Read(&conf, MSIM_OPT_optarg);
 			break;
 		case CONF_FILE_OPT:
-			conf_file = optarg;
-			conf_rc = MSIM_CFG_Read(&conf, optarg);
+			conf_file = MSIM_OPT_optarg;
+			conf_rc = MSIM_CFG_Read(&conf, MSIM_OPT_optarg);
 			break;
 		case VERSION_OPT:
 			print_short_usage();
@@ -157,11 +162,13 @@ int main(int argc, char *argv[])
 			print_usage();
 			return 2;
 		default:
-			snprintf(LOG, LOGSZ, "unknown option: -%c", optopt);
+			snprintf(LOG, LOGSZ, "unknown option: -%c",
+			         MSIM_OPT_optopt);
 			MSIM_LOG_WARN(LOG);
 			break;
 		}
-		c = getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
+		c = MSIM_OPT_Getopt_long(argc, argv, CLI_OPTIONS,
+		                         longopts, NULL);
 	}
 
 	/* Try to load a configuration file if it has not been loaded yet. */
@@ -469,6 +476,7 @@ static int set_lock(struct MSIM_AVR *m, uint8_t val)
 	return 0;
 }
 
+#ifdef WITH_POSIX
 static void dump_flash_handler(int s)
 {
 	int rc;
@@ -478,3 +486,4 @@ static void dump_flash_handler(int s)
 		MSIM_LOG_ERROR("failed to dump memory to: " FLASH_FILE);
 	}
 }
+#endif

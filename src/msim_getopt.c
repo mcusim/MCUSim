@@ -1,35 +1,33 @@
-/* $OpenBSD: getopt_long.c,v 1.24 2010/07/22 19:31:53 blambert Exp $	*/
-/* $NetBSD: getopt_long.c,v 1.1.1.1 2014/07/09 19:38:35 riastradh Exp $	*/
-
 /*
- * Copyright (c) 2017, 2018,
- * Dmitry Salychev <darkness.bsd@gmail.com>,
- * Alexander Salychev <ppsalex@rambler.ru> et al.
- * All rights reserved.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <organization> nor the
+ *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
+
+/* $OpenBSD: getopt_long.c,v 1.24 2010/07/22 19:31:53 blambert Exp $	*/
+/* $NetBSD: getopt_long.c,v 1.1.1.1 2014/07/09 19:38:35 riastradh Exp $	*/
 /*
  * Copyright (c) 2002 Todd C. Miller <Todd.Miller@courtesan.com>
  *
@@ -82,16 +80,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include "mcusim/getopt.h"
 
-int	opterr = 1;		/* if error message should be printed */
-int	optind = 1;		/* index into parent argv vector */
-int	optopt = '?';		/* character checked for validity */
-int	optreset;		/* reset getopt */
-char    *optarg;		/* argument associated with option */
+int MSIM_OPT_opterr = 1;	/* if error message should be printed */
+int MSIM_OPT_optind = 1;	/* index into parent argv vector */
+int MSIM_OPT_optopt = '?';	/* character checked for validity */
+int MSIM_OPT_optreset;		/* reset getopt */
+char *MSIM_OPT_optarg;		/* argument associated with option */
 
-#define PRINT_ERROR	((opterr) && (*options != ':'))
+#define PRINT_ERROR	((MSIM_OPT_opterr) && (*options != ':'))
 
 #define FLAG_PERMUTE	0x01	/* permute non-options to the end of argv */
 #define FLAG_ALLARGS	0x02	/* treat non-options as args to option "-1" */
@@ -105,15 +102,15 @@ char    *optarg;		/* argument associated with option */
 #define	EMSG		""
 
 static int getopt_internal(int, char **, const char *,
-                           const struct option *, int *, int);
+                           const struct MSIM_OPT_Option *, int *, int);
 static int parse_long_options(char *const *, const char *,
-                              const struct option *, int *, int);
+                              const struct MSIM_OPT_Option *, int *, int);
 static int gcd(int, int);
 static void permute_args(int, int, int, char **);
 
 static char *place = EMSG; /* option letter processing */
 
-/* XXX: set optreset to 1 rather than these two */
+/* XXX: set MSIM_OPT_optreset to 1 rather than these two */
 static int nonopt_start = -1; /* first non option argument (for permute) */
 static int nonopt_end = -1;   /* first option after non options (for permute) */
 
@@ -187,7 +184,7 @@ permute_args(int panonopt_start, int panonopt_end, int opt_end, char **nargv)
  */
 static int
 parse_long_options(char *const *nargv, const char *options,
-                   const struct option *long_options, int *idx, int short_too)
+                   const struct MSIM_OPT_Option *long_options, int *idx, int short_too)
 {
 	char *current_argv, *has_equal;
 	size_t current_argv_len;
@@ -196,7 +193,7 @@ parse_long_options(char *const *nargv, const char *options,
 	current_argv = place;
 	match = -1;
 
-	optind++;
+	MSIM_OPT_optind++;
 
 	if ((has_equal = strchr(current_argv, '=')) != NULL) {
 		/* argument found (--option=arg) */
@@ -234,42 +231,42 @@ parse_long_options(char *const *nargv, const char *options,
 				fprintf(stderr, ambig, (int)current_argv_len,
 				        current_argv);
 			}
-			optopt = 0;
+			MSIM_OPT_optopt = 0;
 			return (BADCH);
 		}
 	}
 	if (match != -1) {		/* option found */
-		if (long_options[match].has_arg == no_argument &&
+		if (long_options[match].has_arg == MSIM_OPT_NO_ARGUMENT &&
 		                has_equal) {
 			if (PRINT_ERROR) {
 				fprintf(stderr, noarg, (int)current_argv_len,
 				        current_argv);
 			}
 			/*
-			 * XXX: GNU sets optopt to val regardless of flag
+			 * XXX: GNU sets MSIM_OPT_optopt to val regardless of flag
 			 */
 			if (long_options[match].flag == NULL) {
-				optopt = long_options[match].val;
+				MSIM_OPT_optopt = long_options[match].val;
 			} else {
-				optopt = 0;
+				MSIM_OPT_optopt = 0;
 			}
 			return (BADARG);
 		}
-		if (long_options[match].has_arg == required_argument ||
+		if (long_options[match].has_arg == MSIM_OPT_REQUIRED_ARGUMENT ||
 		                long_options[match].has_arg ==
-		                optional_argument) {
+		                MSIM_OPT_OPTIONAL_ARGUMENT) {
 			if (has_equal) {
-				optarg = has_equal;
+				MSIM_OPT_optarg = has_equal;
 			} else if (long_options[match].has_arg ==
-			                required_argument) {
+			                MSIM_OPT_REQUIRED_ARGUMENT) {
 				/*
 				 * optional argument doesn't use next nargv
 				 */
-				optarg = nargv[optind++];
+				MSIM_OPT_optarg = nargv[MSIM_OPT_optind++];
 			}
 		}
-		if ((long_options[match].has_arg == required_argument) &&
-		                (optarg == NULL)) {
+		if ((long_options[match].has_arg == MSIM_OPT_REQUIRED_ARGUMENT) &&
+		                (MSIM_OPT_optarg == NULL)) {
 			/*
 			 * Missing argument; leading ':' indicates no error
 			 * should be generated.
@@ -278,25 +275,25 @@ parse_long_options(char *const *nargv, const char *options,
 				fprintf(stderr, recargstring, current_argv);
 			}
 			/*
-			 * XXX: GNU sets optopt to val regardless of flag
+			 * XXX: GNU sets MSIM_OPT_optopt to val regardless of flag
 			 */
 			if (long_options[match].flag == NULL) {
-				optopt = long_options[match].val;
+				MSIM_OPT_optopt = long_options[match].val;
 			} else {
-				optopt = 0;
+				MSIM_OPT_optopt = 0;
 			}
-			--optind;
+			--MSIM_OPT_optind;
 			return (BADARG);
 		}
 	} else {			/* unknown option */
 		if (short_too) {
-			--optind;
+			--MSIM_OPT_optind;
 			return (-1);
 		}
 		if (PRINT_ERROR) {
 			fprintf(stderr, illoptstring, current_argv);
 		}
-		optopt = 0;
+		MSIM_OPT_optopt = 0;
 		return (BADCH);
 	}
 	if (idx) {
@@ -316,7 +313,7 @@ parse_long_options(char *const *nargv, const char *options,
  */
 static int
 getopt_internal(int nargc, char **nargv, const char *options,
-                const struct option *long_options, int *idx, int flags)
+                const struct MSIM_OPT_Option *long_options, int *idx, int flags)
 {
 	char *oli;				/* option letter list index */
 	int optchar, short_too;
@@ -343,38 +340,38 @@ getopt_internal(int nargc, char **nargv, const char *options,
 	}
 
 	/*
-	 * XXX Some GNU programs (like cvs) set optind to 0 instead of
-	 * XXX using optreset.  Work around this braindamage.
+	 * XXX Some GNU programs (like cvs) set MSIM_OPT_optind to 0 instead of
+	 * XXX using MSIM_OPT_optreset.  Work around this braindamage.
 	 */
-	if (optind == 0) {
-		optind = optreset = 1;
+	if (MSIM_OPT_optind == 0) {
+		MSIM_OPT_optind = MSIM_OPT_optreset = 1;
 	}
 
-	optarg = NULL;
-	if (optreset) {
+	MSIM_OPT_optarg = NULL;
+	if (MSIM_OPT_optreset) {
 		nonopt_start = nonopt_end = -1;
 	}
 start:
-	if (optreset || !*place) {		/* update scanning pointer */
-		optreset = 0;
-		if (optind >= nargc) {          /* end of argument vector */
+	if (MSIM_OPT_optreset || !*place) {		/* update scanning pointer */
+		MSIM_OPT_optreset = 0;
+		if (MSIM_OPT_optind >= nargc) {          /* end of argument vector */
 			place = EMSG;
 			if (nonopt_end != -1) {
 				/* do permutation, if we have to */
 				permute_args(nonopt_start, nonopt_end,
-				             optind, nargv);
-				optind -= nonopt_end - nonopt_start;
+				             MSIM_OPT_optind, nargv);
+				MSIM_OPT_optind -= nonopt_end - nonopt_start;
 			} else if (nonopt_start != -1) {
 				/*
-				 * If we skipped non-options, set optind
+				 * If we skipped non-options, set MSIM_OPT_optind
 				 * to the first of them.
 				 */
-				optind = nonopt_start;
+				MSIM_OPT_optind = nonopt_start;
 			}
 			nonopt_start = nonopt_end = -1;
 			return (-1);
 		}
-		if (*(place = nargv[optind]) != '-' ||
+		if (*(place = nargv[MSIM_OPT_optind]) != '-' ||
 		                (place[1] == '\0' && strchr(options, '-') ==
 		                 NULL)) {
 			place = EMSG;		/* found non-option */
@@ -383,7 +380,7 @@ start:
 				 * GNU extension:
 				 * return non-option as argument to option 1
 				 */
-				optarg = nargv[optind++];
+				MSIM_OPT_optarg = nargv[MSIM_OPT_optind++];
 				return (INORDER);
 			}
 			if (!(flags & FLAG_PERMUTE)) {
@@ -395,27 +392,27 @@ start:
 			}
 			/* do permutation */
 			if (nonopt_start == -1) {
-				nonopt_start = optind;
+				nonopt_start = MSIM_OPT_optind;
 			} else if (nonopt_end != -1) {
 				permute_args(nonopt_start, nonopt_end,
-				             optind, nargv);
-				nonopt_start = optind -
+				             MSIM_OPT_optind, nargv);
+				nonopt_start = MSIM_OPT_optind -
 				               (nonopt_end - nonopt_start);
 				nonopt_end = -1;
 			}
-			optind++;
+			MSIM_OPT_optind++;
 			/* process next argument */
 			goto start;
 		}
 		if (nonopt_start != -1 && nonopt_end == -1) {
-			nonopt_end = optind;
+			nonopt_end = MSIM_OPT_optind;
 		}
 
 		/*
 		 * If we have "-" do nothing, if "--" we are done.
 		 */
 		if (place[1] != '\0' && *++place == '-' && place[1] == '\0') {
-			optind++;
+			MSIM_OPT_optind++;
 			place = EMSG;
 			/*
 			 * We found an option (--), so if we skipped
@@ -423,8 +420,8 @@ start:
 			 */
 			if (nonopt_end != -1) {
 				permute_args(nonopt_start, nonopt_end,
-				             optind, nargv);
-				optind -= nonopt_end - nonopt_start;
+				             MSIM_OPT_optind, nargv);
+				MSIM_OPT_optind -= nonopt_end - nonopt_start;
 			}
 			nonopt_start = nonopt_end = -1;
 			return (-1);
@@ -437,7 +434,7 @@ start:
 	 *  2) the arg is not just "-"
 	 *  3) either the arg starts with -- we are getopt_long_only()
 	 */
-	if (long_options != NULL && place != nargv[optind] &&
+	if (long_options != NULL && place != nargv[MSIM_OPT_optind] &&
 	                (*place == '-' || (flags & FLAG_LONGONLY))) {
 		short_too = 0;
 		if (*place == '-') {
@@ -466,27 +463,27 @@ start:
 			return (-1);
 		}
 		if (!*place) {
-			++optind;
+			++MSIM_OPT_optind;
 		}
 		if (PRINT_ERROR) {
 			fprintf(stderr, illoptchar, optchar);
 		}
-		optopt = optchar;
+		MSIM_OPT_optopt = optchar;
 		return (BADCH);
 	}
 	if (long_options != NULL && optchar == 'W' && oli[1] == ';') {
 		/* -W long-option */
 		if (*place) {			/* no space */
 			/* NOTHING */;
-		} else if (++optind >= nargc) {	/* no arg */
+		} else if (++MSIM_OPT_optind >= nargc) {	/* no arg */
 			place = EMSG;
 			if (PRINT_ERROR) {
 				fprintf(stderr, recargchar, optchar);
 			}
-			optopt = optchar;
+			MSIM_OPT_optopt = optchar;
 			return (BADARG);
 		} else {			/* white space */
-			place = nargv[optind];
+			place = nargv[MSIM_OPT_optind];
 		}
 		optchar = parse_long_options(nargv, options, long_options,
 		                             idx, 0);
@@ -495,26 +492,26 @@ start:
 	}
 	if (*++oli != ':') {			/* doesn't take argument */
 		if (!*place) {
-			++optind;
+			++MSIM_OPT_optind;
 		}
 	} else {				/* takes (optional) argument */
-		optarg = NULL;
+		MSIM_OPT_optarg = NULL;
 		if (*place) {			/* no white space */
-			optarg = place;
+			MSIM_OPT_optarg = place;
 		} else if (oli[1] != ':') {	/* arg not optional */
-			if (++optind >= nargc) {	/* no arg */
+			if (++MSIM_OPT_optind >= nargc) {	/* no arg */
 				place = EMSG;
 				if (PRINT_ERROR) {
 					fprintf(stderr, recargchar, optchar);
 				}
-				optopt = optchar;
+				MSIM_OPT_optopt = optchar;
 				return (BADARG);
 			} else {
-				optarg = nargv[optind];
+				MSIM_OPT_optarg = nargv[MSIM_OPT_optind];
 			}
 		}
 		place = EMSG;
-		++optind;
+		++MSIM_OPT_optind;
 	}
 	/* dump back option letter */
 	return (optchar);
@@ -526,8 +523,7 @@ start:
  *
  * [eventually this will replace the BSD getopt]
  */
-int
-getopt(int nargc, char **nargv, const char *options)
+int MSIM_OPT_Getopt(int nargc, char **nargv, const char *options)
 {
 
 	/*
@@ -545,22 +541,9 @@ getopt(int nargc, char **nargv, const char *options)
  * getopt_long --
  *	Parse argc/argv argument vector.
  */
-int
-getopt_long(int nargc, char **nargv, const char *options,
-            const struct option *long_options, int *idx)
+int MSIM_OPT_Getopt_long(int nargc, char **nargv, const char *options,
+                         const struct MSIM_OPT_Option *long_options, int *idx)
 {
 	return (getopt_internal(nargc, nargv, options, long_options, idx,
 	                        FLAG_PERMUTE));
-}
-
-/*
- * getopt_long_only --
- *	Parse argc/argv argument vector.
- */
-int
-getopt_long_only(int nargc, char **nargv, const char *options,
-                 const struct option *long_options, int *idx)
-{
-	return (getopt_internal(nargc, nargv, options, long_options, idx,
-	                        FLAG_PERMUTE|FLAG_LONGONLY));
 }

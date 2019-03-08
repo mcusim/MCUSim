@@ -1,35 +1,33 @@
-/* $OpenBSD: getopt.h,v 1.2 2008/06/26 05:42:04 ray Exp $		*/
-/* $NetBSD: getopt.h,v 1.1.1.1 2014/07/09 19:38:35 riastradh Exp $	*/
-
 /*
- * Copyright (c) 2017, 2018,
- * Dmitry Salychev <darkness.bsd@gmail.com>,
- * Alexander Salychev <ppsalex@rambler.ru> et al.
- * All rights reserved.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
  *       notice, this list of conditions and the following disclaimer in the
  *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <organization> nor the
+ *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
+ * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
  */
+
+/* $OpenBSD: getopt.h,v 1.2 2008/06/26 05:42:04 ray Exp $		*/
+/* $NetBSD: getopt.h,v 1.1.1.1 2014/07/09 19:38:35 riastradh Exp $	*/
 /*-
  * Copyright (c) 2000 The NetBSD Foundation, Inc.
  * All rights reserved.
@@ -59,21 +57,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef _GETOPT_H_
-#define _GETOPT_H_
+#ifndef MSIM_OPT_H_
+#define MSIM_OPT_H_
 
 /*
  * GNU-like getopt_long() and 4.4BSD getsubopt()/optreset extensions
  */
-#define no_argument        0
-#define required_argument  1
-#define optional_argument  2
+#define MSIM_OPT_NO_ARGUMENT		0
+#define MSIM_OPT_REQUIRED_ARGUMENT	1
+#define MSIM_OPT_OPTIONAL_ARGUMENT	2
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct option {
+struct MSIM_OPT_Option {
 	/* name of long option */
 	const char *name;
 	/*
@@ -87,24 +85,18 @@ struct option {
 	int val;
 };
 
-int getopt_long(int, char **, const char *, const struct option *, int *);
-int getopt_long_only(int, char **, const char *, const struct option *, int *);
+extern char *MSIM_OPT_optarg;
+extern int MSIM_OPT_opterr;
+extern int MSIM_OPT_optind;
+extern int MSIM_OPT_optopt;
+extern int MSIM_OPT_optreset;
+//extern char *MSIM_OPT_suboptarg;
 
-#ifndef _GETOPT_DEFINED_
-#define _GETOPT_DEFINED_
-int getopt(int, char **, const char *);
-int getsubopt(char **, char *const *, char **);
-
-extern   char *optarg;                  /* getopt(3) external variables */
-extern   int opterr;
-extern   int optind;
-extern   int optopt;
-extern   int optreset;
-extern   char *suboptarg;               /* getsubopt(3) external variable */
-#endif
+int MSIM_OPT_Getopt_long(int, char **, const char *, const struct MSIM_OPT_Option *, int *);
+int MSIM_OPT_Getopt(int, char **, const char *);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* !_GETOPT_H_ */
+#endif /* !MSIM_OPT_H_ */
