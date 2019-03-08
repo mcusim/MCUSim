@@ -58,10 +58,21 @@ struct MSIM_PTY {
 	struct MSIM_PTY_Thread read_thr;
 };
 
+#if defined(WITH_POSIX) && defined(WITH_POSIX_PTY)
+
 int MSIM_PTY_Open(struct MSIM_PTY *pty);
 int MSIM_PTY_Close(struct MSIM_PTY *pty);
 int MSIM_PTY_Write(struct MSIM_PTY *pty, uint8_t *buf, uint32_t len);
 int MSIM_PTY_Read(struct MSIM_PTY *pty, uint8_t *buf, uint32_t len);
+
+#else
+
+#define MSIM_PTY_Open(pty) 1 /* Can't open PTY by default. */
+#define MSIM_PTY_Close(pty) 0 /* No problem with closing. */
+#define MSIM_PTY_Write(pty, buf, len) 0 /* Can't write anything. */
+#define MSIM_PTY_Read(pty, buf, len) 0 /* Can't read anything. */
+
+#endif /* defined(WITH_POSIX) && defined(WITH_POSIX_PTY) */
 
 #ifdef __cplusplus
 }

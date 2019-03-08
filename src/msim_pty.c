@@ -30,6 +30,8 @@
  * These functions are generally useful to let an operating system to interact
  * with a simulated MCU using "serial port" backed by a pseudo-terminal.
  */
+#if defined(WITH_POSIX) && defined(WITH_POSIX_PTY)
+
 #define _POSIX_C_SOURCE 200112L
 #define _XOPEN_SOURCE 600
 #include <stdint.h>
@@ -222,3 +224,5 @@ static void *read_from_pty(void *arg)
 	}
 	pthread_exit(NULL);
 }
+
+#endif /* defined(WITH_POSIX) && defined(WITH_POSIX_PTY) */

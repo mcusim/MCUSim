@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.156")
+set(MSIM_VERSION "0.1.157")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -54,7 +54,9 @@ add_subdirectory(xspice)	# Compile MCUSim as XSPICE library
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
+# -----------------------------------------------------------------------------
 # Set flags here
+# -----------------------------------------------------------------------------
 if (CMAKE_BUILD_TYPE MATCHES Debug)
 	message(STATUS "Building debug version of MCUSim ${MSIM_VERSION}")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDEBUG")
@@ -78,7 +80,9 @@ else()
 	endif()
 endif()
 
+# -----------------------------------------------------------------------------
 # Set sources here
+# -----------------------------------------------------------------------------
 set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
 			src/avr/avr_m8a.c
 			src/avr/avr_m328p.c
@@ -96,7 +100,10 @@ set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
 			src/msim_pty.c
 			src/msim_tsq.c)
 
+# -----------------------------------------------------------------------------
 # Look for libraries, packages, etc.
+# -----------------------------------------------------------------------------
+# Check LuaJIT or Lua installed
 unset(LUA_FOUND CACHE)
 unset(LUA_INCLUDE_DIR CACHE)
 unset(LUA_LIBRARY CACHE)
@@ -108,6 +115,7 @@ else()
 	find_package(LuaJIT REQUIRED)
 endif()
 
+# Check POSIX threads
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
@@ -116,16 +124,15 @@ find_package(Threads REQUIRED)
 set(TARGET_LIBS "")
 if (LUA_FOUND)
 	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
-	message(STATUS "Building with Lua-based models")
 else()
-	message(FATAL_ERROR "Building without Lua-based models")
+	message(FATAL_ERROR "Building without Lua-based models!")
 endif()
 
 if (CMAKE_USE_PTHREADS_INIT)
 	set(TARGET_LIBS ${TARGET_LIBS} Threads::Threads)
 endif()
 
-# Check functions, headers here
+# Check math library
 if (NOT MSVC)
 	check_function_exists(fmax RESULT)
 	if (NOT RESULT)
@@ -133,41 +140,8 @@ if (NOT MSVC)
 		list(APPEND TARGET_LIBS -lm)
 	endif()
 endif()
-check_function_exists(posix_openpt HAVE_POSIX_OPENPT)
-check_function_exists(grantpt HAVE_POSIX_GRANTPT)
-check_function_exists(ptsname HAVE_POSIX_PTSNAME)
-check_function_exists(unlockpt HAVE_POSIX_UNLOCKPT)
-check_function_exists(open HAVE_POSIX_OPEN)
-check_function_exists(close HAVE_POSIX_CLOSE)
-check_function_exists(read HAVE_POSIX_READ)
-check_function_exists(write HAVE_POSIX_WRITE)
-if (WITH_POSIX_PTY MATCHES True)
-	message(STATUS "POSIX pseudo-terminals strictly required")
-endif()
-if (WITH_POSIX_PTY MATCHES False)
-	message(STATUS "POSIX pseudo-terminals strictly not required")
-endif()
-if (HAVE_POSIX_OPENPT AND
-    HAVE_POSIX_GRANTPT AND
-    HAVE_POSIX_PTSNAME AND
-    HAVE_POSIX_UNLOCKPT AND
-    HAVE_POSIX_OPEN AND
-    HAVE_POSIX_CLOSE AND
-    HAVE_POSIX_READ AND
-    HAVE_POSIX_WRITE)
-	if (WITH_POSIX_PTY MATCHES False)
-		message(STATUS "Building without POSIX pseudo-terminals")
-	else(WITH_POSIX_PTY MATCHES False)
-		message(STATUS "Building with POSIX pseudo-terminals")
-		add_definitions(-DMSIM_POSIX_PTY=1)
-	endif(WITH_POSIX_PTY MATCHES False)
-else()
-	if (WITH_POSIX_PTY)
-		message(FATAL_ERROR "Building without POSIX pseudo-terminals")
-	else()
-		message(STATUS "Building without POSIX pseudo-terminals")
-	endif()
-endif()
+
+# Check basic POSIX headers.
 check_include_files(netdb.h HAVE_NETDB_H)
 check_include_files("sys/socket.h" HAVE_SYS_SOCKET_H)
 check_include_files(string.h HAVE_STRING_H)
@@ -179,57 +153,64 @@ check_include_files(netinet/in.h HAVE_NETINET_IN_H)
 check_include_files(signal.h HAVE_SIGNAL_H)
 if (NOT CYGWIN)
 	check_include_files(netinet/tcp.h HAVE_NETINET_TCP_H)
-	if (HAVE_NETDB_H AND
-	    HAVE_SYS_SOCKET_H AND
-	    HAVE_STRING_H AND
-	    HAVE_FCNTL_H AND
-	    HAVE_UNISTD_H AND
-	    HAVE_ERRNO_H AND
-	    HAVE_POLL_H AND
-	    HAVE_NETINET_IN_H AND
-	    HAVE_NETINET_TCP_H AND
-	    HAVE_SIGNAL_H AND
+	if (HAVE_NETDB_H AND HAVE_SYS_SOCKET_H AND HAVE_STRING_H AND
+	    HAVE_FCNTL_H AND HAVE_UNISTD_H AND HAVE_ERRNO_H AND HAVE_POLL_H AND
+	    HAVE_NETINET_IN_H AND HAVE_NETINET_TCP_H AND HAVE_SIGNAL_H AND
 	    CMAKE_USE_PTHREADS_INIT)
-		add_definitions(-DMSIM_POSIX=1)
-		message(STATUS "Building with MSIM_POSIX defined")
+		add_definitions(-DWITH_POSIX=1)
 	else()
-		message(STATUS "Building without MSIM_POSIX defined")
+		message(STATUS "Building without WITH_POSIX defined!")
 	endif()
 else()
 	# CMake cannot find netinet/tcp.h under CYGWIN and it's not
 	# required. Let it be ignored silently.
-	if (HAVE_NETDB_H AND
-	    HAVE_SYS_SOCKET_H AND
-	    HAVE_STRING_H AND
-	    HAVE_FCNTL_H AND
-	    HAVE_UNISTD_H AND
-	    HAVE_ERRNO_H AND
-	    HAVE_POLL_H AND
-	    HAVE_NETINET_IN_H AND
-	    CMAKE_USE_PTHREADS_INIT)
-		add_definitions(-DMSIM_POSIX=1)
-		add_definitions(-DMSIM_POSIX_CYGWIN=1)
-		message(STATUS "Building with MSIM_POSIX defined")
-		message(STATUS "Building with MSIM_POSIX_CYGWIN defined")
+	if (HAVE_NETDB_H AND HAVE_SYS_SOCKET_H AND HAVE_STRING_H AND
+	    HAVE_FCNTL_H AND HAVE_UNISTD_H AND HAVE_ERRNO_H AND HAVE_POLL_H AND
+	    HAVE_NETINET_IN_H AND CMAKE_USE_PTHREADS_INIT)
+		add_definitions(-DWITH_POSIX=1)
+		add_definitions(-DWITH_POSIX_CYGWIN=1)
 	else()
-		message(STATUS "Building without MSIM_POSIX defined")
-		message(STATUS "Building without MSIM_POSIX_CYGWIN defined")
+		message(STATUS "Building without WITH_POSIX defined!")
+		message(STATUS "Building without WITH_POSIX_CYGWIN defined!")
 	endif()
 endif()
 
+# Check whether we will be able to use pseudo-terminals or not.
+check_function_exists(posix_openpt HAVE_POSIX_OPENPT)
+check_function_exists(grantpt HAVE_POSIX_GRANTPT)
+check_function_exists(ptsname HAVE_POSIX_PTSNAME)
+check_function_exists(unlockpt HAVE_POSIX_UNLOCKPT)
+check_function_exists(open HAVE_POSIX_OPEN)
+check_function_exists(close HAVE_POSIX_CLOSE)
+check_function_exists(read HAVE_POSIX_READ)
+check_function_exists(write HAVE_POSIX_WRITE)
+if (HAVE_POSIX_OPENPT AND HAVE_POSIX_GRANTPT AND HAVE_POSIX_PTSNAME AND
+    HAVE_POSIX_UNLOCKPT AND HAVE_POSIX_OPEN AND HAVE_POSIX_CLOSE AND
+    HAVE_POSIX_READ AND HAVE_POSIX_WRITE)
+	add_definitions(-DWITH_POSIX_PTY=1)
+else()
+	message(STATUS "Building without WITH_POSIX_PTY defined!")
+endif()
+
+# -----------------------------------------------------------------------------
 # Prepare headers
+# -----------------------------------------------------------------------------
 file(COPY ${CMAKE_SOURCE_DIR}/include DESTINATION ${CMAKE_BINARY_DIR}
      FILES_MATCHING PATTERN "*.h")
 configure_file(${CMAKE_SOURCE_DIR}/include/mcusim/config.h.in
                ${CMAKE_BINARY_DIR}/include/mcusim/config.h @ONLY)
 
+# -----------------------------------------------------------------------------
 # Define include files and directories here
+# -----------------------------------------------------------------------------
 include_directories("${CMAKE_BINARY_DIR}/include/")
 if (LUA_FOUND)
 	include_directories(${LUA_INCLUDE_DIR})
 endif()
 
+# -----------------------------------------------------------------------------
 # Compile MCUSim libraries and executable
+# -----------------------------------------------------------------------------
 add_library(objlib OBJECT ${MCUSIM_LIB_SOURCES})
 set_property(TARGET objlib PROPERTY POSITION_INDEPENDENT_CODE 1)
 add_library(${MCUSIM_LIB} SHARED $<TARGET_OBJECTS:objlib>)
@@ -240,7 +221,9 @@ set_target_properties("${MCUSIM_LIB}-static" PROPERTIES OUTPUT_NAME ${MCUSIM_LIB
 define_filename_for_sources(${MCUSIM_LIB})
 define_filename_for_sources(${MCUSIM})
 
+# -----------------------------------------------------------------------------
 # Link MCUSim
+# -----------------------------------------------------------------------------
 target_link_libraries(${MCUSIM_LIB} ${TARGET_LIBS})
 target_link_libraries(${MCUSIM} ${MCUSIM_LIB})
 if (APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND LUA_TYPE MATCHES "LuaJIT")
@@ -250,7 +233,9 @@ if (APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND LUA_TYPE MATCHES "LuaJIT")
 	target_link_libraries(${MCUSIM} "-image_base 100000000")
 endif()
 
+# -----------------------------------------------------------------------------
 # Install MCUSim executable, library and headers
+# -----------------------------------------------------------------------------
 message(STATUS "Install to: ${CMAKE_INSTALL_PREFIX}")
 if (NOT DEFINED MSIM_BIN_DIR)
 	set(MSIM_BIN_DIR "bin")

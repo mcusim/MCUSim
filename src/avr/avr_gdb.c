@@ -27,6 +27,8 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+
+#ifdef WITH_POSIX
 #include <inttypes.h>
 #include <string.h>
 #include <netdb.h>
@@ -40,7 +42,7 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
 
-#ifndef MSIM_POSIX_CYGWIN
+#ifndef WITH_POSIX_CYGWIN
 #include <netinet/tcp.h>
 #endif
 
@@ -1381,3 +1383,5 @@ static void rsp_step(struct rsp_buf *buf)
 	rsp.mcu->state = AVR_MSIM_STEP;
 	rsp.client_waiting = 1;
 }
+
+#endif /* WITH_POSIX */

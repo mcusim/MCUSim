@@ -38,9 +38,19 @@
 extern "C" {
 #endif
 
+#ifdef WITH_POSIX
+
 void MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn);
 int MSIM_AVR_RSPHandle(void);
 void MSIM_AVR_RSPClose(void);
+
+#else /* WITH_POSIX not defined */
+
+#define MSIM_AVR_RSPInit(mcu, portn)
+#define MSIM_AVR_RSPHandle() 0
+#define MSIM_AVR_RSPClose()
+
+#endif /* WITH_POSIX */
 
 #ifdef __cplusplus
 }
