@@ -15,7 +15,8 @@ Prerequisites
  recommended because it may decrease a simulation peformance significantly.
 
  If you want to compile MCUSim as an XSPICE library (mcusim.cm), the following
- software should also be installed: GNU make, readline, bison, flex.
+ software should also be installed: GNU make, readline, bison, flex,
+ X11 (and Xaw, Xmu, Xext) headers and libs.
 
  If you want to contribute to the project you will need the following
  software installed: astyle, python (2.7 or above), cppcheck (1.83 or above),

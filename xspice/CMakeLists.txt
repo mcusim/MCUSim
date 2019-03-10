@@ -39,20 +39,12 @@ set(_NGSPICE_TARBALL_MD5 272653b01dd4529c3c3a1dbd2e1588f1)
 
 if (WITH_XSPICE)
 	include(ExternalProject)
-endif()
 
-if (WITH_XSPICE)
 	if (NGSPICE_TARBALL)
 		set(_NGSPICE_TARBALL ${NGSPICE_TARBALL})
 	endif()
 	if (NGSPICE_TARBALL_MD5)
 		set(_NGSPICE_TARBALL_MD5 ${NGSPICE_TARBALL_MD5})
-	endif()
-
-	if (CMAKE_BUILD_TYPE MATCHES Debug)
-		set(_NGSPICE_DEBUG "")
-	else()
-		set(_NGSPICE_DEBUG "--disable-debug")
 	endif()
 
 	if (${CMAKE_SYSTEM_NAME} MATCHES "FreeBSD")
@@ -67,13 +59,10 @@ if (WITH_XSPICE)
 	if (NGSPICE_MAKE)
 		set(_NGSPICE_MAKE ${NGSPICE_MAKE})
 	endif()
-	message(STATUS "Building with XSPICE code model library: mcusim.cm")
-	message(STATUS "Building with NGSpice tarball: ${_NGSPICE_TARBALL}")
-	message(STATUS "Building with NGSpice tarball MD5: ${_NGSPICE_TARBALL_MD5}")
-	message(STATUS "Building with NGSpice make: ${_NGSPICE_MAKE}")
-	message(STATUS "Building with NGSpice configuration: --enable-xspice --with-readline=yes --with-ngshared ${_NGSPICE_DEBUG}")
 
-	# Set flags to link code model library
+# -----------------------------------------------------------------------------
+# Set flags for NGSpice
+# -----------------------------------------------------------------------------
 	set(MSIM_CFLAGS "$ENV{CFLAGS} -I${CMAKE_BINARY_DIR}/include")
 	set(MSIM_CFLAGS "${MSIM_CFLAGS} -DMSIM_VERSION=\"${MSIM_VERSION}\"")
 	set(MSIM_LDFLAGS "$ENV{LDFLAGS} -L${CMAKE_BINARY_DIR}")
@@ -83,6 +72,46 @@ if (WITH_XSPICE)
 	endif()
 	set(MSIM_LIBS "-lmsim")
 
+	find_package(OpenMP)
+	set(_NGSPICE_OPENMP "")
+	if (OPENMP_FOUND)
+		set(_NGSPICE_OPENMP "--enable-openmp")
+		set(MSIM_CFLAGS "${MSIM_CFLAGS} ${OpenMP_C_FLAGS}")
+	endif()
+
+	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
+		set(MSIM_CFLAGS "${MSIM_CFLAGS} -m64 -O2")
+		set(MSIM_LDFLAGS "${MSIM_LDFLAGS} -m64 -s")
+	else()
+		set(MSIM_CFLAGS "${MSIM_CFLAGS} -m32 -O2")
+		set(MSIM_LDFLAGS "${MSIM_LDFLAGS} -m32 -s")
+	endif()
+# -----------------------------------------------------------------------------
+# Set parameters to build NGSpice
+# -----------------------------------------------------------------------------
+	set(_NGSPICE_DEBUG "--disable-debug")
+	if (CMAKE_BUILD_TYPE MATCHES Debug)
+		set(_NGSPICE_DEBUG "")
+	endif()
+
+	if (MINGW OR MSYS OR WIN32)
+		set(_NGSPICE_CONFIG_PARMS --with-wingui --enable-xspice --enable-cider ${_NGSPICE_OPENMP} ${_NGSPICE_DEBUG} CFLAGS=${MSIM_CFLAGS} LDFLAGS=${MSIM_LDFLAGS})
+	else()
+		set(_NGSPICE_CONFIG_PARMS --with-x --enable-xspice --enable-cider --with-readline=yes ${_NGSPICE_OPENMP} ${_NGSPICE_DEBUG} CFLAGS=${MSIM_CFLAGS} LDFLAGS=${MSIM_LDFLAGS})
+	endif()
+	set(_NGSPICE_MAKE_PARMS -j8)
+# -----------------------------------------------------------------------------
+# Print configuration
+# -----------------------------------------------------------------------------
+	message(STATUS "Building with XSPICE library: mcusim.cm")
+	message(STATUS "Building with NGSpice tarball: ${_NGSPICE_TARBALL}")
+	message(STATUS "Building with NGSpice tarball MD5: ${_NGSPICE_TARBALL_MD5}")
+	message(STATUS "Building with NGSpice make: ${_NGSPICE_MAKE}")
+	message(STATUS "Building with NGSpice make params: ${_NGSPICE_MAKE_PARMS}")
+	message(STATUS "Building with NGSpice configuration: ${_NGSPICE_CONFIG_PARMS}")
+# -----------------------------------------------------------------------------
+# Prepare files
+# -----------------------------------------------------------------------------
 	# Copy a tarball with NGSpice sources
 	file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/${_NGSPICE_TARBALL} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 	# Copy script to apply NGSpice patches
@@ -115,24 +144,29 @@ if (WITH_XSPICE)
 		configure_file(${PATCH} ${CMAKE_CURRENT_BINARY_DIR}/ngspice/patches @ONLY)
 	endforeach()
 
-	ExternalProject_Add(
-		mcusim-ngspice-codemodel
+# -----------------------------------------------------------------------------
+# Compile NGSpice as external project
+# -----------------------------------------------------------------------------
+	ExternalProject_Add(mcusim-xspice-library
 		URL ${CMAKE_CURRENT_BINARY_DIR}/${_NGSPICE_TARBALL}
 		URL_MD5 ${_NGSPICE_TARBALL_MD5}
+
 		PREFIX ${CMAKE_CURRENT_BINARY_DIR}/ngspice
 		SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngspice/src
 		TMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngspice/tmp
 		STAMP_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngspice/stamp
 		BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngspice/bin
+
 		# Patch working directory: SOURCE_DIR
 		PATCH_COMMAND "../patches/patch-ngspice-sources"
 		# Configuration working directory: BINARY_DIR
-		CONFIGURE_COMMAND "../src/configure" CFLAGS=${MSIM_CFLAGS} LDFLAGS=${MSIM_LDFLAGS} --enable-xspice --with-readline=yes --with-ngshared ${_NGSPICE_DEBUG}
+		CONFIGURE_COMMAND "../src/configure" ${_NGSPICE_CONFIG_PARMS}
 		# Build working directory: BINARY_DIR
-		BUILD_COMMAND "${_NGSPICE_MAKE}"
+		BUILD_COMMAND "${_NGSPICE_MAKE}" ${_NGSPICE_MAKE_PARMS}
+
 		INSTALL_COMMAND ""
 		TEST_COMMAND ""
 	)
 else()
-	message(STATUS "Building without XSPICE code model library")
+	message(STATUS "Building without XSPICE library")
 endif()

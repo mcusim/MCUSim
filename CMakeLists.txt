@@ -34,23 +34,43 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.158")
+set(MSIM_VERSION "0.1.159")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
 set(MCUSIM "mcusim")
-set(MCUSIM_LIB "libmsim")
 set(MCUSIM_LIB_NAME "msim")
+set(MCUSIM_LIB "lib${MCUSIM_LIB_NAME}")
 
 # Load modules from our source tree too
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Filename.cmake)
 
+# -----------------------------------------------------------------------------
+# Paths to install MCUSim to
+# -----------------------------------------------------------------------------
+message(STATUS "Install to: ${CMAKE_INSTALL_PREFIX}")
+if (NOT DEFINED MSIM_BIN_DIR)
+	set(MSIM_BIN_DIR "bin")
+endif()
+message(STATUS "Install BINARIES to: ${MSIM_BIN_DIR}")
+if (NOT DEFINED MSIM_LIB_DIR)
+	set(MSIM_LIB_DIR "lib")
+endif()
+message(STATUS "Install SHARED libraries to: ${MSIM_LIB_DIR}")
+if (NOT DEFINED MSIM_SLIB_DIR)
+	set(MSIM_SLIB_DIR "lib")
+endif()
+message(STATUS "Install STATIC libraries to: ${MSIM_SLIB_DIR}")
+if (NOT DEFINED MSIM_H_DIR)
+	set(MSIM_H_DIR "include")
+endif()
+message(STATUS "Install HEADERS to: ${MSIM_H_DIR}")
+
 add_subdirectory(scripts)	# Scripts and script-based MCUSim models
 add_subdirectory(tests)		# MCUSim simulation tests
 add_subdirectory(misra)		# Configuration to check MISRA C rules
 add_subdirectory(xspice)	# Compile MCUSim as XSPICE library
-
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
@@ -159,7 +179,7 @@ if (NOT CYGWIN)
 	    CMAKE_USE_PTHREADS_INIT)
 		add_definitions(-DWITH_POSIX=1)
 	else()
-		message(STATUS "Building without WITH_POSIX defined!")
+		message(STATUS "WITH_POSIX undefined!")
 	endif()
 else()
 	# CMake cannot find netinet/tcp.h under CYGWIN and it's not
@@ -170,8 +190,8 @@ else()
 		add_definitions(-DWITH_POSIX=1)
 		add_definitions(-DWITH_POSIX_CYGWIN=1)
 	else()
-		message(STATUS "Building without WITH_POSIX defined!")
-		message(STATUS "Building without WITH_POSIX_CYGWIN defined!")
+		message(STATUS "WITH_POSIX undefined!")
+		message(STATUS "WITH_POSIX_CYGWIN undefined!")
 	endif()
 endif()
 
@@ -189,7 +209,7 @@ if (HAVE_POSIX_OPENPT AND HAVE_POSIX_GRANTPT AND HAVE_POSIX_PTSNAME AND
     HAVE_POSIX_READ AND HAVE_POSIX_WRITE)
 	add_definitions(-DWITH_POSIX_PTY=1)
 else()
-	message(STATUS "Building without WITH_POSIX_PTY defined!")
+	message(STATUS "WITH_POSIX_PTY undefined!")
 endif()
 
 # -----------------------------------------------------------------------------
@@ -209,15 +229,17 @@ if (LUA_FOUND)
 endif()
 
 # -----------------------------------------------------------------------------
-# Compile MCUSim libraries and executable
+# Compile MCUSim
 # -----------------------------------------------------------------------------
 add_library(objlib OBJECT ${MCUSIM_LIB_SOURCES})
 set_property(TARGET objlib PROPERTY POSITION_INDEPENDENT_CODE 1)
 add_library(${MCUSIM_LIB} SHARED $<TARGET_OBJECTS:objlib>)
 add_library("${MCUSIM_LIB}-static" STATIC $<TARGET_OBJECTS:objlib>)
+
 add_executable(${MCUSIM} src/msim_main.c)
 set_target_properties(${MCUSIM_LIB} PROPERTIES OUTPUT_NAME ${MCUSIM_LIB_NAME})
 set_target_properties("${MCUSIM_LIB}-static" PROPERTIES OUTPUT_NAME ${MCUSIM_LIB_NAME})
+
 define_filename_for_sources(${MCUSIM_LIB})
 define_filename_for_sources(${MCUSIM})
 
@@ -236,23 +258,6 @@ endif()
 # -----------------------------------------------------------------------------
 # Install MCUSim executable, library and headers
 # -----------------------------------------------------------------------------
-message(STATUS "Install to: ${CMAKE_INSTALL_PREFIX}")
-if (NOT DEFINED MSIM_BIN_DIR)
-	set(MSIM_BIN_DIR "bin")
-endif()
-message(STATUS "Install binaries to: ${MSIM_BIN_DIR}")
-if (NOT DEFINED MSIM_LIB_DIR)
-	set(MSIM_LIB_DIR "lib")
-endif()
-message(STATUS "Install shared libraries to: ${MSIM_LIB_DIR}")
-if (NOT DEFINED MSIM_SLIB_DIR)
-	set(MSIM_SLIB_DIR "lib")
-endif()
-message(STATUS "Install static libraries to: ${MSIM_SLIB_DIR}")
-if (NOT DEFINED MSIM_H_DIR)
-	set(MSIM_H_DIR "include")
-endif()
-message(STATUS "Install headers to: ${MSIM_H_DIR}")
 install(TARGETS ${MCUSIM} ${MCUSIM_LIB} "${MCUSIM_LIB}-static"
 	RUNTIME DESTINATION ${MSIM_BIN_DIR}
 	LIBRARY DESTINATION ${MSIM_LIB_DIR}

@@ -99,7 +99,6 @@ static void dump_flash_handler(int s);
 /* Entry point of the simulator */
 int main(int argc, char *argv[])
 {
-	extern char *optarg;
 	FILE *fp;
 	int c, rc, rc2, conf_rc = 1;
 	uint32_t i, j;

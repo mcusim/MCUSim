@@ -40,8 +40,8 @@
 #define __FILE_SEP__ '/'
 #endif
 
-#ifndef __FILENAME__
-#define __FILENAME__ ((strrchr(__FILE__,__FILE_SEP__)==NULL)		\
+#ifndef __MSIM_FILENAME__
+#define __MSIM_FILENAME__ ((strrchr(__FILE__,__FILE_SEP__)==NULL)		\
                       ?(__FILE__):(strrchr(__FILE__,__FILE_SEP__)+1))
 #endif
 
@@ -51,21 +51,21 @@ extern "C" {
 
 /* Logging macros. This is a preferred way to log anything. */
 #define MSIM_LOG_FATAL(msg) MSIM_LOG_Log(MSIM_LOG_LVLFATAL,		\
-                "fatal", __FILENAME__, __LINE__, msg);
+                "fatal", __MSIM_FILENAME__, __LINE__, msg);
 
 #define MSIM_LOG_ERROR(msg) MSIM_LOG_Log(MSIM_LOG_LVLERROR,		\
-                "error", __FILENAME__, __LINE__, msg);
+                "error", __MSIM_FILENAME__, __LINE__, msg);
 
 #define MSIM_LOG_WARN(msg) MSIM_LOG_Log(MSIM_LOG_LVLWARNING,		\
-                "warning", __FILENAME__, __LINE__, msg);
+                "warning", __MSIM_FILENAME__, __LINE__, msg);
 
 #define MSIM_LOG_INFO(msg) MSIM_LOG_Log(MSIM_LOG_LVLINFO,		\
-                "info", __FILENAME__, __LINE__, msg);
+                "info", __MSIM_FILENAME__, __LINE__, msg);
 
 #if defined(DEBUG)
 /* Print debug messages if DEBUG is defined only. */
 #define MSIM_LOG_DEBUG(msg) MSIM_LOG_Log(MSIM_LOG_LVLDEBUG,		\
-                "debug", __FILENAME__, __LINE__, msg);
+                "debug", __MSIM_FILENAME__, __LINE__, msg);
 #else
 /* Print nothing otherwise. */
 #define MSIM_LOG_DEBUG(msg)
