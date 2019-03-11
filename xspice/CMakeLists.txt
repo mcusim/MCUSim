@@ -38,6 +38,9 @@ set(_NGSPICE_TARBALL "ngspice-30.tar.gz")
 set(_NGSPICE_TARBALL_MD5 272653b01dd4529c3c3a1dbd2e1588f1)
 
 if (WITH_XSPICE)
+# -----------------------------------------------------------------------------
+# Configuration to build NGSpice with MCUSim XSPICE library
+# -----------------------------------------------------------------------------
 	include(ExternalProject)
 
 	if (NGSPICE_TARBALL)
@@ -79,6 +82,12 @@ if (WITH_XSPICE)
 		set(MSIM_CFLAGS "${MSIM_CFLAGS} ${OpenMP_C_FLAGS}")
 	endif()
 
+	find_package(Readline)
+	set(_NGSPICE_READLINE "")
+	if (READLINE_FOUND)
+		set(_NGSPICE_READLINE "--with-readline=yes")
+	endif()
+
 	if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 		set(MSIM_CFLAGS "${MSIM_CFLAGS} -m64 -O2")
 		set(MSIM_LDFLAGS "${MSIM_LDFLAGS} -m64 -s")
@@ -97,7 +106,7 @@ if (WITH_XSPICE)
 	if (MINGW OR MSYS OR WIN32)
 		set(_NGSPICE_CONFIG_PARMS --with-wingui --enable-xspice --enable-cider ${_NGSPICE_OPENMP} ${_NGSPICE_DEBUG} CFLAGS=${MSIM_CFLAGS} LDFLAGS=${MSIM_LDFLAGS})
 	else()
-		set(_NGSPICE_CONFIG_PARMS --with-x --enable-xspice --enable-cider --with-readline=yes ${_NGSPICE_OPENMP} ${_NGSPICE_DEBUG} CFLAGS=${MSIM_CFLAGS} LDFLAGS=${MSIM_LDFLAGS})
+		set(_NGSPICE_CONFIG_PARMS --with-x --enable-xspice --enable-cider ${_NGSPICE_READLINE} ${_NGSPICE_OPENMP} ${_NGSPICE_DEBUG} CFLAGS=${MSIM_CFLAGS} LDFLAGS=${MSIM_LDFLAGS})
 	endif()
 	set(_NGSPICE_MAKE_PARMS -j8)
 # -----------------------------------------------------------------------------
