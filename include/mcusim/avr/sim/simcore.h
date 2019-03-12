@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "mcusim/mcusim.h"
+#include "mcusim/config.h"
 #include "mcusim/avr/sim/init.h"
 
 #ifdef __cplusplus
@@ -51,12 +52,10 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint8_t frm_test);
 int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
                      uint8_t frm_test);
 
-/* Initializes an MCU into specific model determined by the given name.
- * It is, generally, a good idea to prepare specific MCU model using this
- * function instead of MSIM_XXXInit() ones. */
-int MSIM_AVR_Init(struct MSIM_AVR *mcu, const char *mcu_name,
-                  uint8_t *pm, uint32_t pm_size, uint8_t *dm, uint32_t dm_size,
-                  uint8_t *mpm, FILE *fp);
+/* Initializes an AVR MCU into a specific model according to the
+ * configuration file. */
+int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
+                  const char *conf_file);
 
 /* Functions to work with a stack inside MCU. */
 void MSIM_AVR_StackPush(struct MSIM_AVR *mcu, unsigned char val);

@@ -57,14 +57,9 @@
 static uint8_t init_portd;
 static uint8_t init_pind;
 
-/* The OCR0 Compare Register is double buffered when using any of the PWM
- * modes and updated during either TOP or BOTTOM of the counting sequence. */
-uint8_t ocr0a_buf;
-uint8_t ocr0b_buf;
-
 /* Timer may start counting from a value higher then the one on OCR0 and
  * for that reason misses the Compare Match. This flag is set in this case. */
-uint8_t missed_cm = 0;
+static uint8_t missed_cm = 0;
 
 static void tick_timer0(struct MSIM_AVR *mcu);
 static void update_watched(struct MSIM_AVR *mcu);

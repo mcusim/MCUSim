@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.160")
+set(MSIM_VERSION "0.1.161")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -66,6 +66,14 @@ if (NOT DEFINED MSIM_H_DIR)
 	set(MSIM_H_DIR "include")
 endif()
 message(STATUS "Install HEADERS to: ${MSIM_H_DIR}")
+if (NOT DEFINED MSIM_CONF_DIR)
+	set(MSIM_CONF_DIR "etc")
+endif()
+message(STATUS "Install CONFIG to: ${MSIM_CONF_DIR}")
+if (NOT DEFINED MSIM_SCRIPT_DIR)
+	set(MSIM_SCRIPT_DIR "share/mcusim")
+endif()
+message(STATUS "Install SCRIPTS to: ${MSIM_SCRIPT_DIR}")
 
 add_subdirectory(scripts)	# Scripts and script-based MCUSim models
 add_subdirectory(tests)		# MCUSim simulation tests

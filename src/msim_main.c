@@ -46,9 +46,6 @@
 #include "mcusim/config.h"
 
 /* Local macro definitions */
-#define FUSE_EXT		2
-#define FUSE_HIGH		1
-#define FUSE_LOW		0
 #define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
 #define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
 #define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
@@ -57,15 +54,11 @@
 #define LOG			(mcu.log)
 #define LOGSZ			MSIM_AVR_LOGSZ
 
-/* Default GDB RSP port */
-#define GDB_RSP_PORT		12750
-
 /* Utility files to store MCU memories. */
 #define FLASH_FILE		".mcusim.flash"
-#define EEP_FILE		".mcusim.eeprom"
 
-/* Configuration file (default name). */
-#define CFG_FILE		"mcusim.conf"
+/* Default GDB RSP port */
+#define GDB_RSP_PORT		12750
 
 /* Command line options */
 #define CLI_OPTIONS		":c:"
@@ -88,24 +81,15 @@ static struct MSIM_CFG conf;
 /* Prototypes of the local functions */
 static void print_usage(void);
 static void print_short_usage(void);
-static void print_config(struct MSIM_AVR *m);
-static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val);
-static int set_lock(struct MSIM_AVR *m, uint8_t val);
 #ifdef WITH_POSIX
 static void dump_flash_handler(int s);
 #endif
 /* END Prototypes of the local functions */
 
-/* Entry point of the simulator */
 int main(int argc, char *argv[])
 {
-	FILE *fp;
-	int c, rc, rc2, conf_rc = 1;
-	uint32_t i, j;
-	uint32_t dump_regs;
+	int c, rc;
 	char *conf_file = NULL;
-	struct MSIM_AVR_VCD *vcd = &mcu.vcd;
-	const uint32_t dflen = sizeof vcd->dump_file/sizeof vcd->dump_file[0];
 
 	conf.mcu_freq = 0;
 	conf.trap_at_isr = 0;
@@ -148,11 +132,9 @@ int main(int argc, char *argv[])
 			return 1;
 		case 'c':
 			conf_file = MSIM_OPT_optarg;
-			conf_rc = MSIM_CFG_Read(&conf, MSIM_OPT_optarg);
 			break;
 		case CONF_FILE_OPT:
 			conf_file = MSIM_OPT_optarg;
-			conf_rc = MSIM_CFG_Read(&conf, MSIM_OPT_optarg);
 			break;
 		case VERSION_OPT:
 			print_short_usage();
@@ -170,226 +152,42 @@ int main(int argc, char *argv[])
 		                         longopts, NULL);
 	}
 
-	/* Try to load a configuration file if it has not been loaded yet. */
-	if (conf_rc != 0) {
-		if (conf_file != NULL) {
-			snprintf(LOG, LOGSZ, "failed to open config file: %s",
-			         conf_file);
-			MSIM_LOG_ERROR(LOG);
+	do {
+		/* Initialize AVR */
+		rc = MSIM_AVR_Init(&mcu, &conf, conf_file);
+		if (rc != 0) {
+			break;
 		}
-		/* Try to load from the working directory first.*/
-		conf_rc = MSIM_CFG_Read(&conf, CFG_FILE);
-		if (conf_rc != 0) {
-			/* Try to load a system-wide file at least. */
-			conf_rc = MSIM_CFG_Read(&conf, MSIM_CFG_FILE);
-			if (conf_rc != 0) {
-				MSIM_LOG_ERROR("cannot load any of the "
-				               "configuration files");
-				return 3;
-			} else {
-				snprintf(LOG, LOGSZ, "using config file: %s",
-				         MSIM_CFG_FILE);
-				MSIM_LOG_INFO(LOG);
-			}
-		} else {
-			MSIM_LOG_INFO("using config file: " CFG_FILE);
+
+		/* Prepare and run AVR simulation */
+		if (conf.firmware_test == 0) {
+			snprintf(LOG, LOGSZ, "waiting for incoming GDB "
+			         "connections at localhost:%d...",
+			         conf.rsp_port);
+			MSIM_LOG_INFO(LOG);
+			MSIM_AVR_RSPInit(&mcu, (uint16_t)conf.rsp_port);
 		}
-	} else {
-		snprintf(LOG, LOGSZ, "using config file: %s", conf_file);
-		MSIM_LOG_INFO(LOG);
-	}
 
-	/* Try to open a firmware file */
-	if (conf.reset_flash == 1U) {
-		/* Firmware file has the priority over the utility file. */
-		if (conf.has_firmware_file == 1) {
-			fp = fopen(conf.firmware_file, "r");
-			if (fp == NULL) {
-				snprintf(LOG, LOGSZ, "failed to read firmware "
-				         "file: %s", conf.firmware_file);
-				MSIM_LOG_FATAL(LOG);
-				return 1;
-			} else {
-				snprintf(LOG, LOGSZ, "firmware file used: %s",
-				         conf.firmware_file);
-				MSIM_LOG_INFO(LOG);
-			}
-		} else {
-			MSIM_LOG_FATAL("no firmware file specified in the "
-			               "configuration");
-			return 1;
+		rc = MSIM_AVR_Simulate(&mcu, conf.firmware_test);
+
+		MSIM_PTY_Close(&mcu.pty);
+		MSIM_AVR_LUACleanModels();
+		if (conf.firmware_test == 0) {
+			MSIM_AVR_RSPClose();
 		}
-	} else {
-		/* Try to load the utility file first. */
-		fp = fopen(FLASH_FILE, "r");
-		if (fp == NULL) {
-			MSIM_LOG_DEBUG("failed to read: " FLASH_FILE);
-			if (conf.has_firmware_file == 1) {
-				fp = fopen(conf.firmware_file, "r");
-				if (fp == NULL) {
-					snprintf(LOG, LOGSZ, "failed to read "
-					         "firmware file: %s",
-					         conf.firmware_file);
-					MSIM_LOG_FATAL(LOG);
-					return 1;
-				} else {
-					snprintf(LOG, LOGSZ, "using firmware "
-					         "file: %s", conf.firmware_file);
-					MSIM_LOG_INFO(LOG);
-				}
-			} else {
-				MSIM_LOG_FATAL("no firmware file specified "
-				               "in the configuration");
-				return 1;
-			}
-		} else {
-			MSIM_LOG_DEBUG("using firmware file: " FLASH_FILE);
+
+		if (MSIM_AVR_DumpFlash(&mcu, FLASH_FILE) != 0) {
+			MSIM_LOG_ERROR("failed to dump memory to: "
+			               FLASH_FILE);
 		}
-	}
-
-	/* Initialize MCU as one of AVR models */
-	mcu.intr.trap_at_isr = conf.trap_at_isr;
-	strncpy(vcd->dump_file, conf.vcd_file, dflen - 1);
-	if (MSIM_AVR_Init(&mcu, conf.mcu, NULL, MSIM_AVR_PMSZ, NULL,
-	                  MSIM_AVR_DMSZ, NULL, fp) != 0) {
-		snprintf(LOG, LOGSZ, "MCU model %s cannot be initialized",
-		         conf.mcu);
-		MSIM_LOG_FATAL(LOG);
-		return 1;
-	}
-	fclose(fp);
-
-	/* Apply memory modifications */
-	if (conf.has_lockbits == 1) {
-		set_lock(&mcu, conf.mcu_lockbits);
-	}
-	if (conf.has_efuse == 1) {
-		set_fuse(&mcu, FUSE_EXT, conf.mcu_efuse);
-	}
-	if (conf.has_hfuse == 1) {
-		set_fuse(&mcu, FUSE_HIGH, conf.mcu_hfuse);
-	}
-	if (conf.has_lfuse == 1) {
-		set_fuse(&mcu, FUSE_LOW, conf.mcu_lfuse);
-	}
-
-	/* Select registers to be dumped */
-	dump_regs = 0;
-	for (i = 0; i < conf.dump_regs_num; i++) {
-		for (j = 0; j < MSIM_AVR_DMSZ; j++) {
-			char *bit;
-			char *pos;
-			size_t len;
-			int bitn, cr, bit_cr;
-
-			if (mcu.ioregs[j].off < 0) {
-				continue;
-			}
-			len = strlen(mcu.ioregs[j].name);
-			if (len == 0) {
-				continue;
-			}
-
-			pos = strstr(mcu.ioregs[j].name, conf.dump_regs[i]);
-			cr = strncmp(mcu.ioregs[j].name, conf.dump_regs[i], len);
-
-			/* Do we have a 16-bit register mentioned or an exact
-			 * match of the register names? */
-			if ((cr != 0) && (pos != NULL)) {
-				if (mcu.ioregs[j].name[len-1] == 'H') {
-					vcd->regs[dump_regs].i = (int32_t)j;
-				}
-				if (mcu.ioregs[j].name[len-1] == 'L') {
-					vcd->regs[dump_regs].reg_lowi =
-					        (int32_t)j;
-				}
-
-				if ((vcd->regs[dump_regs].i >= 0) &&
-				                (vcd->regs[dump_regs].
-				                 reg_lowi >= 0)) {
-					vcd->regs[dump_regs].n = -1;
-					strncpy(vcd->regs[dump_regs].name,
-					        mcu.ioregs[j].name, sizeof
-					        vcd->regs[dump_regs].name);
-					vcd->regs[dump_regs].name[len-1] = 0;
-
-					dump_regs++;
-					break;
-				}
-			} else if (cr != 0) {
-				continue;
-			} else {
-				/* Do we have a bit index suffix? */
-				bit = len < sizeof conf.dump_regs[0]/
-				      sizeof conf.dump_regs[0][0]
-				      ? &conf.dump_regs[i][len] : NULL;
-				bit_cr = sscanf(bit, "%d", &bitn);
-				if (bit_cr != 1) {
-					bitn = -1;
-				}
-
-				/* Set index of a register to be dumped */
-				vcd->regs[dump_regs].i = (int32_t)j;
-				vcd->regs[dump_regs].n = (int8_t)bitn;
-				strncpy(vcd->regs[dump_regs].name,
-				        mcu.ioregs[j].name,
-				        sizeof vcd->regs[dump_regs].name);
-
-				dump_regs++;
-				break;
-			}
-		}
-	}
-
-	/* Try to set required frequency */
-	if (conf.mcu_freq > mcu.freq) {
-		snprintf(LOG, LOGSZ, "clock frequency %" PRIu64 ".%" PRIu64
-		         " kHz is above maximum %lu.%lu kHz",
-		         conf.mcu_freq/1000U, conf.mcu_freq%1000U,
-		         mcu.freq/1000UL, mcu.freq%1000UL);
-		MSIM_LOG_WARN(LOG);
-	} else if (conf.mcu_freq > 0U) {
-		mcu.freq = (uint32_t)conf.mcu_freq;
-	} else {
-		snprintf(LOG, LOGSZ, "clock frequency %" PRIu64 ".%"
-		         PRIu64 " kHz cannot be selected as clock source",
-		         conf.mcu_freq/1000U, conf.mcu_freq%1000U);
-		MSIM_LOG_WARN(LOG);
-	}
-
-	/* Print MCU configuration */
-	print_config(&mcu);
-
-	/* Load Lua peripherals if it is required */
-	for (uint32_t k = 0; k < conf.lua_models_num; k++) {
-		char *lua_model = &conf.lua_models[k][0];
-		if (MSIM_AVR_LUALoadModel(&mcu, lua_model)) {
-			MSIM_LOG_FATAL("loading Lua model failed");
-		}
-	}
-
-	/* Prepare and run AVR simulation */
-	if (conf.firmware_test == 0) {
-		snprintf(LOG, LOGSZ, "Waiting for incoming GDB "
-		         "connections at localhost:%d...", conf.rsp_port);
-		MSIM_LOG_INFO(LOG);
-		MSIM_AVR_RSPInit(&mcu, (uint16_t)conf.rsp_port);
-	}
-
-	rc = MSIM_AVR_Simulate(&mcu, conf.firmware_test);
-
-	MSIM_PTY_Close(&mcu.pty);
-	MSIM_AVR_LUACleanModels();
-	if (conf.firmware_test == 0) {
-		MSIM_AVR_RSPClose();
-	}
-
-	rc2 = MSIM_AVR_DumpFlash(&mcu, FLASH_FILE);
-	if (rc2 != 0) {
-		MSIM_LOG_ERROR("failed to dump memory to: " FLASH_FILE);
-	}
+	} while (0);
 
 	return rc;
+}
+
+static void print_short_usage(void)
+{
+	printf("Usage: mcusim --help\n");
 }
 
 static void print_usage(void)
@@ -401,78 +199,6 @@ static void print_usage(void)
 	       "  --conf <config_file> Run with this configuration file.\n"
 	       "  --help               Print this message.\n"
 	       "  --version            Print version.\n");
-}
-
-static void print_short_usage(void)
-{
-	printf("Usage: mcusim --help\n");
-}
-
-static void print_config(struct MSIM_AVR *m)
-{
-	/* AVR memory is organized as array of bytes in the simulator, but
-	 * it's natural to measure program memory in 16-bits words because
-	 * all AVR instructions are 16- or 32-bits wide. This is why all
-	 * program memory addresses are divided by two before printing. */
-	uint64_t reset_pc = m->intr.reset_pc>>1;
-	uint64_t ivt = m->intr.ivt>>1;
-	uint64_t flashstart = m->flashstart>>1;
-	uint64_t flashend = m->flashend>>1;
-	uint64_t blsstart = m->bls.start>>1;
-	uint64_t blsend = m->bls.end>>1;
-
-	snprintf(m->log, LOGSZ, "MCU model: %s (signature %02X%02X%02X)",
-	         m->name, m->signature[0], m->signature[1], m->signature[2]);
-	MSIM_LOG_INFO(m->log);
-
-	snprintf(m->log, LOGSZ, "clock frequency: %" PRIu32 ".%" PRIu32
-	         " kHz", m->freq/1000, m->freq%1000);
-	MSIM_LOG_INFO(m->log);
-
-	snprintf(m->log, LOGSZ, "fuses: EXT=0x%02X, HIGH=0x%02X, "
-	         "LOW=0x%02X", m->fuse[2], m->fuse[1], m->fuse[0]);
-	MSIM_LOG_INFO(m->log);
-
-	snprintf(m->log, LOGSZ, "lock bits: 0x%02X", m->lockbits);
-	MSIM_LOG_INFO(m->log);
-
-	snprintf(m->log, LOGSZ, "reset vector address: 0x%06" PRIX64,
-	         reset_pc);
-	MSIM_LOG_INFO(m->log);
-
-	snprintf(m->log, LOGSZ, "interrupt vectors table address: "
-	         "0x%06" PRIX64, ivt);
-	MSIM_LOG_INFO(m->log);
-
-	snprintf(m->log, LOGSZ, "flash section: 0x%06" PRIX64 "-0x%06" PRIX64,
-	         flashstart, flashend);
-	MSIM_LOG_INFO(m->log);
-
-	snprintf(m->log, LOGSZ, "bootloader section: 0x%06" PRIX64 "-0x%06"
-	         PRIX64, blsstart, blsend);
-	MSIM_LOG_INFO(m->log);
-}
-
-static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val)
-{
-	if (m->set_fusef == NULL) {
-		MSIM_LOG_WARN("cannot modify fuse (MCU-specific function is "
-		              "not available)");
-		return 0;
-	}
-	m->set_fusef(m, fuse, val);
-	return 0;
-}
-
-static int set_lock(struct MSIM_AVR *m, uint8_t val)
-{
-	if (m->set_lockf == NULL) {
-		MSIM_LOG_WARN("cannot modify lock bits (MCU-specific function "
-		              "is not available)");
-		return 0;
-	}
-	m->set_lockf(m, val);
-	return 0;
 }
 
 #ifdef WITH_POSIX

@@ -31,14 +31,15 @@
 #define MSIM_CFG_H_ 1
 
 #include <stdint.h>
-#include "mcusim/mcusim.h"
+#include "mcusim/avr/sim/vcd.h"
+#include "mcusim/avr/sim/lua.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Full path to the default configuration file of MCUSim. */
-#define MSIM_CFG_FILE		"@CMAKE_INSTALL_PREFIX@/etc/mcusim.conf"
+#define MSIM_CFG_FILE		"@CMAKE_INSTALL_PREFIX@/@MSIM_CONF_DIR@/mcusim.conf"
 
 /* This is a basic structure to describe an MCUSim configuration.
  * See mcusim.conf or mcusim.conf.in for detailed description of the fields. */
