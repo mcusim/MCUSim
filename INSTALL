@@ -163,3 +163,7 @@ Install directory
         Prefix to install scripts and Lua models to. It should be a relative
         path to form a full one <CMAKE_INSTALL_PREFIX>/<MSIM_SCRIPT_DIR>.
 
+ -DMSIM_EXAMPLE_DIR=share/mcusim
+
+        Prefix to install examples to. It should be a relative
+        path to form a full one <CMAKE_INSTALL_PREFIX>/<MSIM_EXAMPLE_DIR>.

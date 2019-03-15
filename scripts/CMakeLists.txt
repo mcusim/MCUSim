@@ -42,3 +42,6 @@ install(FILES ${CMAKE_BINARY_DIR}/mcusim.conf DESTINATION ${MSIM_CONF_DIR})
 
 # Install script models
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/models DESTINATION ${MSIM_SCRIPT_DIR})
+
+# Install examples
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/examples DESTINATION ${MSIM_EXAMPLE_DIR})

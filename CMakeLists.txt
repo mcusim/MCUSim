@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.162")
+set(MSIM_VERSION "0.1.163")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -54,26 +54,36 @@ if (NOT DEFINED MSIM_BIN_DIR)
 	set(MSIM_BIN_DIR "bin")
 endif()
 message(STATUS "Install BINARIES to: ${MSIM_BIN_DIR}")
+
 if (NOT DEFINED MSIM_LIB_DIR)
 	set(MSIM_LIB_DIR "lib")
 endif()
 message(STATUS "Install SHARED libraries to: ${MSIM_LIB_DIR}")
+
 if (NOT DEFINED MSIM_SLIB_DIR)
 	set(MSIM_SLIB_DIR "lib")
 endif()
 message(STATUS "Install STATIC libraries to: ${MSIM_SLIB_DIR}")
+
 if (NOT DEFINED MSIM_H_DIR)
 	set(MSIM_H_DIR "include")
 endif()
 message(STATUS "Install HEADERS to: ${MSIM_H_DIR}")
+
 if (NOT DEFINED MSIM_CONF_DIR)
 	set(MSIM_CONF_DIR "etc")
 endif()
 message(STATUS "Install CONFIG to: ${MSIM_CONF_DIR}")
+
 if (NOT DEFINED MSIM_SCRIPT_DIR)
 	set(MSIM_SCRIPT_DIR "share/mcusim")
 endif()
 message(STATUS "Install SCRIPTS to: ${MSIM_SCRIPT_DIR}")
+
+if (NOT DEFINED MSIM_EXAMPLE_DIR)
+	set(MSIM_EXAMPLE_DIR "share/mcusim")
+endif()
+message(STATUS "Install EXAMPLES to: ${MSIM_EXAMPLE_DIR}")
 
 # -----------------------------------------------------------------------------
 # Parts of the project

@@ -60,7 +60,7 @@ int MSIM_AVR_VCDOpen(struct MSIM_AVR *mcu)
 
 	time(&timer);
 	tm_info = localtime(&timer);
-	strftime(buf, sizeof buf, "%Y-%m-%dT%H:%M:%S%z", tm_info);
+	strftime(buf, sizeof buf, "%Y-%m-%dT%H:%M:%S", tm_info);
 
 	/* Printing VCD header */
 	fprintf(f, "$date\n\t%s\n$end\n", buf);

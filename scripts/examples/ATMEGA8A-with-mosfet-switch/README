@@ -1,0 +1,17 @@
+What is it
+----------
+
+ This directory contains all of the files required to simulate a transient
+ response of the circuit in NGSpice which is built on ATmega8A microcontroller
+ which generates a PWM signal and toggles a 12V mosfet switch.
+
+How to run this example
+-----------------------
+
+ Start NGSpice in interactive mode from the current directory, load MCUSim
+ code model library (mcusim.cm) and perform a simulation:
+
+        ngspice -> codemodel <PATH_TO_LIBRARY>/mcusim.cm
+        ngspice -> pb3-pwm.cir
+
+ It'll take some time and ~458851 data rows should be generated.

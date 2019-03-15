@@ -172,10 +172,15 @@ if (WITH_XSPICE)
 		CONFIGURE_COMMAND "../src/configure" ${_NGSPICE_CONFIG_PARMS}
 		# Build working directory: BINARY_DIR
 		BUILD_COMMAND "${_NGSPICE_MAKE}" ${_NGSPICE_MAKE_PARMS}
-
-		INSTALL_COMMAND ""
+		# Build working directory: BINARY_DIR
+		INSTALL_COMMAND "cp" ${CMAKE_CURRENT_BINARY_DIR}/ngspice/bin/src/xspice/icm/mcusim/mcusim.cm ${CMAKE_BINARY_DIR}
 		TEST_COMMAND ""
 	)
+
+# -----------------------------------------------------------------------------
+# Install XSPICE library
+# -----------------------------------------------------------------------------
+install(FILES ${CMAKE_BINARY_DIR}/mcusim.cm DESTINATION ${MSIM_SCRIPT_DIR}/ngspice)
 else()
 	message(STATUS "Building without XSPICE library")
 endif()
