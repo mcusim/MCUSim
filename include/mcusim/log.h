@@ -34,15 +34,24 @@
 #include <string.h>
 
 /* Macro to denote a filename separator. */
-#if defined(_WIN64) || defined(_WIN32)
-#define __FILE_SEP__ '\\'
-#else
-#define __FILE_SEP__ '/'
+#define __MSIM_FS_SEP__ '/'
+
+/* Standard separator for Windows operating system. */
+#if defined(_WIN64) || defined(_WIN32) || defined(__WIN32__)
+#undef __MSIM_FS_SEP__
+#define __MSIM_FS_SEP__ '\\'
 #endif
 
+/* Windows can be with the different POSIX flavors also. */
+#if definded(__CYGWIN__) || (__MINGW32__)
+#undef __MSIM_FS_SEP__
+#define __MSIM_FS_SEP__ '/'
+#endif
+
+/* Let filename to be defined if it doesn't exist yet. */
 #ifndef __MSIM_FILENAME__
-#define __MSIM_FILENAME__ ((strrchr(__FILE__,__FILE_SEP__)==NULL)		\
-                      ?(__FILE__):(strrchr(__FILE__,__FILE_SEP__)+1))
+#define __MSIM_FILENAME__ ((strrchr(__FILE__,__MSIM_FS_SEP__)==NULL)	\
+                      ?(__FILE__):(strrchr(__FILE__,__MSIM_FS_SEP__)+1))
 #endif
 
 #ifdef __cplusplus
