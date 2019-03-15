@@ -76,15 +76,13 @@
 	}								\
 } while (0)
 
-/* Macros to read and update AVR status register (SREG) */
-#define UPDATE_SREG(mcu, flag, set_f) do {				\
-	if ((set_f) == 0) {						\
-		*mcu->sreg &= (uint8_t)~(1<<(flag));			\
+#define UPDATE_BIT(val, i, b) do {					\
+	if (b == 0U) {							\
+		*val &= ~(1<<i);					\
 	} else {							\
-		*mcu->sreg |= (uint8_t)(1<<(flag));			\
+		*val |= (1<<i);						\
 	}								\
-} while (0)
-#define READ_SREG(mcu, flag) ((uint8_t)((*mcu->sreg>>(flag))&1))
+} while (0)								\
 
 static struct MSIM_AVR _mcu;
 static struct MSIM_CFG _cfg;
@@ -94,7 +92,6 @@ static uint8_t _tick_ovf;
 /* Local functions. */
 static void setup_ports_load(ARGS);
 static void ports_not_changed(ARGS);
-static void update_bit(uint8_t *val, uint8_t i, uint8_t b);
 
 void MSIM_CM_M8A(ARGS)
 {
@@ -157,7 +154,7 @@ void MSIM_CM_M8A(ARGS)
 				if ((PORT_NULL(Bin) == 0) &&
 				    (INPUT_STRENGTH(Bin[i]) != HI_IMPEDANCE)) {
 					TO_BIT(INPUT_STATE(Bin[i]), b);
-					update_bit(&pval, i, b);
+					UPDATE_BIT(&pval, i, b);
 				}
 			}
 			DM(PINB) = pval & (~DM(DDRB));
@@ -167,7 +164,7 @@ void MSIM_CM_M8A(ARGS)
 				if ((PORT_NULL(Cin) == 0) &&
 				    (INPUT_STRENGTH(Cin[i]) != HI_IMPEDANCE)) {
 					TO_BIT(INPUT_STATE(Cin[i]), b);
-					update_bit(&pval, i, b);
+					UPDATE_BIT(&pval, i, b);
 				}
 			}
 			DM(PINC) = pval & (~DM(DDRC));
@@ -177,7 +174,7 @@ void MSIM_CM_M8A(ARGS)
 				if ((PORT_NULL(Din) == 0) &&
 				    (INPUT_STRENGTH(Din[i]) != HI_IMPEDANCE)) {
 					TO_BIT(INPUT_STATE(Din[i]), b);
-					update_bit(&pval, i, b);
+					UPDATE_BIT(&pval, i, b);
 				}
 			}
 			DM(PIND) = pval & (~DM(DDRD));
@@ -266,14 +263,5 @@ static void ports_not_changed(ARGS)
 	}
 	for (uint32_t i = 0; i < PORT_SIZE(Dout); i++) {
 		OUTPUT_CHANGED(Dout[i]) = FALSE;
-	}
-}
-
-static void update_bit(uint8_t *val, uint8_t i, uint8_t b)
-{
-	if (b == 0U) {
-		*val &= ~(1<<i);
-	} else {
-		*val |= (1<<i);
 	}
 }

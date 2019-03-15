@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.161")
+set(MSIM_VERSION "0.1.162")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -75,10 +75,14 @@ if (NOT DEFINED MSIM_SCRIPT_DIR)
 endif()
 message(STATUS "Install SCRIPTS to: ${MSIM_SCRIPT_DIR}")
 
+# -----------------------------------------------------------------------------
+# Parts of the project
+# -----------------------------------------------------------------------------
 add_subdirectory(scripts)	# Scripts and script-based MCUSim models
 add_subdirectory(tests)		# MCUSim simulation tests
 add_subdirectory(misra)		# Configuration to check MISRA C rules
 add_subdirectory(xspice)	# Compile MCUSim as XSPICE library
+
 include(CheckFunctionExists)
 include(CheckIncludeFiles)
 
@@ -86,7 +90,7 @@ include(CheckIncludeFiles)
 # Set flags here
 # -----------------------------------------------------------------------------
 if (CMAKE_BUILD_TYPE MATCHES Debug)
-	message(STATUS "Building debug version of MCUSim ${MSIM_VERSION}")
+	message(STATUS "Building DEBUG version of MCUSim ${MSIM_VERSION}")
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDEBUG")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
@@ -97,7 +101,7 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
 		add_definitions(" -Wsign-compare")
 	endif()
 else()
-	message(STATUS "Building release version of MCUSim ${MSIM_VERSION}")
+	message(STATUS "Building RELEASE version of MCUSim ${MSIM_VERSION}")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		add_definitions(" -Wall -pedantic -std=iso9899:1999 -O3")
@@ -131,6 +135,8 @@ set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
 # -----------------------------------------------------------------------------
 # Look for libraries, packages, etc.
 # -----------------------------------------------------------------------------
+set(TARGET_LIBS "")
+
 # Check LuaJIT or Lua installed
 unset(LUA_FOUND CACHE)
 unset(LUA_INCLUDE_DIR CACHE)
@@ -142,20 +148,14 @@ else()
 	set(LUA_TYPE "LuaJIT")
 	find_package(LuaJIT REQUIRED)
 endif()
+if (LUA_FOUND)
+	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
+endif()
 
 # Check POSIX threads
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
-
-# Set target libraries here
-set(TARGET_LIBS "")
-if (LUA_FOUND)
-	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
-else()
-	message(FATAL_ERROR "Building without Lua-based models!")
-endif()
-
 if (CMAKE_USE_PTHREADS_INIT)
 	set(TARGET_LIBS ${TARGET_LIBS} Threads::Threads)
 endif()

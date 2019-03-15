@@ -100,10 +100,12 @@ Null_Allowed:		no
 
 PARAMETER_TABLE:
 
+/* Capacitance for each I/O Pin is 10pF maximum (according to the ATmega8A
+ * datasheet). */
 Parameter_Name:		input_load
 Description:		"input loading capacitance (F)"
 Data_Type:		real
-Default_Value:		1.0e-12
+Default_Value:		1.0e-11
 Limits:			-
 Vector:			no
 Vector_Bounds:		-
@@ -114,7 +116,7 @@ PARAMETER_TABLE:
 Parameter_Name:		clk_load
 Description:		"clock loading capacitance (F)"
 Data_Type:		real
-Default_Value:		1.0e-12
+Default_Value:		1.0e-11
 Limits:			-
 Vector:			no
 Vector_Bounds:		-
@@ -125,7 +127,7 @@ PARAMETER_TABLE:
 Parameter_Name:		reset_load
 Description:		"reset loading capacitance (F)"
 Data_Type:		real
-Default_Value:		1.0e-12
+Default_Value:		1.0e-11
 Limits:			-
 Vector:			no
 Vector_Bounds:		-
@@ -134,10 +136,10 @@ Null_Allowed:		no
 PARAMETER_TABLE:
 
 Parameter_Name:		clk_delay		reset_delay
-Description:		"delay from CLK"	"delay from reset"
+Description:		"clock delay"		"reset delay"
 Data_Type:		real			real
-Default_Value:		1.0e-12			1.0e-12
-Limits:			-			-
+Default_Value:		1.0e-9			1.0e-9
+Limits:			[1e-12 -]		[1e-12 -]
 Vector:			no			no
 Vector_Bounds:		-			-
 Null_Allowed:		yes			yes

@@ -1,14 +1,20 @@
+List of supported devices
+-------------------------
+
  This is a list of microcontrollers supported by MCUSim.
 
- Second column is a short form which can be used as an MCU name in the
- configuration file. Supported peripherals are in a third column.
+ Second column of a table below is a short form which can be used as an
+ MCU model in the configuration file. Supported peripherals are in a third
+ column.
+
+Table of devices
+----------------
 
  Name            Part       Supported features
- ------------------------------------------------------------------------------
+
  ATmega8A        m8a        init, fuses, timers, interrupts (partially),
- ATmega8         m8         USART (partially)
-
+                            USART (partially)
+ ATmega8         m8         same as ATmega8A
  ATmega328P      m328p      init, fuses, timers (partially)
-
  ATmega328       m328       init
 
