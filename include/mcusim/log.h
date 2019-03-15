@@ -43,7 +43,7 @@
 #endif
 
 /* Windows can be with the different POSIX flavors also. */
-#if definded(__CYGWIN__) || (__MINGW32__)
+#if defined(__CYGWIN__) || defined(__MINGW32__)
 #undef __MSIM_FS_SEP__
 #define __MSIM_FS_SEP__ '/'
 #endif
