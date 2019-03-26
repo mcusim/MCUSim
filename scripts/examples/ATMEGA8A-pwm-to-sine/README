@@ -3,7 +3,7 @@ What is it
 
  This directory contains all of the files required to simulate a transient
  response of the circuit in NGSpice which is built on ATmega8A microcontroller
- which generates a PWM signal and toggles a 12V mosfet switch.
+ which generates a PWM signal and converts it to a sine wave.
 
 How to run this example
 -----------------------
@@ -12,6 +12,6 @@ How to run this example
  code model library (mcusim.cm) and perform a simulation:
 
         ngspice -> codemodel <PATH_TO_LIBRARY>/mcusim.cm
-        ngspice -> pb3-pwm.cir
+        ngspice -> pwm-to-sine.cir
 
- It'll take some time and ~458851 data rows should be generated.
+ It'll take some time and ~449217 data rows should be generated.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 The MCUSim Project.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -88,6 +88,8 @@ int MSIM_TSQ_Destroy(struct MSIM_TSQ *q)
 	pthread_mutex_lock(&q->mutex);
 
 	if (q->init != TSQ_INIT) {
+		/* Unlock the basic queue mutex */
+		pthread_mutex_unlock(&q->mutex);
 		return MSIM_TSQ_NOTINIT;
 	}
 	q->init = TSQ_NOTINIT;

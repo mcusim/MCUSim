@@ -1,11 +1,4 @@
-* Proof-of-concept circut to simulate ATmega8A microcontroller
-* with N-Channel and P-Channel FETs switch.
-
-* -----------------------------------------------------------------------------
-* Including model files
-* -----------------------------------------------------------------------------
-.include NTA4153N.REV0.LIB
-.include NTR0202PL.REV0.LIB
+* PWM-to-sine converter based on ATmega8A microcontroller
 
 * -----------------------------------------------------------------------------
 * Microcontroller clock (16 MHz)
@@ -14,30 +7,46 @@ Aclk_io 0 clk_io clk_iom
 .model clk_iom d_osc (cntl_array=[0 1] freq_array=[16.000e6 16.000e6])
 
 * -----------------------------------------------------------------------------
-* Convert digital signals of the microcontroller to V.
-* -----------------------------------------------------------------------------
-Abridge [b3] [ab3] ab3_bridge
-.model ab3_bridge dac_bridge (out_low=0.1 out_high=3.3)
-
-* -----------------------------------------------------------------------------
 * Microcontroller ATmega8A
 * -----------------------------------------------------------------------------
-.model m8a msim_m8a (config_file="pb3-pwm.conf")
+.model m8a msim_m8a (config_file="firmware.conf")
 Am8a clk_io -
 + [-]
 + [b0 b1 b2 b3 b4 b5 b6 b7]
 + [-] [-] [-] [-] m8a
 
 * -----------------------------------------------------------------------------
-* Switch built on n-fet and p-fet
+* Convert digital signals of the microcontroller to V.
 * -----------------------------------------------------------------------------
-R1	0 ab3		100k
-R2	2 3		100k
-R3	4 0		100k
-C1	4 0		1p
-XQ1	2 ab3 0		nta4153n
-XQ2	4 2 3		ntr0202plt1
-VDD	3 0		pwl (0 0 0ms 0 0ms 12.0v 20ms 12.0v)
+Abridge [b3] [in] ab3_bridge
+.model ab3_bridge dac_bridge (out_low=0.1 out_high=3.3)
+
+* -----------------------------------------------------------------------------
+* OpAmp (to filter out all of the harmonics from a PWM signal, i.e.
+*        to keep a DC component of the signal only)
+* -----------------------------------------------------------------------------
+.subckt opamp plus minus out
+r1 plus minus 300k
+a1 %vd (plus minus) outint lim
+.model lim limit (out_lower_limit = -12 out_upper_limit = 12
++ fraction = true limit_range = 0.2 gain=300e3)
+r3 outint out 50.0
+r2 out 0 1e12
+.ends opamp
+
+* -----------------------------------------------------------------------------
+* Low-pass filter (Butterworth, 3rd order, Fc = 500Hz)
+*
+* This filter should generally be enough to filter out all of the PWM harmonics
+* starting from the ~3.9kHz carry frequency.
+* -----------------------------------------------------------------------------
+C2	1 0		68n
+C4	2 out		100n
+C6	3 0		10n
+R1	in 1		5.85k
+R3	1 2		9.52k
+R5	2 3		8.52k
+Xamp	3 out out	opamp
 
 * -----------------------------------------------------------------------------
 * Transient analysis (step, stop, [start])
@@ -54,6 +63,6 @@ run
 * -----------------------------------------------------------------------------
 * Plotting input and output voltages
 * -----------------------------------------------------------------------------
-plot v(ab3) v(4)
+plot v(in) v(out)
 .endc
 .end
