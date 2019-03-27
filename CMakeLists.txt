@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.166")
+set(MSIM_VERSION "0.1.167")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -45,45 +45,41 @@ set(MCUSIM_LIB "lib${MCUSIM_LIB_NAME}")
 # Load modules from our source tree too
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Filename.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Subdirlist.cmake)
 
 # -----------------------------------------------------------------------------
 # Paths to install MCUSim to
 # -----------------------------------------------------------------------------
-message(STATUS "Install to: ${CMAKE_INSTALL_PREFIX}")
 if (NOT DEFINED MSIM_BIN_DIR)
 	set(MSIM_BIN_DIR "bin")
 endif()
-message(STATUS "Install BINARIES to: ${MSIM_BIN_DIR}")
-
 if (NOT DEFINED MSIM_LIB_DIR)
 	set(MSIM_LIB_DIR "lib")
 endif()
-message(STATUS "Install SHARED libraries to: ${MSIM_LIB_DIR}")
-
 if (NOT DEFINED MSIM_SLIB_DIR)
 	set(MSIM_SLIB_DIR "lib")
 endif()
-message(STATUS "Install STATIC libraries to: ${MSIM_SLIB_DIR}")
-
 if (NOT DEFINED MSIM_H_DIR)
 	set(MSIM_H_DIR "include")
 endif()
-message(STATUS "Install HEADERS to: ${MSIM_H_DIR}")
-
 if (NOT DEFINED MSIM_CONF_DIR)
 	set(MSIM_CONF_DIR "etc")
 endif()
-message(STATUS "Install CONFIG to: ${MSIM_CONF_DIR}")
-
 if (NOT DEFINED MSIM_SCRIPT_DIR)
 	set(MSIM_SCRIPT_DIR "share/mcusim")
 endif()
-message(STATUS "Install SCRIPTS to: ${MSIM_SCRIPT_DIR}")
-
 if (NOT DEFINED MSIM_EXAMPLE_DIR)
 	set(MSIM_EXAMPLE_DIR "share/mcusim")
 endif()
-message(STATUS "Install EXAMPLES to: ${MSIM_EXAMPLE_DIR}")
+
+message(STATUS "Install to: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "    binaries: ${CMAKE_INSTALL_PREFIX}/${MSIM_BIN_DIR}")
+message(STATUS "    shared libraries: ${CMAKE_INSTALL_PREFIX}/${MSIM_LIB_DIR}")
+message(STATUS "    static libraries: ${CMAKE_INSTALL_PREFIX}/${MSIM_SLIB_DIR}")
+message(STATUS "    headers: ${CMAKE_INSTALL_PREFIX}/${MSIM_H_DIR}")
+message(STATUS "    config: ${CMAKE_INSTALL_PREFIX}/${MSIM_CONF_DIR}")
+message(STATUS "    scripts: ${CMAKE_INSTALL_PREFIX}/${MSIM_SCRIPT_DIR}")
+message(STATUS "    examples: ${CMAKE_INSTALL_PREFIX}/${MSIM_EXAMPLE_DIR}")
 
 # -----------------------------------------------------------------------------
 # Parts of the project

@@ -25,23 +25,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# MCUSim tests configuration file
+# Macro to get names of all subdirectories in a directory.
 #
-cmake_minimum_required(VERSION 3.2)
-project(mcusim-tests NONE)
+# Example:
+#
+#   subdirlist(SUBDIRS ${MY_CURRENT_DIR}
+#
+# Source: https://stackoverflow.com/a/7788165
+macro(subdirlist result curdir)
+	FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
+	SET(dirlist "")
 
-# Version
-add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
-
-# Prepare files in the current binary directory
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tests.cmake.in
-               ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake @ONLY)
-subdirlist(TEST_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
-foreach(TEST_DIR ${TEST_DIRS})
-	file(COPY ${TEST_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-endforeach()
-
-# Run tests by 'make tests'
-add_custom_command(OUTPUT TESTS
-	COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake)
-add_custom_target(tests DEPENDS TESTS)
+	FOREACH(child ${children})
+		IF(IS_DIRECTORY ${curdir}/${child})
+			LIST(APPEND dirlist ${child})
+		ENDIF()
+	ENDFOREACH()
+	SET(${result} ${dirlist})
+endmacro()
