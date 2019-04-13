@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.167")
+set(MSIM_VERSION "0.1.168")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -63,13 +63,13 @@ if (NOT DEFINED MSIM_H_DIR)
 	set(MSIM_H_DIR "include")
 endif()
 if (NOT DEFINED MSIM_CONF_DIR)
-	set(MSIM_CONF_DIR "etc")
+	set(MSIM_CONF_DIR "etc/mcusim")
 endif()
 if (NOT DEFINED MSIM_SCRIPT_DIR)
-	set(MSIM_SCRIPT_DIR "share/mcusim")
+	set(MSIM_SCRIPT_DIR "share/mcusim/scripts")
 endif()
 if (NOT DEFINED MSIM_EXAMPLE_DIR)
-	set(MSIM_EXAMPLE_DIR "share/mcusim")
+	set(MSIM_EXAMPLE_DIR "share/mcusim/examples")
 endif()
 
 message(STATUS "Install to: ${CMAKE_INSTALL_PREFIX}")
@@ -84,8 +84,9 @@ message(STATUS "    examples: ${CMAKE_INSTALL_PREFIX}/${MSIM_EXAMPLE_DIR}")
 # -----------------------------------------------------------------------------
 # Parts of the project
 # -----------------------------------------------------------------------------
-add_subdirectory(scripts)	# Scripts and script-based MCUSim models
-add_subdirectory(tests)		# MCUSim simulation tests
+add_subdirectory(scripts)	# Scripts and lua models
+add_subdirectory(examples)	# Example circuits
+add_subdirectory(tests)		# Simulation tests
 add_subdirectory(misra)		# Configuration to check MISRA C rules
 add_subdirectory(xspice)	# Compile MCUSim as XSPICE library
 

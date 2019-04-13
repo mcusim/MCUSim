@@ -25,19 +25,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Configuration file for scripts and lua models.
+# Configuration file for example circuits.
 #
 cmake_minimum_required(VERSION 3.2)
-project(mcusim-scripts NONE)
+project(mcusim-examples NONE)
 
 # Version
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/mcusim.conf.in
-               ${CMAKE_BINARY_DIR}/mcusim.conf @ONLY)
-
-# Install configuration file
-install(FILES ${CMAKE_BINARY_DIR}/mcusim.conf DESTINATION ${MSIM_CONF_DIR})
-
-# Install script models
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/lua DESTINATION ${MSIM_SCRIPT_DIR})
+# Install examples
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/ATMEGA8A-pwm-to-sine DESTINATION ${MSIM_EXAMPLE_DIR})

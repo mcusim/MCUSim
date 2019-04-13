@@ -180,7 +180,7 @@ if (WITH_XSPICE)
 # -----------------------------------------------------------------------------
 # Install XSPICE library
 # -----------------------------------------------------------------------------
-install(FILES ${CMAKE_BINARY_DIR}/mcusim.cm DESTINATION ${MSIM_SCRIPT_DIR}/ngspice)
+	install(FILES ${CMAKE_BINARY_DIR}/mcusim.cm DESTINATION ${MSIM_SLIB_DIR})
 else()
 	message(STATUS "Building without XSPICE library")
 endif()

@@ -45,12 +45,6 @@
 #include "mcusim/getopt.h"
 #include "mcusim/config.h"
 
-/* Local macro definitions */
-#define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
-#define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
-#define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
-#define CLEAR(byte, bit)	((byte)&=(~(1<<(bit))))
-#define SET(byte, bit)		((byte)|=(1<<(bit)))
 #define LOG			(mcu.log)
 #define LOGSZ			MSIM_AVR_LOGSZ
 
