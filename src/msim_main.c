@@ -44,9 +44,7 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/getopt.h"
 #include "mcusim/config.h"
-
-#define LOG			(mcu.log)
-#define LOGSZ			MSIM_AVR_LOGSZ
+#include "mcusim/avr/sim/macro.h"
 
 /* Utility files to store MCU memories. */
 #define FLASH_FILE		".mcusim.flash"
@@ -69,7 +67,8 @@ static struct MSIM_OPT_Option longopts[] = {
 };
 
 /* AVR MCU descriptor */
-static struct MSIM_AVR mcu;
+static struct MSIM_AVR avr_mcu;
+static struct MSIM_AVR *mcu = &avr_mcu;
 static struct MSIM_CFG conf;
 
 /* Prototypes of the local functions */
@@ -148,7 +147,7 @@ int main(int argc, char *argv[])
 
 	do {
 		/* Initialize AVR */
-		rc = MSIM_AVR_Init(&mcu, &conf, conf_file);
+		rc = MSIM_AVR_Init(mcu, &conf, conf_file);
 		if (rc != 0) {
 			break;
 		}
@@ -159,20 +158,19 @@ int main(int argc, char *argv[])
 			         "connections at localhost:%d...",
 			         conf.rsp_port);
 			MSIM_LOG_INFO(LOG);
-			MSIM_AVR_RSPInit(&mcu, (uint16_t)conf.rsp_port);
+			MSIM_AVR_RSPInit(mcu, (uint16_t)conf.rsp_port);
 		}
 
-		rc = MSIM_AVR_Simulate(&mcu, conf.firmware_test);
+		rc = MSIM_AVR_Simulate(mcu, conf.firmware_test);
 
-		MSIM_PTY_Close(&mcu.pty);
+		MSIM_PTY_Close(&mcu->pty);
 		MSIM_AVR_LUACleanModels();
 		if (conf.firmware_test == 0) {
 			MSIM_AVR_RSPClose();
 		}
 
-		if (MSIM_AVR_DumpFlash(&mcu, FLASH_FILE) != 0) {
-			MSIM_LOG_ERROR("failed to dump memory to: "
-			               FLASH_FILE);
+		if (MSIM_AVR_DumpFlash(mcu, FLASH_FILE) != 0) {
+			MSIM_LOG_ERROR("failed to dump to: " FLASH_FILE);
 		}
 	} while (0);
 
@@ -200,7 +198,7 @@ static void dump_flash_handler(int s)
 {
 	int rc;
 
-	rc = MSIM_AVR_DumpFlash(&mcu, FLASH_FILE);
+	rc = MSIM_AVR_DumpFlash(mcu, FLASH_FILE);
 	if (rc != 0) {
 		MSIM_LOG_ERROR("failed to dump memory to: " FLASH_FILE);
 	}

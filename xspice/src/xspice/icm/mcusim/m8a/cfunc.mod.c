@@ -44,52 +44,33 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/config.h"
 #include "mcusim/log.h"
+#include "mcusim/bit/macro.h"
 #include "mcusim/avr/sim/m8/m8a.h"
+#include "mcusim/avr/sim/macro.h"
 
-/* Local macros */
 #define MCU_MODEL		"m8a"
-#define DM(v)			(mcu->dm[v])
-#define LOG			(mcu->log)
-#define LOGSZ			(MSIM_AVR_LOGSZ)
 #define TICKS_MAX		UINT64_MAX
 
-#define FUSE_EXT		2
-#define FUSE_HIGH		1
-#define FUSE_LOW		0
-#define GLOB_INT		7
-
-#define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
-#define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
-
 /* Macro to convert Digital_State_t to a bit in uint8_t. */
-#define TO_BIT(ds, b) do {						\
-	switch ((ds)) {							\
-	case ZERO:							\
-		(b) = 0;						\
-		break;							\
-	case ONE:							\
-		(b) = 1;						\
-		break;							\
-	default:							\
-		(b) = rand()&1;						\
-		break;							\
-	}								\
+#define TO_BIT(ds, b) do {		\
+	switch ((ds)) {			\
+	case ZERO:			\
+		(b) = 0;		\
+		break;			\
+	case ONE:			\
+		(b) = 1;		\
+		break;			\
+	default:			\
+		(b) = rand()&1;		\
+		break;			\
+	}				\
 } while (0)
-
-#define UPDATE_BIT(val, i, b) do {					\
-	if (b == 0U) {							\
-		*val &= ~(1<<i);					\
-	} else {							\
-		*val |= (1<<i);						\
-	}								\
-} while (0)								\
 
 static struct MSIM_AVR _mcu;
 static struct MSIM_CFG _cfg;
 static uint64_t _tick;
 static uint8_t _tick_ovf;
 
-/* Local functions. */
 static void setup_ports_load(ARGS);
 static void ports_not_changed(ARGS);
 

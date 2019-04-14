@@ -29,10 +29,10 @@
 #include <time.h>
 #include <inttypes.h>
 #include "mcusim/mcusim.h"
+#include "mcusim/bit/macro.h"
+#include "mcusim/avr/sim/macro.h"
 
 #define TERA			1000000000000.0
-#define LOG			(mcu->log)
-#define LOGSZ			MSIM_AVR_LOGSZ
 #define REG_NAMESZ		16
 
 static void print_reg16(char *buf, uint32_t len, uint8_t hr, uint8_t lr);

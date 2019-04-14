@@ -32,27 +32,10 @@
 #include <string.h>
 #include <inttypes.h>
 #include "mcusim/mcusim.h"
+#include "mcusim/avr/sim/macro.h"
 #include "mcusim/avr/sim/m8/m8a.h"
 #include "mcusim/avr/sim/mcu_init.h"
-
-#define FUSE_LOW		0
-#define FUSE_HIGH		1
-#define FUSE_EXT		2
-#define IS_SET(byte, bit)	(((byte)>>(bit))&1)
-#define IS_CLEAR(byte, bit)	((~(((byte)>>(bit))&1))&1)
-#define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
-#define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
-#define CLEAR(byte, bit)	((byte)=(uint8_t)((byte)&(uint8_t)(~(1<<(bit)))))
-#define SET(byte, bit)		((byte)=(uint8_t)((byte)|(uint8_t)(1<<(bit))))
-
-#define IS_WRIT(mcu, byte)	(((mcu->writ_io[0]) == (byte)) ||	\
-				 ((mcu->writ_io[1]) == (byte)) ||	\
-				 ((mcu->writ_io[2]) == (byte)) ||	\
-				 ((mcu->writ_io[3]) == (byte)))
-#define IS_READ(mcu, byte)	(((mcu->read_io[0]) == (byte)) ||	\
-				 ((mcu->read_io[1]) == (byte)) ||	\
-				 ((mcu->read_io[2]) == (byte)) ||	\
-				 ((mcu->read_io[3]) == (byte)))
+#include "mcusim/bit/macro.h"
 
 #define NOT_CONNECTED		0xFFU
 #define COMPARE_MATCH		75
@@ -64,8 +47,6 @@
  * of the microcontroller. */
 #define A_CHAN			79
 #define B_CHAN			80
-
-#define DM(v)			(mcu->dm[v])
 
 static uint8_t init_portd;	/* PORTD (buffer) */
 static uint8_t init_pind;	/* PIND (buffer) */

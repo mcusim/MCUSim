@@ -35,17 +35,8 @@
 #include "mcusim/hex/ihex.h"
 #include "mcusim/log.h"
 #include "mcusim/config.h"
-
-#define REG_ZH			0x1F
-#define REG_ZL			0x1E
-#define TICKS_MAX		UINT64_MAX
-#define LOG			(mcu->log)
-#define LOGSZ			MSIM_AVR_LOGSZ
-#define GLOB_INT		7
-
-#define FUSE_EXT		2
-#define FUSE_HIGH		1
-#define FUSE_LOW		0
+#include "mcusim/bit/macro.h"
+#include "mcusim/avr/sim/macro.h"
 
 /* Configuration file (default name). */
 #define CFG_FILE		"mcusim.conf"
@@ -253,7 +244,7 @@ int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 		if (mcu->pass_irqs != NULL) {
 			mcu->pass_irqs(mcu);
 		}
-		if (READ_SREG(mcu, GLOB_INT) &&
+		if (READ_SREG(mcu, SR_GLOBINT) &&
 		                (!mcu->ic_left) && (!mcu->intr.exec_main) &&
 		                (mcu->state == AVR_RUNNING ||
 		                 mcu->state == AVR_MSIM_STEP)) {
@@ -680,7 +671,7 @@ static int handle_irq(struct MSIM_AVR *mcu)
 		/* Disable interrupts globally.
 		 * It is not applicable for the AVR XMEGA cores. */
 		if (!mcu->xmega) {
-			UPDATE_SREG(mcu, GLOB_INT, 0);
+			UPDATE_SREG(mcu, SR_GLOBINT, 0);
 		}
 
 		/* Push PC onto the stack */

@@ -29,7 +29,6 @@
  */
 #include <stdlib.h>
 #include <string.h>
-
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
 #include "mcusim/avr/sim/m2560/m2560.h"

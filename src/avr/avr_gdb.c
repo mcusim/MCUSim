@@ -41,6 +41,7 @@
 #include <netinet/in.h>
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
+#include "mcusim/avr/sim/macro.h"
 
 #ifndef WITH_POSIX_CYGWIN
 #include <netinet/tcp.h>
@@ -52,8 +53,6 @@
 #define BREAK				((BREAK_HIGH<<8)|BREAK_LOW)
 #define GDB_BUF_MAX			(16*1024)
 #define REG_BUF_MAX			32
-#define LOG				(mcu->log)
-#define LOGSZ				MSIM_AVR_LOGSZ
 
 enum mp_type {
 	BP_SOFTWARE	= 0,

@@ -29,20 +29,11 @@
 #include <string.h>
 #include <inttypes.h>
 #include "mcusim/mcusim.h"
-#include "mcusim/log.h"
+#include "mcusim/avr/sim/macro.h"
 #include "mcusim/avr/sim/m328/m328p.h"
 #include "mcusim/avr/sim/mcu_init.h"
-
-#define FUSE_LOW		0
-#define FUSE_HIGH		1
-#define FUSE_EXT		2
-#define IS_SET(byte, bit)	(((byte)&(1UL<<(bit)))>>(bit))
-#define IS_RISE(init, val, bit)	((!((init>>bit)&1)) & ((val>>bit)&1))
-#define IS_FALL(init, val, bit)	(((init>>bit)&1) & (!((val>>bit)&1)))
-#define CLEAR(byte, bit)	((byte)=(uint8_t)((byte)&(uint8_t)(~(1<<(bit)))))
-#define SET(byte, bit)		((byte)=(uint8_t)((byte)|(uint8_t)(1<<(bit))))
-
-#define DM(v)			(mcu->dm[v])
+#include "mcusim/log.h"
+#include "mcusim/bit/macro.h"
 
 #define NOT_CONNECTED		0xFFU
 #define TC0_TOP			0xFFU

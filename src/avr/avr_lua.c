@@ -32,15 +32,13 @@
  * This file provides basic functions to load, run and unload these models.
  */
 #include <stdint.h>
-#include "mcusim/avr/sim/luaapi.h"
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
+#include "mcusim/avr/sim/macro.h"
+#include "mcusim/avr/sim/luaapi.h"
 #include "lua.h"
 #include "lualib.h"
 #include "lauxlib.h"
-
-#define LOGSZ			MSIM_AVR_LOGSZ
-#define LOG			(mcu->log)
 
 static lua_State *lua_states[MSIM_AVR_LUAMODELS];
 static uint64_t models_num;
