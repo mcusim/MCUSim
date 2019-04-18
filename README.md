@@ -9,6 +9,9 @@ Readme for MCUSim
  moment. Feel free to start a discussion about any other family or
  architecture of the microcontrollers.
 
+Screenshots
+-----------
+
 Description
 -----------
 
