@@ -172,6 +172,7 @@ int main(int argc, char *argv[])
 		if (MSIM_AVR_DumpFlash(mcu, FLASH_FILE) != 0) {
 			MSIM_LOG_ERROR("failed to dump to: " FLASH_FILE);
 		}
+		break;
 	} while (0);
 
 	return rc;

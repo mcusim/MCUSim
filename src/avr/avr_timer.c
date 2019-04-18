@@ -1,9 +1,9 @@
 /*
- * Copyright (c) 2017, 2018, The MCUSim Contributors
- * All rights reserved.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -12,6 +12,7 @@
  *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -23,27 +24,26 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
- * Main header file which denotes a public API of the MCUSim library.
  */
-#ifndef MSIM_MAIN_HEADER_H_
-#define MSIM_MAIN_HEADER_H_ 1
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <inttypes.h>
 
-#include "mcusim/avr/sim/bootloader.h"
-#include "mcusim/avr/sim/decoder.h"
-#include "mcusim/avr/sim/gdb.h"
-#include "mcusim/avr/sim/interrupt.h"
-#include "mcusim/avr/sim/lua.h"
-#include "mcusim/avr/sim/sim.h"
-#include "mcusim/avr/sim/simcore.h"
-#include "mcusim/avr/sim/vcd.h"
-#include "mcusim/avr/sim/wdt.h"
-#include "mcusim/avr/sim/usart.h"
-#include "mcusim/avr/sim/io.h"
+#include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/timer.h"
 
-#include "mcusim/pty.h"
-#include "mcusim/log.h"
-#include "mcusim/config.h"
+int MSIM_AVR_TMRInit(struct MSIM_AVR_TMR *tmr)
+{
+	return 0;
+}
 
-#endif /* MSIM_MAIN_HEADER_H_ */
+int MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
+{
+	return 0;
+}
+
+int MSIM_AVR_TMROnEvent(enum MSIM_AVR_TMREvent e, MSIM_AVR_TMRFunc_f h)
+{
+	return 0;
+}
