@@ -11,6 +11,7 @@ Readme for MCUSim
 
 Screenshots
 -----------
+![](https://raw.githubusercontent.com/mcusim/MCUSim/master/examples/ATMEGA8A-pwm-to-sine/ngspice-simulation.png)
 
 Description
 -----------
