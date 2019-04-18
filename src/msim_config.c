@@ -30,8 +30,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
-#include "mcusim/config.h"
-#include "mcusim/log.h"
+#include "mcusim/mcusim.h"
 
 static int read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,
                       FILE *file, const char *filename);

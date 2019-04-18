@@ -32,11 +32,11 @@
 #ifndef MSIM_AVR_SIM_H_
 #define MSIM_AVR_SIM_H_ 1
 
-/* Limits of statically allocated MCU memory */
 #define MSIM_AVR_PMSZ		(256*1024)	/* for program memory */
 #define MSIM_AVR_DMSZ		(64*1024)	/* for data memory */
 #define MSIM_AVR_PM_PAGESZ	(1024)		/* for PM page */
 #define MSIM_AVR_LOGSZ		(64*1024)	/* log buffer, in bytes */
+#define MSIM_AVR_MAXTMRS	32		/* maximum timers */
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,6 +52,7 @@ extern "C" {
 #include "mcusim/avr/sim/usart.h"
 #include "mcusim/avr/sim/interrupt.h"
 #include "mcusim/avr/sim/bootloader.h"
+#include "mcusim/avr/sim/timer.h"
 
 /* Forward declaration of the structure to describe AVR microcontroller
  * instance. */
@@ -170,6 +171,8 @@ struct MSIM_AVR {
 	struct MSIM_AVR_VCD vcd; /* Details to work with VCD file. */
 	struct MSIM_AVR_USART usart; /* Details to work with USART. */
 	struct MSIM_PTY pty; /* Details to work with POSIX pseudo-terminals. */
+	/* AVR timers/counters */
+	struct MSIM_AVR_TMR tmrs[MSIM_AVR_MAXTMRS];
 };
 
 #ifdef __cplusplus
