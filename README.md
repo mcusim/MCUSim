@@ -53,7 +53,7 @@ How can I join the development?
 Mailing list
 ------------
 
- * mcusim-dev@freelists.org:
+ * mcusim-dev@freelists.org:    
    This is a list for developers and anyone who is interested in MCUSim.
    Subscribe by sending 'subscribe' to mcusim-dev-request@freelists.org or
    visiting http://www.freelists.org/list/mcusim-dev.
@@ -61,6 +61,6 @@ Mailing list
 Web sites
 ---------
 
- Source code is hosted at https://github.com/mcusim/MCUSim.
- Wiki and issue tracker are at https://trac.mcusim.org.
+ Source code is hosted at https://github.com/mcusim/MCUSim.    
+ Wiki and issue tracker are at https://trac.mcusim.org.    
  Mailing list is at https://www.freelists.org/list/mcusim-dev.
