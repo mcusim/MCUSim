@@ -39,6 +39,7 @@
 #include "mcusim/avr/sim/io_regs.h"
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simcore.h"
+#include "mcusim/avr/sim/timer.h"
 
 #define MCU_NAME	"ATmega8A"
 #define RESET_PC	0x0000	/* Reset vector address (in bytes) */
@@ -53,17 +54,25 @@
 #define BLS_END		0x1FFF	/* Last address in BLS, in bytes */
 #define BLS_SIZE	2048	/* BLS size, in bytes */
 
+#define TICK_PERF_F	MSIM_M8AUpdate
 #define SET_FUSE_F	MSIM_M8ASetFuse
 #define SET_LOCK_F	MSIM_M8ASetLock
-#define TICK_PERF_F	MSIM_M8ATickPerf
 #define PASS_IRQS_F	MSIM_M8APassIRQs
 #define RESET_SPM_F	MSIM_M8AResetSPM
 
-int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v);
-int MSIM_M8ASetLock(struct MSIM_AVR *mcu, uint8_t lock_v);
-int MSIM_M8ATickPerf(struct MSIM_AVR *mcu);
-int MSIM_M8APassIRQs(struct MSIM_AVR *mcu);
-int MSIM_M8AResetSPM(struct MSIM_AVR *mcu);
+/* Prescaler mappings for the timer0, 1 and 2 */
+#define TMRS_PRESC { \
+	{ {0x1, 1}, {0x2, 8}, {0x3, 64}, {0x4, 256}, {0x5, 1024}, \
+	  {0x6, MSIM_AVR_TMR_EXTCLK_FALL}, \
+	  {0x7, MSIM_AVR_TMR_EXTCLK_RISE}, \
+	  {0x0, MSIM_AVR_TMR_STOPMODE} } \
+}
+
+int MSIM_M8AUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
+int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
+int MSIM_M8ASetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
+int MSIM_M8APassIRQs(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
+int MSIM_M8AResetSPM(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 
 #endif /* MSIM_AVR_M8A_H_ */
 

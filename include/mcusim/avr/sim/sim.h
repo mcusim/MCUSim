@@ -57,15 +57,11 @@ extern "C" {
 /* Forward declaration of the structure to describe AVR microcontroller
  * instance. */
 struct MSIM_AVR;
+struct MSIM_AVRConf;
 
 /* Simulated MCU may provide its own implementations of the functions in order
  * to support these features (fuses, locks, timers, IRQs, etc.). */
-typedef int (*MSIM_AVR_SetFuse_f)(struct MSIM_AVR *mcu, uint32_t fuse_n,
-                                  uint8_t fuse_v);
-typedef int (*MSIM_AVR_SetLock_f)(struct MSIM_AVR *mcu, uint8_t lock_v);
-typedef int (*MSIM_AVR_TickPerf_f)(struct MSIM_AVR *mcu);
-typedef int (*MSIM_AVR_PassIRQs_f)(struct MSIM_AVR *mcu);
-typedef int (*MSIM_AVR_ResetSPM_f)(struct MSIM_AVR *mcu);
+typedef int (*MSIM_AVRFunc)(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 
 /* State of a simulated AVR microcontroller. Some of these states are
  * AVR-native, others - added by the simulator to manipulate a simulation
@@ -90,6 +86,13 @@ enum MSIM_AVR_ClkSource {
 	AVR_EXT_RC_CLK,			/* External RC */
 	AVR_EXT_CRYSTAL,		/* External crystal/ceramic resonator*/
 	AVR_INT_128K_RC_CLK		/* Internal 128kHz RC Oscillator*/
+};
+
+/* Configuration to be passed to the MCU-specific functions. */
+struct MSIM_AVRConf {
+	uint32_t fuse_n;
+	uint8_t fuse_v;
+	uint8_t lock_v;
 };
 
 /* Instance of the AVR microcontroller. */
@@ -152,11 +155,11 @@ struct MSIM_AVR {
 	uint32_t regs_num; /* Number of general purpose registers. */
 	uint32_t ioregs_num; /* Number of I/O registers. */
 
-	MSIM_AVR_SetFuse_f set_fusef; /* Function to configure AVR fuses .*/
-	MSIM_AVR_SetLock_f set_lockf; /* Function to configure AVR lock bits.*/
-	MSIM_AVR_TickPerf_f tick_perf; /* Function to tick AVR peripherals. */
-	MSIM_AVR_PassIRQs_f pass_irqs; /* Function to provide IRQs. */
-	MSIM_AVR_ResetSPM_f reset_spm; /* Function to reset SPM instruction. */
+	MSIM_AVRFunc set_fusef; /* Function to configure AVR fuses .*/
+	MSIM_AVRFunc set_lockf;	/* Function to configure AVR lock bits.*/
+	MSIM_AVRFunc tick_perf; /* Function to tick AVR peripherals. */
+	MSIM_AVRFunc pass_irqs; /* Function to provide IRQs. */
+	MSIM_AVRFunc reset_spm; /* Function to reset SPM instruction. */
 
 	enum MSIM_AVR_State state; /* State of the MCU. */
 	pthread_mutex_t state_mutex; /* Lock before accessing MCU state. */

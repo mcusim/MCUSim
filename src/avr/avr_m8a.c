@@ -184,7 +184,7 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	return r;
 }
 
-int MSIM_M8ATickPerf(struct MSIM_AVR *mcu)
+int MSIM_M8AUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf)
 {
 	tick_timer2(mcu);
 	tick_timer1(mcu);
@@ -198,7 +198,7 @@ int MSIM_M8ATickPerf(struct MSIM_AVR *mcu)
 	return 0;
 }
 
-int MSIM_M8AResetSPM(struct MSIM_AVR *mcu)
+int MSIM_M8AResetSPM(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf)
 {
 	if (mcu->spmcsr != NULL) {
 		(*mcu->spmcsr) = (uint8_t)((*mcu->spmcsr) &
@@ -1948,8 +1948,10 @@ static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, uint8_t com2,
 	}
 }
 
-int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
+int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf)
 {
+	uint32_t fuse_n = cnf->fuse_n;
+	uint8_t fuse_v = cnf->fuse_v;
 	uint8_t cksel, bootsz, ckopt;
 	int ret;
 
@@ -2150,13 +2152,13 @@ int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 	return ret;
 }
 
-int MSIM_M8ASetLock(struct MSIM_AVR *mcu, uint8_t lock_v)
+int MSIM_M8ASetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf)
 {
 	/* Waiting to be implemented */
 	return 0;
 }
 
-int MSIM_M8APassIRQs(struct MSIM_AVR *mcu)
+int MSIM_M8APassIRQs(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf)
 {
 	uint8_t timsk;
 	uint8_t tifr;

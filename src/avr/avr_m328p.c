@@ -78,7 +78,7 @@ int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	return r;
 }
 
-int MSIM_M328PTickPerf(struct MSIM_AVR *mcu)
+int MSIM_M328PUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf)
 {
 	tick_timer0(mcu);
 
@@ -340,8 +340,10 @@ static void update_watched(struct MSIM_AVR *mcu)
 	init_pind = DM(PIND);
 }
 
-int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
+int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf)
 {
+	uint32_t fuse_n = cnf->fuse_n;
+	uint8_t fuse_v = cnf->fuse_v;
 	uint8_t cksel, bootsz;
 	uint8_t err;
 
@@ -493,7 +495,7 @@ int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, uint32_t fuse_n, uint8_t fuse_v)
 	return err;
 }
 
-int MSIM_M328PSetLock(struct MSIM_AVR *mcu, uint8_t lock_v)
+int MSIM_M328PSetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf)
 {
 	/* It's waiting to be implemented. */
 	return 0;

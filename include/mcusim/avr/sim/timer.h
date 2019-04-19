@@ -36,6 +36,9 @@
 #define MSIM_AVR_TMR_MAXOC		64
 /* Maximum prescaler values. */
 #define MSIM_AVR_TMR_MAXPRESC		64
+#define MSIM_AVR_TMR_STOPMODE		(-75)
+#define MSIM_AVR_TMR_EXTCLK_RISE	(-76)
+#define MSIM_AVR_TMR_EXTCLK_FALL	(-77)
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,7 +63,7 @@ enum MSIM_AVR_TMREvent {
 
 /* General configuration of the AVR timer. */
 struct MSIM_AVR_TMRConf {
-	uint32_t pk;		/* Prescaler key */
+	int32_t pk;		/* Current prescaler key */
 	uint32_t pvlen;		/* Number of the different prescaler values. */
 	struct MSIM_AVR_TMRPrescPair *pv; /* Prescaler values. */
 	struct MSIM_AVR *mcu;	/* Owner of the timer. */
@@ -78,8 +81,8 @@ struct MSIM_AVR_TMRCbConf {
  *
  * See: timer/counter0 of the ATmega8a and TCCR0 register. */
 struct MSIM_AVR_TMRPrescPair {
-	uint32_t key;
-	uint32_t presc;
+	int32_t key;
+	int32_t presc;
 };
 
 /* The main AVR timer structure. */

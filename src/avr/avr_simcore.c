@@ -40,8 +40,6 @@
 
 /* Configuration file (default name). */
 #define CFG_FILE		"mcusim.conf"
-
-/* Utility files to store MCU memories. */
 #define FLASH_FILE		".mcusim.flash"
 #define EEP_FILE		".mcusim.eeprom"
 
@@ -127,6 +125,7 @@ int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
                      uint8_t frm_test)
 {
 	struct MSIM_AVR_VCD *vcd = &mcu->vcd;
+	struct MSIM_AVRConf cnf;
 	int rc = 0;
 
 	do {
@@ -170,7 +169,7 @@ int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 		 * mechanism of the registers which share the same I/O
 		 * location (UBRRH/UCSRC of ATmega8A for example). */
 		if (mcu->tick_perf != NULL) {
-			mcu->tick_perf(mcu);
+			mcu->tick_perf(mcu, &cnf);
 		}
 
 		/* Tick peripherals written in Lua */
@@ -242,7 +241,7 @@ int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 		 * IRQs, but will have to wait required number of cycles
 		 * to serve them. */
 		if (mcu->pass_irqs != NULL) {
-			mcu->pass_irqs(mcu);
+			mcu->pass_irqs(mcu, &cnf);
 		}
 		if (READ_SREG(mcu, SR_GLOBINT) &&
 		                (!mcu->ic_left) && (!mcu->intr.exec_main) &&
@@ -697,24 +696,35 @@ static int handle_irq(struct MSIM_AVR *mcu)
 
 static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val)
 {
+	struct MSIM_AVRConf cnf;
+	int rc = 0;
+
 	if (m->set_fusef == NULL) {
 		MSIM_LOG_WARN("cannot modify fuse (MCU-specific function is "
 		              "not available)");
-		return 0;
+	} else {
+		cnf.fuse_n = fuse;
+		cnf.fuse_v = val;
+		m->set_fusef(m, &cnf);
 	}
-	m->set_fusef(m, fuse, val);
-	return 0;
+
+	return rc;
 }
 
 static int set_lock(struct MSIM_AVR *m, uint8_t val)
 {
+	struct MSIM_AVRConf cnf;
+	int rc = 0;
+
 	if (m->set_lockf == NULL) {
 		MSIM_LOG_WARN("cannot modify lock bits (MCU-specific function "
 		              "is not available)");
-		return 0;
+	} else {
+		cnf.lock_v = val;
+		m->set_lockf(m, &cnf);
 	}
-	m->set_lockf(m, val);
-	return 0;
+
+	return rc;
 }
 
 static void print_config(struct MSIM_AVR *m)

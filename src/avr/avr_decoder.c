@@ -2700,6 +2700,7 @@ static void exec_spm(struct MSIM_AVR *mcu, uint32_t inst)
 	 * type V	(RAMPZ:Z) ← R1:R0, (Z) ← (Z + 2), *see above*
 	 * type VI	(RAMPZ:Z) ← BUF, (Z) ← (Z + 2), *see above*
 	 */
+	struct MSIM_AVRConf cnf;
 	uint8_t zl, zh, ez, c;
 	uint64_t z;
 	uint8_t err = 0;
@@ -2729,7 +2730,7 @@ static void exec_spm(struct MSIM_AVR *mcu, uint32_t inst)
 
 		/* Reset state of the SPM instruction */
 		if (mcu->reset_spm != NULL) {
-			mcu->reset_spm(mcu);
+			mcu->reset_spm(mcu, &cnf);
 		}
 
 		if (inst == 0x95F8) {
