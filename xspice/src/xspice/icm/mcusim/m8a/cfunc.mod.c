@@ -41,6 +41,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <limits.h>
+
 #include "mcusim/mcusim.h"
 #include "mcusim/config.h"
 #include "mcusim/log.h"
@@ -133,7 +134,7 @@ void MSIM_CM_M8A(ARGS)
 			pval = DM(PINB);
 			for (uint32_t i = 0; i < PORT_SIZE(Bin); i++) {
 				if ((PORT_NULL(Bin) == 0) &&
-				    (INPUT_STRENGTH(Bin[i]) != HI_IMPEDANCE)) {
+				                (INPUT_STRENGTH(Bin[i]) != HI_IMPEDANCE)) {
 					TO_BIT(INPUT_STATE(Bin[i]), b);
 					UPDATE_BIT(&pval, i, b);
 				}
@@ -143,7 +144,7 @@ void MSIM_CM_M8A(ARGS)
 			pval = DM(PINC);
 			for (uint32_t i = 0; i < PORT_SIZE(Cin); i++) {
 				if ((PORT_NULL(Cin) == 0) &&
-				    (INPUT_STRENGTH(Cin[i]) != HI_IMPEDANCE)) {
+				                (INPUT_STRENGTH(Cin[i]) != HI_IMPEDANCE)) {
 					TO_BIT(INPUT_STATE(Cin[i]), b);
 					UPDATE_BIT(&pval, i, b);
 				}
@@ -153,7 +154,7 @@ void MSIM_CM_M8A(ARGS)
 			pval = DM(PIND);
 			for (uint32_t i = 0; i < PORT_SIZE(Din); i++) {
 				if ((PORT_NULL(Din) == 0) &&
-				    (INPUT_STRENGTH(Din[i]) != HI_IMPEDANCE)) {
+				                (INPUT_STRENGTH(Din[i]) != HI_IMPEDANCE)) {
 					TO_BIT(INPUT_STATE(Din[i]), b);
 					UPDATE_BIT(&pval, i, b);
 				}

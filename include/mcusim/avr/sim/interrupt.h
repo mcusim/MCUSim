@@ -36,6 +36,8 @@ extern "C" {
 
 #include <stdint.h>
 
+#include "mcusim/avr/sim/io.h"
+
 /* AVR IRQ limit, i.e. maximum number of interrupt vectors. */
 #define MSIM_AVR_IRQNUM			64
 
@@ -49,11 +51,17 @@ struct MSIM_AVR_INT {
 	uint32_t reset_pc;		/* Reset address */
 	uint32_t ivt;			/* Interrupt vectors table address */
 	uint8_t irq[MSIM_AVR_IRQNUM];	/* Flags for interrupt requests */
-	uint8_t exec_main;		/* Flag to execute one more
-					   instruction from the main
+	uint8_t exec_main;		/* Exe instruction from the main
 					   program after an exit from ISR */
 	uint8_t trap_at_isr;		/* Flag to enter stopped mode when
 					   interrupt occured */
+};
+
+/* Interrupt vector */
+struct MSIM_AVR_INTVec {
+	struct MSIM_AVR_IOBit enable;
+	struct MSIM_AVR_IOBit raised;
+	uint8_t vector;
 };
 
 #ifdef __cplusplus

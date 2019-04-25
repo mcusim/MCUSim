@@ -5,7 +5,7 @@
 #
 
 # Artisctic style configuration to check K&R coding style
-OPTIONS="--style=kr -t8 -xC80 -xL -xg -H -k3"
+OPTIONS="--style=kr -t8 -xC80 -xL -xg -H -k3 -xW -xb -j"
 
 # Check programs available within operating system
 ASTYLE=$(which astyle)

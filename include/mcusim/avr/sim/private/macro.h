@@ -160,44 +160,4 @@
 } while (0)
 #endif
 
-/* Macros to initialize a bit of AVR I/O register. */
-#define IOBIT(io, bit)		{ .reg=(io), .bit=(bit), .mask=1 }
-#define IOBITS(io, bit, mask)	{ .reg=(io), .bit=(bit), .mask=(mask) }
-#define IOBYTE(io)		{ .reg=(io), .bit=0, .mask=0xFF }
-
-/* Macro to warn if a bit doesn't belong to the actual I/O register. */
-#ifdef DEBUG
-#define WARN_IFNOT_IO(b) do {						\
-	if (!IS_IO(mcu, b.reg)) {					\
-		snprintf(LOG, LOGSZ, "not I/O register: 0x%04"		\
-		         PRIX32, b.reg);				\
-		MSIM_LOG_DEBUG(LOG);					\
-	}								\
-} while (0)
-#else
-#define WARN_IFNOT_IO(b) do {						\
-} while (0)
-#endif
-
-/* Read bit/bits of the AVR I/O register. */
-static inline uint8_t IOBIT_RD(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit b)
-{
-	WARN_IFNOT_IO(b);
-
-	return (DM(b.reg) >> b.bit) & b.mask;
-}
-
-/* Write bit/bits of the AVR I/O register */
-static inline uint8_t IOBIT_WR(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit b,
-                               uint8_t v)
-{
-	WARN_IFNOT_IO(b);
-
-	uint32_t m = b.mask << b.bit;
-	uint8_t val = ((uint8_t)(v << b.bit)) & m;
-	WRITE_DS(b.reg, (DM(b.reg) & (~m)) | val);
-
-	return (DM(b.reg) >> b.bit) & b.mask;
-}
-
 #endif /* MSIM_AVR_MACRO_H_ */

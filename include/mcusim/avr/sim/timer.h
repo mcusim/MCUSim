@@ -32,10 +32,7 @@
 #ifndef MSIM_AVR_TIMER_H_
 #define MSIM_AVR_TIMER_H_ 1
 
-/* Maximum output compare channels. */
-#define MSIM_AVR_TMR_MAXOC		64
-/* Maximum prescaler values. */
-#define MSIM_AVR_TMR_MAXPRESC		64
+#define MSIM_AVR_TMR_MAXCOMP		(64)	/* Max output compare chan. */
 #define MSIM_AVR_TMR_STOPMODE		(-75)
 #define MSIM_AVR_TMR_EXTCLK_RISE	(-76)
 #define MSIM_AVR_TMR_EXTCLK_FALL	(-77)
@@ -50,30 +47,56 @@ extern "C" {
 
 #include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/io.h"
+#include "mcusim/avr/sim/interrupt.h"
+
+enum {
+	MSIM_AVR_TMR_WGM_None,
+	MSIM_AVR_TMR_WGM_Normal,	/* Normal mode */
+	MSIM_AVR_TMR_WGM_CTC,		/* Clear timer on Compare Match */
+	MSIM_AVR_TMR_WGM_PWM,		/* PWM */
+	MSIM_AVR_TMR_WGM_FastPWM,	/* Fast PWM */
+	MSIM_AVR_TMR_WGM_PCPWM,		/* Phase Correct PWM */
+	MSIM_AVR_TMR_WGM_PFCPWM,	/* Phase and frequency correct PWM */
+};
+
+struct MSIM_AVR_TMR_WGM {
+	uint32_t top;
+	uint32_t bottom;
+	uint8_t size;
+	uint8_t kind;
+};
+
+/* Timer comparator */
+struct MSIM_AVR_TMR_COMP {
+	struct MSIM_AVR_TMR *owner;		/* Parent timer */
+	struct MSIM_AVR_INTVec interrupt;	/* Interrupt vector */
+	struct MSIM_AVR_IOBit ocr[2];		/* Comparator register */
+	struct MSIM_AVR_IOBit com;		/* Comparator output mode */
+	struct MSIM_AVR_IOBit com_pin;
+};
 
 /* The main AVR timer structure. */
 struct MSIM_AVR_TMR {
-	uint32_t max;		/* Maximum value of the timer. */
-	uint32_t top;		/* Current TOP value of the timer. */
-	uint32_t bot;		/* Current BOTTOM value of the timer. */
+	struct MSIM_AVR_IOBit tcnt[4];		/* Timer counter */
+	struct MSIM_AVR_IOBit icr[4];		/* Input capture */
+	struct MSIM_AVR_IOBit disabled;		/* "disabled" bit */
 
-	uint32_t sval;		/* Current timer value (prescaler is 1) */
-	uint32_t val;		/* Current timer value */
-	uint32_t presc;		/* Current prescaler */
-	uint8_t mode;		/* Current timer mode */
+	struct MSIM_AVR_IOBit cs[4];		/* Clock source */
+	uint8_t cs_div[16];			/* CS bits to prescaler */
+	uint32_t cs_dival;			/* Current prescaler */
 
-	uint32_t oc[MSIM_AVR_TMR_MAXOC]; /* Output compare values */
-	uint32_t oc_buf[MSIM_AVR_TMR_MAXOC]; /* Output compare buffers */
-	uint32_t oclen;		/* Number of output compare channels */
+	struct MSIM_AVR_IOBit ec_pin;		/* External clock pin */
+	uint8_t ec_vold;			/* Old value of the ec pin */
+	uint32_t ec_flags;
 
-	/* Pairs of the arbitrary values and prescaler values.
-	 * It helps to map an arbitrary value of the register which controls
-	 * the timer's prescaler to the actual prescaler value. */
-	struct {
-		uint32_t key;
-		int32_t presc;
-	} pv[MSIM_AVR_TMR_MAXPRESC];
-	uint32_t pvlen;		/* Number of the prescaler values. */
+	struct MSIM_AVR_IOBit wgm[4];		/* Waveform generation mode */
+	struct MSIM_AVR_TMR_WGM wgm_op[16];	/* WGM types */
+	struct MSIM_AVR_TMR_WGM wgm_mode;	/* Current WGM type */
+
+	struct MSIM_AVR_INTVec overflow;
+	struct MSIM_AVR_INTVec in_capture;
+
+	struct MSIM_AVR_TMR_COMP comp[MSIM_AVR_TMR_MAXCOMP];
 };
 
 int MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr);
