@@ -41,7 +41,7 @@
 #include <netinet/in.h>
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
-#include "mcusim/avr/sim/macro.h"
+#include "mcusim/avr/sim/private/macro.h"
 
 #ifndef WITH_POSIX_CYGWIN
 #include <netinet/tcp.h>

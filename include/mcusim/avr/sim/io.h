@@ -42,6 +42,17 @@ struct MSIM_AVR_IOReg {
 	uint8_t mask;		/* Access mask (1 - R/W or W, 0 - R) */
 };
 
+/* Helps to access bits of the AVR I/O register. Mask is used to access
+ * multiple I/O bits in the same register at once:
+ *
+ *     (DM(reg) >> bit) & mask
+ */
+struct MSIM_AVR_IOBit {
+	uint32_t reg;		/* Register address (in data space) */
+	uint32_t mask;		/* Mask to access multiple I/O bits */
+	uint8_t bit;		/* Index of a bit in the register */
+};
+
 #ifdef __cplusplus
 }
 #endif

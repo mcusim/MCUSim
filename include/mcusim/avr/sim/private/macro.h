@@ -30,6 +30,10 @@
 #ifndef MSIM_AVR_MACRO_H_
 #define MSIM_AVR_MACRO_H_ 1
 
+#include <inttypes.h>
+
+#include "mcusim/mcusim.h"
+
 #define REG_ZH			0x1F
 #define REG_ZL			0x1E
 
@@ -48,7 +52,7 @@
 #define SR_ZERO			1
 #define SR_CARRY		0
 
-/* Offset to special function (I/O) registers. */
+/* Offset to AVR I/O (special function) registers. */
 #define SFR			(mcu->sfr_off)
 
 /* Helps to access data memory (general purpose registers, I/O registers or
@@ -57,7 +61,7 @@
 
 #define LOG			(mcu->log)
 #define LOGSZ			(MSIM_AVR_LOGSZ)
-#define TICKS_MAX		UINT64_MAX
+#define TICKS_MAX		(UINT64_MAX)
 
 /* Macro to provide a result of writing value to I/O register with its
  * access mask applied.
@@ -79,8 +83,14 @@
 				 ((mcu->read_io[2]) == (io)) || \
 				 ((mcu->read_io[3]) == (io)))
 
-/* Macro to read and update AVR status register (SREG). */
+/* Helps to test whether location is I/O register or not. */
+#define IS_IO(mcu, loc)		((mcu->regs_num <= loc) && \
+				 (loc < (mcu->regs_num+mcu->ioregs_num)))
+
+/* Read an AVR status register (SREG). */
 #define SR(mcu, flag) ((uint8_t)((*mcu->sreg>>(flag))&1))
+
+/* Update an AVR status register (SREG). */
 #define UPDSR(mcu, flag, set_f) do {					\
 	if ((set_f) == 0) {						\
 		*mcu->sreg &= (uint8_t)~(1<<(flag));			\
@@ -121,8 +131,7 @@
  * I/O registers and access mask will be applied if necessary. */
 #ifndef DEBUG
 #define WRITE_DS(loc, v) do {						\
-	if ((mcu->regs_num <= loc) &&					\
-	                (loc < (mcu->regs_num+mcu->ioregs_num))) {	\
+	if (IS_IO(mcu, loc)) {						\
 		DM(loc) = ((uint8_t)IO(loc, v));			\
 		mcu->writ_io[0] = loc;					\
 	} else {							\
@@ -130,19 +139,18 @@
 	}								\
 } while (0)
 #endif
+
 /* NOTE: Debug only.
- *
  * Write value to the data space. Location will be checked against space of
  * I/O registers and access mask will be applied if necessary. */
 #ifdef DEBUG
 #define WRITE_DS(loc, v) do {						\
-	if ((mcu->regs_num <= loc) &&					\
-	                (loc < (mcu->regs_num+mcu->ioregs_num))) {	\
+	if (IS_IO(mcu, loc)) {						\
 		if (mcu->ioregs[loc].off < 0) {				\
-			snprintf(mcu->log, sizeof mcu->log, "firmware "	\
-			         "is trying to write to unknown I/O "	\
-			         "register: 0x%04" PRIX32, loc);	\
-			MSIM_LOG_DEBUG(mcu->log);			\
+			snprintf(LOG, LOGSZ, "firmware is trying to "	\
+			         "write to unknown I/O register: 0x%04"	\
+			         PRIX32, loc);				\
+			MSIM_LOG_DEBUG(LOG);				\
 		}							\
 		DM(loc) = IO(loc, v);					\
 		mcu->writ_io[0] = loc;					\
@@ -151,5 +159,45 @@
 	}								\
 } while (0)
 #endif
+
+/* Macros to initialize a bit of AVR I/O register. */
+#define IOBIT(io, bit)		{ .reg=(io), .bit=(bit), .mask=1 }
+#define IOBITS(io, bit, mask)	{ .reg=(io), .bit=(bit), .mask=(mask) }
+#define IOBYTE(io)		{ .reg=(io), .bit=0, .mask=0xFF }
+
+/* Macro to warn if a bit doesn't belong to the actual I/O register. */
+#ifdef DEBUG
+#define WARN_IFNOT_IO(b) do {						\
+	if (!IS_IO(mcu, b.reg)) {					\
+		snprintf(LOG, LOGSZ, "not I/O register: 0x%04"		\
+		         PRIX32, b.reg);				\
+		MSIM_LOG_DEBUG(LOG);					\
+	}								\
+} while (0)
+#else
+#define WARN_IFNOT_IO(b) do {						\
+} while (0)
+#endif
+
+/* Read bit/bits of the AVR I/O register. */
+static inline uint8_t IOBIT_RD(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit b)
+{
+	WARN_IFNOT_IO(b);
+
+	return (DM(b.reg) >> b.bit) & b.mask;
+}
+
+/* Write bit/bits of the AVR I/O register */
+static inline uint8_t IOBIT_WR(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit b,
+                               uint8_t v)
+{
+	WARN_IFNOT_IO(b);
+
+	uint32_t m = b.mask << b.bit;
+	uint8_t val = ((uint8_t)(v << b.bit)) & m;
+	WRITE_DS(b.reg, (DM(b.reg) & (~m)) | val);
+
+	return (DM(b.reg) >> b.bit) & b.mask;
+}
 
 #endif /* MSIM_AVR_MACRO_H_ */

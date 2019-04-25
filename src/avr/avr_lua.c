@@ -32,9 +32,10 @@
  * This file provides basic functions to load, run and unload these models.
  */
 #include <stdint.h>
+
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
-#include "mcusim/avr/sim/macro.h"
+#include "mcusim/avr/sim/private/macro.h"
 #include "mcusim/avr/sim/luaapi.h"
 #include "lua.h"
 #include "lualib.h"

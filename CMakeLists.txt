@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.173")
+set(MSIM_VERSION "0.1.174")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -337,5 +337,7 @@ install(TARGETS ${MCUSIM} ${MCUSIM_LIB} "${MCUSIM_LIB}-static"
 	RUNTIME DESTINATION ${MSIM_BIN_DIR}
 	LIBRARY DESTINATION ${MSIM_LIB_DIR}
 	ARCHIVE DESTINATION ${MSIM_SLIB_DIR})
-install(DIRECTORY ${CMAKE_BINARY_DIR}/include/mcusim DESTINATION ${MSIM_H_DIR}
-        FILES_MATCHING PATTERN "*.h")
+install(DIRECTORY ${CMAKE_BINARY_DIR}/include/mcusim
+	DESTINATION ${MSIM_H_DIR}
+        FILES_MATCHING PATTERN "*.h"
+	PATTERN "*/private*" EXCLUDE)

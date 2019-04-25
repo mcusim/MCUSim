@@ -60,14 +60,6 @@
 #define PASS_IRQS_F	MSIM_M8APassIRQs
 #define RESET_SPM_F	MSIM_M8AResetSPM
 
-/* Prescaler mappings for the timer0, 1 and 2 */
-#define TMRS_PRESC { \
-	{ {0x1, 1}, {0x2, 8}, {0x3, 64}, {0x4, 256}, {0x5, 1024}, \
-	  {0x6, MSIM_AVR_TMR_EXTCLK_FALL}, \
-	  {0x7, MSIM_AVR_TMR_EXTCLK_RISE}, \
-	  {0x0, MSIM_AVR_TMR_STOPMODE} } \
-}
-
 int MSIM_M8AUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 int MSIM_M8ASetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);

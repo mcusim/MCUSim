@@ -33,8 +33,8 @@
 #include <inttypes.h>
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
-#include "mcusim/bit/macro.h"
-#include "mcusim/avr/sim/macro.h"
+#include "mcusim/bit/private/macro.h"
+#include "mcusim/avr/sim/private/macro.h"
 
 static int decode_inst(struct MSIM_AVR *mcu, uint32_t inst);
 

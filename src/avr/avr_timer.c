@@ -33,18 +33,7 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/timer.h"
 
-int MSIM_AVR_TMRInit(struct MSIM_AVR_TMR *tmr, struct MSIM_AVR_TMRConf *conf)
-{
-	return 0;
-}
-
-int MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
-                       struct MSIM_AVR_TMRConf *conf)
-{
-	return 0;
-}
-
-int MSIM_AVR_TMROnEvent(enum MSIM_AVR_TMREvent e, MSIM_AVR_TMRFunc_f h)
+int MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
 	return 0;
 }

@@ -32,10 +32,11 @@
 #include <string.h>
 #include <inttypes.h>
 #include "mcusim/mcusim.h"
-#include "mcusim/avr/sim/macro.h"
+#include "mcusim/avr/sim/private/macro.h"
 #include "mcusim/avr/sim/m8/m8a.h"
 #include "mcusim/avr/sim/mcu_init.h"
-#include "mcusim/bit/macro.h"
+#include "mcusim/avr/sim/timer.h"
+#include "mcusim/bit/private/macro.h"
 
 #define NOT_CONNECTED		0xFFU
 #define COMPARE_MATCH		75
@@ -139,10 +140,14 @@ static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, uint8_t com2,
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
-	int r = mcu_init(mcu, args);
-	int rc;
+	int rc = mcu_init(mcu, args);
+	int r;
 
-	if (r == 0) {
+	do {
+		if (rc != 0) {
+			break;
+		}
+
 		/* I/O ports have internal pull-up resistors */
 		DM(PORTB) = 0xFF;
 		DM(PORTC) = 0xFF;
@@ -174,14 +179,16 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 		mcu->pty.master_fd = -1;
 		mcu->pty.slave_fd = -1;
 		mcu->pty.slave_name[0] = 0;
-		rc = MSIM_PTY_Open(&mcu->pty);
-		if (rc == 0) {
+
+		r = MSIM_PTY_Open(&mcu->pty);
+		if (r == 0) {
 			snprintf(mcu->log, sizeof mcu->log, "USART is "
 			         "available via: %s", mcu->pty.slave_name);
 			MSIM_LOG_INFO(mcu->log);
 		}
-	}
-	return r;
+	} while (0);
+
+	return rc;
 }
 
 int MSIM_M8AUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf)

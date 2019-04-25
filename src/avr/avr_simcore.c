@@ -31,12 +31,13 @@
 #include <string.h>
 #include <limits.h>
 #include <inttypes.h>
+
 #include "mcusim/mcusim.h"
 #include "mcusim/hex/ihex.h"
 #include "mcusim/log.h"
 #include "mcusim/config.h"
-#include "mcusim/bit/macro.h"
-#include "mcusim/avr/sim/macro.h"
+#include "mcusim/bit/private/macro.h"
+#include "mcusim/avr/sim/private/macro.h"
 
 /* Configuration file (default name). */
 #define CFG_FILE		"mcusim.conf"

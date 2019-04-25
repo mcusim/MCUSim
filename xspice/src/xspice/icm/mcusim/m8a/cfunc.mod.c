@@ -44,9 +44,9 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/config.h"
 #include "mcusim/log.h"
-#include "mcusim/bit/macro.h"
+#include "mcusim/bit/private/macro.h"
 #include "mcusim/avr/sim/m8/m8a.h"
-#include "mcusim/avr/sim/macro.h"
+#include "mcusim/avr/sim/private/macro.h"
 
 #define MCU_MODEL		"m8a"
 #define TICKS_MAX		UINT64_MAX

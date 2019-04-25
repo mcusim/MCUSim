@@ -40,76 +40,43 @@
 #define MSIM_AVR_TMR_EXTCLK_RISE	(-76)
 #define MSIM_AVR_TMR_EXTCLK_FALL	(-77)
 
+/* Return codes of the timer functions. */
+#define MSIM_AVR_TMR_OK			0
+#define MSIM_AVR_TMR_NULL		75
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "mcusim/mcusim.h"
-
-/* Forward declaration of the structures. */
-struct MSIM_AVR_TMR;
-struct MSIM_AVR_TMRCbConf;
-
-/* Callback function type for the AVR timer. */
-typedef int (*MSIM_AVR_TMRFunc_f)(struct MSIM_AVR *mcu,
-                                  struct MSIM_AVR_TMR *tmr,
-                                  struct MSIM_AVR_TMRCbConf *p);
-
-/* Timer events. */
-enum MSIM_AVR_TMREvent {
-	TMR_E_UPDATED,		/* Timer has been updated. */
-	TMR_E_OCM		/* Output compare match. */
-};
-
-/* General configuration of the AVR timer. */
-struct MSIM_AVR_TMRConf {
-	int32_t pk;		/* Current prescaler key */
-	uint32_t pvlen;		/* Number of the different prescaler values. */
-	struct MSIM_AVR_TMRPrescPair *pv; /* Prescaler values. */
-	struct MSIM_AVR *mcu;	/* Owner of the timer. */
-};
-
-/* Configuration for the callback functions. */
-struct MSIM_AVR_TMRCbConf {
-	uint32_t dummy;
-};
-
-/* Pair of the arbitrary value and a prescaler value.
- *
- * It helps to map an arbitrary value of the register which controls
- * the timer's prescaler to the actual prescaler value.
- *
- * See: timer/counter0 of the ATmega8a and TCCR0 register. */
-struct MSIM_AVR_TMRPrescPair {
-	int32_t key;
-	int32_t presc;
-};
+#include "mcusim/avr/sim/io.h"
 
 /* The main AVR timer structure. */
 struct MSIM_AVR_TMR {
-	uint32_t id;		/* Timer ID. */
-	uint32_t tmax;		/* Maximum (MAX) value of the timer. */
-	uint32_t ttop;		/* Current TOP value of the timer. */
-	uint32_t tbot;		/* Current BOTTOM value of the timer. */
-	uint8_t stop_mode;
-	uint32_t presc;		/* Current prescaler. */
-	uint32_t ticks;		/* Number of internal ticks of the timer. */
+	uint32_t max;		/* Maximum value of the timer. */
+	uint32_t top;		/* Current TOP value of the timer. */
+	uint32_t bot;		/* Current BOTTOM value of the timer. */
 
-	struct MSIM_AVR *mcu;	/* Owner of the timer. */
+	uint32_t sval;		/* Current timer value (prescaler is 1) */
+	uint32_t val;		/* Current timer value */
+	uint32_t presc;		/* Current prescaler */
+	uint8_t mode;		/* Current timer mode */
 
-	/* Output compare values for the different channels. */
-	uint32_t oc[MSIM_AVR_TMR_MAXOC];
-	uint32_t oc_buf[MSIM_AVR_TMR_MAXOC];
-	uint32_t oclen;
+	uint32_t oc[MSIM_AVR_TMR_MAXOC]; /* Output compare values */
+	uint32_t oc_buf[MSIM_AVR_TMR_MAXOC]; /* Output compare buffers */
+	uint32_t oclen;		/* Number of output compare channels */
 
-	/* Prescaler values. */
-	struct MSIM_AVR_TMRPrescPair pv[MSIM_AVR_TMR_MAXPRESC];
+	/* Pairs of the arbitrary values and prescaler values.
+	 * It helps to map an arbitrary value of the register which controls
+	 * the timer's prescaler to the actual prescaler value. */
+	struct {
+		uint32_t key;
+		int32_t presc;
+	} pv[MSIM_AVR_TMR_MAXPRESC];
 	uint32_t pvlen;		/* Number of the prescaler values. */
 };
 
-int MSIM_AVR_TMRInit(struct MSIM_AVR_TMR *tmr, struct MSIM_AVR_TMRConf *cnf);
-int MSIM_AVR_TMRUpdate(struct MSIM_AVR_TMR *tmr, struct MSIM_AVR_TMRConf *cnf);
-int MSIM_AVR_TMROnEvent(enum MSIM_AVR_TMREvent e, MSIM_AVR_TMRFunc_f h);
+int MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr);
 
 #ifdef __cplusplus
 }

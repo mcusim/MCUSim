@@ -28,9 +28,10 @@
 #include <stdint.h>
 #include <time.h>
 #include <inttypes.h>
+
 #include "mcusim/mcusim.h"
-#include "mcusim/bit/macro.h"
-#include "mcusim/avr/sim/macro.h"
+#include "mcusim/bit/private/macro.h"
+#include "mcusim/avr/sim/private/macro.h"
 
 #define TERA			1000000000000.0
 #define REG_NAMESZ		16

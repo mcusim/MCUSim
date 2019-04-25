@@ -44,7 +44,7 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/getopt.h"
 #include "mcusim/config.h"
-#include "mcusim/avr/sim/macro.h"
+#include "mcusim/avr/sim/private/macro.h"
 
 /* Utility files to store MCU memories. */
 #define FLASH_FILE		".mcusim.flash"

@@ -28,12 +28,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+
 #include "mcusim/mcusim.h"
-#include "mcusim/avr/sim/macro.h"
+#include "mcusim/avr/sim/private/macro.h"
 #include "mcusim/avr/sim/m328/m328p.h"
 #include "mcusim/avr/sim/mcu_init.h"
 #include "mcusim/log.h"
-#include "mcusim/bit/macro.h"
+#include "mcusim/bit/private/macro.h"
 
 #define NOT_CONNECTED		0xFFU
 #define TC0_TOP			0xFFU
