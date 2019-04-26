@@ -35,12 +35,25 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/private/macro.h"
 
-/* Macros to initialize a bit of AVR I/O register. */
-#define IOBIT(io, bit)		{ .reg=(io), .bit=(bit), .mask=1 }
-#define IOBITS(io, bit, mask)	{ .reg=(io), .bit=(bit), .mask=(mask) }
-#define IOBYTE(io)		{ .reg=(io), .bit=0, .mask=0xFF }
-#define IONOBIT()		{ .reg=0, .bit=UINT8_MAX, .mask=0 }
-#define IONOBYTE()		{ .reg=0, .bit=UINT8_MAX, .mask=0 }
+#define IOBIT(_io, _bit)	 { .reg=(_io), .bit=(_bit), .mask=1 }
+#define IOBITS(_io, _bit, _mask) { .reg=(_io), .bit=(_bit), .mask=(_mask) }
+#define IOBYTE(_io)		 { .reg=(_io), .bit=0, .mask=0xFF }
+#define IONOBIT()		 { .reg=0, .bit=0, .mask=0 }
+#define IONOBYTE()		 { .reg=0, .bit=0, .mask=0 }
+#define NB			 IONOBIT()
+#define IONOBITA()		 { NB }
+#define IONOBYTEA()		 { NB }
+#define NOWGM()			 { .top=0, .bottom=0, .size=0, .kind=0 }
+#define NOINTV()		 { .enable=IONOBIT(), .raised=IONOBIT(), \
+				   .vector=0 }
+#define NOCOMP()		 { .owner=0, .com=IONOBIT(), .pin=IONOBIT(), \
+				   .iv=NOINTV(), .ocr=IONOBITA() }
+#define NOWGMA()		 { NOWGM() }
+#define NOINTVA()		 { NOINTV() }
+#define NOCOMPA()		 { NOCOMP() }
+
+#define IS_IONOBIT(b)	((b.reg==0U)&&(b.bit==0U)&&(b.mask==0U))
+#define IS_IONOBYTE(b)	((b.reg==0U)&&(b.bit==0U)&&(b.mask==0U))
 
 /* Macro to warn if a bit doesn't belong to the actual I/O register. */
 #ifdef DEBUG

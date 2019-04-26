@@ -174,8 +174,8 @@ struct MSIM_AVR {
 	struct MSIM_AVR_VCD vcd; /* Details to work with VCD file. */
 	struct MSIM_AVR_USART usart; /* Details to work with USART. */
 	struct MSIM_PTY pty; /* Details to work with POSIX pseudo-terminals. */
-	/* AVR timers/counters */
-	struct MSIM_AVR_TMR tmrs[MSIM_AVR_MAXTMRS];
+
+	struct MSIM_AVR_TMR timers[MSIM_AVR_MAXTMRS];	/* Timers/counters */
 };
 
 #ifdef __cplusplus

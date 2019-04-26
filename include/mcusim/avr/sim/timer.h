@@ -32,7 +32,7 @@
 #ifndef MSIM_AVR_TIMER_H_
 #define MSIM_AVR_TIMER_H_ 1
 
-#define MSIM_AVR_TMR_MAXCOMP		(64)	/* Max output compare chan. */
+#define MSIM_AVR_TMR_MAXCOMP		(64)
 #define MSIM_AVR_TMR_STOPMODE		(-75)
 #define MSIM_AVR_TMR_EXTCLK_RISE	(-76)
 #define MSIM_AVR_TMR_EXTCLK_FALL	(-77)
@@ -50,13 +50,14 @@ extern "C" {
 #include "mcusim/avr/sim/interrupt.h"
 
 enum {
-	MSIM_AVR_TMR_WGM_None,
+	MSIM_AVR_TMR_WGM_None = 0,
 	MSIM_AVR_TMR_WGM_Normal,	/* Normal mode */
 	MSIM_AVR_TMR_WGM_CTC,		/* Clear timer on Compare Match */
 	MSIM_AVR_TMR_WGM_PWM,		/* PWM */
 	MSIM_AVR_TMR_WGM_FastPWM,	/* Fast PWM */
 	MSIM_AVR_TMR_WGM_PCPWM,		/* Phase Correct PWM */
 	MSIM_AVR_TMR_WGM_PFCPWM,	/* Phase and frequency correct PWM */
+	MSIM_AVR_TMR_WGMCNT
 };
 
 struct MSIM_AVR_TMR_WGM {
@@ -69,16 +70,15 @@ struct MSIM_AVR_TMR_WGM {
 /* Timer comparator */
 struct MSIM_AVR_TMR_COMP {
 	struct MSIM_AVR_TMR *owner;		/* Parent timer */
-	struct MSIM_AVR_INTVec interrupt;	/* Interrupt vector */
 	struct MSIM_AVR_IOBit ocr[2];		/* Comparator register */
 	struct MSIM_AVR_IOBit com;		/* Comparator output mode */
-	struct MSIM_AVR_IOBit com_pin;
+	struct MSIM_AVR_IOBit pin;		/* Pin to output waveform */
+	struct MSIM_AVR_INTVec iv;		/* Interrupt vector */
 };
 
 /* The main AVR timer structure. */
 struct MSIM_AVR_TMR {
 	struct MSIM_AVR_IOBit tcnt[4];		/* Timer counter */
-	struct MSIM_AVR_IOBit icr[4];		/* Input capture */
 	struct MSIM_AVR_IOBit disabled;		/* "disabled" bit */
 
 	struct MSIM_AVR_IOBit cs[4];		/* Clock source */
@@ -93,8 +93,12 @@ struct MSIM_AVR_TMR {
 	struct MSIM_AVR_TMR_WGM wgm_op[16];	/* WGM types */
 	struct MSIM_AVR_TMR_WGM wgm_mode;	/* Current WGM type */
 
-	struct MSIM_AVR_INTVec overflow;
-	struct MSIM_AVR_INTVec in_capture;
+	struct MSIM_AVR_IOBit icr[4];		/* Input capture register */
+	struct MSIM_AVR_IOBit icp;		/* Input capture pin */
+	struct MSIM_AVR_IOBit ices[4];		/* Input capture edge select */
+
+	struct MSIM_AVR_INTVec iv_ovf;		/* Overflow */
+	struct MSIM_AVR_INTVec iv_ic;		/* Input capture */
 
 	struct MSIM_AVR_TMR_COMP comp[MSIM_AVR_TMR_MAXCOMP];
 };
