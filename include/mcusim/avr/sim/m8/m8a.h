@@ -118,7 +118,124 @@ const struct MSIM_AVR ORIG_MCU = {
 				IOBIT(TCCR1A, WGM10), IOBIT(TCCR1A, WGM11),
 				IOBIT(TCCR1B, WGM12), IOBIT(TCCR1B, WGM13)
 			},
-			.wgm_op = NOWGMA(),
+			.wgm_op = {
+				[0] = {
+					.kind = WGM_NORMAL,
+					.size = 16,
+					.top = 0xFFFF,
+					.updocr_at = UPD_ATIMMEDIATE,
+					.settov_at = UPD_ATMAX,
+				},
+				[1] = {
+					.kind = WGM_PCPWM8,
+					.size = 8,
+					.top = 0x00FF,
+					.updocr_at = UPD_ATTOP,
+					.settov_at = UPD_ATBOTTOM,
+				},
+				[2] = {
+					.kind = WGM_PCPWM9,
+					.size = 9,
+					.top = 0x01FF,
+					.updocr_at = UPD_ATTOP,
+					.settov_at = UPD_ATBOTTOM,
+				},
+				[3] = {
+					.kind = WGM_PCPWM10,
+					.size = 10,
+					.top = 0x03FF,
+					.updocr_at = UPD_ATTOP,
+					.settov_at = UPD_ATBOTTOM,
+				},
+				[4] = {
+					.kind = WGM_CTC,
+					.rtop = {
+						IOBYTE(OCR1AL), IOBYTE(OCR1AH)
+					},
+					.updocr_at = UPD_ATIMMEDIATE,
+					.settov_at = UPD_ATMAX,
+				},
+				[5] = {
+					.kind = WGM_FASTPWM8,
+					.size = 8,
+					.top = 0x00FF,
+					.updocr_at = UPD_ATBOTTOM,
+					.settov_at = UPD_ATTOP,
+				},
+				[6] = {
+					.kind = WGM_FASTPWM9,
+					.size = 9,
+					.top = 0x01FF,
+					.updocr_at = UPD_ATBOTTOM,
+					.settov_at = UPD_ATTOP,
+				},
+				[7] = {
+					.kind = WGM_FASTPWM10,
+					.size = 10,
+					.top = 0x01FF,
+					.updocr_at = UPD_ATBOTTOM,
+					.settov_at = UPD_ATTOP,
+				},
+				[8] = {
+					.kind = WGM_PFCPWM,
+					.rtop = {
+						IOBYTE(ICR1L), IOBYTE(ICR1H)
+					},
+					.updocr_at = UPD_ATBOTTOM,
+					.settov_at = UPD_ATBOTTOM,
+				},
+				[9] = {
+					.kind = WGM_PFCPWM,
+					.rtop = {
+						IOBYTE(OCR1AL), IOBYTE(OCR1AH)
+					},
+					.updocr_at = UPD_ATBOTTOM,
+					.settov_at = UPD_ATBOTTOM,
+				},
+				[10] = {
+					.kind = WGM_PCPWM,
+					.rtop = {
+						IOBYTE(ICR1L), IOBYTE(ICR1H)
+					},
+					.updocr_at = UPD_ATTOP,
+					.settov_at = UPD_ATBOTTOM,
+				},
+				[11] = {
+					.kind = WGM_PCPWM,
+					.rtop = {
+						IOBYTE(OCR1AL), IOBYTE(OCR1AH)
+					},
+					.updocr_at = UPD_ATTOP,
+					.settov_at = UPD_ATBOTTOM,
+				},
+				[12] = {
+					.kind = WGM_CTC,
+					.rtop = {
+						IOBYTE(ICR1L), IOBYTE(ICR1H)
+					},
+					.updocr_at = UPD_ATIMMEDIATE,
+					.settov_at = UPD_ATMAX,
+				},
+				[13] = {
+					.kind = WGM_NONE,
+				},
+				[14] = {
+					.kind = WGM_FASTPWM,
+					.rtop = {
+						IOBYTE(ICR1L), IOBYTE(ICR1H)
+					},
+					.updocr_at = UPD_ATBOTTOM,
+					.settov_at = UPD_ATTOP,
+				},
+				[15] = {
+					.kind = WGM_FASTPWM,
+					.rtop = {
+						IOBYTE(OCR1AL), IOBYTE(OCR1AH)
+					},
+					.updocr_at = UPD_ATBOTTOM,
+					.settov_at = UPD_ATTOP,
+				},
+			},
 			/* ------------ Input capture config --------------- */
 			.icr = { IOBYTE(ICR1L), IOBYTE(ICR1H) },
 			.icp = IOBIT(PORTB, ICP1),
@@ -142,6 +259,7 @@ const struct MSIM_AVR ORIG_MCU = {
 					},
 					.com = IOBITS(TCCR1A, COM1A0, 0x3),
 					.pin = IOBIT(PORTB, OC1A),
+					.ddp = IOBIT(DDRB, OC1A),
 					.iv = {
 						.enable = IOBIT(TIMSK, OCIE1A),
 						.raised = IOBIT(TIFR, OCF1A),
@@ -154,6 +272,7 @@ const struct MSIM_AVR ORIG_MCU = {
 					},
 					.com = IOBITS(TCCR1A, COM1B0, 0x3),
 					.pin = IOBIT(PORTB, OC1B),
+					.ddp = IOBIT(DDRB, OC1B),
 					.iv = {
 						.enable = IOBIT(TIMSK, OCIE1B),
 						.raised = IOBIT(TIFR, OCF1B),
@@ -174,7 +293,35 @@ const struct MSIM_AVR ORIG_MCU = {
 			.cs_div = { 0, 0, 3, 5, 6, 7, 8, 10 }, /* Power of 2 */
 			/* ------- Waveform generation mode config --------- */
 			.wgm = { IOBIT(TCCR2, WGM20), IOBIT(TCCR2, WGM21) },
-			.wgm_op = NOWGMA(),
+			.wgm_op = {
+				[0] = {
+					.kind = WGM_NORMAL,
+					.size = 8,
+					.top = 0xFF,
+					.updocr_at = UPD_ATIMMEDIATE,
+					.settov_at = UPD_ATMAX,
+				},
+				[1] = {
+					.kind = WGM_PCPWM,
+					.size = 8,
+					.top = 0xFF,
+					.updocr_at = UPD_ATTOP,
+					.settov_at = UPD_ATBOTTOM,
+				},
+				[2] = {
+					.kind = WGM_CTC,
+					.rtop = { IOBYTE(OCR2) },
+					.updocr_at = UPD_ATIMMEDIATE,
+					.settov_at = UPD_ATMAX,
+				},
+				[3] = {
+					.kind = WGM_FASTPWM,
+					.size = 8,
+					.top = 0xFF,
+					.updocr_at = UPD_ATBOTTOM,
+					.settov_at = UPD_ATMAX,
+				},
+			},
 			/* ------------ Input capture config --------------- */
 			.icr = IONOBITA(),
 			.icp = IONOBIT(),
@@ -192,6 +339,7 @@ const struct MSIM_AVR ORIG_MCU = {
 					.ocr = { IOBYTE(OCR2) },
 					.com = IOBITS(TCCR2, COM20, 0x3),
 					.pin = IOBIT(PORTB, OC2),
+					.ddp = IOBIT(DDRB, OC2),
 					.iv = {
 						.enable = IOBIT(TIMSK, OCIE2),
 						.raised = IOBIT(TIFR, OCF2),

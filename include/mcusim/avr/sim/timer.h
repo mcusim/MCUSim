@@ -32,6 +32,7 @@
 #ifndef MSIM_AVR_TIMER_H_
 #define MSIM_AVR_TIMER_H_ 1
 
+#define MSIM_AVR_TMR_MAXWGM		(64)
 #define MSIM_AVR_TMR_MAXCOMP		(64)
 #define MSIM_AVR_TMR_STOPMODE		(-75)
 #define MSIM_AVR_TMR_EXTCLK_RISE	(-76)
@@ -54,25 +55,55 @@ enum {
 	MSIM_AVR_TMR_WGM_Normal,	/* Normal mode */
 	MSIM_AVR_TMR_WGM_CTC,		/* Clear timer on Compare Match */
 	MSIM_AVR_TMR_WGM_PWM,		/* PWM */
+
+	MSIM_AVR_TMR_WGM_FastPWM8,	/* Fast PWM, 8-bit */
+	MSIM_AVR_TMR_WGM_FastPWM9,	/* Fast PWM, 9-bit */
+	MSIM_AVR_TMR_WGM_FastPWM10,	/* Fast PWM, 10-bit */
 	MSIM_AVR_TMR_WGM_FastPWM,	/* Fast PWM */
+
+	MSIM_AVR_TMR_WGM_PCPWM8,	/* Phase Correct PWM, 8-bit */
+	MSIM_AVR_TMR_WGM_PCPWM9,	/* Phase Correct PWM, 9-bit */
+	MSIM_AVR_TMR_WGM_PCPWM10,	/* Phase Correct PWM, 10-bit */
 	MSIM_AVR_TMR_WGM_PCPWM,		/* Phase Correct PWM */
+
 	MSIM_AVR_TMR_WGM_PFCPWM,	/* Phase and frequency correct PWM */
-	MSIM_AVR_TMR_WGMCNT
+};
+
+enum {
+	MSIM_AVR_TMR_UPD_ATNONE,
+	MSIM_AVR_TMR_UPD_ATMAX,
+	MSIM_AVR_TMR_UPD_ATTOP,
+	MSIM_AVR_TMR_UPD_ATBOTTOM,
+	MSIM_AVR_TMR_UPD_ATIMMEDIATE
 };
 
 struct MSIM_AVR_TMR_WGM {
-	uint32_t top;
-	uint32_t bottom;
-	uint8_t size;
 	uint8_t kind;
+	uint8_t size;
+	struct MSIM_AVR_IOBit rtop[4];
+	int32_t top;
+	uint32_t bottom;
+	uint8_t updocr_at;			/* Update OCR at */
+	uint8_t settov_at;			/* Set TOV at */
+};
+
+struct MSIM_AVR_TMR_COM {
+	uint8_t disconn;
+	int32_t clear_at;
+	int32_t set_at;
+	int32_t toggle_at;
 };
 
 /* Timer comparator */
 struct MSIM_AVR_TMR_COMP {
 	struct MSIM_AVR_TMR *owner;		/* Parent timer */
-	struct MSIM_AVR_IOBit ocr[2];		/* Comparator register */
-	struct MSIM_AVR_IOBit com;		/* Comparator output mode */
+	struct MSIM_AVR_IOBit ocr[4];		/* Comparator register */
 	struct MSIM_AVR_IOBit pin;		/* Pin to output waveform */
+	struct MSIM_AVR_IOBit ddp;		/* Data direction for pin */
+
+	struct MSIM_AVR_IOBit com;		/* Comparator output mode */
+	struct MSIM_AVR_TMR_COM com_op[16];
+
 	struct MSIM_AVR_INTVec iv;		/* Interrupt vector */
 };
 
@@ -87,11 +118,11 @@ struct MSIM_AVR_TMR {
 
 	struct MSIM_AVR_IOBit ec_pin;		/* External clock pin */
 	uint8_t ec_vold;			/* Old value of the ec pin */
-	uint32_t ec_flags;
+	uint32_t ec_flags;			/* External clock flags */
 
 	struct MSIM_AVR_IOBit wgm[4];		/* Waveform generation mode */
-	struct MSIM_AVR_TMR_WGM wgm_op[16];	/* WGM types */
-	struct MSIM_AVR_TMR_WGM wgm_mode;	/* Current WGM type */
+	struct MSIM_AVR_TMR_WGM wgm_op[MSIM_AVR_TMR_MAXWGM]; /* WGM types */
+	uint8_t wgm_mode;			/* Current WGM type (index) */
 
 	struct MSIM_AVR_IOBit icr[4];		/* Input capture register */
 	struct MSIM_AVR_IOBit icp;		/* Input capture pin */
