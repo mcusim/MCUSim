@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.177")
+set(MSIM_VERSION "0.1.178")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name
@@ -290,10 +290,12 @@ endif()
 # -----------------------------------------------------------------------------
 # Prepare headers
 # -----------------------------------------------------------------------------
-file(COPY ${CMAKE_SOURCE_DIR}/include DESTINATION ${CMAKE_BINARY_DIR}
-     FILES_MATCHING PATTERN "*.h")
-configure_file(${CMAKE_SOURCE_DIR}/include/mcusim/config.h.in
-               ${CMAKE_BINARY_DIR}/include/mcusim/config.h @ONLY)
+file(GLOB_RECURSE RAW_HEADERS RELATIVE ${CMAKE_SOURCE_DIR}
+	"${CMAKE_SOURCE_DIR}/include/*.h")
+foreach(HEADER ${RAW_HEADERS})
+	configure_file(${CMAKE_SOURCE_DIR}/${HEADER}
+	               ${CMAKE_BINARY_DIR}/${HEADER} @ONLY)
+endforeach()
 
 # -----------------------------------------------------------------------------
 # Define include files and directories here

@@ -257,9 +257,9 @@ const struct MSIM_AVR ORIG_MCU = {
 					.ocr = {
 						IOBYTE(OCR1AL), IOBYTE(OCR1AH)
 					},
-					.com = IOBITS(TCCR1A, COM1A0, 0x3),
 					.pin = IOBIT(PORTB, OC1A),
 					.ddp = IOBIT(DDRB, OC1A),
+					.com = IOBITS(TCCR1A, COM1A0, 0x3),
 					.iv = {
 						.enable = IOBIT(TIMSK, OCIE1A),
 						.raised = IOBIT(TIFR, OCF1A),
@@ -270,9 +270,9 @@ const struct MSIM_AVR ORIG_MCU = {
 					.ocr = {
 						IOBYTE(OCR1BL), IOBYTE(OCR1BH)
 					},
-					.com = IOBITS(TCCR1A, COM1B0, 0x3),
 					.pin = IOBIT(PORTB, OC1B),
 					.ddp = IOBIT(DDRB, OC1B),
+					.com = IOBITS(TCCR1A, COM1B0, 0x3),
 					.iv = {
 						.enable = IOBIT(TIMSK, OCIE1B),
 						.raised = IOBIT(TIFR, OCF1B),
@@ -337,9 +337,9 @@ const struct MSIM_AVR ORIG_MCU = {
 			.comp = {
 				[0] = {
 					.ocr = { IOBYTE(OCR2) },
-					.com = IOBITS(TCCR2, COM20, 0x3),
 					.pin = IOBIT(PORTB, OC2),
 					.ddp = IOBIT(DDRB, OC2),
+					.com = IOBITS(TCCR2, COM20, 0x3),
 					.iv = {
 						.enable = IOBIT(TIMSK, OCIE2),
 						.raised = IOBIT(TIFR, OCF2),
