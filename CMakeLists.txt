@@ -34,7 +34,7 @@ cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
 # Program version
-set(MSIM_VERSION "0.1.178")
+set(MSIM_VERSION "0.1.179")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 # Program name

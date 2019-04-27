@@ -388,8 +388,8 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
 		/* Initialize MCU as one of the AVR models */
 		mcu->intr.trap_at_isr = conf->trap_at_isr;
 		if (setup_avr(mcu, conf->mcu, NULL,
-		              MSIM_AVR_PMSZ, NULL,
-		              MSIM_AVR_DMSZ, NULL, fp) != 0) {
+		                MSIM_AVR_PMSZ, NULL,
+		                MSIM_AVR_DMSZ, NULL, fp) != 0) {
 			snprintf(LOG, LOGSZ, "MCU model %s cannot be "
 			         "initialized", conf->mcu);
 			MSIM_LOG_FATAL(LOG);
@@ -741,11 +741,11 @@ static void print_config(struct MSIM_AVR *m)
 	uint64_t blsstart = m->bls.start>>1;
 	uint64_t blsend = m->bls.end>>1;
 
-	snprintf(m->log, LOGSZ, "MCU model: %s (signature %02X%02X%02X)",
+	snprintf(m->log, LOGSZ, "model: %s (%02X%02X%02X)",
 	         m->name, m->signature[0], m->signature[1], m->signature[2]);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "clock frequency: %" PRIu32 ".%" PRIu32
+	snprintf(m->log, LOGSZ, "clock: %" PRIu32 ".%" PRIu32
 	         " kHz", m->freq/1000, m->freq%1000);
 	MSIM_LOG_INFO(m->log);
 
@@ -753,22 +753,21 @@ static void print_config(struct MSIM_AVR *m)
 	         "LOW=0x%02X", m->fuse[2], m->fuse[1], m->fuse[0]);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "lock bits: 0x%02X", m->lockbits);
+	snprintf(m->log, LOGSZ, "lock: 0x%02X", m->lockbits);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "reset vector address: 0x%06" PRIX64,
+	snprintf(m->log, LOGSZ, "reset vector: 0x%06" PRIX64,
 	         reset_pc);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "interrupt vectors table address: "
-	         "0x%06" PRIX64, ivt);
+	snprintf(m->log, LOGSZ, "interrupt vectors: 0x%06" PRIX64, ivt);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "flash section: 0x%06" PRIX64 "-0x%06" PRIX64,
+	snprintf(m->log, LOGSZ, "flash: 0x%06" PRIX64 "-0x%06" PRIX64,
 	         flashstart, flashend);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "bootloader section: 0x%06" PRIX64 "-0x%06"
+	snprintf(m->log, LOGSZ, "bootloader: 0x%06" PRIX64 "-0x%06"
 	         PRIX64, blsstart, blsend);
 	MSIM_LOG_INFO(m->log);
 }

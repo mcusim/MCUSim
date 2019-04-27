@@ -25,9 +25,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * General-purpose AVR timer.
- *
- * It's supposed to be suitable for any AVR MCU.
+ * General-purpose AVR timer. It's supposed to be suitable for any AVR MCU.
  */
 #ifndef MSIM_AVR_TIMER_H_
 #define MSIM_AVR_TIMER_H_ 1
@@ -69,29 +67,40 @@ enum {
 	MSIM_AVR_TMR_WGM_PFCPWM,	/* Phase and frequency correct PWM */
 };
 
+/* Helps to update buffered values. */
 enum {
-	MSIM_AVR_TMR_UPD_ATNONE,
-	MSIM_AVR_TMR_UPD_ATMAX,
-	MSIM_AVR_TMR_UPD_ATTOP,
-	MSIM_AVR_TMR_UPD_ATBOTTOM,
-	MSIM_AVR_TMR_UPD_ATIMMEDIATE
+	MSIM_AVR_TMR_UPD_ATNONE = 0,		/* Unknown value */
+	MSIM_AVR_TMR_UPD_ATMAX,			/* At MAX value */
+	MSIM_AVR_TMR_UPD_ATTOP,			/* At TOP value */
+	MSIM_AVR_TMR_UPD_ATBOTTOM,		/* At BOTTOM value */
+	MSIM_AVR_TMR_UPD_ATIMMEDIATE,		/* Immediately */
 };
 
+/* Helps to describe what to do with a pin of the output compare module. */
+enum {
+	MSIM_AVR_TMR_COM_DISC = 0,		/* Disconnected */
+	MSIM_AVR_TMR_COM_TGONCM,		/* Toggle on Compare Match */
+	MSIM_AVR_TMR_COM_CLONCM,		/* Clear on Compare Match */
+	MSIM_AVR_TMR_COM_STONCM,		/* Set on Compare Match */
+	/* Clear on Compare Match, Set at Bottom */
+	MSIM_AVR_TMR_COM_CLONCM_STATBOT,
+	/* Set on Compare Match, Clear at Bottom */
+	MSIM_AVR_TMR_COM_STONCM_CLATBOT,
+	/* Clear on Compare Match (up-cnt), Set on Compare Match (down-cnt) */
+	MSIM_AVR_TMR_COM_CLONUP_STONDOWN,
+	/* Set on Compare Match (up-cnt), Clear on Compare Match (down-cnt) */
+	MSIM_AVR_TMR_COM_STONUP_CLONDOWN,
+};
+
+/* Waveform generation mode */
 struct MSIM_AVR_TMR_WGM {
-	uint8_t kind;
-	uint8_t size;
-	struct MSIM_AVR_IOBit rtop[4];
-	int32_t top;
-	uint32_t bottom;
+	uint8_t kind;				/* WGM type */
+	uint8_t size;				/* Size, in bits */
+	struct MSIM_AVR_IOBit rtop[4];		/* Register as TOP value */
+	int32_t top;				/* Fixed TOP value */
+	uint32_t bottom;			/* Fixed BOTTOM value */
 	uint8_t updocr_at;			/* Update OCR at */
 	uint8_t settov_at;			/* Set TOV at */
-};
-
-struct MSIM_AVR_TMR_COM {
-	uint8_t disconn;
-	int32_t clear_at;
-	int32_t set_at;
-	int32_t toggle_at;
 };
 
 /* Timer comparator */
@@ -102,7 +111,7 @@ struct MSIM_AVR_TMR_COMP {
 	struct MSIM_AVR_IOBit ddp;		/* Data direction for pin */
 
 	struct MSIM_AVR_IOBit com;		/* Comparator output mode */
-	struct MSIM_AVR_TMR_COM com_op[16];
+	uint8_t com_op[16][16];			/* mode: [WGM][COM] */
 
 	struct MSIM_AVR_INTVec iv;		/* Interrupt vector */
 };
