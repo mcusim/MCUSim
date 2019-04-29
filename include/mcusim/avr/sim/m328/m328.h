@@ -40,21 +40,39 @@
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simcore.h"
 
-#define MCU_NAME	"ATmega328"
-#define RESET_PC	0x0000	/* Reset vector address, in bytes */
-#define IVT_ADDR	0x0002	/* Interrupt vectors address, in bytes */
-#define PC_BITS		14		/* PC bit capacity */
-#define LBITS_DEFAULT	0x3F		/* Default lock bits */
-#define CLK_SOURCE	AVR_INT_CAL_RC_CLK /* Calibrated Internal RC */
-#define CLK_FREQ	1000000		/* Oscillator frequency, in Hz */
-#define GP_REGS		32		/* GP registers, R0, R1, ..., R31 */
-#define IO_REGS		224		/* I/O registers, PORTD, SREG, etc. */
-#define BLS_START	0x7000		/* First address in BLS, in bytes */
-#define BLS_END		0x7FFF		/* Last address in BLS, in bytes */
-#define BLS_SIZE	4096		/* BLS size, in bytes */
-#define FLASHSTART	0x0000
-#define RAMSIZE		2048
-#define E2START		0x0000
-#define E2SIZE		1024
+const static struct MSIM_AVR ORIG_M328 = {
+	.name = "ATmega328",
+	.signature = { SIGNATURE_0, SIGNATURE_1, SIGNATURE_2 },
+	.pc = 0x0000,
+	.pc_bits = 14,
+	.freq = 1000000,		/* Clock frequency, in Hz */
+	.clk_source = AVR_INT_CAL_RC_CLK,
+	.lockbits = 0x3F,
+	.regs_num = 32,			/* # of general purpose registers */
+	.ioregs_num = 224,		/* # of I/O registers */
+	.xmega = 0,
+	.reduced_core = 0,
+	.spm_pagesize = SPM_PAGESIZE,
+	.flashstart = 0x0000,
+	.flashend = FLASHEND,
+	.ramstart = RAMSTART,
+	.ramend = RAMEND,
+	.ramsize = 2048,
+	.e2start = 0x0000,
+	.e2end = E2END,
+	.e2size = 1024,
+	.e2pagesize = E2PAGESIZE,
+	.sfr_off = __SFR_OFFSET,
+	.fuse = { LFUSE_DEFAULT, HFUSE_DEFAULT, 0xFF },
+	.bls = {			/* Bootloader config */
+		.start = 0x7000,
+		.end = 0x7FFF,
+		.size = 4096,
+	},
+	.intr = {
+		.reset_pc = 0x0000,
+		.ivt = 0x0002,
+	},
+};
 
 #endif /* MSIM_AVR_M328_H_ */

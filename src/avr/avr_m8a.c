@@ -86,8 +86,8 @@ static void update_watched(struct MSIM_AVR *mcu);
 
 static void tick_usart(struct MSIM_AVR *mcu);
 #if defined(MSIM_POSIX) && defined(MSIM_POSIX_PTY)
-static void usart_transmit(struct MSIM_AVR *mcu);
-static void usart_receive(struct MSIM_AVR *mcu);
+	static void usart_transmit(struct MSIM_AVR *mcu);
+	static void usart_receive(struct MSIM_AVR *mcu);
 #endif
 
 static void tick_wdt(struct MSIM_AVR *mcu);
@@ -140,7 +140,7 @@ static void timer2_oc2_pcpwm(struct MSIM_AVR *mcu, uint8_t com2,
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
-	int rc = mcu_init(mcu, args);
+	int rc = mcu_init(&ORIG_M8A, mcu, args);
 	int r;
 
 	do {
@@ -245,7 +245,7 @@ static void update_watched(struct MSIM_AVR *mcu)
 		if (spmen_clear == 1U) {
 			if (spmen_cycles == 0U) {
 				(*mcu->spmcsr) = (uint8_t)((*mcu->spmcsr) &
-				                (uint8_t)(~(1<<SPMEN)));
+				                           (uint8_t)(~(1<<SPMEN)));
 				spmen_clear = 0;
 				/* Generate SPM_RDY interrupt */
 				if ((*mcu->spmcsr>>SPMIE)&1U) {

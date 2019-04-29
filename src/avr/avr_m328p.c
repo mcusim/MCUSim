@@ -71,7 +71,7 @@ static void timer0_oc0_nonpwm(struct MSIM_AVR *mcu, uint8_t com0a,
 
 int MSIM_M328PInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
-	int r = mcu_init(mcu, args);
+	int r = mcu_init(&ORIG_M328P, mcu, args);
 
 	if (r == 0) {
 		update_watched(mcu);

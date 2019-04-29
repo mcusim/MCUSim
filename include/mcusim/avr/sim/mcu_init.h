@@ -29,7 +29,8 @@
 #ifndef MSIM_AVR_MCUINIT_H_
 #define MSIM_AVR_MCUINIT_H_ 1
 
-static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
+static inline int mcu_init(const struct MSIM_AVR *orig, struct MSIM_AVR *mcu,
+                           struct MSIM_InitArgs *args)
 {
 	uint32_t i;
 	uint32_t pmsz, pm_size;
@@ -39,26 +40,14 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	uint32_t ioregs_num = sizeof ioregs/sizeof ioregs[0];
 #endif
 
+	(*mcu) = (*orig);
+
 	if (mcu == NULL) {
 		MSIM_LOG_FATAL("MCU instance should not be null");
 		return 255;
 	}
 	pm_size = args->pmsz;
 	dm_size = args->dmsz;
-	strcpy(mcu->name, MCU_NAME);
-	mcu->signature[0] = SIGNATURE_0;
-	mcu->signature[1] = SIGNATURE_1;
-	mcu->signature[2] = SIGNATURE_2;
-#ifdef XMEGA
-	mcu->xmega = 1;
-#else
-	mcu->xmega = 0;
-#endif
-#ifdef REDUCED_CORE
-	mcu->reduced_core = 1;
-#else
-	mcu->reduced_core = 0;
-#endif
 
 	if (SPMCSR > 0) {
 		mcu->spmcsr = &mcu->dm[SPMCSR];
@@ -67,20 +56,6 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	} else {
 		mcu->spmcsr = NULL;
 	}
-	mcu->spm_pagesize = SPM_PAGESIZE;
-	mcu->flashstart = FLASHSTART;
-	mcu->flashend = FLASHEND;
-	mcu->ramstart = RAMSTART;
-	mcu->ramend = RAMEND;
-	mcu->ramsize = RAMSIZE;
-	mcu->e2start = E2START;
-	mcu->e2end = E2END;
-	mcu->e2size = E2SIZE;
-	mcu->e2pagesize = E2PAGESIZE;
-	mcu->lockbits = LBITS_DEFAULT;
-	mcu->sfr_off = __SFR_OFFSET;
-	mcu->regs_num = GP_REGS;
-	mcu->ioregs_num = IO_REGS;
 
 	/* Program memory */
 	pmsz = mcu->flashend - mcu->flashstart + 1;
@@ -133,51 +108,6 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 		mcu->rampd = NULL;
 	}
 
-#ifdef EFUSE_DEFAULT
-	mcu->fuse[2] = EFUSE_DEFAULT;
-#endif
-#ifdef HFUSE_DEFAULT
-	mcu->fuse[1] = HFUSE_DEFAULT;
-#endif
-	mcu->fuse[0] = LFUSE_DEFAULT;
-
-	/* MCU-specific functions */
-#ifdef SET_FUSE_F
-	mcu->set_fusef = SET_FUSE_F;
-#else
-	mcu->set_fusef = NULL;
-#endif
-#ifdef SET_LOCK_F
-	mcu->set_lockf = SET_LOCK_F;
-#else
-	mcu->set_lockf = NULL;
-#endif
-#ifdef TICK_PERF_F
-	mcu->tick_perf = TICK_PERF_F;
-#else
-	mcu->tick_perf = NULL;
-#endif
-#ifdef PASS_IRQS_F
-	mcu->pass_irqs = PASS_IRQS_F;
-#else
-	mcu->pass_irqs = NULL;
-#endif
-#ifdef RESET_SPM_F
-	mcu->reset_spm = RESET_SPM_F;
-#else
-	mcu->reset_spm = NULL;
-#endif
-
-#ifdef BLS_START
-	mcu->bls.start = BLS_START;
-	mcu->bls.end = BLS_END;
-	mcu->bls.size = BLS_SIZE;
-#else
-	mcu->bls.start = 0;
-	mcu->bls.end = 0;
-	mcu->bls.size = 0;
-#endif
-
 	/* Init descriptors of the I/O registers */
 	for (i = 0; i < MSIM_AVR_DMSZ; i++) {
 		mcu->ioregs[i].off = -1;
@@ -201,14 +131,6 @@ static inline int mcu_init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 	}
 #endif
 
-	mcu->clk_source = CLK_SOURCE;
-	mcu->freq = CLK_FREQ;
-	mcu->pc_bits = PC_BITS;
-	mcu->pc = RESET_PC;
-
-	/* Set up interrupts and IRQs */
-	mcu->intr.reset_pc = RESET_PC;
-	mcu->intr.ivt = IVT_ADDR;
 	return 0;
 }
 

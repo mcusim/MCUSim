@@ -43,30 +43,11 @@
 #include "mcusim/avr/sim/timer.h"
 #include "mcusim/avr/sim/private/io_macro.h"
 
-#define MCU_NAME	"ATmega8A"
-#define RESET_PC	0x0000	/* Reset vector address (in bytes) */
-#define IVT_ADDR	0x0002	/* Interrupt vectors address (in bytes) */
-#define PC_BITS		12	/* PC bit capacity */
-#define LBITS_DEFAULT	0x3F	/* Default lock bits */
-#define CLK_SOURCE	AVR_INT_CAL_RC_CLK /* Calibrated Internal RC */
-#define CLK_FREQ	1000000	/* Oscillator frequency, in Hz */
-#define GP_REGS		32	/* # of GP registers */
-#define IO_REGS		64	/* # of I/O registers */
-#define BLS_START	0x1800	/* First address in BLS, in bytes */
-#define BLS_END		0x1FFF	/* Last address in BLS, in bytes */
-#define BLS_SIZE	2048	/* BLS size, in bytes */
-
 /* Missing pins definitions */
 #define ICP1		0
 #define OC1A		1
 #define OC1B		2
 #define OC2		3
-
-#define TICK_PERF_F	MSIM_M8AUpdate
-#define SET_FUSE_F	MSIM_M8ASetFuse
-#define SET_LOCK_F	MSIM_M8ASetLock
-#define PASS_IRQS_F	MSIM_M8APassIRQs
-#define RESET_SPM_F	MSIM_M8AResetSPM
 
 int MSIM_M8AUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
@@ -74,7 +55,44 @@ int MSIM_M8ASetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 int MSIM_M8APassIRQs(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 int MSIM_M8AResetSPM(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 
-const struct MSIM_AVR ORIG_MCU = {
+const static struct MSIM_AVR ORIG_M8A = {
+	.name = "ATmega8A",
+	.signature = { SIGNATURE_0, SIGNATURE_1, SIGNATURE_2 },
+	.pc = 0x0000,
+	.pc_bits = 12,
+	.freq = 1000000,		/* Clock frequency, in Hz */
+	.clk_source = AVR_INT_CAL_RC_CLK,
+	.lockbits = 0x3F,
+	.regs_num = 32,			/* # of general purpose registers */
+	.ioregs_num = 64,		/* # of I/O registers */
+	.xmega = 0,			/* XMEGA AVR flag */
+	.reduced_core = 0,		/* Reduced AVR core flag */
+	.spm_pagesize = SPM_PAGESIZE,
+	.flashstart = FLASHSTART,
+	.flashend = FLASHEND,
+	.ramstart = RAMSTART,
+	.ramend = RAMEND,
+	.ramsize = RAMSIZE,
+	.e2start = E2START,
+	.e2end = E2END,
+	.e2size = E2SIZE,
+	.e2pagesize = E2PAGESIZE,
+	.sfr_off = __SFR_OFFSET,
+	.set_fusef = MSIM_M8ASetFuse,
+	.set_lockf = MSIM_M8ASetLock,
+	.tick_perf = MSIM_M8AUpdate,
+	.pass_irqs = MSIM_M8APassIRQs,
+	.reset_spm = MSIM_M8AResetSPM,
+	.fuse = { LFUSE_DEFAULT, HFUSE_DEFAULT, 0xFF },
+	.bls = {			/* Bootloader config */
+		.start = 0x1800,
+		.end = 0x1FFF,
+		.size = 2048,
+	},
+	.intr = {
+		.reset_pc = 0x0000,
+		.ivt = 0x0002,
+	},
 	.timers = {
 		[0] = {
 			/* ---------------- Basic config ------------------- */
@@ -562,4 +580,3 @@ const struct MSIM_AVR ORIG_MCU = {
 };
 
 #endif /* MSIM_AVR_M8A_H_ */
-

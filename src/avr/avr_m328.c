@@ -36,5 +36,5 @@
 
 int MSIM_M328Init(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
-	return mcu_init(mcu, args);
+	return mcu_init(&ORIG_M328, mcu, args);
 }

@@ -33,16 +33,13 @@
 cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
-# Program version
-set(MSIM_VERSION "0.1.179")
-add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
-
-# Program name
+set(MSIM_VERSION "0.1.180")
 set(MCUSIM "mcusim")
 set(MCUSIM_LIB_NAME "msim")
 set(MCUSIM_LIB "lib${MCUSIM_LIB_NAME}")
 
-# Load modules from our source tree too
+add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
+
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Filename.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Subdirlist.cmake)
