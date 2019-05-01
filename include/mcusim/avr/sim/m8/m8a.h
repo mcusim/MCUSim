@@ -43,12 +43,6 @@
 #include "mcusim/avr/sim/timer.h"
 #include "mcusim/avr/sim/private/io_macro.h"
 
-/* Missing pins definitions */
-#define ICP1		0
-#define OC1A		1
-#define OC1B		2
-#define OC2		3
-
 int MSIM_M8AUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 int MSIM_M8ASetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
@@ -256,7 +250,7 @@ const static struct MSIM_AVR ORIG_M8A = {
 			},
 			/* ------------ Input capture config --------------- */
 			.icr = { IOBYTE(ICR1L), IOBYTE(ICR1H) },
-			.icp = IOBIT(PORTB, ICP1),
+			.icp = IOBIT(PORTB, PB0),
 			.ices = { IOBIT(TCCR1B, ICES1) },
 			/* ------------- Interrupts config ----------------- */
 			.iv_ovf = {
@@ -275,8 +269,8 @@ const static struct MSIM_AVR ORIG_M8A = {
 					.ocr = {
 						IOBYTE(OCR1AL), IOBYTE(OCR1AH)
 					},
-					.pin = IOBIT(PORTB, OC1A),
-					.ddp = IOBIT(DDRB, OC1A),
+					.pin = IOBIT(PORTB, PB1),
+					.ddp = IOBIT(DDRB, PB1),
 					.com = IOBITS(TCCR1A, COM1A0, 0x3),
 					.com_op = {
 						[0] = {
@@ -380,8 +374,8 @@ const static struct MSIM_AVR ORIG_M8A = {
 					.ocr = {
 						IOBYTE(OCR1BL), IOBYTE(OCR1BH)
 					},
-					.pin = IOBIT(PORTB, OC1B),
-					.ddp = IOBIT(DDRB, OC1B),
+					.pin = IOBIT(PORTB, PB2),
+					.ddp = IOBIT(DDRB, PB2),
 					.com = IOBITS(TCCR1A, COM1B0, 0x3),
 					.com_op = {
 						[0] = {
@@ -489,8 +483,8 @@ const static struct MSIM_AVR ORIG_M8A = {
 			.disabled = IONOBIT(),
 			/* ------------- Clock select config --------------- */
 			.cs = {
-				IOBIT(TCCR1B, CS10), IOBIT(TCCR1B, CS11),
-				IOBIT(TCCR1B, CS12)
+				IOBIT(TCCR2, CS20), IOBIT(TCCR2, CS21),
+				IOBIT(TCCR2, CS22)
 			},
 			.cs_div = { 0, 0, 3, 5, 6, 7, 8, 10 }, /* Power of 2 */
 			/* ------- Waveform generation mode config --------- */
@@ -539,8 +533,8 @@ const static struct MSIM_AVR ORIG_M8A = {
 			.comp = {
 				[0] = {
 					.ocr = { IOBYTE(OCR2) },
-					.pin = IOBIT(PORTB, OC2),
-					.ddp = IOBIT(DDRB, OC2),
+					.pin = IOBIT(PORTB, PB3),
+					.ddp = IOBIT(DDRB, PB3),
 					.com = IOBITS(TCCR2, COM20, 0x3),
 					.com_op = {
 						[0] = {

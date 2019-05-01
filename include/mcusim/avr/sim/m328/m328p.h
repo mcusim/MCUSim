@@ -39,6 +39,7 @@
 #include "mcusim/avr/sim/io_regs.h"
 #include "mcusim/avr/sim/sim.h"
 #include "mcusim/avr/sim/simcore.h"
+#include "mcusim/avr/sim/private/io_macro.h"
 
 int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 int MSIM_M328PSetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
@@ -106,6 +107,183 @@ const static struct MSIM_AVR ORIG_M328P = {
 	.intr = {
 		.reset_pc = 0x0000,
 		.ivt = 0x0002,
+	},
+	.timers = {
+		[0] = {
+			/* ---------------- Basic config ------------------- */
+			.tcnt = { IOBYTE(TCNT0) },
+			.disabled = IOBIT(PRR, PRTIM0),
+			/* ------------- Clock select config --------------- */
+			.cs = {
+				IOBIT(TCCR0B, CS00), IOBIT(TCCR0B, CS01),
+				IOBIT(TCCR0B, CS02)
+			},
+			.cs_div = { 0, 0, 3, 6, 8, 10 }, /* Power of 2 */
+			/* ------- Waveform generation mode config --------- */
+			.wgm = {
+				IOBIT(TCCR0A, WGM00), IOBIT(TCCR0A, WGM01),
+				IOBIT(TCCR0B, WGM02),
+			},
+			.wgm_op = {
+				[0] = {
+					.kind = WGM_NORMAL,
+					.size = 8,
+					.top = 0xFF,
+					.updocr_at = UPD_ATIMMEDIATE,
+					.settov_at = UPD_ATMAX,
+				},
+				[1] = {
+					.kind = WGM_PCPWM,
+					.size = 8,
+					.top = 0xFF,
+					.updocr_at = UPD_ATTOP,
+					.settov_at = UPD_ATBOTTOM,
+				},
+				[2] = {
+					.kind = WGM_CTC,
+					.rtop = { IOBYTE(OCR0A) },
+					.updocr_at = UPD_ATIMMEDIATE,
+					.settov_at = UPD_ATMAX,
+				},
+				[3] = {
+					.kind = WGM_FASTPWM,
+					.size = 8,
+					.top = 0xFF,
+					.updocr_at = UPD_ATBOTTOM,
+					.settov_at = UPD_ATMAX,
+				},
+				[4] = {
+					.kind = WGM_NONE,
+				},
+				[5] = {
+					.kind = WGM_PCPWM,
+					.rtop = { IOBYTE(OCR0A) },
+					.updocr_at = UPD_ATTOP,
+					.settov_at = UPD_ATBOTTOM,
+				},
+				[6] = {
+					.kind = WGM_NONE,
+				},
+				[7] = {
+					.kind = WGM_FASTPWM,
+					.rtop = { IOBYTE(OCR0A) },
+					.updocr_at = UPD_ATBOTTOM,
+					.settov_at = UPD_ATTOP,
+				},
+			},
+			/* ------------ Input capture config --------------- */
+			.icr = IONOBITA(),
+			.icp = IONOBIT(),
+			.ices = IONOBITA(),
+			/* ------------- Interrupts config ----------------- */
+			.iv_ovf = {
+				.enable = IOBIT(TIMSK0, TOIE0),
+				.raised = IOBIT(TIFR0, TOV0),
+				.vector = TIMER0_OVF_vect_num
+			},
+			.iv_ic = NOINTV(),
+			/* ----------- Output compare config --------------- */
+			.comp = {
+				[0] = {
+					.ocr = { IOBYTE(OCR0A) },
+					.pin = IOBIT(PORTD, PD6),
+					.ddp = IOBIT(DDRD, PD6),
+					.com = IOBITS(TCCR0A, COM0A0, 0x3),
+					.com_op = {
+						[0] = { /* WGM_NORMAL */
+							COM_DISC,
+							COM_TGONCM,
+							COM_CLONCM,
+							COM_STONCM,
+						},
+						[1] = { /* WGM_PCPWM */
+							COM_DISC,
+							COM_DISC,
+							COM_CLONUP_STONDOWN,
+							COM_STONUP_CLONDOWN,
+						},
+						[2] = { /* WGM_CTC */
+							COM_DISC,
+							COM_TGONCM,
+							COM_CLONCM,
+							COM_STONCM,
+						},
+						[3] = { /* WGM_FASTPWM */
+							COM_DISC,
+							COM_DISC,
+							COM_CLONCM_STATBOT,
+							COM_STONCM_CLATBOT,
+						},
+						[5] = { /* WGM_PCPWM */
+							COM_DISC,
+							COM_TGONCM,
+							COM_CLONUP_STONDOWN,
+							COM_STONUP_CLONDOWN,
+						},
+						[7] = { /* WGM_FASTPWM */
+							COM_DISC,
+							COM_TGONCM,
+							COM_CLONCM_STATBOT,
+							COM_STONCM_CLATBOT,
+						},
+					},
+					.iv = {
+						.enable = IOBIT(TIMSK0, OCIE0A),
+						.raised = IOBIT(TIFR0, OCF0A),
+						.vector = TIMER0_COMPA_vect_num
+					},
+				},
+				[1] = {
+					.ocr = { IOBYTE(OCR0B) },
+					.pin = IOBIT(PORTD, PD5),
+					.ddp = IOBIT(DDRD, PD5),
+					.com = IOBITS(TCCR0A, COM0B0, 0x3),
+					.com_op = {
+						[0] = { /* WGM_NORMAL */
+							COM_DISC,
+							COM_TGONCM,
+							COM_CLONCM,
+							COM_STONCM,
+						},
+						[1] = { /* WGM_PCPWM */
+							COM_DISC,
+							COM_DISC,
+							COM_CLONUP_STONDOWN,
+							COM_STONUP_CLONDOWN,
+						},
+						[2] = { /* WGM_CTC */
+							COM_DISC,
+							COM_TGONCM,
+							COM_CLONCM,
+							COM_STONCM,
+						},
+						[3] = { /* WGM_FASTPWM */
+							COM_DISC,
+							COM_DISC,
+							COM_CLONCM_STATBOT,
+							COM_STONCM_CLATBOT,
+						},
+						[5] = { /* WGM_PCPWM */
+							COM_DISC,
+							COM_DISC,
+							COM_CLONUP_STONDOWN,
+							COM_STONUP_CLONDOWN,
+						},
+						[7] = { /* WGM_FASTPWM */
+							COM_DISC,
+							COM_DISC,
+							COM_CLONCM_STATBOT,
+							COM_STONCM_CLATBOT,
+						},
+					},
+					.iv = {
+						.enable = IOBIT(TIMSK0, OCIE0B),
+						.raised = IOBIT(TIFR0, OCF0B),
+						.vector = TIMER0_COMPB_vect_num
+					},
+				},
+			},
+		},
 	},
 };
 
