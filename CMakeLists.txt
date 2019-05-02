@@ -33,7 +33,7 @@
 cmake_minimum_required(VERSION 3.2)
 project(MCUSim C)
 
-set(MSIM_VERSION "0.1.181")
+set(MSIM_VERSION "0.2-current")
 set(MCUSIM "mcusim")
 set(MCUSIM_LIB_NAME "msim")
 set(MCUSIM_LIB "lib${MCUSIM_LIB_NAME}")

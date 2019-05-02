@@ -30,8 +30,6 @@
 #ifndef MSIM_AVR_TIMER_H_
 #define MSIM_AVR_TIMER_H_ 1
 
-#define MSIM_AVR_TMR_MAXWGM		(64)
-#define MSIM_AVR_TMR_MAXCOMP		(64)
 #define MSIM_AVR_TMR_STOPMODE		(-75)
 #define MSIM_AVR_TMR_EXTCLK_RISE	(-76)
 #define MSIM_AVR_TMR_EXTCLK_FALL	(-77)
@@ -48,26 +46,18 @@ extern "C" {
 #include "mcusim/avr/sim/io.h"
 #include "mcusim/avr/sim/interrupt.h"
 
+/* Waveform generation modes */
 enum {
 	MSIM_AVR_TMR_WGM_None = 0,
 	MSIM_AVR_TMR_WGM_Normal,	/* Normal mode */
 	MSIM_AVR_TMR_WGM_CTC,		/* Clear timer on Compare Match */
 	MSIM_AVR_TMR_WGM_PWM,		/* PWM */
-
-	MSIM_AVR_TMR_WGM_FastPWM8,	/* Fast PWM, 8-bit */
-	MSIM_AVR_TMR_WGM_FastPWM9,	/* Fast PWM, 9-bit */
-	MSIM_AVR_TMR_WGM_FastPWM10,	/* Fast PWM, 10-bit */
 	MSIM_AVR_TMR_WGM_FastPWM,	/* Fast PWM */
-
-	MSIM_AVR_TMR_WGM_PCPWM8,	/* Phase Correct PWM, 8-bit */
-	MSIM_AVR_TMR_WGM_PCPWM9,	/* Phase Correct PWM, 9-bit */
-	MSIM_AVR_TMR_WGM_PCPWM10,	/* Phase Correct PWM, 10-bit */
 	MSIM_AVR_TMR_WGM_PCPWM,		/* Phase Correct PWM */
-
 	MSIM_AVR_TMR_WGM_PFCPWM,	/* Phase and frequency correct PWM */
 };
 
-/* Helps to update buffered values. */
+/* When to update buffered values */
 enum {
 	MSIM_AVR_TMR_UPD_ATNONE = 0,		/* Unknown value */
 	MSIM_AVR_TMR_UPD_ATMAX,			/* At MAX value */
@@ -76,7 +66,7 @@ enum {
 	MSIM_AVR_TMR_UPD_ATIMMEDIATE,		/* Immediately */
 };
 
-/* Helps to describe what to do with a pin of the output compare module. */
+/* Output compare pin action. */
 enum {
 	MSIM_AVR_TMR_COM_DISC = 0,		/* Disconnected */
 	MSIM_AVR_TMR_COM_TGONCM,		/* Toggle on Compare Match */
@@ -92,7 +82,7 @@ enum {
 	MSIM_AVR_TMR_COM_STONUP_CLONDOWN,
 };
 
-/* Waveform generation mode */
+/* Waveform generation mode descriptor */
 struct MSIM_AVR_TMR_WGM {
 	uint8_t kind;				/* WGM type */
 	uint8_t size;				/* Size, in bits */
@@ -103,7 +93,7 @@ struct MSIM_AVR_TMR_WGM {
 	uint8_t settov_at;			/* Set TOV at */
 };
 
-/* Timer comparator */
+/* Comparator module */
 struct MSIM_AVR_TMR_COMP {
 	struct MSIM_AVR_TMR *owner;		/* Parent timer */
 	struct MSIM_AVR_IOBit ocr[4];		/* Comparator register */
@@ -116,7 +106,7 @@ struct MSIM_AVR_TMR_COMP {
 	struct MSIM_AVR_INTVec iv;		/* Interrupt vector */
 };
 
-/* The main AVR timer structure. */
+/* AVR timer/counter */
 struct MSIM_AVR_TMR {
 	struct MSIM_AVR_IOBit tcnt[4];		/* Timer counter */
 	struct MSIM_AVR_IOBit disabled;		/* "disabled" bit */
@@ -130,7 +120,7 @@ struct MSIM_AVR_TMR {
 	uint32_t ec_flags;			/* External clock flags */
 
 	struct MSIM_AVR_IOBit wgm[4];		/* Waveform generation mode */
-	struct MSIM_AVR_TMR_WGM wgm_op[MSIM_AVR_TMR_MAXWGM]; /* WGM types */
+	struct MSIM_AVR_TMR_WGM wgm_op[16];	/* WGM types */
 	uint8_t wgm_mode;			/* Current WGM type (index) */
 
 	struct MSIM_AVR_IOBit icr[4];		/* Input capture register */
@@ -140,7 +130,7 @@ struct MSIM_AVR_TMR {
 	struct MSIM_AVR_INTVec iv_ovf;		/* Overflow */
 	struct MSIM_AVR_INTVec iv_ic;		/* Input capture */
 
-	struct MSIM_AVR_TMR_COMP comp[MSIM_AVR_TMR_MAXCOMP];
+	struct MSIM_AVR_TMR_COMP comp[16];	/* Output compare channels */
 };
 
 int MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr);
