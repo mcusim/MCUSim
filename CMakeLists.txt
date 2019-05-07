@@ -189,6 +189,7 @@ set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
 			src/avr/avr_decoder.c
 			src/avr/avr_gdb.c
 			src/avr/avr_vcd.c
+			src/avr/avr_timer.c
 			src/msim_config.c
 			src/msim_getopt.c
 			src/msim_ihex.c

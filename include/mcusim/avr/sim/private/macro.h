@@ -62,6 +62,7 @@
 #define LOG			(mcu->log)
 #define LOGSZ			(MSIM_AVR_LOGSZ)
 #define TICKS_MAX		(UINT64_MAX)
+#define ARR_LEN(a)		(sizeof(a)/sizeof(a[0]))
 
 /* Macro to provide a result of writing value to I/O register with its
  * access mask applied.

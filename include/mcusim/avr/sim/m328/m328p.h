@@ -113,6 +113,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 			/* ---------------- Basic config ------------------- */
 			.tcnt = { IOBYTE(TCNT0) },
 			.disabled = IOBIT(PRR, PRTIM0),
+			.size = 8,
 			/* ------------- Clock select config --------------- */
 			.cs = {
 				IOBIT(TCCR0B, CS00), IOBIT(TCCR0B, CS01),
@@ -188,7 +189,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 					.ocr = { IOBYTE(OCR0A) },
 					.pin = IOBIT(PORTD, PD6),
 					.ddp = IOBIT(DDRD, PD6),
-					.com = IOBITS(TCCR0A, COM0A0, 0x3),
+					.com = IOBITS(TCCR0A, COM0A0, 0x3, 2),
 					.com_op = {
 						[0] = { /* WGM_NORMAL */
 							COM_DISC,
@@ -237,7 +238,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 					.ocr = { IOBYTE(OCR0B) },
 					.pin = IOBIT(PORTD, PD5),
 					.ddp = IOBIT(DDRD, PD5),
-					.com = IOBITS(TCCR0A, COM0B0, 0x3),
+					.com = IOBITS(TCCR0A, COM0B0, 0x3, 2),
 					.com_op = {
 						[0] = { /* WGM_NORMAL */
 							COM_DISC,
@@ -288,6 +289,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 			/* ---------------- Basic config ------------------- */
 			.tcnt = { IOBYTE(TCNT1L), IOBYTE(TCNT1H) },
 			.disabled = IOBIT(PRR, PRTIM1),
+			.size = 16,
 			/* ------------- Clock select config --------------- */
 			.cs = {
 				IOBIT(TCCR1B, CS10), IOBIT(TCCR1B, CS11),
@@ -448,7 +450,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 					},
 					.pin = IOBIT(PORTB, PB1),
 					.ddp = IOBIT(DDRB, PB1),
-					.com = IOBITS(TCCR1A, COM1A0, 0x3),
+					.com = IOBITS(TCCR1A, COM1A0, 0x3, 2),
 					.com_op = {
 						[0] = { /* Normal mode */
 							COM_DISC,
@@ -553,7 +555,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 					},
 					.pin = IOBIT(PORTB, PB2),
 					.ddp = IOBIT(DDRB, PB2),
-					.com = IOBITS(TCCR1A, COM1B0, 0x3),
+					.com = IOBITS(TCCR1A, COM1B0, 0x3, 2),
 					.com_op = {
 						[0] = { /* Normal mode */
 							COM_DISC,
@@ -658,6 +660,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 			/* ---------------- Basic config ------------------- */
 			.tcnt = { IOBYTE(TCNT2) },
 			.disabled = IOBIT(PRR, PRTIM2),
+			.size = 8,
 			/* ------------- Clock select config --------------- */
 			.cs = {
 				IOBIT(TCCR2B, CS20), IOBIT(TCCR2B, CS21),
@@ -733,7 +736,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 					.ocr = { IOBYTE(OCR2A) },
 					.pin = IOBIT(PORTB, PB3),
 					.ddp = IOBIT(DDRB, PB3),
-					.com = IOBITS(TCCR2A, COM2A0, 0x3),
+					.com = IOBITS(TCCR2A, COM2A0, 0x3, 2),
 					.com_op = {
 						[0] = { /* Normal mode */
 							COM_DISC,
@@ -782,7 +785,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 					.ocr = { IOBYTE(OCR2B) },
 					.pin = IOBIT(PORTD, PD3),
 					.ddp = IOBIT(DDRD, PD3),
-					.com = IOBITS(TCCR2A, COM2B0, 0x3),
+					.com = IOBITS(TCCR2A, COM2B0, 0x3, 2),
 					.com_op = {
 						[0] = { /* Normal mode */
 							COM_DISC,

@@ -1,9 +1,9 @@
-/*
- * Copyright (c) 2017, 2018, The MCUSim Contributors
- * All rights reserved.
+--[[
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
+ *
  *     * Redistributions of source code must retain the above copyright
  *       notice, this list of conditions and the following disclaimer.
  *     * Redistributions in binary form must reproduce the above copyright
@@ -12,6 +12,7 @@
  *     * Neither the name of the MCUSim or its parts nor the
  *       names of its contributors may be used to endorse or promote products
  *       derived from this software without specific prior written permission.
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
@@ -23,38 +24,33 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
- * Common data types to work with AVR I/O registers.
- */
-#ifndef MSIM_AVR_IO_H_
-#define MSIM_AVR_IO_H_ 1
+--]]
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+ticks_passed = 0
+check_point = 0			-- TCNT0 is 0 at start, count up to 255 then
+				-- and reset by overflow interrupt
 
-/* I/O register of the AVR microcontroller */
-struct MSIM_AVR_IOReg {
-	char name[16];
-	int32_t off;		/* Register address (in data space) */
-	uint8_t *addr;		/* Pointer to the register in DM */
-	uint8_t reset;		/* Value after MCU reset */
-	uint8_t mask;		/* Access mask (1 - R/W or W, 0 - R) */
-};
+function module_conf(mcu)
+end
 
-/* Helps to access bits of the AVR I/O register:
- *
- *         (DM(reg) >> bit) & mask
- */
-struct MSIM_AVR_IOBit {
-	uint32_t reg;		/* Register address (offset in data space) */
-	uint32_t mask;		/* Bit mask */
-	uint8_t bit;		/* Index of a bit in the register */
-	uint8_t mbits;		/* Number of mask bits */
-};
+function module_tick(mcu)
+	if check_point == 0 and AVR_ReadIO(mcu, TCNT0) == 0 then
+		check_point = check_point + 1
+	elseif check_point == 1 and AVR_ReadIO(mcu, TCNT0) == 255 then
+		check_point = check_point + 1
+	elseif check_point == 2 and AVR_ReadIO(mcu, TCNT0) == 0 then
+		check_point = check_point + 1
+	elseif check_point == 3 and AVR_ReadIO(mcu, TCNT0) == 255 then
+		check_point = check_point + 1
+	elseif check_point == 4 and AVR_ReadIO(mcu, TCNT0) == 64 then
+		-- Test finished successfully
+		MSIM_SetState(mcu, AVR_MSIM_STOP)
+		print("ticks passed: " .. ticks_passed)
+	elseif ticks_passed > 100000 then
+		-- Test failed
+		MSIM_SetState(mcu, AVR_MSIM_TESTFAIL)
+		print("ticks passed: " .. ticks_passed)
+	end
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* MSIM_AVR_IO_H_ */
+	ticks_passed = ticks_passed + 1
+end

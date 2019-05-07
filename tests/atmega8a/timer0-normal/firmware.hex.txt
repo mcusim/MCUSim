@@ -1,0 +1,127 @@
+
+/usr/home/dsl/git/MCUSim/tests/atmega8a/timer0-normal/build/firmware.hex:     file format ihex
+
+
+Disassembly of section .sec1:
+
+00000000 <.sec1>:
+   0:	12 c0       	rjmp	.+36     	;  0x26
+   2:	21 c0       	rjmp	.+66     	;  0x46
+   4:	20 c0       	rjmp	.+64     	;  0x46
+   6:	1f c0       	rjmp	.+62     	;  0x46
+   8:	1e c0       	rjmp	.+60     	;  0x46
+   a:	1d c0       	rjmp	.+58     	;  0x46
+   c:	1c c0       	rjmp	.+56     	;  0x46
+   e:	1b c0       	rjmp	.+54     	;  0x46
+  10:	1a c0       	rjmp	.+52     	;  0x46
+  12:	51 c0       	rjmp	.+162    	;  0xb6
+  14:	18 c0       	rjmp	.+48     	;  0x46
+  16:	17 c0       	rjmp	.+46     	;  0x46
+  18:	16 c0       	rjmp	.+44     	;  0x46
+  1a:	15 c0       	rjmp	.+42     	;  0x46
+  1c:	14 c0       	rjmp	.+40     	;  0x46
+  1e:	13 c0       	rjmp	.+38     	;  0x46
+  20:	12 c0       	rjmp	.+36     	;  0x46
+  22:	11 c0       	rjmp	.+34     	;  0x46
+  24:	10 c0       	rjmp	.+32     	;  0x46
+  26:	11 24       	eor	r1, r1
+  28:	1f be       	out	0x3f, r1	; 63
+  2a:	cf e5       	ldi	r28, 0x5F	; 95
+  2c:	d4 e0       	ldi	r29, 0x04	; 4
+  2e:	de bf       	out	0x3e, r29	; 62
+  30:	cd bf       	out	0x3d, r28	; 61
+  32:	20 e0       	ldi	r18, 0x00	; 0
+  34:	a0 e6       	ldi	r26, 0x60	; 96
+  36:	b0 e0       	ldi	r27, 0x00	; 0
+  38:	01 c0       	rjmp	.+2      	;  0x3c
+  3a:	1d 92       	st	X+, r1
+  3c:	a1 36       	cpi	r26, 0x61	; 97
+  3e:	b2 07       	cpc	r27, r18
+  40:	e1 f7       	brne	.-8      	;  0x3a
+  42:	02 d0       	rcall	.+4      	;  0x48
+  44:	59 c0       	rjmp	.+178    	;  0xf8
+  46:	dc cf       	rjmp	.-72     	;  0x0
+  48:	cf 93       	push	r28
+  4a:	df 93       	push	r29
+  4c:	cd b7       	in	r28, 0x3d	; 61
+  4e:	de b7       	in	r29, 0x3e	; 62
+  50:	02 d0       	rcall	.+4      	;  0x56
+  52:	78 94       	sei
+  54:	ff cf       	rjmp	.-2      	;  0x54
+  56:	cf 93       	push	r28
+  58:	df 93       	push	r29
+  5a:	cd b7       	in	r28, 0x3d	; 61
+  5c:	de b7       	in	r29, 0x3e	; 62
+  5e:	82 e5       	ldi	r24, 0x52	; 82
+  60:	90 e0       	ldi	r25, 0x00	; 0
+  62:	fc 01       	movw	r30, r24
+  64:	10 82       	st	Z, r1
+  66:	89 e5       	ldi	r24, 0x59	; 89
+  68:	90 e0       	ldi	r25, 0x00	; 0
+  6a:	29 e5       	ldi	r18, 0x59	; 89
+  6c:	30 e0       	ldi	r19, 0x00	; 0
+  6e:	f9 01       	movw	r30, r18
+  70:	20 81       	ld	r18, Z
+  72:	21 60       	ori	r18, 0x01	; 1
+  74:	fc 01       	movw	r30, r24
+  76:	20 83       	st	Z, r18
+  78:	83 e5       	ldi	r24, 0x53	; 83
+  7a:	90 e0       	ldi	r25, 0x00	; 0
+  7c:	23 e5       	ldi	r18, 0x53	; 83
+  7e:	30 e0       	ldi	r19, 0x00	; 0
+  80:	f9 01       	movw	r30, r18
+  82:	20 81       	ld	r18, Z
+  84:	2b 7f       	andi	r18, 0xFB	; 251
+  86:	fc 01       	movw	r30, r24
+  88:	20 83       	st	Z, r18
+  8a:	83 e5       	ldi	r24, 0x53	; 83
+  8c:	90 e0       	ldi	r25, 0x00	; 0
+  8e:	23 e5       	ldi	r18, 0x53	; 83
+  90:	30 e0       	ldi	r19, 0x00	; 0
+  92:	f9 01       	movw	r30, r18
+  94:	20 81       	ld	r18, Z
+  96:	22 60       	ori	r18, 0x02	; 2
+  98:	fc 01       	movw	r30, r24
+  9a:	20 83       	st	Z, r18
+  9c:	83 e5       	ldi	r24, 0x53	; 83
+  9e:	90 e0       	ldi	r25, 0x00	; 0
+  a0:	23 e5       	ldi	r18, 0x53	; 83
+  a2:	30 e0       	ldi	r19, 0x00	; 0
+  a4:	f9 01       	movw	r30, r18
+  a6:	20 81       	ld	r18, Z
+  a8:	2e 7f       	andi	r18, 0xFE	; 254
+  aa:	fc 01       	movw	r30, r24
+  ac:	20 83       	st	Z, r18
+  ae:	00 00       	nop
+  b0:	df 91       	pop	r29
+  b2:	cf 91       	pop	r28
+  b4:	08 95       	ret
+  b6:	1f 92       	push	r1
+  b8:	0f 92       	push	r0
+  ba:	00 90 5f 00 	lds	r0, 0x005F	;  0x80005f
+  be:	0f 92       	push	r0
+  c0:	11 24       	eor	r1, r1
+  c2:	8f 93       	push	r24
+  c4:	cf 93       	push	r28
+  c6:	df 93       	push	r29
+  c8:	cd b7       	in	r28, 0x3d	; 61
+  ca:	de b7       	in	r29, 0x3e	; 62
+  cc:	80 91 60 00 	lds	r24, 0x0060	;  0x800060
+  d0:	8f 3f       	cpi	r24, 0xFF	; 255
+  d2:	19 f4       	brne	.+6      	;  0xda
+  d4:	10 92 60 00 	sts	0x0060, r1	;  0x800060
+  d8:	05 c0       	rjmp	.+10     	;  0xe4
+  da:	80 91 60 00 	lds	r24, 0x0060	;  0x800060
+  de:	8f 5f       	subi	r24, 0xFF	; 255
+  e0:	80 93 60 00 	sts	0x0060, r24	;  0x800060
+  e4:	00 00       	nop
+  e6:	df 91       	pop	r29
+  e8:	cf 91       	pop	r28
+  ea:	8f 91       	pop	r24
+  ec:	0f 90       	pop	r0
+  ee:	00 92 5f 00 	sts	0x005F, r0	;  0x80005f
+  f2:	0f 90       	pop	r0
+  f4:	1f 90       	pop	r1
+  f6:	18 95       	reti
+  f8:	f8 94       	cli
+  fa:	ff cf       	rjmp	.-2      	;  0xfa

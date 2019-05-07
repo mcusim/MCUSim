@@ -1,4 +1,4 @@
-/*
+--[[
  * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -24,16 +24,32 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- */
-#define F_CPU		8000000UL
-#include <avr/io.h>
-#include <util/delay.h>
+--]]
 
-int main(void) {
-	DDRB = 0xFF;	// sets PORTB to output
-	PORTB = 0x00;	// sets output pins to low
-	while (1) {
-		PORTB ^= (1<<0);
-		_delay_ms(200);
-	}
-}
+ticks_passed = 0
+check_point = 0
+
+function module_conf(mcu)
+end
+
+function module_tick(mcu)
+	if check_point == 0 and AVR_ReadIO(mcu, TCNT1H) == 0 then
+		check_point = check_point + 1
+	elseif check_point == 1 and AVR_ReadIO(mcu, TCNT1H) == 255 then
+		check_point = check_point + 1
+	elseif check_point == 2 and AVR_ReadIO(mcu, TCNT1H) == 0 then
+		check_point = check_point + 1
+	elseif check_point == 3 and AVR_ReadIO(mcu, TCNT1H) == 255 then
+		check_point = check_point + 1
+	elseif check_point == 4 and AVR_ReadIO(mcu, TCNT1H) == 64 then
+		-- Test finished successfully
+		MSIM_SetState(mcu, AVR_MSIM_STOP)
+		print("ticks passed: " .. ticks_passed)
+	elseif ticks_passed > 1500000 then
+		-- Test failed
+		MSIM_SetState(mcu, AVR_MSIM_TESTFAIL)
+		print("ticks passed: " .. ticks_passed)
+	end
+
+	ticks_passed = ticks_passed + 1
+end

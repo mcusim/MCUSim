@@ -1,8 +1,6 @@
 #define F_CPU			16000000UL
-
 #include <stdint.h>
 #include <avr/io.h>
-#include <util/delay.h>
 #include <avr/interrupt.h>
 
 #define SET_BIT(byte, bit)	((byte)|=(1UL<<(bit)))
@@ -15,31 +13,34 @@
 
 void timer0_init(void);
 
-static volatile unsigned char intn;
+static volatile unsigned char intn = 0;
 
 int main(void)
 {
-	intn = 0;
-
 	timer0_init();
 	sei();
 	while (1) {
 	}
+
 	return 0;
 }
 
 void timer0_init(void)
 {
-	/* External clock source on T0 pin, rising edge. */
-	TCCR0 |= (1<<CS02)|(1<<CS01)|(1<<CS00);
 	TCNT0 = 0;			/* Counter to 0 */
 	TIMSK |= (1<<TOIE0);		/* Enable overflow interrupt */
+
+	/* Clock source is clk_io/8 */
+	TCCR0 &= (uint8_t)(~(1<<CS02));
+	TCCR0 |=  (1<<CS01);
+	TCCR0 &= (uint8_t)(~(1<<CS00));
 }
 
 ISR(TIMER0_OVF_vect)
 {
-	if (intn == 255)
+	if (intn == 255) {
 		intn = 0;
-	else
+	} else {
 		intn++;
+	}
 }

@@ -47,11 +47,13 @@ ISR(TIMER2_OVF_vect)
 {
 	if (ocr2_up) {
 		OCR2 += (unsigned char)5;
-		if (OCR2 == 255)
+		if (OCR2 == 255) {
 			ocr2_up = 0;
+		}
 	} else {
 		OCR2 -= (unsigned char)5;
-		if (OCR2 == 0)
+		if (OCR2 == 0) {
 			ocr2_up = 1;
+		}
 	}
 }

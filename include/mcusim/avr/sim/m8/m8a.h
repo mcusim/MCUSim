@@ -46,7 +46,6 @@
 int MSIM_M8AUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 int MSIM_M8ASetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
-int MSIM_M8APassIRQs(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 int MSIM_M8AResetSPM(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 
 const static struct MSIM_AVR ORIG_M8A = {
@@ -75,7 +74,6 @@ const static struct MSIM_AVR ORIG_M8A = {
 	.set_fusef = MSIM_M8ASetFuse,
 	.set_lockf = MSIM_M8ASetLock,
 	.tick_perf = MSIM_M8AUpdate,
-	.pass_irqs = MSIM_M8APassIRQs,
 	.reset_spm = MSIM_M8AResetSPM,
 	.fuse = { LFUSE_DEFAULT, HFUSE_DEFAULT, 0xFF },
 	.bls = {			/* Bootloader config */
@@ -92,6 +90,7 @@ const static struct MSIM_AVR ORIG_M8A = {
 			/* ---------------- Basic config ------------------- */
 			.tcnt = { IOBYTE(TCNT0) },
 			.disabled = IONOBIT(),
+			.size = 8,
 			/* ------------- Clock select config --------------- */
 			.cs = {
 				IOBIT(TCCR0, CS00), IOBIT(TCCR0, CS01),
@@ -119,6 +118,7 @@ const static struct MSIM_AVR ORIG_M8A = {
 			/* ---------------- Basic config ------------------- */
 			.tcnt = { IOBYTE(TCNT1L), IOBYTE(TCNT1H) },
 			.disabled = IONOBIT(),
+			.size = 16,
 			/* ------------- Clock select config --------------- */
 			.cs = {
 				IOBIT(TCCR1B, CS10), IOBIT(TCCR1B, CS11),
@@ -271,7 +271,7 @@ const static struct MSIM_AVR ORIG_M8A = {
 					},
 					.pin = IOBIT(PORTB, PB1),
 					.ddp = IOBIT(DDRB, PB1),
-					.com = IOBITS(TCCR1A, COM1A0, 0x3),
+					.com = IOBITS(TCCR1A, COM1A0, 0x3, 2),
 					.com_op = {
 						[0] = {
 							COM_DISC,
@@ -376,7 +376,7 @@ const static struct MSIM_AVR ORIG_M8A = {
 					},
 					.pin = IOBIT(PORTB, PB2),
 					.ddp = IOBIT(DDRB, PB2),
-					.com = IOBITS(TCCR1A, COM1B0, 0x3),
+					.com = IOBITS(TCCR1A, COM1B0, 0x3, 2),
 					.com_op = {
 						[0] = {
 							COM_DISC,
@@ -481,6 +481,7 @@ const static struct MSIM_AVR ORIG_M8A = {
 			/* ---------------- Basic config ------------------- */
 			.tcnt = { IOBYTE(TCNT2) },
 			.disabled = IONOBIT(),
+			.size = 8,
 			/* ------------- Clock select config --------------- */
 			.cs = {
 				IOBIT(TCCR2, CS20), IOBIT(TCCR2, CS21),
@@ -535,7 +536,7 @@ const static struct MSIM_AVR ORIG_M8A = {
 					.ocr = { IOBYTE(OCR2) },
 					.pin = IOBIT(PORTB, PB3),
 					.ddp = IOBIT(DDRB, PB3),
-					.com = IOBITS(TCCR2, COM20, 0x3),
+					.com = IOBITS(TCCR2, COM20, 0x3, 2),
 					.com_op = {
 						[0] = {
 							COM_DISC,

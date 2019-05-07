@@ -38,6 +38,7 @@
 #include "mcusim/config.h"
 #include "mcusim/bit/private/macro.h"
 #include "mcusim/avr/sim/private/macro.h"
+#include "mcusim/avr/sim/private/io_macro.h"
 
 /* Configuration file (default name). */
 #define CFG_FILE		"mcusim.conf"
@@ -57,6 +58,7 @@
 typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 
 /* Function to process interrupt request according to the order */
+static int pass_irqs(struct MSIM_AVR *mcu);
 static int handle_irq(struct MSIM_AVR *mcu);
 /* Function to setup AVR instance. */
 static int setup_avr(struct MSIM_AVR *mcu, const char *mcu_name,
@@ -102,8 +104,6 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint8_t frm_test)
 		}
 	}
 	if (frm_test) {
-		/* Force MCU to run in a firmware-test mode. */
-		MSIM_LOG_DEBUG("running in a firmware test mode");
 		mcu->state = AVR_RUNNING;
 	}
 
@@ -136,17 +136,15 @@ int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 		if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_STOP)) {
 			if (MSIM_LOG_ISDEBUG) {
 				snprintf(mcu->log, sizeof mcu->log,
-				         "simulation terminated because of "
-				         "stopped mcu, pc=0x%06" PRIX32,
-				         mcu->pc);
+				         "simulation terminated (stopped mcu),"
+				         " pc=0x%06" PRIX32, mcu->pc);
 				MSIM_LOG_DEBUG(mcu->log);
 			}
 			rc = 2;
 			break;
 		}
 		if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_TESTFAIL)) {
-			MSIM_LOG_WARN("simulation terminated because of a "
-			              "failed test");
+			MSIM_LOG_WARN("simulation terminated (failed test)");
 			rc = 1;
 			break;
 		}
@@ -162,6 +160,9 @@ int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 			rc = 1;
 			break;
 		}
+
+		/* Update timers */
+		MSIM_AVR_TMRUpdate(mcu);
 
 		/* Tick MCU periferals.
 		 *
@@ -232,18 +233,16 @@ int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 			break;
 		}
 
-		/* Provide IRQs based on the MCU flags and handle them if this
-		 * is possible.
+		/* Provide and handle IRQs.
 		 *
 		 * It's important to understand an interrupt may occur during
 		 * execution of a multi-cycle instruction. This instruction
 		 * is completed before the interrupt is served (according to
-		 * the multiple AVR datasheets). It means that we may provide
-		 * IRQs, but will have to wait required number of cycles
-		 * to serve them. */
-		if (mcu->pass_irqs != NULL) {
-			mcu->pass_irqs(mcu, &cnf);
-		}
+		 * the multiple AVR datasheets).
+		 *
+		 * It means that we may provide IRQs, but will have to wait
+		 * required number of cycles to serve them. */
+		pass_irqs(mcu);
 		if (READ_SREG(mcu, SR_GLOBINT) &&
 		                (!mcu->ic_left) && (!mcu->intr.exec_main) &&
 		                (mcu->state == AVR_RUNNING ||
@@ -267,11 +266,9 @@ int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 		 * if compiler supports "unsigned long long" type). */
 		if ((*tick) == TICKS_MAX) {
 			*tick_ovf = 1;
-			MSIM_LOG_WARN("maximum amount of simulation ticks "
-			              "reached");
+			MSIM_LOG_WARN("maximum amount of ticks reached");
 			if (vcd->dump != NULL) {
-				MSIM_LOG_WARN("VCD dump will not be recorded "
-				              "further");
+				MSIM_LOG_WARN("recording VCD stopped");
 			}
 		} else {
 			(*tick)++;
@@ -294,7 +291,7 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
 	rc = MSIM_CFG_Read(conf, conf_file);
 	if (rc != 0) {
 		if (conf_file != NULL) {
-			snprintf(LOG, LOGSZ, "failed to open config file: %s",
+			snprintf(LOG, LOGSZ, "failed to open config: %s",
 			         conf_file);
 			MSIM_LOG_ERROR(LOG);
 		}
@@ -305,18 +302,16 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
 			/* Try to load a system-wide file at least. */
 			rc = MSIM_CFG_Read(conf, MSIM_CFG_FILE);
 			if (rc != 0) {
-				MSIM_LOG_ERROR("can't load any configuration "
-				               "file");
+				MSIM_LOG_ERROR("can't load any configuration");
 				rc = 1;
 			} else {
-				MSIM_LOG_INFO("using config file: "
-				              MSIM_CFG_FILE);
+				MSIM_LOG_INFO("using config: " MSIM_CFG_FILE);
 			}
 		} else {
-			MSIM_LOG_INFO("using config file: " CFG_FILE);
+			MSIM_LOG_INFO("using config: " CFG_FILE);
 		}
 	} else {
-		snprintf(LOG, LOGSZ, "using config file: %s", conf_file);
+		snprintf(LOG, LOGSZ, "using config: %s", conf_file);
 		MSIM_LOG_INFO(LOG);
 	}
 
@@ -333,20 +328,18 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
 				fp = fopen(conf->firmware_file, "r");
 				if (fp == NULL) {
 					snprintf(LOG, LOGSZ, "failed to read "
-					         "firmware file: %s",
+					         "firmware: %s",
 					         conf->firmware_file);
 					MSIM_LOG_FATAL(LOG);
 					rc = 1;
 					break;
 				} else {
-					snprintf(LOG, LOGSZ, "firmware file "
-					         "used: %s",
+					snprintf(LOG, LOGSZ, "firmware: %s",
 					         conf->firmware_file);
 					MSIM_LOG_INFO(LOG);
 				}
 			} else {
-				MSIM_LOG_FATAL("no firmware file specified in "
-				               "the config file");
+				MSIM_LOG_FATAL("missing firmware in config");
 				rc = 1;
 				break;
 			}
@@ -360,28 +353,25 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
 					fp = fopen(conf->firmware_file, "r");
 					if (fp == NULL) {
 						snprintf(LOG, LOGSZ, "failed "
-						         "to read firmware "
-						         "file: %s",
+						         "to read: %s",
 						         conf->firmware_file);
 						MSIM_LOG_FATAL(LOG);
 						rc = 1;
 						break;
 					} else {
 						snprintf(LOG, LOGSZ, "using "
-						         "firmware file: %s",
+						         "firmware: %s",
 						         conf->firmware_file);
 						MSIM_LOG_INFO(LOG);
 					}
 				} else {
-					MSIM_LOG_FATAL("no firmware file "
-					               "specified in the "
-					               "configuration");
+					MSIM_LOG_FATAL("missing firmware in "
+					               "config");
 					rc = 1;
 					break;
 				}
 			} else {
-				MSIM_LOG_DEBUG("using firmware file: "
-				               FLASH_FILE);
+				MSIM_LOG_DEBUG("using firmware: " FLASH_FILE);
 			}
 		}
 
@@ -390,8 +380,8 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
 		if (setup_avr(mcu, conf->mcu, NULL,
 		                MSIM_AVR_PMSZ, NULL,
 		                MSIM_AVR_DMSZ, NULL, fp) != 0) {
-			snprintf(LOG, LOGSZ, "MCU model %s cannot be "
-			         "initialized", conf->mcu);
+			snprintf(LOG, LOGSZ, "%s can't be initialized",
+			         conf->mcu);
 			MSIM_LOG_FATAL(LOG);
 			rc = 1;
 			break;
@@ -515,8 +505,8 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
 		if (vcd->regs[0].i >= 0) {
 			rc = MSIM_AVR_VCDOpen(mcu);
 			if (rc != 0) {
-				snprintf(LOG, LOGSZ, "failed to open a VCD "
-				         "file %s", vcd->dump_file);
+				snprintf(LOG, LOGSZ, "failed to open VCD: %s",
+				         vcd->dump_file);
 				MSIM_LOG_FATAL(LOG);
 				rc = 1;
 				break;
@@ -525,7 +515,7 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
 
 		/* Force MCU to run in a firmware-test mode. */
 		if (conf->firmware_test == 1U) {
-			MSIM_LOG_DEBUG("running in a firmware test mode");
+			MSIM_LOG_DEBUG("running in \"firmware test\" mode");
 			mcu->state = AVR_RUNNING;
 		}
 	} while (0);
@@ -560,14 +550,13 @@ static int setup_avr(struct MSIM_AVR *mcu, const char *mcu_name,
 	}
 
 	if (!mcu_found) {
-		snprintf(log, sizeof log, "MCU model is not supported: %s",
-		         mcu_name);
+		snprintf(log, sizeof log, "MCU not supported: %s", mcu_name);
 		MSIM_LOG_FATAL(log);
 		return -1;
 	}
 
 	if (load_progmem(mcu, fp)) {
-		MSIM_LOG_FATAL("program memory cannot be loaded from a file");
+		MSIM_LOG_FATAL("program memory can't be loaded from a file");
 		return -1;
 	}
 	mcu->state = AVR_STOPPED;
@@ -582,7 +571,7 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 	uint8_t *pm;
 
 	if (fp == NULL) {
-		MSIM_LOG_FATAL("cannot read program memory from a file");
+		MSIM_LOG_FATAL("can't read program memory from a file");
 		return -1;
 	}
 
@@ -695,14 +684,64 @@ static int handle_irq(struct MSIM_AVR *mcu)
 	return ret;
 }
 
+static int pass_irqs(struct MSIM_AVR *mcu)
+{
+	struct MSIM_AVR_TMR *tmr;
+	struct MSIM_AVR_TMR_COMP *comp;
+	uint32_t en, rai;
+	int rc = 0;
+
+	/* Pass interrupts of the timers */
+	for (uint32_t i = 0; i < MSIM_AVR_MAXTMRS; i++) {
+		tmr = &mcu->timers[i];
+		if (IS_IONOBITA(tmr->tcnt)) {
+			break;
+		}
+
+		/* Timer's owm interrupts */
+		struct MSIM_AVR_INTVec *vec[] = { &tmr->iv_ovf, &tmr->iv_ic };
+		for (uint32_t k = 0; k < ARR_LEN(vec); k++) {
+			if (IS_NOINTV(vec[k])) {
+				break;
+			}
+
+			en = IOBIT_RD(mcu, &vec[k]->enable);
+			rai = IOBIT_RD(mcu, &vec[k]->raised);
+			if ((en == 1U) && (rai == 1U)) {
+				mcu->intr.irq[vec[k]->vector-1] = 1;
+				IOBIT_WR(mcu, &vec[k]->raised, 0);
+			}
+		}
+
+		/* Interrupts of the output compare channels */
+		for (uint32_t k = 0; k < ARR_LEN(tmr->comp); k++) {
+			comp = &tmr->comp[k];
+			if (IS_NOCOMP(comp)) {
+				break;
+			}
+			if (IS_NOINTV(&comp->iv)) {
+				break;
+			}
+
+			en = IOBIT_RD(mcu, &comp->iv.enable);
+			rai = IOBIT_RD(mcu, &comp->iv.raised);
+			if ((en == 1U) && (rai == 1U)) {
+				mcu->intr.irq[comp->iv.vector-1] = 1;
+				IOBIT_WR(mcu, &comp->iv.raised, 0);
+			}
+		}
+	}
+
+	return rc;
+}
+
 static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val)
 {
 	struct MSIM_AVRConf cnf;
 	int rc = 0;
 
 	if (m->set_fusef == NULL) {
-		MSIM_LOG_WARN("cannot modify fuse (MCU-specific function is "
-		              "not available)");
+		MSIM_LOG_WARN("can't write fuse");
 	} else {
 		cnf.fuse_n = fuse;
 		cnf.fuse_v = val;
@@ -718,8 +757,7 @@ static int set_lock(struct MSIM_AVR *m, uint8_t val)
 	int rc = 0;
 
 	if (m->set_lockf == NULL) {
-		MSIM_LOG_WARN("cannot modify lock bits (MCU-specific function "
-		              "is not available)");
+		MSIM_LOG_WARN("can't write lock bits");
 	} else {
 		cnf.lock_v = val;
 		m->set_lockf(m, &cnf);
@@ -745,19 +783,18 @@ static void print_config(struct MSIM_AVR *m)
 	         m->name, m->signature[0], m->signature[1], m->signature[2]);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "clock: %" PRIu32 ".%" PRIu32
-	         " kHz", m->freq/1000, m->freq%1000);
+	snprintf(m->log, LOGSZ, "clock: %" PRIu32 ".%" PRIu32 " kHz",
+	         m->freq/1000, m->freq%1000);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "fuses: EXT=0x%02X, HIGH=0x%02X, "
-	         "LOW=0x%02X", m->fuse[2], m->fuse[1], m->fuse[0]);
+	snprintf(m->log, LOGSZ, "fuses: EXT=0x%02X, HIGH=0x%02X, LOW=0x%02X",
+	         m->fuse[2], m->fuse[1], m->fuse[0]);
 	MSIM_LOG_INFO(m->log);
 
 	snprintf(m->log, LOGSZ, "lock: 0x%02X", m->lockbits);
 	MSIM_LOG_INFO(m->log);
 
-	snprintf(m->log, LOGSZ, "reset vector: 0x%06" PRIX64,
-	         reset_pc);
+	snprintf(m->log, LOGSZ, "reset vector: 0x%06" PRIX64, reset_pc);
 	MSIM_LOG_INFO(m->log);
 
 	snprintf(m->log, LOGSZ, "interrupt vectors: 0x%06" PRIX64, ivt);

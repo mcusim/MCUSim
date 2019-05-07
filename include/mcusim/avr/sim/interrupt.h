@@ -59,9 +59,10 @@ struct MSIM_AVR_INT {
 
 /* Interrupt vector */
 struct MSIM_AVR_INTVec {
-	struct MSIM_AVR_IOBit enable;
-	struct MSIM_AVR_IOBit raised;
-	uint8_t vector;
+	struct MSIM_AVR_IOBit enable;	/* Interrupt "enabled" flag */
+	struct MSIM_AVR_IOBit raised;	/* Interrupt flag */
+	uint8_t vector;			/* Interrupt address (in IVT) */
+	uint8_t pending;		/* Pending interrupt flag */
 };
 
 #ifdef __cplusplus

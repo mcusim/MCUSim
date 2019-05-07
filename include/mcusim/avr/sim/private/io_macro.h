@@ -31,34 +31,34 @@
 #define MSIM_AVR_IO_MACRO_H_ 1
 
 #include <inttypes.h>
+#include <math.h>
 
 #include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/private/macro.h"
 
-#define IOBIT(_io, _bit)	 { .reg=(_io), .bit=(_bit), .mask=1 }
-#define IOBITS(_io, _bit, _mask) { .reg=(_io), .bit=(_bit), .mask=(_mask) }
-#define IOBYTE(_io)		 { .reg=(_io), .bit=0, .mask=0xFF }
-#define IONOBIT()		 { .reg=0, .bit=0, .mask=0 }
-#define IONOBYTE()		 { .reg=0, .bit=0, .mask=0 }
-#define NB			 IONOBIT()
-#define IONOBITA()		 { NB }
-#define IONOBYTEA()		 { NB }
-#define NOWGM()			 { .top=0, .bottom=0, .size=0, .kind=0 }
-#define NOINTV()		 { .enable=IONOBIT(), .raised=IONOBIT(), \
-				   .vector=0 }
-#define NOCOMP()		 { .owner=0, .com=IONOBIT(), .pin=IONOBIT(), \
-				   .iv=NOINTV(), .ocr=IONOBITA() }
-#define NOWGMA()		 { NOWGM() }
-#define NOINTVA()		 { NOINTV() }
-#define NOCOMPA()		 { NOCOMP() }
-
+#define IOBIT(io, b)		{ .reg=(io), .bit=(b), .mask=1, .mbits=1 }
+#define IOBITS(io, b, m, mb)	{ .reg=(io), .bit=(b), .mask=(m), .mbits=(mb) }
+#define IOBYTE(io)		{ .reg=(io), .bit=0, .mask=0xFF, .mbits=8 }
+#define IONOBIT()		{ .reg=0, .bit=0, .mask=0, .mbits=0 }
+#define IONOBYTE()		{ .reg=0, .bit=0, .mask=0, .mbits=0 }
+#define NB			IONOBIT()
+#define IONOBITA()		{ NB }
+#define IONOBYTEA()		{ NB }
+#define NOWGM()			{ .top=0, .bottom=0, .size=0, .kind=0 }
+#define NOWGMA()		{ NOWGM() }
+#define NOINTV()		{ .enable=NB, .raised=NB, .vector=0 }
+#define NOINTVA()		{ NOINTV() }
+#define NOCOMP()		{ .com=NB, .pin=NB, .iv=NOINTV(), .ocr={ NB } }
+#define NOCOMPA()		{ NOCOMP() }
 /* When to update buffered values */
 #define UPD_ATNONE		MSIM_AVR_TMR_UPD_ATNONE
 #define UPD_ATMAX		MSIM_AVR_TMR_UPD_ATMAX
 #define UPD_ATTOP		MSIM_AVR_TMR_UPD_ATTOP
 #define UPD_ATBOTTOM		MSIM_AVR_TMR_UPD_ATBOTTOM
 #define UPD_ATIMMEDIATE		MSIM_AVR_TMR_UPD_ATIMMEDIATE
-
+/* Timer count direction */
+#define CNT_UP			MSIM_AVR_TMR_CNTUP
+#define CNT_DOWN		MSIM_AVR_TMR_CNTDOWN
 /* Waveform generation mode */
 #define WGM_NONE		MSIM_AVR_TMR_WGM_None
 #define WGM_NORMAL		MSIM_AVR_TMR_WGM_Normal
@@ -67,7 +67,6 @@
 #define WGM_FASTPWM		MSIM_AVR_TMR_WGM_FastPWM
 #define WGM_PCPWM		MSIM_AVR_TMR_WGM_PCPWM
 #define WGM_PFCPWM		MSIM_AVR_TMR_WGM_PFCPWM
-
 /* Output compare pin action. */
 #define COM_DISC		MSIM_AVR_TMR_COM_DISC
 #define COM_TGONCM		MSIM_AVR_TMR_COM_TGONCM
@@ -78,42 +77,66 @@
 #define	COM_CLONUP_STONDOWN	MSIM_AVR_TMR_COM_CLONUP_STONDOWN
 #define	COM_STONUP_CLONDOWN	MSIM_AVR_TMR_COM_STONUP_CLONDOWN
 
-#define IS_IONOBIT(b)	((b.reg==0U)&&(b.bit==0U)&&(b.mask==0U))
-#define IS_IONOBYTE(b)	((b.reg==0U)&&(b.bit==0U)&&(b.mask==0U))
+#define IS_IONOBIT(b)		(((b).reg==0U)&&((b).bit==0U)&&((b).mask==0U))
+#define IS_IONOBYTE(b)		(((b).reg==0U)&&((b).bit==0U)&&((b).mask==0U))
+#define IS_IONOBITA(v)		(IS_IONOBIT((v)[0]))
+#define IS_IONOBYTEA(v)		(IS_IONOBYTE((v)[0]))
+#define IS_NOCOMP(v)		(IS_IONOBIT((v)->com) &&		\
+				 IS_IONOBIT((v)->pin) &&		\
+				 IS_IONOBIT((v)->ocr[0]) &&		\
+				 IS_IONOBIT((v)->iv.enable) &&		\
+				 IS_IONOBIT((v)->iv.raised))
+#define IS_NOINTV(v)		(IS_IONOBIT((v)->enable) &&		\
+				 IS_IONOBIT((v)->raised))
 
-/* Macro to warn if a bit doesn't belong to the actual I/O register. */
-#ifdef DEBUG
-#define WARN_IF_NOTIO(b) do {						\
-	if (!IS_IO(mcu, b.reg)) {					\
-		snprintf(LOG, LOGSZ, "not I/O register: 0x%04"		\
-		         PRIX32, b.reg);				\
-		MSIM_LOG_DEBUG(LOG);					\
-	}								\
-} while (0)
-#else
-#define WARN_IF_NOTIO(b) do {						\
-} while (0)
-#endif
-
-/* Read bit/bits of the AVR I/O register. */
-static inline uint8_t IOBIT_RD(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit b)
+/* Read bits of the AVR I/O register. */
+static inline uint32_t IOBIT_RD(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *b)
 {
-	WARN_IF_NOTIO(b);
-
-	return (DM(b.reg) >> b.bit) & b.mask;
+	return (DM(b->reg) >> b->bit) & b->mask;
 }
 
-/* Write bit/bits of the AVR I/O register */
-static inline uint8_t IOBIT_WR(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit b,
-                               uint8_t v)
+/* Read an array of bits of the AVR I/O registers. */
+static inline uint32_t IOBIT_RDA(struct MSIM_AVR *mcu,
+                                 struct MSIM_AVR_IOBit *bit, uint32_t len)
 {
-	WARN_IF_NOTIO(b);
+	uint32_t r = 0;		/* Result */
+	uint8_t mb = 0;		/* Mask bits */
 
-	uint32_t m = b.mask << b.bit;
-	uint8_t val = ((uint8_t)(v << b.bit)) & m;
-	WRITE_DS(b.reg, (DM(b.reg) & (~m)) | val);
+	/* Iterate all bits (and masked bits) */
+	for (uint32_t i = 0; i < len; i++) {
+		if (IS_IONOBIT(bit[i])) {
+			break;
+		}
+		r |= (uint32_t)(IOBIT_RD(mcu, &bit[i]) << mb);
+		mb += bit[i].mbits;
+	}
 
-	return (DM(b.reg) >> b.bit) & b.mask;
+	return r;
+}
+
+/* Write bits of the AVR I/O register. */
+static inline void IOBIT_WR(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *b,
+                            uint32_t v)
+{
+	uint32_t m = b->mask << b->bit;
+	uint8_t val = ((uint8_t)(v << b->bit)) & m;
+
+	WRITE_DS(b->reg, (DM(b->reg) & (~m)) | val);
+}
+
+/* Write an array of bits of the AVR I/O registers. */
+static inline void IOBIT_WRA(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *bit,
+                             uint32_t len, uint32_t v)
+{
+	uint32_t mb = 0;	/* Mask bits */
+
+	for (uint32_t i = 0; i < len; i++) {
+		if (IS_IONOBIT(bit[i])) {
+			break;
+		}
+		IOBIT_WR(mcu, &bit[i], ((v>>mb) & bit[i].mask));
+		mb += bit[i].mbits;
+	}
 }
 
 #endif /* MSIM_AVR_IO_MACRO_H_ */

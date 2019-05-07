@@ -82,12 +82,18 @@ enum {
 	MSIM_AVR_TMR_COM_STONUP_CLONDOWN,
 };
 
+/* Timer count direction */
+enum {
+	MSIM_AVR_TMR_CNTUP = 0,
+	MSIM_AVR_TMR_CNTDOWN,
+};
+
 /* Waveform generation mode descriptor */
 struct MSIM_AVR_TMR_WGM {
 	uint8_t kind;				/* WGM type */
 	uint8_t size;				/* Size, in bits */
 	struct MSIM_AVR_IOBit rtop[4];		/* Register as TOP value */
-	int32_t top;				/* Fixed TOP value */
+	uint32_t top;				/* Fixed TOP value */
 	uint32_t bottom;			/* Fixed BOTTOM value */
 	uint8_t updocr_at;			/* Update OCR at */
 	uint8_t settov_at;			/* Set TOV at */
@@ -95,10 +101,10 @@ struct MSIM_AVR_TMR_WGM {
 
 /* Comparator module */
 struct MSIM_AVR_TMR_COMP {
-	struct MSIM_AVR_TMR *owner;		/* Parent timer */
 	struct MSIM_AVR_IOBit ocr[4];		/* Comparator register */
 	struct MSIM_AVR_IOBit pin;		/* Pin to output waveform */
 	struct MSIM_AVR_IOBit ddp;		/* Data direction for pin */
+	uint32_t ocr_buf;			/* Buffered value of OCR */
 
 	struct MSIM_AVR_IOBit com;		/* Comparator output mode */
 	uint8_t com_op[16][16];			/* mode: [WGM][COM] */
@@ -110,10 +116,13 @@ struct MSIM_AVR_TMR_COMP {
 struct MSIM_AVR_TMR {
 	struct MSIM_AVR_IOBit tcnt[4];		/* Timer counter */
 	struct MSIM_AVR_IOBit disabled;		/* "disabled" bit */
+	uint32_t scnt;				/* System clock counter */
+	uint8_t cnt_dir;			/* Count direction */
+	uint8_t size;				/* Resolution, in bits */
 
 	struct MSIM_AVR_IOBit cs[4];		/* Clock source */
 	uint8_t cs_div[16];			/* CS bits to prescaler */
-	uint32_t cs_dival;			/* Current prescaler */
+	uint32_t presc;				/* Current prescaler */
 
 	struct MSIM_AVR_IOBit ec_pin;		/* External clock pin */
 	uint8_t ec_vold;			/* Old value of the ec pin */
@@ -121,7 +130,8 @@ struct MSIM_AVR_TMR {
 
 	struct MSIM_AVR_IOBit wgm[4];		/* Waveform generation mode */
 	struct MSIM_AVR_TMR_WGM wgm_op[16];	/* WGM types */
-	uint8_t wgm_mode;			/* Current WGM type (index) */
+	struct MSIM_AVR_TMR_WGM *wgmval;	/* Current WGM type */
+	int32_t wgmi;				/* Current WGM type (index) */
 
 	struct MSIM_AVR_IOBit icr[4];		/* Input capture register */
 	struct MSIM_AVR_IOBit icp;		/* Input capture pin */
@@ -133,7 +143,7 @@ struct MSIM_AVR_TMR {
 	struct MSIM_AVR_TMR_COMP comp[16];	/* Output compare channels */
 };
 
-int MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr);
+int MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu);
 
 #ifdef __cplusplus
 }
