@@ -92,11 +92,13 @@ enum {
 struct MSIM_AVR_TMR_WGM {
 	uint8_t kind;				/* WGM type */
 	uint8_t size;				/* Size, in bits */
-	struct MSIM_AVR_IOBit rtop[4];		/* Register as TOP value */
 	uint32_t top;				/* Fixed TOP value */
 	uint32_t bottom;			/* Fixed BOTTOM value */
 	uint8_t updocr_at;			/* Update OCR at */
 	uint8_t settov_at;			/* Set TOV at */
+
+	struct MSIM_AVR_IOBit rtop[4];		/* Register as TOP value */
+	uint32_t rtop_buf;
 };
 
 /* Comparator module */
@@ -136,6 +138,7 @@ struct MSIM_AVR_TMR {
 	struct MSIM_AVR_IOBit icr[4];		/* Input capture register */
 	struct MSIM_AVR_IOBit icp;		/* Input capture pin */
 	struct MSIM_AVR_IOBit ices[4];		/* Input capture edge select */
+	uint8_t icpval;
 
 	struct MSIM_AVR_INTVec iv_ovf;		/* Overflow */
 	struct MSIM_AVR_INTVec iv_ic;		/* Input capture */

@@ -88,6 +88,8 @@
 				 IS_IONOBIT((v)->iv.raised))
 #define IS_NOINTV(v)		(IS_IONOBIT((v)->enable) &&		\
 				 IS_IONOBIT((v)->raised))
+#define IS_NOWGM(v)		(((v)->top==0U) && ((v)->bottom==0U) &&	\
+				 ((v)->size==0U) && ((v)->kind==0U))
 
 /* Read bits of the AVR I/O register. */
 static inline uint32_t IOBIT_RD(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *b)
@@ -137,6 +139,37 @@ static inline void IOBIT_WRA(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *bit,
 		IOBIT_WR(mcu, &bit[i], ((v>>mb) & bit[i].mask));
 		mb += bit[i].mbits;
 	}
+}
+
+/* Compare two definitions of the AVR I/O bits (but not their values!) */
+static inline uint8_t IOBIT_CMP(struct MSIM_AVR_IOBit *b0,
+                                struct MSIM_AVR_IOBit *b1)
+{
+	return (uint8_t)((b0->reg==b1->reg) &&
+	                 (b0->bit==b1->bit) &&
+	                 (b0->mask==b1->mask) &&
+	                 (b0->mbits==b1->mbits)) ? 0U : 1U;
+}
+
+static inline uint8_t IOBIT_CMPA(struct MSIM_AVR_IOBit *b0,
+                                 struct MSIM_AVR_IOBit *b1, uint32_t count)
+{
+	uint8_t rc = 1; /* Not equal by default */
+
+	do {
+		if (count == 0U) {
+			rc = 0;
+			break;
+		}
+		for (uint32_t i = 0; i < count; i++) {
+			rc = IOBIT_CMP(&b0[i], &b1[i]);
+			if (rc != 0U) {
+				break;
+			}
+		}
+	} while (0);
+
+	return rc;
 }
 
 #endif /* MSIM_AVR_IO_MACRO_H_ */

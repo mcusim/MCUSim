@@ -25,8 +25,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Test to check fastpwm mode of ATmega8A's Timer/Counter1.
-#
 cmake_minimum_required(VERSION 3.2)
 project(mcusim-test-atmega328-toggle-pin)
 
