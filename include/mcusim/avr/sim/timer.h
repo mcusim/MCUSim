@@ -64,6 +64,7 @@ enum {
 	MSIM_AVR_TMR_UPD_ATTOP,			/* At TOP value */
 	MSIM_AVR_TMR_UPD_ATBOTTOM,		/* At BOTTOM value */
 	MSIM_AVR_TMR_UPD_ATIMMEDIATE,		/* Immediately */
+	MSIM_AVR_TMR_UPD_ATCM,			/* At Compare Match */
 };
 
 /* Output compare pin action. */

@@ -53,14 +53,15 @@
 };
 
 static int update_timer(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static void mode_nonpwm(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
+static void mode_nonpwm_fastpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr);
+static void mode_pcpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr);
 static void update_ocr_buffers(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
 static int update_ocr_buffer(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
                              uint32_t);
 static void int_reset_pending(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
 static void int_raise_pending(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
 static void trigger_oc_pin(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
-                           struct MSIM_AVR_TMR_COMP *);
+                           struct MSIM_AVR_TMR_COMP *, uint8_t);
 static void update_wgm_buffers(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
 static int update_wgm_buffer(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
                              uint32_t);
@@ -148,7 +149,11 @@ static int update_timer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 		switch (tmr->wgmval->kind) {
 		case WGM_NORMAL:
 		case WGM_CTC:
-			mode_nonpwm(mcu, tmr);
+		case WGM_FASTPWM:
+			mode_nonpwm_fastpwm(mcu, tmr);
+			break;
+		case WGM_PCPWM:
+			mode_pcpwm(mcu, tmr);
 			break;
 		default:
 			break;
@@ -161,13 +166,13 @@ static int update_timer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 	return rc;
 }
 
-static void mode_nonpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
+static void mode_nonpwm_fastpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
 	struct MSIM_AVR_TMR_WGM *wgm = tmr->wgmval;
 	struct MSIM_AVR_TMR_COMP *comp;
+	uint32_t tcnt = IOBIT_RDA(mcu, tmr->tcnt, ARR_LEN(tmr->tcnt));
 	uint32_t ocr, top;
 	uint32_t icp, ices;
-	uint32_t tcnt = IOBIT_RDA(mcu, tmr->tcnt, ARR_LEN(tmr->tcnt));
 
 	/* Raise pending interrupts */
 	int_raise_pending(mcu, tmr);
@@ -227,7 +232,9 @@ static void mode_nonpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 				/* Compare match. Interrupt flag should be set
 				 * at the next timer clock cycle! */
 				comp->iv.pending = 1;
-				trigger_oc_pin(mcu, tmr, comp);
+
+				/* Trigger OC pin at Compare Match */
+				trigger_oc_pin(mcu, tmr, comp, UPD_ATCM);
 			}
 		}
 
@@ -241,6 +248,15 @@ static void mode_nonpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 				update_ocr_buffers(mcu, tmr);
 				update_wgm_buffers(mcu, tmr);
 			}
+
+			/* Trigger OC pin at BOTTOM */
+			for (uint32_t i = 0; i < ARR_LEN(tmr->comp); i++) {
+				comp = &tmr->comp[i];
+				if (IS_NOCOMP(comp)) {
+					break;
+				}
+				trigger_oc_pin(mcu, tmr, comp, UPD_ATBOTTOM);
+			}
 		} else {
 			tcnt++;
 		}
@@ -250,9 +266,72 @@ static void mode_nonpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 	}
 }
 
-static void trigger_oc_pin(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
-                           struct MSIM_AVR_TMR_COMP *comp)
+static void mode_pcpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
+}
+
+static void trigger_oc_pin(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
+                           struct MSIM_AVR_TMR_COMP *comp, uint8_t at)
+{
+	int32_t wgmi = tmr->wgmi;
+	uint32_t com = IOBIT_RD(mcu, &comp->com);
+	uint32_t ddp = IOBIT_RD(mcu, &comp->ddp); /* Data direction (pin) */
+	uint8_t com_op = comp->com_op[wgmi][com]; /* Current COMP operation */
+
+	do {
+		if (ddp == 0U) {
+			break;
+		}
+
+		if (tmr->cnt_dir == CNT_UP) {
+			if (at == UPD_ATCM) {
+				switch (com_op) {
+				case COM_TGONCM:
+					IOBIT_TG(mcu, &comp->pin);
+					break;
+				case COM_CLONCM:
+				case COM_CLONCM_STATBOT:
+				case COM_CLONUP_STONDOWN:
+					IOBIT_WR(mcu, &comp->pin, 0);
+					break;
+				case COM_STONCM:
+				case COM_STONCM_CLATBOT:
+				case COM_STONUP_CLONDOWN:
+					IOBIT_WR(mcu, &comp->pin, 1);
+					break;
+				case COM_DISC:
+				default:
+					break;
+				}
+			} else if (at == UPD_ATBOTTOM) {
+				switch (com_op) {
+				case COM_CLONCM_STATBOT:
+					IOBIT_WR(mcu, &comp->pin, 1);
+					break;
+				case COM_STONCM_CLATBOT:
+					IOBIT_WR(mcu, &comp->pin, 0);
+					break;
+				default:
+					break;
+				}
+			} else {
+				/* Nothing to be toggled in this case */
+			}
+		} else if (at == UPD_ATCM) { /* Down counting */
+			switch (com_op) {
+			case COM_CLONUP_STONDOWN:
+				IOBIT_WR(mcu, &comp->pin, 1);
+				break;
+			case COM_STONUP_CLONDOWN:
+				IOBIT_WR(mcu, &comp->pin, 0);
+				break;
+			default:
+				break;
+			}
+		} else {
+			/* Nothing to be toggled in this case */
+		}
+	} while (0);
 }
 
 static void update_ocr_buffers(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)

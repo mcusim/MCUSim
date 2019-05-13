@@ -56,6 +56,7 @@
 #define UPD_ATTOP		MSIM_AVR_TMR_UPD_ATTOP
 #define UPD_ATBOTTOM		MSIM_AVR_TMR_UPD_ATBOTTOM
 #define UPD_ATIMMEDIATE		MSIM_AVR_TMR_UPD_ATIMMEDIATE
+#define UPD_ATCM		MSIM_AVR_TMR_UPD_ATCM
 /* Timer count direction */
 #define CNT_UP			MSIM_AVR_TMR_CNTUP
 #define CNT_DOWN		MSIM_AVR_TMR_CNTDOWN
@@ -170,6 +171,11 @@ static inline uint8_t IOBIT_CMPA(struct MSIM_AVR_IOBit *b0,
 	} while (0);
 
 	return rc;
+}
+
+static inline void IOBIT_TG(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *b)
+{
+	IOBIT_WR(mcu, b, ~(IOBIT_RD(mcu, b))&1);
 }
 
 #endif /* MSIM_AVR_IO_MACRO_H_ */
