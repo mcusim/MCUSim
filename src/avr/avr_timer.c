@@ -207,11 +207,18 @@ static void mode_nonpwm_fastpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 	}
 
 	/* Update buffers at the TOP or MAX */
-	if ((tcnt == (top-1)) && (tmr->scnt == (tmr->presc-2U)) &&
-	                ((wgm->updocr_at == UPD_ATTOP) ||
-	                 (wgm->updocr_at == UPD_ATMAX))) {
-		update_ocr_buffers(mcu, tmr);
-		update_wgm_buffers(mcu, tmr);
+	if ((tcnt == (top-1)) && (tmr->scnt >= (tmr->presc-1U))) {
+		if ((wgm->updocr_at == UPD_ATTOP) ||
+		                (wgm->updocr_at == UPD_ATMAX)) {
+			update_ocr_buffers(mcu, tmr);
+			update_wgm_buffers(mcu, tmr);
+		}
+
+		/* Raise TOV flag at TOP or MAX */
+		if ((wgm->settov_at == UPD_ATTOP) ||
+		                (wgm->settov_at == UPD_ATMAX)) {
+			IOBIT_WR(mcu, &tmr->iv_ovf.raised, 1);
+		}
 	}
 
 	if (tmr->scnt < (tmr->presc-1U)) {
@@ -241,7 +248,11 @@ static void mode_nonpwm_fastpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 		/* Counter Unit. */
 		if (tcnt == top) {
 			tcnt = 0;
-			IOBIT_WR(mcu, &tmr->iv_ovf.raised, 1);
+
+			/* Raise TOV flag at BOTTOM */
+			if (wgm->settov_at == UPD_ATBOTTOM) {
+				IOBIT_WR(mcu, &tmr->iv_ovf.raised, 1);
+			}
 
 			/* Update buffers at the BOTTOM */
 			if (wgm->updocr_at == UPD_ATBOTTOM) {
