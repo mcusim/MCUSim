@@ -41,7 +41,7 @@
 	.size = 8,							\
 	.top = 0xFF,							\
 	.updocr_at = UPD_ATIMMEDIATE,					\
-	.settov_at = UPD_ATMAX,						\
+	.settov_at = UPD_ATBOTTOM,						\
 };
 
 #define FAKE_WGM16 {							\
@@ -49,12 +49,11 @@
 	.size = 16,							\
 	.top = 0xFFFF,							\
 	.updocr_at = UPD_ATIMMEDIATE,					\
-	.settov_at = UPD_ATMAX,						\
+	.settov_at = UPD_ATBOTTOM,						\
 };
 
 static int update_timer(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static void mode_nonpwm_fastpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr);
-static void mode_pcpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr);
+static void mode_nonpwm_pwm(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
 static void update_ocr_buffers(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
 static int update_ocr_buffer(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
                              uint32_t);
@@ -150,10 +149,9 @@ static int update_timer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 		case WGM_NORMAL:
 		case WGM_CTC:
 		case WGM_FASTPWM:
-			mode_nonpwm_fastpwm(mcu, tmr);
-			break;
 		case WGM_PCPWM:
-			mode_pcpwm(mcu, tmr);
+		case WGM_PFCPWM:
+			mode_nonpwm_pwm(mcu, tmr);
 			break;
 		default:
 			break;
@@ -166,21 +164,25 @@ static int update_timer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 	return rc;
 }
 
-static void mode_nonpwm_fastpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
+static void mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
 	struct MSIM_AVR_TMR_WGM *wgm = tmr->wgmval;
 	struct MSIM_AVR_TMR_COMP *comp;
 	uint32_t tcnt = IOBIT_RDA(mcu, tmr->tcnt, ARR_LEN(tmr->tcnt));
-	uint32_t ocr, top;
+	uint32_t ocr, top = wgm->top;
 	uint32_t icp, ices;
+	uint8_t dual_slope = 0;
+
+	/* Does timer use a dual-slope operation mode?
+	 * Counting direction matters in this case. */
+	dual_slope = ((tmr->wgmval->kind == WGM_PCPWM) ||
+	              (tmr->wgmval->kind == WGM_PCPWM)) ? 1 : 0;
 
 	/* Raise pending interrupts */
 	int_raise_pending(mcu, tmr);
 
-	/* Obtain TOP value */
-	if (IS_IONOBITA(wgm->rtop)) {
-		top = wgm->top;
-	} else {
+	/* Obtain TOP value from a register */
+	if (!IS_IONOBITA(wgm->rtop)) {
 		top = (wgm->updocr_at == UPD_ATIMMEDIATE)
 		      ? IOBIT_RDA(mcu, wgm->rtop, ARR_LEN(wgm->rtop))
 		      : wgm->rtop_buf;
@@ -206,24 +208,24 @@ static void mode_nonpwm_fastpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 		}
 	}
 
-	/* Update buffers at the TOP or MAX */
-	if ((tcnt == (top-1)) && (tmr->scnt >= (tmr->presc-1U))) {
-		if ((wgm->updocr_at == UPD_ATTOP) ||
-		                (wgm->updocr_at == UPD_ATMAX)) {
-			update_ocr_buffers(mcu, tmr);
-			update_wgm_buffers(mcu, tmr);
-		}
-
-		/* Raise TOV flag at TOP or MAX */
-		if ((wgm->settov_at == UPD_ATTOP) ||
-		                (wgm->settov_at == UPD_ATMAX)) {
-			IOBIT_WR(mcu, &tmr->iv_ovf.raised, 1);
-		}
-	}
-
 	if (tmr->scnt < (tmr->presc-1U)) {
 		tmr->scnt++;
 	} else {
+		/* Update buffers at TOP/MAX */
+		if ((tmr->cnt_dir == CNT_UP) && (tcnt == (top-1))) {
+			if ((wgm->updocr_at == UPD_ATTOP) ||
+			                (wgm->updocr_at == UPD_ATMAX)) {
+				update_ocr_buffers(mcu, tmr);
+				update_wgm_buffers(mcu, tmr);
+			}
+
+			/* Raise TOV flag at TOP or MAX */
+			if ((wgm->settov_at == UPD_ATTOP) ||
+			                (wgm->settov_at == UPD_ATMAX)) {
+				IOBIT_WR(mcu, &tmr->iv_ovf.raised, 1);
+			}
+		}
+
 		/* Output Compare and Compare Match units.
 		 * Compares current timer value with OC registers. */
 		for (uint32_t i = 0; i < ARR_LEN(tmr->comp); i++) {
@@ -245,16 +247,16 @@ static void mode_nonpwm_fastpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 			}
 		}
 
-		/* Counter Unit. */
-		if (tcnt == top) {
-			tcnt = 0;
-
+		/* Update buffers at BOTTOM */
+		if (((dual_slope == 0U) && (tcnt == top)) ||
+		                ((dual_slope == 1U) &&
+		                 (tmr->cnt_dir == CNT_DOWN) && (tcnt == 1U))) {
 			/* Raise TOV flag at BOTTOM */
 			if (wgm->settov_at == UPD_ATBOTTOM) {
 				IOBIT_WR(mcu, &tmr->iv_ovf.raised, 1);
 			}
 
-			/* Update buffers at the BOTTOM */
+			/* Update buffers at BOTTOM */
 			if (wgm->updocr_at == UPD_ATBOTTOM) {
 				update_ocr_buffers(mcu, tmr);
 				update_wgm_buffers(mcu, tmr);
@@ -268,17 +270,29 @@ static void mode_nonpwm_fastpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 				}
 				trigger_oc_pin(mcu, tmr, comp, UPD_ATBOTTOM);
 			}
-		} else {
-			tcnt++;
 		}
 
+		/* Counter Unit. */
+		if ((dual_slope == 0U) && (tcnt == top)) {
+			tcnt = 0;
+		} else if ((dual_slope == 1U) && (tcnt == top)) {
+			tmr->cnt_dir = CNT_DOWN;
+			tcnt--;
+		} else if ((dual_slope == 1U) && (tcnt == 0)) {
+			tmr->cnt_dir = CNT_UP;
+			tcnt++;
+		} else {
+			if (tmr->cnt_dir == CNT_UP) {
+				tcnt++;
+			} else {
+				tcnt--;
+			}
+		}
+
+		/* Reset system clock counter and update timer's register. */
 		tmr->scnt = 0;
 		IOBIT_WRA(mcu, tmr->tcnt, ARR_LEN(tmr->tcnt), tcnt);
 	}
-}
-
-static void mode_pcpwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
-{
 }
 
 static void trigger_oc_pin(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
