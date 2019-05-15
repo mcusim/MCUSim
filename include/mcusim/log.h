@@ -38,14 +38,14 @@
 
 /* Standard separator for Windows operating system. */
 #if defined(_WIN64) || defined(_WIN32) || defined(__WIN32__)
-#undef __MSIM_FS_SEP__
-#define __MSIM_FS_SEP__ '\\'
+	#undef __MSIM_FS_SEP__
+	#define __MSIM_FS_SEP__ '\\'
 #endif
 
 /* Windows can be with the different POSIX flavors also. */
 #if defined(__CYGWIN__) || defined(__MINGW32__)
-#undef __MSIM_FS_SEP__
-#define __MSIM_FS_SEP__ '/'
+	#undef __MSIM_FS_SEP__
+	#define __MSIM_FS_SEP__ '/'
 #endif
 
 /* Let filename to be defined if it doesn't exist yet. */
@@ -60,21 +60,21 @@ extern "C" {
 
 /* Logging macros. This is a preferred way to log anything. */
 #define MSIM_LOG_FATAL(msg) MSIM_LOG_Log(MSIM_LOG_LVLFATAL,		\
-                "fatal", __MSIM_FILENAME__, __LINE__, msg);
+                "(!!)", __MSIM_FILENAME__, __LINE__, msg);
 
 #define MSIM_LOG_ERROR(msg) MSIM_LOG_Log(MSIM_LOG_LVLERROR,		\
-                "error", __MSIM_FILENAME__, __LINE__, msg);
+                "(EE)", __MSIM_FILENAME__, __LINE__, msg);
 
 #define MSIM_LOG_WARN(msg) MSIM_LOG_Log(MSIM_LOG_LVLWARNING,		\
-                "warning", __MSIM_FILENAME__, __LINE__, msg);
+                "(WW)", __MSIM_FILENAME__, __LINE__, msg);
 
 #define MSIM_LOG_INFO(msg) MSIM_LOG_Log(MSIM_LOG_LVLINFO,		\
-                "info", __MSIM_FILENAME__, __LINE__, msg);
+                "(--)", __MSIM_FILENAME__, __LINE__, msg);
 
 #if defined(DEBUG)
 /* Print debug messages if DEBUG is defined only. */
 #define MSIM_LOG_DEBUG(msg) MSIM_LOG_Log(MSIM_LOG_LVLDEBUG,		\
-                "debug", __MSIM_FILENAME__, __LINE__, msg);
+                "(DD)", __MSIM_FILENAME__, __LINE__, msg);
 #else
 /* Print nothing otherwise. */
 #define MSIM_LOG_DEBUG(msg)
@@ -103,6 +103,8 @@ void MSIM_LOG_Log(enum MSIM_LOG_Level lvl, const char *lvlmsg,
 /* Access logging level functions. */
 void MSIM_LOG_SetLevel(enum MSIM_LOG_Level level);
 enum MSIM_LOG_Level MSIM_LOG_GetLevel(void);
+
+void MSIM_LOG_PrintMarkers(void);
 
 #ifdef __cplusplus
 }

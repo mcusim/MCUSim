@@ -40,6 +40,10 @@ set(MCUSIM_LIB "lib${MCUSIM_LIB_NAME}")
 
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
+unset(build_date CACHE)
+string(TIMESTAMP build_date UTC)
+add_definitions(-DMSIM_BUILD_DATE="${build_date}")
+
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Filename.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Subdirlist.cmake)
@@ -315,7 +319,9 @@ add_executable(${MCUSIM} src/msim_main.c)
 set_target_properties(${MCUSIM_LIB} PROPERTIES OUTPUT_NAME ${MCUSIM_LIB_NAME})
 set_target_properties("${MCUSIM_LIB}-static" PROPERTIES OUTPUT_NAME ${MCUSIM_LIB_NAME})
 
+define_filename_for_sources(objlib)
 define_filename_for_sources(${MCUSIM_LIB})
+define_filename_for_sources("${MCUSIM_LIB}-static")
 define_filename_for_sources(${MCUSIM})
 
 # -----------------------------------------------------------------------------

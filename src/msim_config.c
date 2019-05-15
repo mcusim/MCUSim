@@ -75,21 +75,19 @@ int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename)
 int MSIM_CFG_PrintVersion(void)
 {
 #ifndef DEBUG
-	printf("MCUSim %s: Microcontroller-based circuit simulator\n"
-	       "        Copyright 2017-2019 The MCUSim Project.\n"
-	       "        Please find documentation at https://trac.mcusim.org\n"
-	       "        Please file your bug-reports at "
-	       "https://trac.mcusim.org/newticket\n", MSIM_VERSION);
+	printf("MCU Simulator %s\nBuild Date: %s\n",
+	       MSIM_VERSION, MSIM_BUILD_DATE);
 #else
 	/* Adjust logging level in the debug version. */
 	MSIM_LOG_SetLevel(MSIM_LOG_LVLDEBUG);
-	printf("MCUSim %s: Microcontroller-based circuit simulator "
-	       "(debug)\n"
-	       "        Copyright 2017-2019 The MCUSim Project.\n"
-	       "        Please find documentation at https://trac.mcusim.org\n"
-	       "        Please file your bug-reports at "
-	       "https://trac.mcusim.org/newticket\n", MSIM_VERSION);
+	printf("MCU Simulator %s (dbg)\nBuild Date: %s\n",
+	       MSIM_VERSION, MSIM_BUILD_DATE);
 #endif
+	MSIM_LOG_INFO("Copyright 2017-2019 The MCUSim Project");
+	MSIM_LOG_INFO("Documentation: https://trac.mcusim.org");
+	MSIM_LOG_INFO("Bugs: https://trac.mcusim.org/newticket");
+	MSIM_LOG_PrintMarkers();
+
 	return 0;
 }
 

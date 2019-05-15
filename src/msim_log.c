@@ -50,3 +50,9 @@ enum MSIM_LOG_Level MSIM_LOG_GetLevel(void)
 {
 	return log_level;
 }
+
+void MSIM_LOG_PrintMarkers(void)
+{
+	MSIM_LOG_INFO("Markers: (--) informational, (DD) debug, "
+	              "(WW) warning, (EE) error, (!!) fatal.");
+}
