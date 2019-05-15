@@ -41,8 +41,11 @@ set(MCUSIM_LIB "lib${MCUSIM_LIB_NAME}")
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
 unset(build_date CACHE)
-string(TIMESTAMP build_date UTC)
+unset(build_time CACHE)
+string(TIMESTAMP build_date "%Y-%m-%d" UTC)
+string(TIMESTAMP build_time "%H:%M:%S" UTC)
 add_definitions(-DMSIM_BUILD_DATE="${build_date}")
+add_definitions(-DMSIM_BUILD_TIME="${build_time}")
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Filename.cmake)

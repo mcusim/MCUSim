@@ -75,13 +75,13 @@ int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename)
 int MSIM_CFG_PrintVersion(void)
 {
 #ifndef DEBUG
-	printf("MCU Simulator %s\nBuild Date: %s\n",
-	       MSIM_VERSION, MSIM_BUILD_DATE);
+	printf("MCU Simulator %s\nBuild Date: %s %s (UTC)\n",
+	       MSIM_VERSION, MSIM_BUILD_DATE, MSIM_BUILD_TIME);
 #else
 	/* Adjust logging level in the debug version. */
 	MSIM_LOG_SetLevel(MSIM_LOG_LVLDEBUG);
-	printf("MCU Simulator %s (dbg)\nBuild Date: %s\n",
-	       MSIM_VERSION, MSIM_BUILD_DATE);
+	printf("MCU Simulator %s (dbg)\nBuild Date: %s %s (UTC)\n",
+	       MSIM_VERSION, MSIM_BUILD_DATE, MSIM_BUILD_TIME);
 #endif
 	MSIM_LOG_INFO("Copyright 2017-2019 The MCUSim Project");
 	MSIM_LOG_INFO("Documentation: https://trac.mcusim.org");
