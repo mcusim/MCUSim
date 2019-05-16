@@ -41,7 +41,7 @@
 	.size = 8,							\
 	.top = 0xFF,							\
 	.updocr_at = UPD_ATIMMEDIATE,					\
-	.settov_at = UPD_ATBOTTOM,						\
+	.settov_at = UPD_ATBOTTOM,					\
 };
 
 #define FAKE_WGM16 {							\
@@ -49,7 +49,7 @@
 	.size = 16,							\
 	.top = 0xFFFF,							\
 	.updocr_at = UPD_ATIMMEDIATE,					\
-	.settov_at = UPD_ATBOTTOM,						\
+	.settov_at = UPD_ATBOTTOM,					\
 };
 
 static int update_timer(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
@@ -60,7 +60,8 @@ static int update_ocr_buffer(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
 static void int_reset_pending(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
 static void int_raise_pending(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
 static void trigger_oc_pin(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
-                           struct MSIM_AVR_TMR_COMP *, uint8_t);
+                           struct MSIM_AVR_TMR_COMP *,
+                           uint32_t, uint32_t, uint8_t);
 static void update_wgm_buffers(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
 static int update_wgm_buffer(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
                              uint32_t);
@@ -172,6 +173,7 @@ static void mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 	uint32_t ocr, top = wgm->top;
 	uint32_t icp, ices;
 	uint8_t dual_slope = 0;
+	uint8_t cd = tmr->cnt_dir;
 
 	/* Does timer use a dual-slope operation mode?
 	 * Counting direction matters in this case. */
@@ -212,7 +214,7 @@ static void mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 		tmr->scnt++;
 	} else {
 		/* Update buffers at TOP/MAX */
-		if ((tmr->cnt_dir == CNT_UP) && (tcnt == (top-1))) {
+		if ((cd == CNT_UP) && (tcnt == (top-1))) {
 			if ((wgm->updocr_at == UPD_ATTOP) ||
 			                (wgm->updocr_at == UPD_ATMAX)) {
 				update_ocr_buffers(mcu, tmr);
@@ -237,20 +239,24 @@ static void mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 			ocr = (wgm->updocr_at == UPD_ATIMMEDIATE)
 			      ? IOBIT_RDA(mcu, comp->ocr, ARR_LEN(comp->ocr))
 			      : comp->ocr_buf;
-			if (tcnt == ocr) {
+
+			if (((cd == CNT_UP) && (tcnt == (ocr-1))) ||
+			                ((cd == CNT_DOWN) &&
+			                 (tcnt == (ocr+1)))) {
 				/* Compare match. Interrupt flag should be set
 				 * at the next timer clock cycle! */
 				comp->iv.pending = 1;
 
 				/* Trigger OC pin at Compare Match */
-				trigger_oc_pin(mcu, tmr, comp, UPD_ATCM);
+				trigger_oc_pin(mcu, tmr, comp, tcnt, top,
+				               UPD_ATCM);
 			}
 		}
 
 		/* Update buffers at BOTTOM */
 		if (((dual_slope == 0U) && (tcnt == top)) ||
 		                ((dual_slope == 1U) &&
-		                 (tmr->cnt_dir == CNT_DOWN) && (tcnt == 1U))) {
+		                 (cd == CNT_DOWN) && (tcnt == 1U))) {
 			/* Raise TOV flag at BOTTOM */
 			if (wgm->settov_at == UPD_ATBOTTOM) {
 				IOBIT_WR(mcu, &tmr->iv_ovf.raised, 1);
@@ -268,7 +274,8 @@ static void mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 				if (IS_NOCOMP(comp)) {
 					break;
 				}
-				trigger_oc_pin(mcu, tmr, comp, UPD_ATBOTTOM);
+				trigger_oc_pin(mcu, tmr, comp, tcnt, top,
+				               UPD_ATBOTTOM);
 			}
 		}
 
@@ -296,7 +303,8 @@ static void mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 }
 
 static void trigger_oc_pin(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
-                           struct MSIM_AVR_TMR_COMP *comp, uint8_t at)
+                           struct MSIM_AVR_TMR_COMP *comp,
+                           uint32_t tcnt, uint32_t top, uint8_t at)
 {
 	int32_t wgmi = tmr->wgmi;
 	uint32_t com = IOBIT_RD(mcu, &comp->com);
@@ -316,13 +324,21 @@ static void trigger_oc_pin(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
 					break;
 				case COM_CLONCM:
 				case COM_CLONCM_STATBOT:
-				case COM_CLONUP_STONDOWN:
 					IOBIT_WR(mcu, &comp->pin, 0);
+					break;
+				case COM_CLONUP_STONDOWN:
+					if ((tcnt != (top-1)) && (tcnt != 1)) {
+						IOBIT_WR(mcu, &comp->pin, 0);
+					}
 					break;
 				case COM_STONCM:
 				case COM_STONCM_CLATBOT:
-				case COM_STONUP_CLONDOWN:
 					IOBIT_WR(mcu, &comp->pin, 1);
+					break;
+				case COM_STONUP_CLONDOWN:
+					if ((tcnt != (top-1)) && (tcnt != 1)) {
+						IOBIT_WR(mcu, &comp->pin, 1);
+					}
 					break;
 				case COM_DISC:
 				default:
@@ -345,10 +361,14 @@ static void trigger_oc_pin(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
 		} else if (at == UPD_ATCM) { /* Down counting */
 			switch (com_op) {
 			case COM_CLONUP_STONDOWN:
-				IOBIT_WR(mcu, &comp->pin, 1);
+				if ((tcnt != (top-1)) && (tcnt != 1)) {
+					IOBIT_WR(mcu, &comp->pin, 1);
+				}
 				break;
 			case COM_STONUP_CLONDOWN:
-				IOBIT_WR(mcu, &comp->pin, 0);
+				if ((tcnt != (top-1)) && (tcnt != 1)) {
+					IOBIT_WR(mcu, &comp->pin, 0);
+				}
 				break;
 			default:
 				break;

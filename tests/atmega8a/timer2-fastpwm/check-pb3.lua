@@ -32,8 +32,6 @@ TICK_TIME = 0.0			-- clock period, in us
 ticks_passed = 0
 check_point = 0
 pb3_old = 1
-tcnt2 = 0
-ocr2 = 0
 
 function module_conf(mcu)
 	-- Re-calculate clock period, in us
@@ -45,40 +43,40 @@ function module_conf(mcu)
 end
 
 function module_tick(mcu)
-	tcnt2 = AVR_ReadIO(mcu, TCNT2)
-	ocr2 = AVR_ReadIO(mcu, OCR2)
+	local tcnt2 = AVR_ReadIO(mcu, TCNT2)
+	local ocr2 = AVR_ReadIO(mcu, OCR2)
 
 	if check_point == 0 then
-		if pb3_old == true and AVR_IOBit(mcu, PORTB, 3) == false then
-			if tcnt2 == 61 and ocr2 == 60 then
+		if pb3_old and not AVR_IOBit(mcu, PORTB, 3) then
+			if tcnt2 == 60 and ocr2 == 60 then
 				print("check_point: " .. check_point)
 				check_point = check_point + 1
 			end
 		end
 	elseif check_point == 1 then
-		if pb3_old == true and AVR_IOBit(mcu, PORTB, 3) == false then
-			if tcnt2 == 61 and ocr2 == 30 then
+		if pb3_old and not AVR_IOBit(mcu, PORTB, 3) then
+			if tcnt2 == 60 and ocr2 == 30 then
 				print("check_point: " .. check_point)
 				check_point = check_point + 1
 			end
 		end
 	elseif check_point == 2 then
-		if pb3_old == true and AVR_IOBit(mcu, PORTB, 3) == false then
-			if tcnt2 == 31 and ocr2 == 60 then
+		if pb3_old and not AVR_IOBit(mcu, PORTB, 3) then
+			if tcnt2 == 30 and ocr2 == 60 then
 				print("check_point: " .. check_point)
 				check_point = check_point + 1
 			end
 		end
 	elseif check_point == 3 then
-		if pb3_old == true and AVR_IOBit(mcu, PORTB, 3) == false then
-			if tcnt2 == 61 and ocr2 == 30 then
+		if pb3_old and not AVR_IOBit(mcu, PORTB, 3) then
+			if tcnt2 == 60 and ocr2 == 30 then
 				print("check_point: " .. check_point)
 				check_point = check_point + 1
 			end
 		end
 	elseif check_point == 4 then
-		if pb3_old == true and AVR_IOBit(mcu, PORTB, 3) == false then
-			if tcnt2 == 31 and ocr2 == 60 then
+		if pb3_old and not AVR_IOBit(mcu, PORTB, 3) then
+			if tcnt2 == 30 and ocr2 == 60 then
 				-- Test finished successfully
 				MSIM_SetState(mcu, AVR_MSIM_STOP)
 				print("check_point: " .. check_point)

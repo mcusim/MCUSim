@@ -89,7 +89,7 @@ enum {
 	MSIM_AVR_TMR_CNTDOWN,
 };
 
-/* Waveform generation mode descriptor */
+/* Waveform generator module */
 struct MSIM_AVR_TMR_WGM {
 	uint8_t kind;				/* WGM type */
 	uint8_t size;				/* Size, in bits */
