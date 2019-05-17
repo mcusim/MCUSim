@@ -31,6 +31,7 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
 #include "mcusim/avr/sim/private/macro.h"
@@ -142,13 +143,36 @@ int MSIM_LUAF_AVRReadIO(lua_State *L)
 	if ((mcu->ioregs_num == 0) ||
 	                (io_reg >= (mcu->sfr_off+mcu->ioregs_num)) ||
 	                (io_reg < mcu->sfr_off)) {
-		snprintf(mcu->log, sizeof mcu->log, "lua model is reading "
-		         "unknown I/O register: %u", io_reg);
-		MSIM_LOG_ERROR(mcu->log);
+		snprintf(LOG, LOGSZ, "lua model is reading unknown I/O "
+		         "register: %u", io_reg);
+		MSIM_LOG_ERROR(LOG);
 		lua_pushnil(L);
 		return 1;
 	}
+
 	lua_pushinteger(L, mcu->dm[io_reg]);
+	return 1;
+}
+
+int MSIM_LUAF_AVRReadIO16(lua_State *L)
+{
+	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
+	uint16_t io_high = (uint16_t)lua_tointeger(L, 2);
+	uint16_t io_low = (uint16_t)lua_tointeger(L, 3);
+	const uint32_t l = mcu->sfr_off;
+	const uint32_t h = l + mcu->ioregs_num;
+
+	/* Model is trying to read something else. */
+	if ((l == h) || (io_high >= h) || (io_high < l) ||
+	                (io_low >= h) || (io_low < l)) {
+		snprintf(LOG, LOGSZ, "lua model is reading unknown 16-bit I/O "
+		         "register: %u:%u", io_high, io_low);
+		MSIM_LOG_ERROR(LOG);
+		lua_pushnil(L);
+		return 1;
+	}
+
+	lua_pushinteger(L, (uint16_t)(mcu->dm[io_high]<<8)|(mcu->dm[io_low]));
 	return 1;
 }
 
@@ -245,5 +269,27 @@ int MSIM_LUAF_AVRWriteIO(lua_State *L)
 		return 0;
 	}
 	mcu->dm[io_reg] = val;
+	return 0;
+}
+
+int MSIM_LUAF_AVRWriteIO16(lua_State *L)
+{
+	struct MSIM_AVR *mcu = lua_touserdata(L, 1);
+	uint16_t io_high = (uint16_t)lua_tointeger(L, 2);
+	uint16_t io_low = (uint16_t)lua_tointeger(L, 3);
+	uint16_t val = (uint16_t)lua_tointeger(L, 4);
+	const uint32_t l = mcu->sfr_off;
+	const uint32_t h = l + mcu->ioregs_num;
+
+	/* Model is trying to write something else. */
+	if ((l == h) || (io_high >= h) || (io_high < l)) {
+		snprintf(LOG, LOGSZ, "lua model is writing unknown 16-bit I/O "
+		         "register: %u:%u", io_high, io_low);
+		MSIM_LOG_ERROR(LOG);
+		return 0;
+	}
+
+	mcu->dm[io_high] = (uint8_t)((val>>8)&0xFF);
+	mcu->dm[io_low] = (uint8_t)(val&0xFF);
 	return 0;
 }

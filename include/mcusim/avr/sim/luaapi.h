@@ -86,6 +86,18 @@ int MSIM_LUAF_AVRReadReg(lua_State *L);
  */
 int MSIM_LUAF_AVRReadIO(lua_State *L);
 
+/* Reads value of a 16-bit I/O AVR register. I/O registers are addressed as
+ * data space, i.e. offset of the special function registers should be added.
+ *
+ * Lua parameters:
+ * 	struct MSIM_AVR *mcu;
+ * 	uint16_t io_high;
+ * 	uint16_t io_low;
+ * Returns:
+ * 	uint16_t val;
+ */
+int MSIM_LUAF_AVRReadIO16(lua_State *L);
+
 /* Writes bit of a general purpose AVR register (from register file).
  *
  * Lua parameters:
@@ -125,6 +137,17 @@ int MSIM_LUAF_AVRWriteReg(lua_State *L);
  * 	unsigned char val;
  */
 int MSIM_LUAF_AVRWriteIO(lua_State *L);
+
+/* Writes value to 16-bit I/O AVR register. I/O registers are addressed as
+ * data space, i.e. offset of the special function registers should be added.
+ *
+ * Lua parameters:
+ * 	struct MSIM_AVR *mcu;
+ * 	uint16_t io_high;
+ * 	uint16_t io_low;
+ * 	uint16_t val;
+ */
+int MSIM_LUAF_AVRWriteIO16(lua_State *L);
 
 /* Set state of a simulated AVR microcontroller. This function is helpful to
  * terminate simulation if it's necessary (test failure, etc.).

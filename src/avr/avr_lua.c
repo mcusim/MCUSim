@@ -68,6 +68,8 @@ int MSIM_AVR_LUALoadModel(struct MSIM_AVR *mcu, char *model)
 		lua_setglobal(lua_states[i], "AVR_IOBit");
 		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRReadIO);
 		lua_setglobal(lua_states[i], "AVR_ReadIO");
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRReadIO16);
+		lua_setglobal(lua_states[i], "AVR_ReadIO16");
 		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRReadReg);
 		lua_setglobal(lua_states[i], "AVR_ReadReg");
 		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRRegBit);
@@ -78,6 +80,8 @@ int MSIM_AVR_LUALoadModel(struct MSIM_AVR *mcu, char *model)
 		lua_setglobal(lua_states[i], "AVR_SetRegBit");
 		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRWriteIO);
 		lua_setglobal(lua_states[i], "AVR_WriteIO");
+		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRWriteIO16);
+		lua_setglobal(lua_states[i], "AVR_WriteIO16");
 		lua_pushcfunction(lua_states[i], MSIM_LUAF_AVRWriteReg);
 		lua_setglobal(lua_states[i], "AVR_WriteReg");
 		lua_pushcfunction(lua_states[i], MSIM_LUAF_SetState);
