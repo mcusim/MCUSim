@@ -178,7 +178,7 @@ static void mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 	/* Does timer use a dual-slope operation mode?
 	 * Counting direction matters in this case. */
 	dual_slope = ((tmr->wgmval->kind == WGM_PCPWM) ||
-	              (tmr->wgmval->kind == WGM_PCPWM)) ? 1 : 0;
+	              (tmr->wgmval->kind == WGM_PFCPWM)) ? 1 : 0;
 
 	/* Raise pending interrupts */
 	int_raise_pending(mcu, tmr);

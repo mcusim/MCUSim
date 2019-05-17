@@ -671,7 +671,7 @@ static int handle_irq(struct MSIM_AVR *mcu)
 		}
 
 		/* Load interrupt vector to PC */
-		mcu->pc = mcu->intr.ivt+(i*2);
+		mcu->pc = mcu->intr.ivt * i;
 
 		/* Switch MCU to step mode if it's necessary */
 		if (mcu->intr.trap_at_isr && mcu->state == AVR_RUNNING) {
@@ -708,7 +708,7 @@ static int pass_irqs(struct MSIM_AVR *mcu)
 			en = IOBIT_RD(mcu, &vec[k]->enable);
 			rai = IOBIT_RD(mcu, &vec[k]->raised);
 			if ((en == 1U) && (rai == 1U)) {
-				mcu->intr.irq[vec[k]->vector-1] = 1;
+				mcu->intr.irq[vec[k]->vector] = 1;
 				IOBIT_WR(mcu, &vec[k]->raised, 0);
 			}
 		}
@@ -726,7 +726,7 @@ static int pass_irqs(struct MSIM_AVR *mcu)
 			en = IOBIT_RD(mcu, &comp->iv.enable);
 			rai = IOBIT_RD(mcu, &comp->iv.raised);
 			if ((en == 1U) && (rai == 1U)) {
-				mcu->intr.irq[comp->iv.vector-1] = 1;
+				mcu->intr.irq[comp->iv.vector] = 1;
 				IOBIT_WR(mcu, &comp->iv.raised, 0);
 			}
 		}

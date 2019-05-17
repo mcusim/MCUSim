@@ -31,7 +31,7 @@ TICK_TIME = 0.0			-- clock period, in us
 
 ticks_passed = 0
 check_point = 0
-pb3_old = 1
+pb2_old = 1
 
 function module_conf(mcu)
 	-- Re-calculate clock period, in us
@@ -43,40 +43,40 @@ function module_conf(mcu)
 end
 
 function module_tick(mcu)
-	local tcnt2 = AVR_ReadIO(mcu, TCNT2)
-	local ocr2 = AVR_ReadIO(mcu, OCR2)
+	local tcnt1 = AVR_ReadIO16(mcu, TCNT1H, TCNT1L)
+	local ocr1b = AVR_ReadIO16(mcu, OCR1BH, OCR1BL)
 
 	if check_point == 0 then
-		if pb3_old and not AVR_IOBit(mcu, PORTB, 3) then
-			if tcnt2 == 250 and ocr2 == 245 then
+		if not pb2_old and AVR_IOBit(mcu, PORTB, 2) then
+			if tcnt1 == 896 and ocr1b == 896 then
 				print("check_point: " .. check_point)
 				check_point = check_point + 1
 			end
 		end
 	elseif check_point == 1 then
-		if pb3_old and not AVR_IOBit(mcu, PORTB, 3) then
-			if tcnt2 == 245 and ocr2 == 240 then
+		if not pb2_old and AVR_IOBit(mcu, PORTB, 2) then
+			if tcnt1 == 896 and ocr1b == 768 then
 				print("check_point: " .. check_point)
 				check_point = check_point + 1
 			end
 		end
 	elseif check_point == 2 then
-		if pb3_old and not AVR_IOBit(mcu, PORTB, 3) then
-			if tcnt2 == 240 and ocr2 == 235 then
+		if not pb2_old and AVR_IOBit(mcu, PORTB, 2) then
+			if tcnt1 == 768 and ocr1b == 640 then
 				print("check_point: " .. check_point)
 				check_point = check_point + 1
 			end
 		end
 	elseif check_point == 3 then
-		if pb3_old and not AVR_IOBit(mcu, PORTB, 3) then
-			if tcnt2 == 235 and ocr2 == 230 then
+		if not pb2_old and AVR_IOBit(mcu, PORTB, 2) then
+			if tcnt1 == 640 and ocr1b == 512 then
 				print("check_point: " .. check_point)
 				check_point = check_point + 1
 			end
 		end
 	elseif check_point == 4 then
-		if pb3_old and not AVR_IOBit(mcu, PORTB, 3) then
-			if tcnt2 == 230 and ocr2 == 225 then
+		if not pb2_old and AVR_IOBit(mcu, PORTB, 2) then
+			if tcnt1 == 512 and ocr1b == 384 then
 				-- Test finished successfully
 				--MSIM_SetState(mcu, AVR_MSIM_STOP)
 				print("check_point: " .. check_point)
@@ -86,12 +86,12 @@ function module_tick(mcu)
 		end
 	end
 
-	if ticks_passed > 30000 then
+	if ticks_passed > 75000 then
 		-- Test failed
 		MSIM_SetState(mcu, AVR_MSIM_TESTFAIL)
 		print("ticks passed: " .. ticks_passed)
 	end
 
 	ticks_passed = ticks_passed + 1
-	pb3_old = AVR_IOBit(mcu, PORTB, 3)
+	pb2_old = AVR_IOBit(mcu, PORTB, 2)
 end

@@ -106,7 +106,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 	},
 	.intr = {
 		.reset_pc = 0x0000,
-		.ivt = 0x0002,
+		.ivt = 0x0004,
 	},
 	.timers = {
 		[0] = {
