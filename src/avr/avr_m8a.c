@@ -60,9 +60,6 @@ static uint8_t ubrrh_buf;	/* USART Baud Rate High (buffer) */
 static uint8_t ubrrl_buf;	/* USART Baud Rate Low (buffer) */
 static uint8_t udr_buf;		/* USART Data Register */
 
-static uint8_t wdtcr_buf;	/* Watchdog Timer Control Register */
-static uint8_t wdce_cycles = 0;	/* Clean WDCE bit in this number of cycles */
-
 static uint8_t spmcr_buf;	/* SPM Control Register */
 static uint8_t spmen_cycles = 0; /* Clean SPMEN bit in this number of cycles */
 static uint8_t spmen_clear = 0;	/* Flag to clear SPMEN in # of cycles */
@@ -74,8 +71,6 @@ static void tick_usart(struct MSIM_AVR *mcu);
 	static void usart_transmit(struct MSIM_AVR *mcu);
 	static void usart_receive(struct MSIM_AVR *mcu);
 #endif
-
-static void tick_wdt(struct MSIM_AVR *mcu);
 
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 {
@@ -91,14 +86,6 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 		DM(PORTB) = 0xFF;
 		DM(PORTC) = 0xFF;
 		DM(PORTD) = 0xFF;
-
-		/* Set default WDT parameters */
-		mcu->wdt.sys_presc = 1;
-		mcu->wdt.sys_ticks = 0;
-		mcu->wdt.presc = 16*1024;	/* Default WDT prescaler */
-		mcu->wdt.ticks = 0;
-		mcu->wdt.always_on = 0; 	/* WDT initially disabled */
-		mcu->wdt.checked = 0;		/* WDT will be adjusted */
 
 		/* Set USART registers */
 		DM(UCSRA) = 0x20;
@@ -133,7 +120,6 @@ int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args)
 int MSIM_M8AUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf)
 {
 	tick_usart(mcu);
-	tick_wdt(mcu);
 
 	/* Update watched values after all of the peripherals. */
 	update_watched(mcu);
@@ -173,8 +159,6 @@ static void update_watched(struct MSIM_AVR *mcu)
 	ubrrl_buf = DM(UBRRL);
 	ucsra_buf = DM(UCSRA);
 	udr_buf = DM(UDR);
-
-	wdtcr_buf = DM(WDTCR);
 
 	/* Update SPMCR value and reset SPMEN bit if necessary */
 	if (mcu->spmcsr != NULL) {
@@ -292,113 +276,6 @@ static void tick_usart(struct MSIM_AVR *mcu)
 #endif
 	} else {
 		/* USART Tx inactive, do nothing */
-	}
-}
-
-static void tick_wdt(struct MSIM_AVR *mcu)
-{
-	uint8_t wdp;		/* Watchdog Prescaler */
-
-	/* Initial WDT adjustment */
-	if (mcu->wdt.checked == 0U) {
-		/* WDT oscillator frequency is 1 MHz */
-		mcu->wdt.sys_presc = mcu->freq/1000000;
-		mcu->wdt.sys_ticks = 0;
-		mcu->wdt.checked = 1;
-	}
-
-	/* Enable WDT if this is required */
-	if ((mcu->wdt.always_on == 0U) && (mcu->wdt.on == 0U) &&
-	                (DM(WDTCR) != wdtcr_buf) &&
-	                (IS_SET(DM(WDTCR), WDE) == 1)) {
-		MSIM_LOG_DEBUG("WDT is enabled");
-		mcu->wdt.on = 1;
-		mcu->wdt.sys_ticks = 0;
-		mcu->wdt.ticks = 0;
-	}
-
-	/* Watch for attempts to adjust WDE (off) and/or WDP (prescaler) */
-	if (wdce_cycles > 0U) {
-		if (IS_CLEAR(DM(WDTCR), WDCE) == 1U) {
-			/* Disable WDT if this is required */
-			if (IS_CLEAR(DM(WDTCR), WDE) == 1U) {
-				MSIM_LOG_DEBUG("WDT is disabled");
-				mcu->wdt.on = 0;
-				mcu->wdt.sys_ticks = 0;
-				mcu->wdt.ticks = 0;
-			}
-			/* Adjust WDT prescaler if this is required */
-			wdp = DM(WDTCR)&0x07;
-			switch (wdp) {
-			case 0:
-				mcu->wdt.presc = 16*1024;
-				break;
-			case 1:
-				mcu->wdt.presc = 32*1024;
-				break;
-			case 2:
-				mcu->wdt.presc = 64*1024;
-				break;
-			case 3:
-				mcu->wdt.presc = 128*1024;
-				break;
-			case 4:
-				mcu->wdt.presc = 256*1024;
-				break;
-			case 5:
-				mcu->wdt.presc = 512*1024;
-				break;
-			case 6:
-				mcu->wdt.presc = 1024*1024;
-				break;
-			case 7:
-				mcu->wdt.presc = 2048*1024;
-				break;
-			default:
-				snprintf(mcu->log, sizeof mcu->log, "illegal "
-				         "watchdog prescaler: WDP=0x%" PRIX8,
-				         wdp);
-				MSIM_LOG_ERROR(mcu->log);
-				break;
-			}
-			wdce_cycles = 0;
-		} else {
-			/* WDCE bit is set, do nothing */
-		}
-		wdce_cycles--;
-		if (wdce_cycles == 0U) {
-			CLEAR(DM(WDTCR), WDCE);
-		}
-	}
-
-	/* Watch for a timed sequence start */
-	if ((IS_WRIT(mcu, WDTCR)) && (IS_SET(DM(WDTCR), WDCE) == 1U) &&
-	                ((IS_SET(DM(WDTCR), WDE)) == 1U)) {
-		/* It looks like a firmware is going to adjust WDT parameters
-		 * within next four system clock cycles. */
-		wdce_cycles = 4;
-	}
-
-	/* Update WDT if this one is enabled */
-	if ((mcu->wdt.always_on == 1U) || (mcu->wdt.on == 1U)) {
-		if (mcu->wdt.sys_ticks < mcu->wdt.sys_presc) {
-			/* Pre-scaling system clock */
-			mcu->wdt.sys_ticks++;
-		} else {
-			/* WDT oscillator clock */
-			if (mcu->wdt.ticks < mcu->wdt.presc) {
-				mcu->wdt.ticks++;
-			} else {
-				/* Watchdog MCU reset */
-				mcu->pc = mcu->intr.reset_pc;
-				DM(MCUCSR) |= (1<<WDRF);
-				mcu->wdt.sys_ticks = 0;
-				mcu->wdt.ticks = 0;
-				mcu->wdt.on = 0;
-				MSIM_LOG_DEBUG("Watchdog MCU reset");
-			}
-			mcu->wdt.sys_ticks = 0;
-		}
 	}
 }
 
@@ -680,17 +557,6 @@ int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf)
 			}
 			break;
 		case FUSE_HIGH:
-			/* Do we have WDT always on? */
-			if (((fuse_v>>6)&1) == 0) {
-				mcu->wdt.always_on = 1;
-				mcu->wdt.on = 1;
-				MSIM_LOG_WARN("WDT is always ON (WDTON bit is "
-				              "programmed/cleared)");
-			} else {
-				mcu->wdt.always_on = 0;
-				mcu->wdt.on = 0;
-			}
-
 			bootsz = (fuse_v>>1)&0x3U;
 			ckopt = (fuse_v>>4)&0x1U;
 			switch (bootsz) {

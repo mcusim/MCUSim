@@ -53,13 +53,13 @@ const static struct MSIM_AVR ORIG_M8A = {
 	.signature = { SIGNATURE_0, SIGNATURE_1, SIGNATURE_2 },
 	.pc = 0x0000,
 	.pc_bits = 12,
-	.freq = 1000000,		/* Clock frequency, in Hz */
+	.freq = 1000000,
 	.clk_source = AVR_INT_CAL_RC_CLK,
 	.lockbits = 0x3F,
-	.regs_num = 32,			/* # of general purpose registers */
-	.ioregs_num = 64,		/* # of I/O registers */
-	.xmega = 0,			/* XMEGA AVR flag */
-	.reduced_core = 0,		/* Reduced AVR core flag */
+	.regs_num = 32,
+	.ioregs_num = 64,
+	.xmega = 0,
+	.reduced_core = 0,
 	.spm_pagesize = SPM_PAGESIZE,
 	.flashstart = FLASHSTART,
 	.flashend = FLASHEND,
@@ -76,7 +76,7 @@ const static struct MSIM_AVR ORIG_M8A = {
 	.tick_perf = MSIM_M8AUpdate,
 	.reset_spm = MSIM_M8AResetSPM,
 	.fuse = { LFUSE_DEFAULT, HFUSE_DEFAULT, 0xFF },
-	.bls = {			/* Bootloader config */
+	.bls = {
 		.start = 0x1800,
 		.end = 0x1FFF,
 		.size = 2048,
@@ -570,6 +570,21 @@ const static struct MSIM_AVR ORIG_M8A = {
 					},
 				},
 			},
+		},
+	},
+	.wdt = {
+		.wdp = {
+			IOBIT(WDTCR, WDP0), IOBIT(WDTCR, WDP1),
+			IOBIT(WDTCR, WDP2)
+		},
+		.wdp_op = { 16, 32, 64, 128, 256, 512, 1024, 2048 },
+		.ce = IOBIT(WDTCR, WDCE),
+		.en = IOBIT(WDTCR, WDE),
+		.iv_to = NOINTV(),
+		.iv_sr = {
+			.enable = IONOBIT(),
+			.raised = IONOBIT(),
+			.vector = 0 /* Reset vector */
 		},
 	}
 };

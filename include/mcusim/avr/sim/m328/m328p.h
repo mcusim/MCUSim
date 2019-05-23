@@ -77,13 +77,13 @@ const static struct MSIM_AVR ORIG_M328P = {
 	.signature = { SIGNATURE_0, SIGNATURE_1, SIGNATURE_2 },
 	.pc = 0x0000,
 	.pc_bits = 14,
-	.freq = 1000000,		/* Clock frequency, in Hz */
+	.freq = 1000000,
 	.clk_source = AVR_INT_CAL_RC_CLK,
 	.lockbits = 0x3F,
-	.regs_num = 32,			/* # of general purpose registers */
-	.ioregs_num = 224,		/* # of I/O registers */
-	.xmega = 0,			/* XMEGA AVR flag */
-	.reduced_core = 0,		/* Reduced AVR core flag */
+	.regs_num = 32,
+	.ioregs_num = 224,
+	.xmega = 0,
+	.reduced_core = 0,
 	.spm_pagesize = SPM_PAGESIZE,
 	.flashstart = 0x0000,
 	.flashend = FLASHEND,
@@ -99,7 +99,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 	.set_lockf = MSIM_M328PSetLock,
 	.tick_perf = MSIM_M328PUpdate,
 	.fuse = { LFUSE_DEFAULT, HFUSE_DEFAULT, 0xFF },
-	.bls = {			/* Bootloader config */
+	.bls = {
 		.start = 0x7000,
 		.end = 0x7FFF,
 		.size = 4096,
@@ -833,6 +833,25 @@ const static struct MSIM_AVR ORIG_M328P = {
 			},
 		},
 	},
+	.wdt = {
+		.wdp = {
+			IOBIT(WDTCSR, WDP0), IOBIT(WDTCSR, WDP1),
+			IOBIT(WDTCSR, WDP2), IOBIT(WDTCSR, WDP3)
+		},
+		.wdp_op = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 },
+		.ce = IOBIT(WDTCSR, WDCE),
+		.en = IOBIT(WDTCSR, WDE),
+		.iv_to = {
+			.enable = IOBIT(WDTCSR, WDIE),
+			.raised = IOBIT(WDTCSR, WDIF),
+			.vector = WDT_vect_num
+		},
+		.iv_sr = {
+			.enable = IONOBIT(),
+			.raised = IONOBIT(),
+			.vector = 0 /* Reset vector */
+		},
+	}
 };
 
 #endif /* MSIM_AVR_M328P_H_ */

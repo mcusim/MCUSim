@@ -186,23 +186,25 @@ endif()
 # -----------------------------------------------------------------------------
 # Set sources here
 # -----------------------------------------------------------------------------
-set(MCUSIM_LIB_SOURCES	src/avr/avr_simcore.c
-			src/avr/avr_m8a.c
-			src/avr/avr_m328p.c
-			src/avr/avr_m328.c
-			#src/avr/avr_m2560.c
-			src/avr/avr_lua.c
-			src/avr/avr_luaapi.c
-			src/avr/avr_decoder.c
-			src/avr/avr_gdb.c
-			src/avr/avr_vcd.c
-			src/avr/avr_timer.c
-			src/msim_config.c
-			src/msim_getopt.c
-			src/msim_ihex.c
-			src/msim_log.c
-			src/msim_pty.c
-			src/msim_tsq.c)
+set(MCUSIM_LIB_SOURCES
+	src/avr/avr_simcore.c
+	src/avr/avr_m8a.c
+	src/avr/avr_m328p.c
+	src/avr/avr_m328.c
+	src/avr/avr_lua.c
+	src/avr/avr_luaapi.c
+	src/avr/avr_decoder.c
+	src/avr/avr_gdb.c
+	src/avr/avr_vcd.c
+	src/avr/avr_timer.c
+	src/avr/avr_wdt.c
+	src/msim_config.c
+	src/msim_getopt.c
+	src/msim_ihex.c
+	src/msim_log.c
+	src/msim_pty.c
+	src/msim_tsq.c
+)
 
 # -----------------------------------------------------------------------------
 # Look for libraries, packages, etc.
@@ -317,7 +319,6 @@ add_library(objlib OBJECT ${MCUSIM_LIB_SOURCES})
 set_property(TARGET objlib PROPERTY POSITION_INDEPENDENT_CODE 1)
 add_library(${MCUSIM_LIB} SHARED $<TARGET_OBJECTS:objlib>)
 add_library("${MCUSIM_LIB}-static" STATIC $<TARGET_OBJECTS:objlib>)
-
 add_executable(${MCUSIM} src/msim_main.c)
 set_target_properties(${MCUSIM_LIB} PROPERTIES OUTPUT_NAME ${MCUSIM_LIB_NAME})
 set_target_properties("${MCUSIM_LIB}-static" PROPERTIES OUTPUT_NAME ${MCUSIM_LIB_NAME})

@@ -24,40 +24,19 @@
  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- *
- * General-purpose AVR watchdog timer. It's supposed to be suitable for any
- * AVR MCU.
  */
-#ifndef MSIM_AVR_WDT_H_
-#define MSIM_AVR_WDT_H_ 1
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <inttypes.h>
 
 #include "mcusim/mcusim.h"
-#include "mcusim/avr/sim/io.h"
-#include "mcusim/avr/sim/interrupt.h"
+#include "mcusim/avr/sim/wdt.h"
+#include "mcusim/avr/sim/private/macro.h"
+#include "mcusim/avr/sim/private/io_macro.h"
+#include "mcusim/bit/private/macro.h"
 
-/* AVR Watchdog Timer */
-struct MSIM_AVR_WDT {
-	struct MSIM_AVR_IOBit wdp[4];		/* Watchdog prescaler */
-	uint32_t wdp_op[16];			/* Prescalers (# of cycles) */
-	uint32_t wdpval;			/* Current prescaler */
-
-	struct MSIM_AVR_IOBit ce;		/* Change Enable bit */
-	struct MSIM_AVR_IOBit en;		/* Enable bit */
-
-	struct MSIM_AVR_INTVec iv_to;		/* Timeout interrupt vector */
-	struct MSIM_AVR_INTVec iv_sr;		/* System reset vector */
-};
-
-int MSIM_AVR_WDTUpdate(struct MSIM_AVR *mcu);
-
-#ifdef __cplusplus
+int MSIM_AVR_WDTUpdate(struct MSIM_AVR *mcu)
+{
+	return 0;
 }
-#endif
-
-#endif /* MSIM_AVR_WDT_H_ */

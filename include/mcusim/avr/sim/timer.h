@@ -42,6 +42,8 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
+
 #include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/io.h"
 #include "mcusim/avr/sim/interrupt.h"
@@ -70,17 +72,13 @@ enum {
 /* Output compare pin action. */
 enum {
 	MSIM_AVR_TMR_COM_DISC = 0,		/* Disconnected */
-	MSIM_AVR_TMR_COM_TGONCM,		/* Toggle on Compare Match */
-	MSIM_AVR_TMR_COM_CLONCM,		/* Clear on Compare Match */
-	MSIM_AVR_TMR_COM_STONCM,		/* Set on Compare Match */
-	/* Clear on Compare Match, Set at Bottom */
-	MSIM_AVR_TMR_COM_CLONCM_STATBOT,
-	/* Set on Compare Match, Clear at Bottom */
-	MSIM_AVR_TMR_COM_STONCM_CLATBOT,
-	/* Clear on Compare Match (up-cnt), Set on Compare Match (down-cnt) */
-	MSIM_AVR_TMR_COM_CLONUP_STONDOWN,
-	/* Set on Compare Match (up-cnt), Clear on Compare Match (down-cnt) */
-	MSIM_AVR_TMR_COM_STONUP_CLONDOWN,
+	MSIM_AVR_TMR_COM_TGONCM,		/* Toggle @ Compare Match */
+	MSIM_AVR_TMR_COM_CLONCM,		/* Clear @ CM */
+	MSIM_AVR_TMR_COM_STONCM,		/* Set @ CM */
+	MSIM_AVR_TMR_COM_CLONCM_STATBOT,	/* Clear@CM, Set@BOTTOM */
+	MSIM_AVR_TMR_COM_STONCM_CLATBOT,	/* Set@CM, Clear@BOTTOM */
+	MSIM_AVR_TMR_COM_CLONUP_STONDOWN,	/* Clear@CM(UP), Set@CM(DOWN) */
+	MSIM_AVR_TMR_COM_STONUP_CLONDOWN,	/* Set@CM(UP), Clear@CM(DOWN) */
 };
 
 /* Timer count direction */

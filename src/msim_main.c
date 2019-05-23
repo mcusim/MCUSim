@@ -75,7 +75,7 @@ static struct MSIM_CFG conf;
 static void print_usage(void);
 static void print_short_usage(void);
 #ifdef WITH_POSIX
-static void dump_flash_handler(int s);
+	static void dump_flash_handler(int s);
 #endif
 /* END Prototypes of the local functions */
 
@@ -95,16 +95,16 @@ int main(int argc, char *argv[])
 #endif
 #ifdef WITH_POSIX
 	/* Set up signals handlers. */
-	struct sigaction dmpflash_act;
-	memset(&dmpflash_act, 0, sizeof dmpflash_act);
-	dmpflash_act.sa_handler = dump_flash_handler;
-	dmpflash_act.sa_flags = 0;
+	struct sigaction dmpflash_act = {
+		.sa_handler = dump_flash_handler,
+		.sa_flags = 0,
+	};
+	int signals[] = { SIGABRT, SIGKILL, SIGQUIT, SIGSEGV, SIGTERM };
+
 	sigemptyset(&dmpflash_act.sa_mask);
-	sigaction(SIGABRT, &dmpflash_act, NULL);
-	sigaction(SIGKILL, &dmpflash_act, NULL);
-	sigaction(SIGQUIT, &dmpflash_act, NULL);
-	sigaction(SIGSEGV, &dmpflash_act, NULL);
-	sigaction(SIGTERM, &dmpflash_act, NULL);
+	for (uint32_t i = 0; i < ARR_LEN(signals); i++) {
+		sigaction(signals[i], &dmpflash_act, NULL);
+	}
 #endif
 
 	MSIM_CFG_PrintVersion();
