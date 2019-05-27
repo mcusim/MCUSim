@@ -32,1044 +32,1049 @@
 #define NO_REG		-1
 
 #ifndef SREG
-#define SREG		NO_REG
-#define SREG_RES	0x00
-#define SREG_MASK	0x00
+	#define SREG		NO_REG
+	#define SREG_RES	0x00
+	#define SREG_MASK	0x00
 #endif
 #ifndef SPH
-#define SPH		NO_REG
-#define SPH_RES		0x00
-#define SPH_MASK	0x00
+	#define SPH		NO_REG
+	#define SPH_RES		0x00
+	#define SPH_MASK	0x00
 #endif
 #ifndef SPL
-#define SPL		NO_REG
-#define SPL_RES		0x00
-#define SPL_MASK	0x00
+	#define SPL		NO_REG
+	#define SPL_RES		0x00
+	#define SPL_MASK	0x00
 #endif
 #ifndef PORTA
-#define PORTA		NO_REG
-#define PORTA_RES	0x00
-#define PORTA_MASK	0x00
+	#define PORTA		NO_REG
+	#define PORTA_RES	0x00
+	#define PORTA_MASK	0x00
 #endif
 #ifndef DDRA
-#define DDRA		NO_REG
-#define DDRA_RES	0x00
-#define DDRA_MASK	0x00
+	#define DDRA		NO_REG
+	#define DDRA_RES	0x00
+	#define DDRA_MASK	0x00
 #endif
 #ifndef PINA
-#define PINA		NO_REG
-#define PINA_RES	0x00
-#define PINA_MASK	0x00
+	#define PINA		NO_REG
+	#define PINA_RES	0x00
+	#define PINA_MASK	0x00
 #endif
 #ifndef PORTB
-#define PORTB		NO_REG
-#define PORTB_RES	0x00
-#define PORTB_MASK	0x00
+	#define PORTB		NO_REG
+	#define PORTB_RES	0x00
+	#define PORTB_MASK	0x00
 #endif
 #ifndef DDRB
-#define DDRB		NO_REG
-#define DDRB_RES	0x00
-#define DDRB_MASK	0x00
+	#define DDRB		NO_REG
+	#define DDRB_RES	0x00
+	#define DDRB_MASK	0x00
 #endif
 #ifndef PINB
-#define PINB		NO_REG
-#define PINB_RES	0x00
-#define PINB_MASK	0x00
+	#define PINB		NO_REG
+	#define PINB_RES	0x00
+	#define PINB_MASK	0x00
 #endif
 #ifndef PORTC
-#define PORTC		NO_REG
-#define PORTC_RES	0x00
-#define PORTC_MASK	0x00
+	#define PORTC		NO_REG
+	#define PORTC_RES	0x00
+	#define PORTC_MASK	0x00
 #endif
 #ifndef DDRC
-#define DDRC		NO_REG
-#define DDRC_RES	0x00
-#define DDRC_MASK	0x00
+	#define DDRC		NO_REG
+	#define DDRC_RES	0x00
+	#define DDRC_MASK	0x00
 #endif
 #ifndef PINC
-#define PINC		NO_REG
-#define PINC_RES	0x00
-#define PINC_MASK	0x00
+	#define PINC		NO_REG
+	#define PINC_RES	0x00
+	#define PINC_MASK	0x00
 #endif
 #ifndef PORTD
-#define PORTD		NO_REG
-#define PORTD_RES	0x00
-#define PORTD_MASK	0x00
+	#define PORTD		NO_REG
+	#define PORTD_RES	0x00
+	#define PORTD_MASK	0x00
 #endif
 #ifndef DDRD
-#define DDRD		NO_REG
-#define DDRD_RES	0x00
-#define DDRD_MASK	0x00
+	#define DDRD		NO_REG
+	#define DDRD_RES	0x00
+	#define DDRD_MASK	0x00
 #endif
 #ifndef PIND
-#define PIND		NO_REG
-#define PIND_RES	0x00
-#define PIND_MASK	0x00
+	#define PIND		NO_REG
+	#define PIND_RES	0x00
+	#define PIND_MASK	0x00
 #endif
 #ifndef PORTE
-#define PORTE		NO_REG
-#define PORTE_RES	0x00
-#define PORTE_MASK	0x00
+	#define PORTE		NO_REG
+	#define PORTE_RES	0x00
+	#define PORTE_MASK	0x00
 #endif
 #ifndef DDRE
-#define DDRE		NO_REG
-#define DDRE_RES	0x00
-#define DDRE_MASK	0x00
+	#define DDRE		NO_REG
+	#define DDRE_RES	0x00
+	#define DDRE_MASK	0x00
 #endif
 #ifndef PINE
-#define PINE		NO_REG
-#define PINE_RES	0x00
-#define PINE_MASK	0x00
+	#define PINE		NO_REG
+	#define PINE_RES	0x00
+	#define PINE_MASK	0x00
 #endif
 #ifndef PORTF
-#define PORTF		NO_REG
-#define PORTF_RES	0x00
-#define PORTF_MASK	0x00
+	#define PORTF		NO_REG
+	#define PORTF_RES	0x00
+	#define PORTF_MASK	0x00
 #endif
 #ifndef DDRF
-#define DDRF		NO_REG
-#define DDRF_RES	0x00
-#define DDRF_MASK	0x00
+	#define DDRF		NO_REG
+	#define DDRF_RES	0x00
+	#define DDRF_MASK	0x00
 #endif
 #ifndef PINF
-#define PINF		NO_REG
-#define PINF_RES	0x00
-#define PINF_MASK	0x00
+	#define PINF		NO_REG
+	#define PINF_RES	0x00
+	#define PINF_MASK	0x00
 #endif
 #ifndef PORTG
-#define PORTG		NO_REG
-#define PORTG_RES	0x00
-#define PORTG_MASK	0x00
+	#define PORTG		NO_REG
+	#define PORTG_RES	0x00
+	#define PORTG_MASK	0x00
 #endif
 #ifndef DDRG
-#define DDRG		NO_REG
-#define DDRG_RES	0x00
-#define DDRG_MASK	0x00
+	#define DDRG		NO_REG
+	#define DDRG_RES	0x00
+	#define DDRG_MASK	0x00
 #endif
 #ifndef PING
-#define PING		NO_REG
-#define PING_RES	0x00
-#define PING_MASK	0x00
+	#define PING		NO_REG
+	#define PING_RES	0x00
+	#define PING_MASK	0x00
 #endif
 #ifndef EIND
-#define EIND		NO_REG
-#define EIND_RES	0x00
-#define EIND_MASK	0x00
+	#define EIND		NO_REG
+	#define EIND_RES	0x00
+	#define EIND_MASK	0x00
 #endif
 #ifndef RAMPZ
-#define RAMPZ		NO_REG
-#define RAMPZ_RES	0x00
-#define RAMPZ_MASK	0x00
+	#define RAMPZ		NO_REG
+	#define RAMPZ_RES	0x00
+	#define RAMPZ_MASK	0x00
 #endif
 #ifndef RAMPY
-#define RAMPY		NO_REG
-#define RAMPY_RES	0x00
-#define RAMPY_MASK	0x00
+	#define RAMPY		NO_REG
+	#define RAMPY_RES	0x00
+	#define RAMPY_MASK	0x00
 #endif
 #ifndef RAMPX
-#define RAMPX		NO_REG
-#define RAMPX_RES	0x00
-#define RAMPX_MASK	0x00
+	#define RAMPX		NO_REG
+	#define RAMPX_RES	0x00
+	#define RAMPX_MASK	0x00
 #endif
 #ifndef RAMPD
-#define RAMPD		NO_REG
-#define RAMPD_RES	0x00
-#define RAMPD_MASK	0x00
+	#define RAMPD		NO_REG
+	#define RAMPD_RES	0x00
+	#define RAMPD_MASK	0x00
 #endif
 #ifndef SPMCSR
-#define SPMCSR		NO_REG
-#define SPMCSR_RES	0x00
-#define SPMCSR_MASK	0x00
+	#define SPMCSR		NO_REG
+	#define SPMCSR_RES	0x00
+	#define SPMCSR_MASK	0x00
 #endif
 #ifndef MCUCR
-#define MCUCR		NO_REG
-#define MCUCR_RES	0x00
-#define MCUCR_MASK	0x00
+	#define MCUCR		NO_REG
+	#define MCUCR_RES	0x00
+	#define MCUCR_MASK	0x00
 #endif
 #ifndef MCUSR
-#define MCUSR		NO_REG
-#define MCUSR_RES	0x00
-#define MCUSR_MASK	0x00
+	#define MCUSR		NO_REG
+	#define MCUSR_RES	0x00
+	#define MCUSR_MASK	0x00
 #endif
 #ifndef SMCR
-#define SMCR		NO_REG
-#define SMCR_RES	0x00
-#define SMCR_MASK	0x00
+	#define SMCR		NO_REG
+	#define SMCR_RES	0x00
+	#define SMCR_MASK	0x00
 #endif
 #ifndef OCDR
-#define OCDR		NO_REG
-#define OCDR_RES	0x00
-#define OCDR_MASK	0x00
+	#define OCDR		NO_REG
+	#define OCDR_RES	0x00
+	#define OCDR_MASK	0x00
 #endif
 #ifndef ACSR
-#define ACSR		NO_REG
-#define ACSR_RES	0x00
-#define ACSR_MASK	0x00
+	#define ACSR		NO_REG
+	#define ACSR_RES	0x00
+	#define ACSR_MASK	0x00
 #endif
 #ifndef SPDR
-#define SPDR		NO_REG
-#define SPDR_RES	0x00
-#define SPDR_MASK	0x00
+	#define SPDR		NO_REG
+	#define SPDR_RES	0x00
+	#define SPDR_MASK	0x00
 #endif
 #ifndef SPSR
-#define SPSR		NO_REG
-#define SPSR_RES	0x00
-#define SPSR_MASK	0x00
+	#define SPSR		NO_REG
+	#define SPSR_RES	0x00
+	#define SPSR_MASK	0x00
 #endif
 #ifndef SPCR
-#define SPCR		NO_REG
-#define SPCR_RES	0x00
-#define SPCR_MASK	0x00
+	#define SPCR		NO_REG
+	#define SPCR_RES	0x00
+	#define SPCR_MASK	0x00
 #endif
 #ifndef GPIOR2
-#define GPIOR2		NO_REG
-#define GPIOR2_RES	0x00
-#define GPIOR2_MASK	0x00
+	#define GPIOR2		NO_REG
+	#define GPIOR2_RES	0x00
+	#define GPIOR2_MASK	0x00
 #endif
 #ifndef GPIOR1
-#define GPIOR1		NO_REG
-#define GPIOR1_RES	0x00
-#define GPIOR1_MASK	0x00
+	#define GPIOR1		NO_REG
+	#define GPIOR1_RES	0x00
+	#define GPIOR1_MASK	0x00
 #endif
 #ifndef GPIOR0
-#define GPIOR0		NO_REG
-#define GPIOR0_RES	0x00
-#define GPIOR0_MASK	0x00
+	#define GPIOR0		NO_REG
+	#define GPIOR0_RES	0x00
+	#define GPIOR0_MASK	0x00
 #endif
 #ifndef OCR0B
-#define OCR0B		NO_REG
-#define OCR0B_RES	0x00
-#define OCR0B_MASK	0x00
+	#define OCR0B		NO_REG
+	#define OCR0B_RES	0x00
+	#define OCR0B_MASK	0x00
 #endif
 #ifndef OCR0A
-#define OCR0A		NO_REG
-#define OCR0A_RES	0x00
-#define OCR0A_MASK	0x00
+	#define OCR0A		NO_REG
+	#define OCR0A_RES	0x00
+	#define OCR0A_MASK	0x00
 #endif
 #ifndef TCNT0
-#define TCNT0		NO_REG
-#define TCNT0_RES	0x00
-#define TCNT0_MASK	0x00
+	#define TCNT0		NO_REG
+	#define TCNT0_RES	0x00
+	#define TCNT0_MASK	0x00
 #endif
 #ifndef TCCR0B
-#define TCCR0B		NO_REG
-#define TCCR0B_RES	0x00
-#define TCCR0B_MASK	0x00
+	#define TCCR0B		NO_REG
+	#define TCCR0B_RES	0x00
+	#define TCCR0B_MASK	0x00
 #endif
 #ifndef TCCR0A
-#define TCCR0A		NO_REG
-#define TCCR0A_RES	0x00
-#define TCCR0A_MASK	0x00
+	#define TCCR0A		NO_REG
+	#define TCCR0A_RES	0x00
+	#define TCCR0A_MASK	0x00
 #endif
 #ifndef TCCR0
-#define TCCR0		NO_REG
-#define TCCR0_RES	0x00
-#define TCCR0_MASK	0x00
+	#define TCCR0		NO_REG
+	#define TCCR0_RES	0x00
+	#define TCCR0_MASK	0x00
 #endif
 #ifndef GTCCR
-#define GTCCR		NO_REG
-#define GTCCR_RES	0x00
-#define GTCCR_MASK	0x00
+	#define GTCCR		NO_REG
+	#define GTCCR_RES	0x00
+	#define GTCCR_MASK	0x00
 #endif
 #ifndef EEARH
-#define EEARH		NO_REG
-#define EEARH_RES	0x00
-#define EEARH_MASK	0x00
+	#define EEARH		NO_REG
+	#define EEARH_RES	0x00
+	#define EEARH_MASK	0x00
 #endif
 #ifndef EEARL
-#define EEARL		NO_REG
-#define EEARL_RES	0x00
-#define EEARL_MASK	0x00
+	#define EEARL		NO_REG
+	#define EEARL_RES	0x00
+	#define EEARL_MASK	0x00
 #endif
 #ifndef EEDR
-#define EEDR		NO_REG
-#define EEDR_RES	0x00
-#define EEDR_MASK	0x00
+	#define EEDR		NO_REG
+	#define EEDR_RES	0x00
+	#define EEDR_MASK	0x00
 #endif
 #ifndef EECR
-#define EECR		NO_REG
-#define EECR_RES	0x00
-#define EECR_MASK	0x00
+	#define EECR		NO_REG
+	#define EECR_RES	0x00
+	#define EECR_MASK	0x00
 #endif
 #ifndef EIMSK
-#define EIMSK		NO_REG
-#define EIMSK_RES	0x00
-#define EIMSK_MASK	0x00
+	#define EIMSK		NO_REG
+	#define EIMSK_RES	0x00
+	#define EIMSK_MASK	0x00
 #endif
 #ifndef EIFR
-#define EIFR		NO_REG
-#define EIFR_RES	0x00
-#define EIFR_MASK	0x00
+	#define EIFR		NO_REG
+	#define EIFR_RES	0x00
+	#define EIFR_MASK	0x00
 #endif
 #ifndef PCIFR
-#define PCIFR		NO_REG
-#define PCIFR_RES	0x00
-#define PCIFR_MASK	0x00
+	#define PCIFR		NO_REG
+	#define PCIFR_RES	0x00
+	#define PCIFR_MASK	0x00
 #endif
 #ifndef TIFR5
-#define TIFR5		NO_REG
-#define TIFR5_RES	0x00
-#define TIFR5_MASK	0x00
+	#define TIFR5		NO_REG
+	#define TIFR5_RES	0x00
+	#define TIFR5_MASK	0x00
 #endif
 #ifndef TIFR4
-#define TIFR4		NO_REG
-#define TIFR4_RES	0x00
-#define TIFR4_MASK	0x00
+	#define TIFR4		NO_REG
+	#define TIFR4_RES	0x00
+	#define TIFR4_MASK	0x00
 #endif
 #ifndef TIFR3
-#define TIFR3		NO_REG
-#define TIFR3_RES	0x00
-#define TIFR3_MASK	0x00
+	#define TIFR3		NO_REG
+	#define TIFR3_RES	0x00
+	#define TIFR3_MASK	0x00
 #endif
 #ifndef TIFR2
-#define TIFR2		NO_REG
-#define TIFR2_RES	0x00
-#define TIFR2_MASK	0x00
+	#define TIFR2		NO_REG
+	#define TIFR2_RES	0x00
+	#define TIFR2_MASK	0x00
 #endif
 #ifndef TIFR1
-#define TIFR1		NO_REG
-#define TIFR1_RES	0x00
-#define TIFR1_MASK	0x00
+	#define TIFR1		NO_REG
+	#define TIFR1_RES	0x00
+	#define TIFR1_MASK	0x00
 #endif
 #ifndef TIFR0
-#define TIFR0		NO_REG
-#define TIFR0_RES	0x00
-#define TIFR0_MASK	0x00
+	#define TIFR0		NO_REG
+	#define TIFR0_RES	0x00
+	#define TIFR0_MASK	0x00
 #endif
 #ifndef TIFR
-#define TIFR		NO_REG
-#define TIFR_RES	0x00
-#define TIFR_MASK	0x00
+	#define TIFR		NO_REG
+	#define TIFR_RES	0x00
+	#define TIFR_MASK	0x00
 #endif
 #ifndef GICR
-#define GICR		NO_REG
-#define GICR_RES	0x00
-#define GICR_MASK	0x00
+	#define GICR		NO_REG
+	#define GICR_RES	0x00
+	#define GICR_MASK	0x00
 #endif
 #ifndef GIFR
-#define GIFR		NO_REG
-#define GIFR_RES	0x00
-#define GIFR_MASK	0x00
+	#define GIFR		NO_REG
+	#define GIFR_RES	0x00
+	#define GIFR_MASK	0x00
 #endif
 #ifndef TIMSK
-#define TIMSK		NO_REG
-#define TIMSK_RES	0x00
-#define TIMSK_MASK	0x00
+	#define TIMSK		NO_REG
+	#define TIMSK_RES	0x00
+	#define TIMSK_MASK	0x00
 #endif
 #ifndef SPMCR
-#define SPMCR		NO_REG
-#define SPMCR_RES	0x00
-#define SPMCR_MASK	0x00
+	#define SPMCR		NO_REG
+	#define SPMCR_RES	0x00
+	#define SPMCR_MASK	0x00
 #endif
 #ifndef TWCR
-#define TWCR		NO_REG
-#define TWCR_RES	0x00
-#define TWCR_MASK	0x00
+	#define TWCR		NO_REG
+	#define TWCR_RES	0x00
+	#define TWCR_MASK	0x00
 #endif
 #ifndef MCUCSR
-#define MCUCSR		NO_REG
-#define MCUCSR_RES	0x00
-#define MCUCSR_MASK	0x00
+	#define MCUCSR		NO_REG
+	#define MCUCSR_RES	0x00
+	#define MCUCSR_MASK	0x00
 #endif
 #ifndef OSCCAL
-#define OSCCAL		NO_REG
-#define OSCCAL_RES	0x00
-#define OSCCAL_MASK	0x00
+	#define OSCCAL		NO_REG
+	#define OSCCAL_RES	0x00
+	#define OSCCAL_MASK	0x00
 #endif
 #ifndef SFIOR
-#define SFIOR		NO_REG
-#define SFIOR_RES	0x00
-#define SFIOR_MASK	0x00
+	#define SFIOR		NO_REG
+	#define SFIOR_RES	0x00
+	#define SFIOR_MASK	0x00
 #endif
 #ifndef TCCR1A
-#define TCCR1A		NO_REG
-#define TCCR1A_RES	0x00
-#define TCCR1A_MASK	0x00
+	#define TCCR1A		NO_REG
+	#define TCCR1A_RES	0x00
+	#define TCCR1A_MASK	0x00
 #endif
 #ifndef TCCR1B
-#define TCCR1B		NO_REG
-#define TCCR1B_RES	0x00
-#define TCCR1B_MASK	0x00
+	#define TCCR1B		NO_REG
+	#define TCCR1B_RES	0x00
+	#define TCCR1B_MASK	0x00
 #endif
 #ifndef TCNT1H
-#define TCNT1H		NO_REG
-#define TCNT1H_RES	0x00
-#define TCNT1H_MASK	0x00
+	#define TCNT1H		NO_REG
+	#define TCNT1H_RES	0x00
+	#define TCNT1H_MASK	0x00
 #endif
 #ifndef TCNT1L
-#define TCNT1L		NO_REG
-#define TCNT1L_RES	0x00
-#define TCNT1L_MASK	0x00
+	#define TCNT1L		NO_REG
+	#define TCNT1L_RES	0x00
+	#define TCNT1L_MASK	0x00
 #endif
 #ifndef OCR1AH
-#define OCR1AH		NO_REG
-#define OCR1AH_RES	0x00
-#define OCR1AH_MASK	0x00
+	#define OCR1AH		NO_REG
+	#define OCR1AH_RES	0x00
+	#define OCR1AH_MASK	0x00
 #endif
 #ifndef OCR1AL
-#define OCR1AL		NO_REG
-#define OCR1AL_RES	0x00
-#define OCR1AL_MASK	0x00
+	#define OCR1AL		NO_REG
+	#define OCR1AL_RES	0x00
+	#define OCR1AL_MASK	0x00
 #endif
 #ifndef OCR1BH
-#define OCR1BH		NO_REG
-#define OCR1BH_RES	0x00
-#define OCR1BH_MASK	0x00
+	#define OCR1BH		NO_REG
+	#define OCR1BH_RES	0x00
+	#define OCR1BH_MASK	0x00
 #endif
 #ifndef OCR1BL
-#define OCR1BL		NO_REG
-#define OCR1BL_RES	0x00
-#define OCR1BL_MASK	0x00
+	#define OCR1BL		NO_REG
+	#define OCR1BL_RES	0x00
+	#define OCR1BL_MASK	0x00
 #endif
 #ifndef ICR1H
-#define ICR1H		NO_REG
-#define ICR1H_RES	0x00
-#define ICR1H_MASK	0x00
+	#define ICR1H		NO_REG
+	#define ICR1H_RES	0x00
+	#define ICR1H_MASK	0x00
 #endif
 #ifndef ICR1L
-#define ICR1L		NO_REG
-#define ICR1L_RES	0x00
-#define ICR1L_MASK	0x00
+	#define ICR1L		NO_REG
+	#define ICR1L_RES	0x00
+	#define ICR1L_MASK	0x00
 #endif
 #ifndef TCCR2
-#define TCCR2		NO_REG
-#define TCCR2_RES	0x00
-#define TCCR2_MASK	0x00
+	#define TCCR2		NO_REG
+	#define TCCR2_RES	0x00
+	#define TCCR2_MASK	0x00
 #endif
 #ifndef TCNT2
-#define TCNT2		NO_REG
-#define TCNT2_RES	0x00
-#define TCNT2_MASK	0x00
+	#define TCNT2		NO_REG
+	#define TCNT2_RES	0x00
+	#define TCNT2_MASK	0x00
 #endif
 #ifndef OCR2
-#define OCR2		NO_REG
-#define OCR2_RES	0x00
-#define OCR2_MASK	0x00
+	#define OCR2		NO_REG
+	#define OCR2_RES	0x00
+	#define OCR2_MASK	0x00
 #endif
 #ifndef ASSR
-#define ASSR		NO_REG
-#define ASSR_RES	0x00
-#define ASSR_MASK	0x00
+	#define ASSR		NO_REG
+	#define ASSR_RES	0x00
+	#define ASSR_MASK	0x00
 #endif
 #ifndef WDTCR
-#define WDTCR		NO_REG
-#define WDTCR_RES	0x00
-#define WDTCR_MASK	0x00
+	#define WDTCR		NO_REG
+	#define WDTCR_RES	0x00
+	#define WDTCR_MASK	0x00
 #endif
 #ifndef UBRRH
-#define UBRRH		NO_REG
-#define UBRRH_RES	0x00
-#define UBRRH_MASK	0x00
+	#define UBRRH		NO_REG
+	#define UBRRH_RES	0x00
+	#define UBRRH_MASK	0x00
 #endif
 #ifndef UCSRC
-#define UCSRC		NO_REG
-#define UCSRC_RES	0x00
-#define UCSRC_MASK	0x00
+	#define UCSRC		NO_REG
+	#define UCSRC_RES	0x00
+	#define UCSRC_MASK	0x00
 #endif
 #ifndef UDR
-#define UDR		NO_REG
-#define UDR_RES	0x00
-#define UDR_MASK	0x00
+	#define UDR		NO_REG
+	#define UDR_RES	0x00
+	#define UDR_MASK	0x00
 #endif
 #ifndef UCSRA
-#define UCSRA		NO_REG
-#define UCSRA_RES	0x00
-#define UCSRA_MASK	0x00
+	#define UCSRA		NO_REG
+	#define UCSRA_RES	0x00
+	#define UCSRA_MASK	0x00
 #endif
 #ifndef UCSRB
-#define UCSRB		NO_REG
-#define UCSRB_RES	0x00
-#define UCSRB_MASK	0x00
+	#define UCSRB		NO_REG
+	#define UCSRB_RES	0x00
+	#define UCSRB_MASK	0x00
 #endif
 #ifndef UBRRL
-#define UBRRL		NO_REG
-#define UBRRL_RES	0x00
-#define UBRRL_MASK	0x00
+	#define UBRRL		NO_REG
+	#define UBRRL_RES	0x00
+	#define UBRRL_MASK	0x00
 #endif
 #ifndef ADMUX
-#define ADMUX		NO_REG
-#define ADMUX_RES	0x00
-#define ADMUX_MASK	0x00
+	#define ADMUX		NO_REG
+	#define ADMUX_RES	0x00
+	#define ADMUX_MASK	0x00
 #endif
 #ifndef ADCSRA
-#define ADCSRA		NO_REG
-#define ADCSRA_RES	0x00
-#define ADCSRA_MASK	0x00
+	#define ADCSRA		NO_REG
+	#define ADCSRA_RES	0x00
+	#define ADCSRA_MASK	0x00
 #endif
 #ifndef ADCH
-#define ADCH		NO_REG
-#define ADCH_RES	0x00
-#define ADCH_MASK	0x00
+	#define ADCH		NO_REG
+	#define ADCH_RES	0x00
+	#define ADCH_MASK	0x00
 #endif
 #ifndef ADCL
-#define ADCL		NO_REG
-#define ADCL_RES	0x00
-#define ADCL_MASK	0x00
+	#define ADCL		NO_REG
+	#define ADCL_RES	0x00
+	#define ADCL_MASK	0x00
 #endif
 #ifndef TWDR
-#define TWDR		NO_REG
-#define TWDR_RES	0x00
-#define TWDR_MASK	0x00
+	#define TWDR		NO_REG
+	#define TWDR_RES	0x00
+	#define TWDR_MASK	0x00
 #endif
 #ifndef TWAR
-#define TWAR		NO_REG
-#define TWAR_RES	0x00
-#define TWAR_MASK	0x00
+	#define TWAR		NO_REG
+	#define TWAR_RES	0x00
+	#define TWAR_MASK	0x00
 #endif
 #ifndef TWSR
-#define TWSR		NO_REG
-#define TWSR_RES	0x00
-#define TWSR_MASK	0x00
+	#define TWSR		NO_REG
+	#define TWSR_RES	0x00
+	#define TWSR_MASK	0x00
 #endif
 #ifndef TWBR
-#define TWBR		NO_REG
-#define TWBR_RES	0x00
-#define TWBR_MASK	0x00
+	#define TWBR		NO_REG
+	#define TWBR_RES	0x00
+	#define TWBR_MASK	0x00
 #endif
 #ifndef UDR3
-#define UDR3		NO_REG
-#define UDR3_RES	0x00
-#define UDR3_MASK	0x00
+	#define UDR3		NO_REG
+	#define UDR3_RES	0x00
+	#define UDR3_MASK	0x00
 #endif
 #ifndef UBRR3H
-#define UBRR3H		NO_REG
-#define UBRR3H_RES	0x00
-#define UBRR3H_MASK	0x00
+	#define UBRR3H		NO_REG
+	#define UBRR3H_RES	0x00
+	#define UBRR3H_MASK	0x00
 #endif
 #ifndef UBRR3L
-#define UBRR3L		NO_REG
-#define UBRR3L_RES	0x00
-#define UBRR3L_MASK	0x00
+	#define UBRR3L		NO_REG
+	#define UBRR3L_RES	0x00
+	#define UBRR3L_MASK	0x00
 #endif
 #ifndef UCSR3C
-#define UCSR3C		NO_REG
-#define UCSR3C_RES	0x00
-#define UCSR3C_MASK	0x00
+	#define UCSR3C		NO_REG
+	#define UCSR3C_RES	0x00
+	#define UCSR3C_MASK	0x00
 #endif
 #ifndef UCSR3B
-#define UCSR3B		NO_REG
-#define UCSR3B_RES	0x00
-#define UCSR3B_MASK	0x00
+	#define UCSR3B		NO_REG
+	#define UCSR3B_RES	0x00
+	#define UCSR3B_MASK	0x00
 #endif
 #ifndef UCSR3A
-#define UCSR3A		NO_REG
-#define UCSR3A_RES	0x00
-#define UCSR3A_MASK	0x00
+	#define UCSR3A		NO_REG
+	#define UCSR3A_RES	0x00
+	#define UCSR3A_MASK	0x00
 #endif
 #ifndef OCR5CH
-#define OCR5CH		NO_REG
-#define OCR5CH_RES	0x00
-#define OCR5CH_MASK	0x00
+	#define OCR5CH		NO_REG
+	#define OCR5CH_RES	0x00
+	#define OCR5CH_MASK	0x00
 #endif
 #ifndef OCR5CL
-#define OCR5CL		NO_REG
-#define OCR5CL_RES	0x00
-#define OCR5CL_MASK	0x00
+	#define OCR5CL		NO_REG
+	#define OCR5CL_RES	0x00
+	#define OCR5CL_MASK	0x00
 #endif
 #ifndef OCR5BH
-#define OCR5BH		NO_REG
-#define OCR5BH_RES	0x00
-#define OCR5BH_MASK	0x00
+	#define OCR5BH		NO_REG
+	#define OCR5BH_RES	0x00
+	#define OCR5BH_MASK	0x00
 #endif
 #ifndef OCR5BL
-#define OCR5BL		NO_REG
-#define OCR5BL_RES	0x00
-#define OCR5BL_MASK	0x00
+	#define OCR5BL		NO_REG
+	#define OCR5BL_RES	0x00
+	#define OCR5BL_MASK	0x00
 #endif
 #ifndef OCR5AH
-#define OCR5AH		NO_REG
-#define OCR5AH_RES	0x00
-#define OCR5AH_MASK	0x00
+	#define OCR5AH		NO_REG
+	#define OCR5AH_RES	0x00
+	#define OCR5AH_MASK	0x00
 #endif
 #ifndef OCR5AL
-#define OCR5AL		NO_REG
-#define OCR5AL_RES	0x00
-#define OCR5AL_MASK	0x00
+	#define OCR5AL		NO_REG
+	#define OCR5AL_RES	0x00
+	#define OCR5AL_MASK	0x00
 #endif
 #ifndef ICR5H
-#define ICR5H		NO_REG
-#define ICR5H_RES	0x00
-#define ICR5H_MASK	0x00
+	#define ICR5H		NO_REG
+	#define ICR5H_RES	0x00
+	#define ICR5H_MASK	0x00
 #endif
 #ifndef ICR5L
-#define ICR5L		NO_REG
-#define ICR5L_RES	0x00
-#define ICR5L_MASK	0x00
+	#define ICR5L		NO_REG
+	#define ICR5L_RES	0x00
+	#define ICR5L_MASK	0x00
 #endif
 #ifndef TCNT5H
-#define TCNT5H		NO_REG
-#define TCNT5H_RES	0x00
-#define TCNT5H_MASK	0x00
+	#define TCNT5H		NO_REG
+	#define TCNT5H_RES	0x00
+	#define TCNT5H_MASK	0x00
 #endif
 #ifndef TCNT5L
-#define TCNT5L		NO_REG
-#define TCNT5L_RES	0x00
-#define TCNT5L_MASK	0x00
+	#define TCNT5L		NO_REG
+	#define TCNT5L_RES	0x00
+	#define TCNT5L_MASK	0x00
 #endif
 #ifndef TCCR5C
-#define TCCR5C		NO_REG
-#define TCCR5C_RES	0x00
-#define TCCR5C_MASK	0x00
+	#define TCCR5C		NO_REG
+	#define TCCR5C_RES	0x00
+	#define TCCR5C_MASK	0x00
 #endif
 #ifndef TCCR5B
-#define TCCR5B		NO_REG
-#define TCCR5B_RES	0x00
-#define TCCR5B_MASK	0x00
+	#define TCCR5B		NO_REG
+	#define TCCR5B_RES	0x00
+	#define TCCR5B_MASK	0x00
 #endif
 #ifndef TCCR5A
-#define TCCR5A		NO_REG
-#define TCCR5A_RES	0x00
-#define TCCR5A_MASK	0x00
+	#define TCCR5A		NO_REG
+	#define TCCR5A_RES	0x00
+	#define TCCR5A_MASK	0x00
 #endif
 #ifndef PORTL
-#define PORTL		NO_REG
-#define PORTL_RES	0x00
-#define PORTL_MASK	0x00
+	#define PORTL		NO_REG
+	#define PORTL_RES	0x00
+	#define PORTL_MASK	0x00
 #endif
 #ifndef DDRL
-#define DDRL		NO_REG
-#define DDRL_RES	0x00
-#define DDRL_MASK	0x00
+	#define DDRL		NO_REG
+	#define DDRL_RES	0x00
+	#define DDRL_MASK	0x00
 #endif
 #ifndef PINL
-#define PINL		NO_REG
-#define PINL_RES	0x00
-#define PINL_MASK	0x00
+	#define PINL		NO_REG
+	#define PINL_RES	0x00
+	#define PINL_MASK	0x00
 #endif
 #ifndef PORTK
-#define PORTK		NO_REG
-#define PORTK_RES	0x00
-#define PORTK_MASK	0x00
+	#define PORTK		NO_REG
+	#define PORTK_RES	0x00
+	#define PORTK_MASK	0x00
 #endif
 #ifndef DDRK
-#define DDRK		NO_REG
-#define DDRK_RES	0x00
-#define DDRK_MASK	0x00
+	#define DDRK		NO_REG
+	#define DDRK_RES	0x00
+	#define DDRK_MASK	0x00
 #endif
 #ifndef PINK
-#define PINK		NO_REG
-#define PINK_RES	0x00
-#define PINK_MASK	0x00
+	#define PINK		NO_REG
+	#define PINK_RES	0x00
+	#define PINK_MASK	0x00
 #endif
 #ifndef PORTJ
-#define PORTJ		NO_REG
-#define PORTJ_RES	0x00
-#define PORTJ_MASK	0x00
+	#define PORTJ		NO_REG
+	#define PORTJ_RES	0x00
+	#define PORTJ_MASK	0x00
 #endif
 #ifndef DDRJ
-#define DDRJ		NO_REG
-#define DDRJ_RES	0x00
-#define DDRJ_MASK	0x00
+	#define DDRJ		NO_REG
+	#define DDRJ_RES	0x00
+	#define DDRJ_MASK	0x00
 #endif
 #ifndef PINJ
-#define PINJ		NO_REG
-#define PINJ_RES	0x00
-#define PINJ_MASK	0x00
+	#define PINJ		NO_REG
+	#define PINJ_RES	0x00
+	#define PINJ_MASK	0x00
 #endif
 #ifndef PORTH
-#define PORTH		NO_REG
-#define PORTH_RES	0x00
-#define PORTH_MASK	0x00
+	#define PORTH		NO_REG
+	#define PORTH_RES	0x00
+	#define PORTH_MASK	0x00
 #endif
 #ifndef DDRH
-#define DDRH		NO_REG
-#define DDRH_RES	0x00
-#define DDRH_MASK	0x00
+	#define DDRH		NO_REG
+	#define DDRH_RES	0x00
+	#define DDRH_MASK	0x00
 #endif
 #ifndef PINH
-#define PINH		NO_REG
-#define PINH_RES	0x00
-#define PINH_MASK	0x00
+	#define PINH		NO_REG
+	#define PINH_RES	0x00
+	#define PINH_MASK	0x00
 #endif
 #ifndef UDR2
-#define UDR2		NO_REG
-#define UDR2_RES	0x00
-#define UDR2_MASK	0x00
+	#define UDR2		NO_REG
+	#define UDR2_RES	0x00
+	#define UDR2_MASK	0x00
 #endif
 #ifndef UBRR2H
-#define UBRR2H		NO_REG
-#define UBRR2H_RES	0x00
-#define UBRR2H_MASK	0x00
+	#define UBRR2H		NO_REG
+	#define UBRR2H_RES	0x00
+	#define UBRR2H_MASK	0x00
 #endif
 #ifndef UBRR2L
-#define UBRR2L		NO_REG
-#define UBRR2L_RES	0x00
-#define UBRR2L_MASK	0x00
+	#define UBRR2L		NO_REG
+	#define UBRR2L_RES	0x00
+	#define UBRR2L_MASK	0x00
 #endif
 #ifndef UCSR2C
-#define UCSR2C		NO_REG
-#define UCSR2C_RES	0x00
-#define UCSR2C_MASK	0x00
+	#define UCSR2C		NO_REG
+	#define UCSR2C_RES	0x00
+	#define UCSR2C_MASK	0x00
 #endif
 #ifndef UCSR2B
-#define UCSR2B		NO_REG
-#define UCSR2B_RES	0x00
-#define UCSR2B_MASK	0x00
+	#define UCSR2B		NO_REG
+	#define UCSR2B_RES	0x00
+	#define UCSR2B_MASK	0x00
 #endif
 #ifndef UCSR2A
-#define UCSR2A		NO_REG
-#define UCSR2A_RES	0x00
-#define UCSR2A_MASK	0x00
+	#define UCSR2A		NO_REG
+	#define UCSR2A_RES	0x00
+	#define UCSR2A_MASK	0x00
 #endif
 #ifndef UDR1
-#define UDR1		NO_REG
-#define UDR1_RES	0x00
-#define UDR1_MASK	0x00
+	#define UDR1		NO_REG
+	#define UDR1_RES	0x00
+	#define UDR1_MASK	0x00
 #endif
 #ifndef UBRR1H
-#define UBRR1H		NO_REG
-#define UBRR1H_RES	0x00
-#define UBRR1H_MASK	0x00
+	#define UBRR1H		NO_REG
+	#define UBRR1H_RES	0x00
+	#define UBRR1H_MASK	0x00
 #endif
 #ifndef UBRR1L
-#define UBRR1L		NO_REG
-#define UBRR1L_RES	0x00
-#define UBRR1L_MASK	0x00
+	#define UBRR1L		NO_REG
+	#define UBRR1L_RES	0x00
+	#define UBRR1L_MASK	0x00
 #endif
 #ifndef UCSR1C
-#define UCSR1C		NO_REG
-#define UCSR1C_RES	0x00
-#define UCSR1C_MASK	0x00
+	#define UCSR1C		NO_REG
+	#define UCSR1C_RES	0x00
+	#define UCSR1C_MASK	0x00
 #endif
 #ifndef UCSR1B
-#define UCSR1B		NO_REG
-#define UCSR1B_RES	0x00
-#define UCSR1B_MASK	0x00
+	#define UCSR1B		NO_REG
+	#define UCSR1B_RES	0x00
+	#define UCSR1B_MASK	0x00
 #endif
 #ifndef UCSR1A
-#define UCSR1A		NO_REG
-#define UCSR1A_RES	0x00
-#define UCSR1A_MASK	0x00
+	#define UCSR1A		NO_REG
+	#define UCSR1A_RES	0x00
+	#define UCSR1A_MASK	0x00
 #endif
 #ifndef UDR0
-#define UDR0		NO_REG
-#define UDR0_RES	0x00
-#define UDR0_MASK	0x00
+	#define UDR0		NO_REG
+	#define UDR0_RES	0x00
+	#define UDR0_MASK	0x00
 #endif
 #ifndef UBRR0H
-#define UBRR0H		NO_REG
-#define UBRR0H_RES	0x00
-#define UBRR0H_MASK	0x00
+	#define UBRR0H		NO_REG
+	#define UBRR0H_RES	0x00
+	#define UBRR0H_MASK	0x00
 #endif
 #ifndef UBRR0L
-#define UBRR0L		NO_REG
-#define UBRR0L_RES	0x00
-#define UBRR0L_MASK	0x00
+	#define UBRR0L		NO_REG
+	#define UBRR0L_RES	0x00
+	#define UBRR0L_MASK	0x00
 #endif
 #ifndef UCSR0C
-#define UCSR0C		NO_REG
-#define UCSR0C_RES	0x00
-#define UCSR0C_MASK	0x00
+	#define UCSR0C		NO_REG
+	#define UCSR0C_RES	0x00
+	#define UCSR0C_MASK	0x00
 #endif
 #ifndef UCSR0B
-#define UCSR0B		NO_REG
-#define UCSR0B_RES	0x00
-#define UCSR0B_MASK	0x00
+	#define UCSR0B		NO_REG
+	#define UCSR0B_RES	0x00
+	#define UCSR0B_MASK	0x00
 #endif
 #ifndef UCSR0A
-#define UCSR0A		NO_REG
-#define UCSR0A_RES	0x00
-#define UCSR0A_MASK	0x00
+	#define UCSR0A		NO_REG
+	#define UCSR0A_RES	0x00
+	#define UCSR0A_MASK	0x00
 #endif
 #ifndef TWAMR
-#define TWAMR		NO_REG
-#define TWAMR_RES	0x00
-#define TWAMR_MASK	0x00
+	#define TWAMR		NO_REG
+	#define TWAMR_RES	0x00
+	#define TWAMR_MASK	0x00
 #endif
 #ifndef OCR2B
-#define OCR2B		NO_REG
-#define OCR2B_RES	0x00
-#define OCR2B_MASK	0x00
+	#define OCR2B		NO_REG
+	#define OCR2B_RES	0x00
+	#define OCR2B_MASK	0x00
 #endif
 #ifndef OCR2A
-#define OCR2A		NO_REG
-#define OCR2A_RES	0x00
-#define OCR2A_MASK	0x00
+	#define OCR2A		NO_REG
+	#define OCR2A_RES	0x00
+	#define OCR2A_MASK	0x00
 #endif
 #ifndef TCCR2B
-#define TCCR2B		NO_REG
-#define TCCR2B_RES	0x00
-#define TCCR2B_MASK	0x00
+	#define TCCR2B		NO_REG
+	#define TCCR2B_RES	0x00
+	#define TCCR2B_MASK	0x00
 #endif
 #ifndef TCCR2A
-#define TCCR2A		NO_REG
-#define TCCR2A_RES	0x00
-#define TCCR2A_MASK	0x00
+	#define TCCR2A		NO_REG
+	#define TCCR2A_RES	0x00
+	#define TCCR2A_MASK	0x00
 #endif
 #ifndef OCR4CH
-#define OCR4CH		NO_REG
-#define OCR4CH_RES	0x00
-#define OCR4CH_MASK	0x00
+	#define OCR4CH		NO_REG
+	#define OCR4CH_RES	0x00
+	#define OCR4CH_MASK	0x00
 #endif
 #ifndef OCR4CL
-#define OCR4CL		NO_REG
-#define OCR4CL_RES	0x00
-#define OCR4CL_MASK	0x00
+	#define OCR4CL		NO_REG
+	#define OCR4CL_RES	0x00
+	#define OCR4CL_MASK	0x00
 #endif
 #ifndef OCR4BH
-#define OCR4BH		NO_REG
-#define OCR4BH_RES	0x00
-#define OCR4BH_MASK	0x00
+	#define OCR4BH		NO_REG
+	#define OCR4BH_RES	0x00
+	#define OCR4BH_MASK	0x00
 #endif
 #ifndef OCR4BL
-#define OCR4BL		NO_REG
-#define OCR4BL_RES	0x00
-#define OCR4BL_MASK	0x00
+	#define OCR4BL		NO_REG
+	#define OCR4BL_RES	0x00
+	#define OCR4BL_MASK	0x00
 #endif
 #ifndef OCR4AH
-#define OCR4AH		NO_REG
-#define OCR4AH_RES	0x00
-#define OCR4AH_MASK	0x00
+	#define OCR4AH		NO_REG
+	#define OCR4AH_RES	0x00
+	#define OCR4AH_MASK	0x00
 #endif
 #ifndef OCR4AL
-#define OCR4AL		NO_REG
-#define OCR4AL_RES	0x00
-#define OCR4AL_MASK	0x00
+	#define OCR4AL		NO_REG
+	#define OCR4AL_RES	0x00
+	#define OCR4AL_MASK	0x00
 #endif
 #ifndef ICR4H
-#define ICR4H		NO_REG
-#define ICR4H_RES	0x00
-#define ICR4H_MASK	0x00
+	#define ICR4H		NO_REG
+	#define ICR4H_RES	0x00
+	#define ICR4H_MASK	0x00
 #endif
 #ifndef ICR4L
-#define ICR4L		NO_REG
-#define ICR4L_RES	0x00
-#define ICR4L_MASK	0x00
+	#define ICR4L		NO_REG
+	#define ICR4L_RES	0x00
+	#define ICR4L_MASK	0x00
 #endif
 #ifndef TCNT4H
-#define TCNT4H		NO_REG
-#define TCNT4H_RES	0x00
-#define TCNT4H_MASK	0x00
+	#define TCNT4H		NO_REG
+	#define TCNT4H_RES	0x00
+	#define TCNT4H_MASK	0x00
 #endif
 #ifndef TCNT4L
-#define TCNT4L		NO_REG
-#define TCNT4L_RES	0x00
-#define TCNT4L_MASK	0x00
+	#define TCNT4L		NO_REG
+	#define TCNT4L_RES	0x00
+	#define TCNT4L_MASK	0x00
 #endif
 #ifndef TCCR4C
-#define TCCR4C		NO_REG
-#define TCCR4C_RES	0x00
-#define TCCR4C_MASK	0x00
+	#define TCCR4C		NO_REG
+	#define TCCR4C_RES	0x00
+	#define TCCR4C_MASK	0x00
 #endif
 #ifndef TCCR4B
-#define TCCR4B		NO_REG
-#define TCCR4B_RES	0x00
-#define TCCR4B_MASK	0x00
+	#define TCCR4B		NO_REG
+	#define TCCR4B_RES	0x00
+	#define TCCR4B_MASK	0x00
 #endif
 #ifndef TCCR4A
-#define TCCR4A		NO_REG
-#define TCCR4A_RES	0x00
-#define TCCR4A_MASK	0x00
+	#define TCCR4A		NO_REG
+	#define TCCR4A_RES	0x00
+	#define TCCR4A_MASK	0x00
 #endif
 #ifndef OCR3CH
-#define OCR3CH		NO_REG
-#define OCR3CH_RES	0x00
-#define OCR3CH_MASK	0x00
+	#define OCR3CH		NO_REG
+	#define OCR3CH_RES	0x00
+	#define OCR3CH_MASK	0x00
 #endif
 #ifndef OCR3CL
-#define OCR3CL		NO_REG
-#define OCR3CL_RES	0x00
-#define OCR3CL_MASK	0x00
+	#define OCR3CL		NO_REG
+	#define OCR3CL_RES	0x00
+	#define OCR3CL_MASK	0x00
 #endif
 #ifndef OCR3BH
-#define OCR3BH		NO_REG
-#define OCR3BH_RES	0x00
-#define OCR3BH_MASK	0x00
+	#define OCR3BH		NO_REG
+	#define OCR3BH_RES	0x00
+	#define OCR3BH_MASK	0x00
 #endif
 #ifndef OCR3BL
-#define OCR3BL		NO_REG
-#define OCR3BL_RES	0x00
-#define OCR3BL_MASK	0x00
+	#define OCR3BL		NO_REG
+	#define OCR3BL_RES	0x00
+	#define OCR3BL_MASK	0x00
 #endif
 #ifndef OCR3AH
-#define OCR3AH		NO_REG
-#define OCR3AH_RES	0x00
-#define OCR3AH_MASK	0x00
+	#define OCR3AH		NO_REG
+	#define OCR3AH_RES	0x00
+	#define OCR3AH_MASK	0x00
 #endif
 #ifndef OCR3AL
-#define OCR3AL		NO_REG
-#define OCR3AL_RES	0x00
-#define OCR3AL_MASK	0x00
+	#define OCR3AL		NO_REG
+	#define OCR3AL_RES	0x00
+	#define OCR3AL_MASK	0x00
 #endif
 #ifndef ICR3H
-#define ICR3H		NO_REG
-#define ICR3H_RES	0x00
-#define ICR3H_MASK	0x00
+	#define ICR3H		NO_REG
+	#define ICR3H_RES	0x00
+	#define ICR3H_MASK	0x00
 #endif
 #ifndef ICR3L
-#define ICR3L		NO_REG
-#define ICR3L_RES	0x00
-#define ICR3L_MASK	0x00
+	#define ICR3L		NO_REG
+	#define ICR3L_RES	0x00
+	#define ICR3L_MASK	0x00
 #endif
 #ifndef TCNT3H
-#define TCNT3H		NO_REG
-#define TCNT3H_RES	0x00
-#define TCNT3H_MASK	0x00
+	#define TCNT3H		NO_REG
+	#define TCNT3H_RES	0x00
+	#define TCNT3H_MASK	0x00
 #endif
 #ifndef TCNT3L
-#define TCNT3L		NO_REG
-#define TCNT3L_RES	0x00
-#define TCNT3L_MASK	0x00
+	#define TCNT3L		NO_REG
+	#define TCNT3L_RES	0x00
+	#define TCNT3L_MASK	0x00
 #endif
 #ifndef TCCR3C
-#define TCCR3C		NO_REG
-#define TCCR3C_RES	0x00
-#define TCCR3C_MASK	0x00
+	#define TCCR3C		NO_REG
+	#define TCCR3C_RES	0x00
+	#define TCCR3C_MASK	0x00
 #endif
 #ifndef TCCR3B
-#define TCCR3B		NO_REG
-#define TCCR3B_RES	0x00
-#define TCCR3B_MASK	0x00
+	#define TCCR3B		NO_REG
+	#define TCCR3B_RES	0x00
+	#define TCCR3B_MASK	0x00
 #endif
 #ifndef TCCR3A
-#define TCCR3A		NO_REG
-#define TCCR3A_RES	0x00
-#define TCCR3A_MASK	0x00
+	#define TCCR3A		NO_REG
+	#define TCCR3A_RES	0x00
+	#define TCCR3A_MASK	0x00
 #endif
 #ifndef OCR1CH
-#define OCR1CH		NO_REG
-#define OCR1CH_RES	0x00
-#define OCR1CH_MASK	0x00
+	#define OCR1CH		NO_REG
+	#define OCR1CH_RES	0x00
+	#define OCR1CH_MASK	0x00
 #endif
 #ifndef OCR1CL
-#define OCR1CL		NO_REG
-#define OCR1CL_RES	0x00
-#define OCR1CL_MASK	0x00
+	#define OCR1CL		NO_REG
+	#define OCR1CL_RES	0x00
+	#define OCR1CL_MASK	0x00
 #endif
 #ifndef TCCR1C
-#define TCCR1C		NO_REG
-#define TCCR1C_RES	0x00
-#define TCCR1C_MASK	0x00
+	#define TCCR1C		NO_REG
+	#define TCCR1C_RES	0x00
+	#define TCCR1C_MASK	0x00
 #endif
 #ifndef DIDR1
-#define DIDR1		NO_REG
-#define DIDR1_RES	0x00
-#define DIDR1_MASK	0x00
+	#define DIDR1		NO_REG
+	#define DIDR1_RES	0x00
+	#define DIDR1_MASK	0x00
 #endif
 #ifndef DIDR0
-#define DIDR0		NO_REG
-#define DIDR0_RES	0x00
-#define DIDR0_MASK	0x00
+	#define DIDR0		NO_REG
+	#define DIDR0_RES	0x00
+	#define DIDR0_MASK	0x00
 #endif
 #ifndef DIDR2
-#define DIDR2		NO_REG
-#define DIDR2_RES	0x00
-#define DIDR2_MASK	0x00
+	#define DIDR2		NO_REG
+	#define DIDR2_RES	0x00
+	#define DIDR2_MASK	0x00
 #endif
 #ifndef ADCSRB
-#define ADCSRB		NO_REG
-#define ADCSRB_RES	0x00
-#define ADCSRB_MASK	0x00
+	#define ADCSRB		NO_REG
+	#define ADCSRB_RES	0x00
+	#define ADCSRB_MASK	0x00
 #endif
 #ifndef XMCRB
-#define XMCRB		NO_REG
-#define XMCRB_RES	0x00
-#define XMCRB_MASK	0x00
+	#define XMCRB		NO_REG
+	#define XMCRB_RES	0x00
+	#define XMCRB_MASK	0x00
 #endif
 #ifndef XMCRA
-#define XMCRA		NO_REG
-#define XMCRA_RES	0x00
-#define XMCRA_MASK	0x00
+	#define XMCRA		NO_REG
+	#define XMCRA_RES	0x00
+	#define XMCRA_MASK	0x00
 #endif
 #ifndef TIMSK5
-#define TIMSK5		NO_REG
-#define TIMSK5_RES	0x00
-#define TIMSK5_MASK	0x00
+	#define TIMSK5		NO_REG
+	#define TIMSK5_RES	0x00
+	#define TIMSK5_MASK	0x00
 #endif
 #ifndef TIMSK4
-#define TIMSK4		NO_REG
-#define TIMSK4_RES	0x00
-#define TIMSK4_MASK	0x00
+	#define TIMSK4		NO_REG
+	#define TIMSK4_RES	0x00
+	#define TIMSK4_MASK	0x00
 #endif
 #ifndef TIMSK3
-#define TIMSK3		NO_REG
-#define TIMSK3_RES	0x00
-#define TIMSK3_MASK	0x00
+	#define TIMSK3		NO_REG
+	#define TIMSK3_RES	0x00
+	#define TIMSK3_MASK	0x00
 #endif
 #ifndef TIMSK2
-#define TIMSK2		NO_REG
-#define TIMSK2_RES	0x00
-#define TIMSK2_MASK	0x00
+	#define TIMSK2		NO_REG
+	#define TIMSK2_RES	0x00
+	#define TIMSK2_MASK	0x00
 #endif
 #ifndef TIMSK1
-#define TIMSK1		NO_REG
-#define TIMSK1_RES	0x00
-#define TIMSK1_MASK	0x00
+	#define TIMSK1		NO_REG
+	#define TIMSK1_RES	0x00
+	#define TIMSK1_MASK	0x00
 #endif
 #ifndef TIMSK0
-#define TIMSK0		NO_REG
-#define TIMSK0_RES	0x00
-#define TIMSK0_MASK	0x00
+	#define TIMSK0		NO_REG
+	#define TIMSK0_RES	0x00
+	#define TIMSK0_MASK	0x00
 #endif
 #ifndef PCMSK2
-#define PCMSK2		NO_REG
-#define PCMSK2_RES	0x00
-#define PCMSK2_MASK	0x00
+	#define PCMSK2		NO_REG
+	#define PCMSK2_RES	0x00
+	#define PCMSK2_MASK	0x00
 #endif
 #ifndef PCMSK1
-#define PCMSK1		NO_REG
-#define PCMSK1_RES	0x00
-#define PCMSK1_MASK	0x00
+	#define PCMSK1		NO_REG
+	#define PCMSK1_RES	0x00
+	#define PCMSK1_MASK	0x00
 #endif
 #ifndef PCMSK0
-#define PCMSK0		NO_REG
-#define PCMSK0_RES	0x00
-#define PCMSK0_MASK	0x00
+	#define PCMSK0		NO_REG
+	#define PCMSK0_RES	0x00
+	#define PCMSK0_MASK	0x00
 #endif
 #ifndef EICRB
-#define EICRB		NO_REG
-#define EICRB_RES	0x00
-#define EICRB_MASK	0x00
+	#define EICRB		NO_REG
+	#define EICRB_RES	0x00
+	#define EICRB_MASK	0x00
 #endif
 #ifndef EICRA
-#define EICRA		NO_REG
-#define EICRA_RES	0x00
-#define EICRA_MASK	0x00
+	#define EICRA		NO_REG
+	#define EICRA_RES	0x00
+	#define EICRA_MASK	0x00
 #endif
 #ifndef PCICR
-#define PCICR		NO_REG
-#define PCICR_RES	0x00
-#define PCICR_MASK	0x00
+	#define PCICR		NO_REG
+	#define PCICR_RES	0x00
+	#define PCICR_MASK	0x00
 #endif
 #ifndef PRR1
-#define PRR1		NO_REG
-#define PRR1_RES	0x00
-#define PRR1_MASK	0x00
+	#define PRR1		NO_REG
+	#define PRR1_RES	0x00
+	#define PRR1_MASK	0x00
 #endif
 #ifndef PRR0
-#define PRR0		NO_REG
-#define PRR0_RES	0x00
-#define PRR0_MASK	0x00
+	#define PRR0		NO_REG
+	#define PRR0_RES	0x00
+	#define PRR0_MASK	0x00
 #endif
 #ifndef CLKPR
-#define CLKPR		NO_REG
-#define CLKPR_RES	0x00
-#define CLKPR_MASK	0x00
+	#define CLKPR		NO_REG
+	#define CLKPR_RES	0x00
+	#define CLKPR_MASK	0x00
 #endif
 #ifndef WDTCSR
-#define WDTCSR		NO_REG
-#define WDTCSR_RES	0x00
-#define WDTCSR_MASK	0x00
+	#define WDTCSR		NO_REG
+	#define WDTCSR_RES	0x00
+	#define WDTCSR_MASK	0x00
 #endif
 #ifndef SPCR0
-#define SPCR0		NO_REG
-#define SPCR0_RES	0x00
-#define SPCR0_MASK	0x00
+	#define SPCR0		NO_REG
+	#define SPCR0_RES	0x00
+	#define SPCR0_MASK	0x00
 #endif
 #ifndef SPSR0
-#define SPSR0		NO_REG
-#define SPSR0_RES	0x00
-#define SPSR0_MASK	0x00
+	#define SPSR0		NO_REG
+	#define SPSR0_RES	0x00
+	#define SPSR0_MASK	0x00
 #endif
 #ifndef DWDR
-#define DWDR		NO_REG
-#define DWDR_RES	0x00
-#define DWDR_MASK	0x00
+	#define DWDR		NO_REG
+	#define DWDR_RES	0x00
+	#define DWDR_MASK	0x00
 #endif
 #ifndef PRR
-#define PRR		NO_REG
-#define PRR_RES		0x00
-#define PRR_MASK	0x00
+	#define PRR		NO_REG
+	#define PRR_RES		0x00
+	#define PRR_MASK	0x00
+#endif
+#ifndef PCMSK3
+	#define PCMSK3		NO_REG
+	#define PCMSK3_RES		0x00
+	#define PCMSK3_MASK	0x00
 #endif
 
 /* Macro to initialize array of AVR I/O registers. */
@@ -1279,4 +1284,5 @@
 	{ "SPSR0", SPSR0, NULL, SPSR0_RES, SPSR0_MASK }, \
 	{ "DWDR", DWDR, NULL, DWDR_RES, DWDR_MASK }, \
 	{ "PRR", PRR, NULL, PRR_RES, PRR_MASK }, \
+	{ "PCMSK3", PCMSK3, NULL, PCMSK3_RES, PCMSK3_MASK }, \
 }
