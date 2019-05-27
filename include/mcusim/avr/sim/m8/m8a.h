@@ -573,6 +573,7 @@ const static struct MSIM_AVR ORIG_M8A = {
 		},
 	},
 	.wdt = {
+		.oscf = 1000000,
 		.wdp = {
 			IOBIT(WDTCR, WDP0), IOBIT(WDTCR, WDP1),
 			IOBIT(WDTCR, WDP2)

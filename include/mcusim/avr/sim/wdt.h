@@ -43,6 +43,11 @@ extern "C" {
 
 /* AVR Watchdog Timer */
 struct MSIM_AVR_WDT {
+	struct MSIM_AVR_IOBit wdton;		/* WDT always-on bit */
+	uint32_t oscf;				/* WDT osc. frequency, in Hz */
+	uint32_t oscp;				/* Current osc. prescaler */
+	uint32_t scnt;				/* System clock counter */
+
 	struct MSIM_AVR_IOBit wdp[4];		/* Watchdog prescaler */
 	uint32_t wdp_op[16];			/* Prescalers (# of cycles) */
 	uint32_t wdpval;			/* Current prescaler */
