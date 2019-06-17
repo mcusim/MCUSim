@@ -43,10 +43,14 @@
 #include "mcusim/avr/sim/timer.h"
 #include "mcusim/avr/sim/private/io_macro.h"
 
-int MSIM_M8AUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
-int MSIM_M8ASetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
-int MSIM_M8ASetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
-int MSIM_M8AResetSPM(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
+int
+MSIM_M8AUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
+int
+MSIM_M8ASetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
+int
+MSIM_M8ASetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
+int
+MSIM_M8AResetSPM(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 
 const static struct MSIM_AVR ORIG_M8A = {
 	.name = "ATmega8A",
@@ -573,16 +577,18 @@ const static struct MSIM_AVR ORIG_M8A = {
 		},
 	},
 	.wdt = {
+		.wdton = FBIT(1, WDTON),
+		.wde = IOBIT(WDTCR, WDE),
+		.wdie = IONOBIT(),
+		.ce = IOBIT(WDTCR, WDCE),
 		.oscf = 1000000,
 		.wdp = {
 			IOBIT(WDTCR, WDP0), IOBIT(WDTCR, WDP1),
 			IOBIT(WDTCR, WDP2)
 		},
 		.wdp_op = { 16, 32, 64, 128, 256, 512, 1024, 2048 },
-		.ce = IOBIT(WDTCR, WDCE),
-		.en = IOBIT(WDTCR, WDE),
-		.iv_to = NOINTV(),
-		.iv_sr = {
+		.iv_tout = NOINTV(),
+		.iv_sysr = {
 			.enable = IONOBIT(),
 			.raised = IONOBIT(),
 			.vector = 0 /* Reset vector */

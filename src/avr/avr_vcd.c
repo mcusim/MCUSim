@@ -36,11 +36,15 @@
 #define TERA			1000000000000.0
 #define REG_NAMESZ		16
 
-static void print_reg16(char *buf, uint32_t len, uint8_t hr, uint8_t lr);
-static void print_reg(char *buf, uint32_t len, uint8_t r);
-static void print_regbit(char *buf, uint32_t len, uint8_t r, int8_t bit);
+static void
+print_reg16(char *buf, uint32_t len, uint8_t hr, uint8_t lr);
+static void
+print_reg(char *buf, uint32_t len, uint8_t r);
+static void
+print_regbit(char *buf, uint32_t len, uint8_t r, int8_t bit);
 
-int MSIM_AVR_VCDOpen(struct MSIM_AVR *mcu)
+int
+MSIM_AVR_VCDOpen(struct MSIM_AVR *mcu)
 {
 	time_t timer;
 	struct tm *tm_info;
@@ -127,7 +131,8 @@ int MSIM_AVR_VCDOpen(struct MSIM_AVR *mcu)
 	return 0;
 }
 
-int MSIM_AVR_VCDClose(struct MSIM_AVR *mcu)
+int
+MSIM_AVR_VCDClose(struct MSIM_AVR *mcu)
 {
 	int rc = 0;
 
@@ -138,7 +143,8 @@ int MSIM_AVR_VCDClose(struct MSIM_AVR *mcu)
 	return rc;
 }
 
-void MSIM_AVR_VCDDumpFrame(struct MSIM_AVR *mcu, uint64_t tick)
+void
+MSIM_AVR_VCDDumpFrame(struct MSIM_AVR *mcu, uint64_t tick)
 {
 	uint32_t regs = MSIM_AVR_VCD_REGS;
 	uint32_t reg_val;
@@ -245,7 +251,8 @@ void MSIM_AVR_VCDDumpFrame(struct MSIM_AVR *mcu, uint64_t tick)
 	}
 }
 
-static void print_reg16(char *buf, uint32_t len, uint8_t hr, uint8_t lr)
+static void
+print_reg16(char *buf, uint32_t len, uint8_t hr, uint8_t lr)
 {
 	uint32_t i;
 	uint32_t j = 0;
@@ -256,10 +263,6 @@ static void print_reg16(char *buf, uint32_t len, uint8_t hr, uint8_t lr)
 	rbits = 16;
 	reg = ((uint16_t)(hr<<8)&0xFF00U)|(uint16_t)(lr&0x00FFU);
 
-	if (len < (rbits+1)) {
-		buf[0] = 0;
-		return;
-	}
 	for (i = 0; i < rbits; i++) {
 		if ((reg >> (rbits-1-i)) & 1) {
 			buf[j++] = '1';
@@ -270,7 +273,8 @@ static void print_reg16(char *buf, uint32_t len, uint8_t hr, uint8_t lr)
 	buf[j] = 0;
 }
 
-static void print_reg(char *buf, uint32_t len, uint8_t r)
+static void
+print_reg(char *buf, uint32_t len, uint8_t r)
 {
 	uint32_t i;
 	uint32_t j;
@@ -279,10 +283,6 @@ static void print_reg(char *buf, uint32_t len, uint8_t r)
 	j = 0;
 	rbits = 8;
 
-	if (len < (rbits+1)) {
-		buf[0] = 0;
-		return;
-	}
 	for (i = 0; i < rbits; i++) {
 		if ((r >> (rbits-1-i)) & 1) {
 			buf[j++] = '1';
@@ -293,12 +293,9 @@ static void print_reg(char *buf, uint32_t len, uint8_t r)
 	buf[j] = 0;
 }
 
-static void print_regbit(char *buf, uint32_t len, uint8_t r, int8_t bit)
+static void
+print_regbit(char *buf, uint32_t len, uint8_t r, int8_t bit)
 {
-	if (len < 2) {
-		buf[0] = 0;
-		return;
-	}
 	buf[0] = ((r >> bit) & 1) ? '1' : '0';
 	buf[1] = 0;
 }

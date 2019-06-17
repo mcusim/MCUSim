@@ -27,6 +27,9 @@
  * Reset values and access masks of the ATmega328/328P's I/O registers.
  */
 
+/* fuse bits */
+#define WDTON		4
+
 #define SREG		_SFR_IO8(0x3F)
 #define SREG_RES	0x00
 #define SREG_MASK	0xFF

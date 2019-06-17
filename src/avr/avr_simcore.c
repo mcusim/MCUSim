@@ -58,16 +58,22 @@
 typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 
 /* Function to process interrupt request according to the order */
-static int pass_irqs(struct MSIM_AVR *mcu);
-static int handle_irq(struct MSIM_AVR *mcu);
+static int
+pass_irqs(struct MSIM_AVR *mcu);
+static int
+handle_irq(struct MSIM_AVR *mcu);
 /* Function to setup AVR instance. */
-static int setup_avr(struct MSIM_AVR *mcu, const char *mcu_name,
-                     uint8_t *pm, uint32_t pm_size,
-                     uint8_t *dm, uint32_t dm_size,
-                     uint8_t *mpm, FILE *fp);
-static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val);
-static int set_lock(struct MSIM_AVR *m, uint8_t val);
-static void print_config(struct MSIM_AVR *m);
+static int
+setup_avr(struct MSIM_AVR *mcu, const char *mcu_name,
+          uint8_t *pm, uint32_t pm_size,
+          uint8_t *dm, uint32_t dm_size,
+          uint8_t *mpm, FILE *fp);
+static int
+set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val);
+static int
+set_lock(struct MSIM_AVR *m, uint8_t val);
+static void
+print_config(struct MSIM_AVR *m);
 
 struct init_func_info {
 	char partno[20];
@@ -84,9 +90,11 @@ static struct init_func_info init_funcs[] = {
 //	{ "m2560",	"ATmega2560",	MSIM_M2560Init }
 };
 
-static int load_progmem(struct MSIM_AVR *mcu, FILE *fp);
+static int
+load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 
-int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint8_t frm_test)
+int
+MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint8_t frm_test)
 {
 	struct MSIM_AVR_VCD *vcd = &mcu->vcd;
 	uint64_t tick = 0;	/* # of cycles sinse start */
@@ -122,17 +130,20 @@ int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint8_t frm_test)
 	return rc;
 }
 
-int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
-                     uint8_t frm_test)
+int
+MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
+                 uint8_t frm_test)
 {
 	struct MSIM_AVR_VCD *vcd = &mcu->vcd;
 	struct MSIM_AVRConf cnf;
 	int rc = 0;
 
 	do {
-		/* The main simulation loop can be terminated by setting
-		 * MCU state to AVR_MSIM_STOP. The primary (and maybe only)
-		 * source of this state setting is a command from debugger. */
+		/*
+		 * The main simulation loop can be terminated by setting
+		 * the MCU state to AVR_MSIM_STOP. It's likely to be done by
+		 * a command from a remove GDB.
+		 */
 		if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_STOP)) {
 			if (MSIM_LOG_ISDEBUG) {
 				snprintf(mcu->log, sizeof mcu->log,
@@ -278,8 +289,9 @@ int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 	return rc;
 }
 
-int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
-                  const char *conf_file)
+int
+MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
+              const char *conf_file)
 {
 	FILE *fp;
 	struct MSIM_AVR_VCD *vcd = &mcu->vcd;
@@ -523,10 +535,11 @@ int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
 	return rc;
 }
 
-static int setup_avr(struct MSIM_AVR *mcu, const char *mcu_name,
-                     uint8_t *pm, uint32_t pm_size,
-                     uint8_t *dm, uint32_t dm_size,
-                     uint8_t *mpm, FILE *fp)
+static int
+setup_avr(struct MSIM_AVR *mcu, const char *mcu_name,
+          uint8_t *pm, uint32_t pm_size,
+          uint8_t *dm, uint32_t dm_size,
+          uint8_t *mpm, FILE *fp)
 {
 	unsigned int i;
 	char mcu_found = 0;
@@ -564,21 +577,15 @@ static int setup_avr(struct MSIM_AVR *mcu, const char *mcu_name,
 	return 0;
 }
 
-static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
+static int
+load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 {
 	IHexRecord rec, mem_rec;
-	uint32_t base, addr;
-	uint8_t *pm;
+	uint32_t base = 0;
+	uint32_t addr = 0;
+	uint8_t *pm = mcu->pm;
 
-	if (fp == NULL) {
-		MSIM_LOG_FATAL("can't read program memory from a file");
-		return -1;
-	}
-
-	/* Copy HEX data to program memory of the MCU */
-	pm = mcu->pm;
-	base = 0;
-	addr = 0;
+	/* Copy hex data to the MCU program memory */
 	while (MSIM_IHEX_ReadRec(&rec, fp) == IHEX_OK) {
 		/* Should base address be re-calculated? */
 		if (rec.address < addr) {
@@ -638,7 +645,8 @@ static int load_progmem(struct MSIM_AVR *mcu, FILE *fp)
 	return 0;
 }
 
-static int handle_irq(struct MSIM_AVR *mcu)
+static int
+handle_irq(struct MSIM_AVR *mcu)
 {
 	unsigned int i;
 	int ret;
@@ -684,7 +692,8 @@ static int handle_irq(struct MSIM_AVR *mcu)
 	return ret;
 }
 
-static int pass_irqs(struct MSIM_AVR *mcu)
+static int
+pass_irqs(struct MSIM_AVR *mcu)
 {
 	struct MSIM_AVR_TMR *tmr;
 	struct MSIM_AVR_TMR_COMP *comp;
@@ -735,7 +744,8 @@ static int pass_irqs(struct MSIM_AVR *mcu)
 	return rc;
 }
 
-static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val)
+static int
+set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val)
 {
 	struct MSIM_AVRConf cnf;
 	int rc = 0;
@@ -751,7 +761,8 @@ static int set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val)
 	return rc;
 }
 
-static int set_lock(struct MSIM_AVR *m, uint8_t val)
+static int
+set_lock(struct MSIM_AVR *m, uint8_t val)
 {
 	struct MSIM_AVRConf cnf;
 	int rc = 0;
@@ -766,7 +777,8 @@ static int set_lock(struct MSIM_AVR *m, uint8_t val)
 	return rc;
 }
 
-static void print_config(struct MSIM_AVR *m)
+static void
+print_config(struct MSIM_AVR *m)
 {
 	/* AVR memory is organized as array of bytes in the simulator, but
 	 * it's natural to measure program memory in 16-bits words because
@@ -809,7 +821,8 @@ static void print_config(struct MSIM_AVR *m)
 	MSIM_LOG_INFO(m->log);
 }
 
-void MSIM_AVR_StackPush(struct MSIM_AVR *mcu, unsigned char val)
+void
+MSIM_AVR_StackPush(struct MSIM_AVR *mcu, unsigned char val)
 {
 	unsigned int sp;
 
@@ -819,7 +832,8 @@ void MSIM_AVR_StackPush(struct MSIM_AVR *mcu, unsigned char val)
 	*mcu->sph = (unsigned char) (sp >> 8);
 }
 
-uint8_t MSIM_AVR_StackPop(struct MSIM_AVR *mcu)
+uint8_t
+MSIM_AVR_StackPop(struct MSIM_AVR *mcu)
 {
 	unsigned int sp;
 	unsigned char v;
@@ -831,7 +845,8 @@ uint8_t MSIM_AVR_StackPop(struct MSIM_AVR *mcu)
 	return v;
 }
 
-void MSIM_AVR_PrintParts(void)
+void
+MSIM_AVR_PrintParts(void)
 {
 	uint32_t i;
 
@@ -840,7 +855,8 @@ void MSIM_AVR_PrintParts(void)
 	}
 }
 
-int MSIM_AVR_DumpFlash(struct MSIM_AVR *mcu, const char *dump)
+int
+MSIM_AVR_DumpFlash(struct MSIM_AVR *mcu, const char *dump)
 {
 	FILE *out;
 	IHexRecord rec;

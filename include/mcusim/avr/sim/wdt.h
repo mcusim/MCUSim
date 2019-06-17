@@ -42,22 +42,23 @@ extern "C" {
 #include "mcusim/avr/sim/interrupt.h"
 
 /* AVR Watchdog Timer */
-struct MSIM_AVR_WDT {
-	struct MSIM_AVR_IOBit wdton;		/* WDT always-on bit */
-	uint32_t oscf;				/* WDT osc. frequency, in Hz */
-	uint32_t oscp;				/* Current osc. prescaler */
-	uint32_t scnt;				/* System clock counter */
+typedef struct MSIM_AVR_WDT {
+	MSIM_AVR_IOFuse wdton;		/* WDT always-on bit */
+	MSIM_AVR_IOBit wde;		/* WDT system reset enable bit */
+	MSIM_AVR_IOBit wdie;		/* WDT interrupt enable bit */
+	MSIM_AVR_IOBit ce;		/* Change Enable bit */
 
-	struct MSIM_AVR_IOBit wdp[4];		/* Watchdog prescaler */
-	uint32_t wdp_op[16];			/* Prescalers (# of cycles) */
-	uint32_t wdpval;			/* Current prescaler */
+	uint32_t oscf;			/* Oscillator's frequency, in Hz */
+	uint32_t oscp;			/* Oscillator's prescaler */
+	uint32_t scnt;			/* System clock counter */
 
-	struct MSIM_AVR_IOBit ce;		/* Change Enable bit */
-	struct MSIM_AVR_IOBit en;		/* Enable bit */
+	MSIM_AVR_IOBit wdp[4];		/* Watchdog prescaler */
+	uint32_t wdp_op[16];		/* Prescalers (# of cycles) */
+	uint32_t wdpval;		/* Current prescaler */
 
-	struct MSIM_AVR_INTVec iv_to;		/* Timeout interrupt vector */
-	struct MSIM_AVR_INTVec iv_sr;		/* System reset vector */
-};
+	MSIM_AVR_INTVec iv_tout;	/* Timeout interrupt vector */
+	MSIM_AVR_INTVec iv_sysr;	/* System reset vector */
+} MSIM_AVR_WDT;
 
 int MSIM_AVR_WDTUpdate(struct MSIM_AVR *mcu);
 

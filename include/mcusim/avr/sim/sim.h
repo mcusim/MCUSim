@@ -32,11 +32,11 @@
 #ifndef MSIM_AVR_SIM_H_
 #define MSIM_AVR_SIM_H_ 1
 
-#define MSIM_AVR_PMSZ		(256*1024)	/* for program memory */
-#define MSIM_AVR_DMSZ		(64*1024)	/* for data memory */
-#define MSIM_AVR_PM_PAGESZ	(1024)		/* for PM page */
-#define MSIM_AVR_LOGSZ		(64*1024)	/* log buffer, in bytes */
-#define MSIM_AVR_MAXTMRS	(32)		/* maximum timers */
+#define MSIM_AVR_PMSZ		(256*1024)	/* Program Memory size */
+#define MSIM_AVR_DMSZ		(64*1024)	/* Data Memory size */
+#define MSIM_AVR_PM_PAGESZ	(1024)		/* PM page size */
+#define MSIM_AVR_LOGSZ		(64*1024)	/* Log buffer size */
+#define MSIM_AVR_MAXTMRS	(32)		/* Maximum # of timers */
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,6 +44,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <pthread.h>
+
 #include "mcusim/pty.h"
 #include "mcusim/tsq.h"
 #include "mcusim/avr/sim/vcd.h"
@@ -54,8 +55,6 @@ extern "C" {
 #include "mcusim/avr/sim/bootloader.h"
 #include "mcusim/avr/sim/timer.h"
 
-/* Forward declaration of the structure to describe AVR microcontroller
- * instance. */
 struct MSIM_AVR;
 struct MSIM_AVRConf;
 
@@ -167,15 +166,15 @@ struct MSIM_AVR {
 
 	/* Descriptors of the I/O registers. Each register can be addressed by
 	 * the same offset as in the data memory. */
-	struct MSIM_AVR_IOReg ioregs[MSIM_AVR_DMSZ];
+	MSIM_AVR_IOReg ioregs[MSIM_AVR_DMSZ];
 	struct MSIM_AVR_BLD bls; /* Bootloader section details. */
-	struct MSIM_AVR_INT intr; /* Details to work with IRQs. */
+	MSIM_AVR_INT intr; /* Details to work with IRQs. */
 	struct MSIM_AVR_WDT wdt; /* Watchdog timer of the MCU. */
 	struct MSIM_AVR_VCD vcd; /* Details to work with VCD file. */
 	struct MSIM_AVR_USART usart; /* Details to work with USART. */
 	struct MSIM_PTY pty; /* Details to work with POSIX pseudo-terminals. */
 
-	struct MSIM_AVR_TMR timers[MSIM_AVR_MAXTMRS];	/* Timers/counters */
+	MSIM_AVR_TMR timers[MSIM_AVR_MAXTMRS];	/* Timers/counters */
 };
 
 #ifdef __cplusplus

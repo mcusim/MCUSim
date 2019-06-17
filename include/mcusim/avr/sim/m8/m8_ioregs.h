@@ -27,6 +27,9 @@
  * Reset values and access masks of the ATmega8/8A's I/O registers.
  */
 
+/* fuse bits */
+#define WDTON		6
+
 #define SREG		_SFR_IO8(0x3F)
 #define SREG_RES	0x00
 #define SREG_MASK	0xFF

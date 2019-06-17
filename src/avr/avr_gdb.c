@@ -44,7 +44,7 @@
 #include "mcusim/avr/sim/private/macro.h"
 
 #ifndef WITH_POSIX_CYGWIN
-#include <netinet/tcp.h>
+	#include <netinet/tcp.h>
 #endif
 
 #define AVRSIM_RSP_PROTOCOL		"tcp"
@@ -80,39 +80,69 @@ struct rsp_buf {
 static struct rsp_state rsp;
 static const char hexchars[] = "0123456789ABCDEF";
 
-static void rsp_close_server(void);
-static void rsp_close_client(void);
-static void rsp_server_request(void);
-static void rsp_client_request(void);
+static void
+rsp_close_server(void);
+static void
+rsp_close_client(void);
+static void
+rsp_server_request(void);
+static void
+rsp_client_request(void);
 
-static struct rsp_buf *get_packet(void);
-static void put_packet(struct rsp_buf *buf);
-static int get_rsp_char(void);
-static void put_rsp_char(char c);
-static int hex(int c);
-static unsigned long hex2reg(char *buf, const unsigned long dign);
-static void put_str_packet(const char *str);
-static void rsp_report_exception(void);
-static void rsp_continue(struct rsp_buf *buf);
-static void rsp_query(struct rsp_buf *buf);
-static void rsp_vpkt(struct rsp_buf *buf);
-static void rsp_restart(void);
-static void rsp_read_all_regs(void);
-static void rsp_write_all_regs(struct rsp_buf *buf);
-static void rsp_read_mem(struct rsp_buf *buf);
-static void rsp_write_mem(struct rsp_buf *buf);
-static void rsp_write_mem_bin(struct rsp_buf *buf);
-static void rsp_step(struct rsp_buf *buf);
-static void rsp_insert_matchpoint(struct rsp_buf *buf);
-static void rsp_remove_matchpoint(struct rsp_buf *buf);
-static unsigned long rsp_unescape(char *data, unsigned long len);
-static void rsp_read_reg(struct rsp_buf *buf);
-static void rsp_write_reg(struct rsp_buf *buf);
+static struct rsp_buf *
+get_packet(void);
+static void
+put_packet(struct rsp_buf *buf);
+static int
+get_rsp_char(void);
+static void
+put_rsp_char(char c);
+static int
+hex(int c);
+static unsigned long
+hex2reg(char *buf, const unsigned long dign);
+static void
+put_str_packet(const char *str);
+static void
+rsp_report_exception(void);
+static void
+rsp_continue(struct rsp_buf *buf);
+static void
+rsp_query(struct rsp_buf *buf);
+static void
+rsp_vpkt(struct rsp_buf *buf);
+static void
+rsp_restart(void);
+static void
+rsp_read_all_regs(void);
+static void
+rsp_write_all_regs(struct rsp_buf *buf);
+static void
+rsp_read_mem(struct rsp_buf *buf);
+static void
+rsp_write_mem(struct rsp_buf *buf);
+static void
+rsp_write_mem_bin(struct rsp_buf *buf);
+static void
+rsp_step(struct rsp_buf *buf);
+static void
+rsp_insert_matchpoint(struct rsp_buf *buf);
+static void
+rsp_remove_matchpoint(struct rsp_buf *buf);
+static unsigned long
+rsp_unescape(char *data, unsigned long len);
+static void
+rsp_read_reg(struct rsp_buf *buf);
+static void
+rsp_write_reg(struct rsp_buf *buf);
 
-static size_t read_reg(int n, char *buf);
-static void write_reg(int n, char *buf);
+static size_t
+read_reg(int n, char *buf);
+static void
+write_reg(int n, char *buf);
 
-void MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn)
+void
+MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn)
 {
 	struct protoent *protocol;	/* Protocol entry */
 	struct hostent *host;		/* Host entry */
@@ -212,13 +242,15 @@ void MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn)
 	}
 }
 
-void MSIM_AVR_RSPClose(void)
+void
+MSIM_AVR_RSPClose(void)
 {
 	rsp_close_client();
 	rsp_close_server();
 }
 
-int MSIM_AVR_RSPHandle(void)
+int
+MSIM_AVR_RSPHandle(void)
 {
 	struct pollfd fds[2];
 
@@ -314,7 +346,8 @@ int MSIM_AVR_RSPHandle(void)
 	return 0;
 }
 
-static void rsp_close_server(void)
+static void
+rsp_close_server(void)
 {
 	if (rsp.fserv != -1) {
 		close(rsp.fserv);
@@ -322,7 +355,8 @@ static void rsp_close_server(void)
 	}
 }
 
-static void rsp_close_client(void)
+static void
+rsp_close_client(void)
 {
 	if (rsp.fcli != -1) {
 		close(rsp.fcli);
@@ -330,7 +364,8 @@ static void rsp_close_client(void)
 	}
 }
 
-static void rsp_server_request(void)
+static void
+rsp_server_request(void)
 {
 	struct sockaddr_in sock_addr;	/* The socket address */
 	socklen_t len;			/* Size of the socket address */
@@ -391,7 +426,8 @@ static void rsp_server_request(void)
 	rsp.fcli = fd;
 }
 
-static void rsp_client_request(void)
+static void
+rsp_client_request(void)
 {
 	struct rsp_buf *buf;
 
@@ -513,7 +549,8 @@ static void rsp_client_request(void)
 	}
 }
 
-static void rsp_read_reg(struct rsp_buf *buf)
+static void
+rsp_read_reg(struct rsp_buf *buf)
 {
 	uint32_t regn;
 	char val[REG_BUF_MAX];
@@ -537,7 +574,8 @@ static void rsp_read_reg(struct rsp_buf *buf)
 	}
 }
 
-static void rsp_write_reg(struct rsp_buf *buf)
+static void
+rsp_write_reg(struct rsp_buf *buf)
 {
 	uint32_t regn;
 	char val[REG_BUF_MAX];
@@ -554,7 +592,8 @@ static void rsp_write_reg(struct rsp_buf *buf)
 	}
 }
 
-static void rsp_insert_matchpoint(struct rsp_buf *buf)
+static void
+rsp_insert_matchpoint(struct rsp_buf *buf)
 {
 	enum mp_type type;
 	unsigned long addr;
@@ -617,7 +656,8 @@ static void rsp_insert_matchpoint(struct rsp_buf *buf)
 	}
 }
 
-static void rsp_remove_matchpoint(struct rsp_buf *buf)
+static void
+rsp_remove_matchpoint(struct rsp_buf *buf)
 {
 	enum mp_type type;
 	unsigned long addr;
@@ -630,7 +670,7 @@ static void rsp_remove_matchpoint(struct rsp_buf *buf)
 	vals = sscanf(buf->data, "z%1d,%lx,%1d", (int *)&type, &addr, &len);
 	if (vals != 3) {
 		snprintf(LOG, LOGSZ, "RSP matchpoint insertion request not "
-		        "recognized: %s\n", buf->data);
+		         "recognized: %s\n", buf->data);
 		MSIM_LOG_ERROR(LOG);
 		put_str_packet("E01");
 		return;
@@ -681,7 +721,8 @@ static void rsp_remove_matchpoint(struct rsp_buf *buf)
 	}
 }
 
-static struct rsp_buf *get_packet(void)
+static struct rsp_buf *
+get_packet(void)
 {
 	static struct rsp_buf buf;
 	uint8_t checksum;
@@ -790,7 +831,8 @@ static struct rsp_buf *get_packet(void)
 	return &buf;
 }
 
-static int get_rsp_char(void)
+static int
+get_rsp_char(void)
 {
 	unsigned char c;
 	ssize_t bytes;
@@ -830,7 +872,8 @@ static int get_rsp_char(void)
 	}
 }
 
-static void put_rsp_char(char c)
+static void
+put_rsp_char(char c)
 {
 	if (rsp.fcli == -1) {
 		fprintf(stderr, "Attempt to write '%c' to unopened RSP "
@@ -863,11 +906,12 @@ static void put_rsp_char(char c)
 	}
 }
 
-static int hex(int c)
+static int
+hex(int c)
 {
 	return ((c >= 'a') && (c <= 'f')) ? c - 'a' + 10 :
 	       ((c >= '0') && (c <= '9')) ? c - '0' :
-	       ((c >= 'A') && (c <= 'F')) ? c - 'A' + 10 : -1;
+	       ((c >= 'A') && (c <= 'F')) ? c - 'A' + 10 : 0;
 }
 
 /*
@@ -879,7 +923,8 @@ static int hex(int c)
  * dign		Number of digits in buffer to convert
  * return	The value to convert
  */
-static unsigned long hex2reg(char *buf, const unsigned long dign)
+static unsigned long
+hex2reg(char *buf, const unsigned long dign)
 {
 	unsigned int n;			/* Counter for digits */
 	unsigned long val;		/* The result */
@@ -893,7 +938,8 @@ static unsigned long hex2reg(char *buf, const unsigned long dign)
 	return val;
 }
 
-static void put_str_packet(const char *str)
+static void
+put_str_packet(const char *str)
 {
 	struct rsp_buf buf;
 	unsigned long len = strlen(str);
@@ -914,18 +960,17 @@ static void put_str_packet(const char *str)
 	put_packet(&buf);
 }
 
-static void put_packet(struct rsp_buf *buf)
+static void
+put_packet(struct rsp_buf *buf)
 {
 	int32_t ch;
-	uint8_t checksum;
 	uint32_t count;
 	int8_t c;
 
 	/* Construct $<packet info>#<checksum>. Repeat until the GDB client
 	 * acknowledges satisfactory receipt. */
 	do {
-		checksum = 0;
-		count = 0;
+		uint8_t checksum = 0;
 
 		put_rsp_char('$');		/* Start of the packet */
 
@@ -956,7 +1001,8 @@ static void put_packet(struct rsp_buf *buf)
 	} while (ch != '+');
 }
 
-static void rsp_report_exception(void)
+static void
+rsp_report_exception(void)
 {
 	struct rsp_buf buf;
 
@@ -970,7 +1016,8 @@ static void rsp_report_exception(void)
 	put_packet (&buf);
 }
 
-static void rsp_continue(struct rsp_buf *buf)
+static void
+rsp_continue(struct rsp_buf *buf)
 {
 	uint32_t addr;
 
@@ -981,7 +1028,8 @@ static void rsp_continue(struct rsp_buf *buf)
 	rsp.client_waiting = 1;
 }
 
-static void rsp_query(struct rsp_buf *buf)
+static void
+rsp_query(struct rsp_buf *buf)
 {
 	if (!strcmp("qC", buf->data)) {
 		/*
@@ -1032,7 +1080,8 @@ static void rsp_query(struct rsp_buf *buf)
 	}
 }
 
-static void rsp_vpkt(struct rsp_buf *buf)
+static void
+rsp_vpkt(struct rsp_buf *buf)
 {
 	if (!strncmp("vAttach;", buf->data, strlen("vAttach;"))) {
 		/*
@@ -1078,13 +1127,15 @@ static void rsp_vpkt(struct rsp_buf *buf)
 	}
 }
 
-static void rsp_restart(void)
+static void
+rsp_restart(void)
 {
 	rsp.mcu->pc = rsp.mcu->intr.reset_pc;
 	rsp.mcu->state = AVR_STOPPED;
 }
 
-static size_t read_reg(int n, char *buf)
+static size_t
+read_reg(int n, char *buf)
 {
 	/*
 	 * This function reads registers in order required to reply to
@@ -1112,7 +1163,8 @@ static size_t read_reg(int n, char *buf)
 	return strlen(buf);
 }
 
-static void write_reg(int n, char *buf)
+static void
+write_reg(int n, char *buf)
 {
 	unsigned long v;
 
@@ -1137,7 +1189,8 @@ static void write_reg(int n, char *buf)
 	return;
 }
 
-static void rsp_read_all_regs(void)
+static void
+rsp_read_all_regs(void)
 {
 	char reply[GDB_BUF_MAX];
 	char *rep;
@@ -1151,7 +1204,8 @@ static void rsp_read_all_regs(void)
 	put_str_packet(reply);
 }
 
-static void rsp_write_all_regs(struct rsp_buf *buf)
+static void
+rsp_write_all_regs(struct rsp_buf *buf)
 {
 	unsigned int n, off;
 	unsigned long v;
@@ -1186,7 +1240,8 @@ static void rsp_write_all_regs(struct rsp_buf *buf)
 	put_str_packet("OK");
 }
 
-static void rsp_read_mem(struct rsp_buf *buf)
+static void
+rsp_read_mem(struct rsp_buf *buf)
 {
 	unsigned int addr, len, i;
 	unsigned char c;
@@ -1239,7 +1294,8 @@ static void rsp_read_mem(struct rsp_buf *buf)
 	put_packet(buf);
 }
 
-static void rsp_write_mem(struct rsp_buf *buf)
+static void
+rsp_write_mem(struct rsp_buf *buf)
 {
 	static uint8_t tmpbuf[GDB_BUF_MAX];
 	uint64_t addr, datlen;
@@ -1299,7 +1355,8 @@ static void rsp_write_mem(struct rsp_buf *buf)
 	put_str_packet("OK");
 }
 
-static void rsp_write_mem_bin(struct rsp_buf *buf)
+static void
+rsp_write_mem_bin(struct rsp_buf *buf)
 {
 	unsigned long addr, datlen, len;
 	char *bindat;
@@ -1358,7 +1415,8 @@ static void rsp_write_mem_bin(struct rsp_buf *buf)
  * @para[in] len The number of bytes to be converted
  * @return The number of bytes AFTER conversion
  */
-static unsigned long rsp_unescape(char *data, unsigned long len)
+static unsigned long
+rsp_unescape(char *data, unsigned long len)
 {
 	unsigned long from_off = 0;		/* Offset to source char */
 	unsigned long to_off = 0;		/* Offset to dest char */
@@ -1377,7 +1435,8 @@ static unsigned long rsp_unescape(char *data, unsigned long len)
 	return  to_off;
 }
 
-static void rsp_step(struct rsp_buf *buf)
+static void
+rsp_step(struct rsp_buf *buf)
 {
 	rsp.mcu->state = AVR_MSIM_STEP;
 	rsp.client_waiting = 1;

@@ -332,7 +332,8 @@ define_filename_for_sources(${MCUSIM})
 # Link MCUSim
 # -----------------------------------------------------------------------------
 target_link_libraries(${MCUSIM_LIB} ${TARGET_LIBS})
-target_link_libraries(${MCUSIM} ${MCUSIM_LIB})
+target_link_libraries("${MCUSIM_LIB}-static" ${TARGET_LIBS})
+target_link_libraries(${MCUSIM} "${MCUSIM_LIB}-static")
 if (APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND LUA_TYPE MATCHES "LuaJIT")
 	# Add LuaJIT-specific flags for 64-bit build on macOS
 	message(STATUS "Linking MCUSim with LuaJIT-specific flags on macOS with 64-bit build")

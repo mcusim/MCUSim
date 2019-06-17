@@ -41,23 +41,19 @@
 #include <limits.h>
 #include <inttypes.h>
 #include <signal.h>
+
 #include "mcusim/mcusim.h"
 #include "mcusim/getopt.h"
 #include "mcusim/config.h"
 #include "mcusim/avr/sim/private/macro.h"
 
-/* Utility files to store MCU memories. */
 #define FLASH_FILE		".mcusim.flash"
-
-/* Default GDB RSP port */
 #define GDB_RSP_PORT		12750
-
 /* Command line options */
 #define CLI_OPTIONS		":c:"
 #define VERSION_OPT		7576
 #define PRINT_USAGE_OPT		7580
 #define CONF_FILE_OPT		7581
-/* END Local macro definitions */
 
 /* Long command line options */
 static struct MSIM_OPT_Option longopts[] = {
@@ -72,14 +68,18 @@ static struct MSIM_AVR *mcu = &avr_mcu;
 static struct MSIM_CFG conf;
 
 /* Prototypes of the local functions */
-static void print_usage(void);
-static void print_short_usage(void);
+static void
+print_usage(void);
+static void
+print_short_usage(void);
 #ifdef WITH_POSIX
-	static void dump_flash_handler(int s);
+	static void
+	dump_flash_handler(int s);
 #endif
 /* END Prototypes of the local functions */
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
 	int c, rc;
 	char *conf_file = NULL;
@@ -95,13 +95,13 @@ int main(int argc, char *argv[])
 #endif
 #ifdef WITH_POSIX
 	/* Set up signals handlers. */
-	struct sigaction dmpflash_act = {
-		.sa_handler = dump_flash_handler,
-		.sa_flags = 0,
-	};
 	int signals[] = { SIGABRT, SIGKILL, SIGQUIT, SIGSEGV, SIGTERM };
+	struct sigaction dmpflash_act;
 
+	memset(&dmpflash_act, 0, sizeof dmpflash_act);
 	sigemptyset(&dmpflash_act.sa_mask);
+	dmpflash_act.sa_handler = dump_flash_handler;
+
 	for (uint32_t i = 0; i < ARR_LEN(signals); i++) {
 		sigaction(signals[i], &dmpflash_act, NULL);
 	}
@@ -178,12 +178,14 @@ int main(int argc, char *argv[])
 	return rc;
 }
 
-static void print_short_usage(void)
+static void
+print_short_usage(void)
 {
 	printf("Usage: mcusim --help\n");
 }
 
-static void print_usage(void)
+static void
+print_usage(void)
 {
 	/* Print usage and options */
 	printf("Usage: mcusim [options]\n"
@@ -195,7 +197,8 @@ static void print_usage(void)
 }
 
 #ifdef WITH_POSIX
-static void dump_flash_handler(int s)
+static void
+dump_flash_handler(int s)
 {
 	int rc;
 

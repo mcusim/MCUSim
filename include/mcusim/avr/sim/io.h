@@ -34,24 +34,26 @@ extern "C" {
 #endif
 
 /* I/O register of the AVR microcontroller */
-struct MSIM_AVR_IOReg {
+typedef struct MSIM_AVR_IOReg {
 	char name[16];
 	int32_t off;		/* Register address (in data space) */
 	uint8_t *addr;		/* Pointer to the register in DM */
 	uint8_t reset;		/* Value after MCU reset */
 	uint8_t mask;		/* Access mask (1 - R/W or W, 0 - R) */
-};
+} MSIM_AVR_IOReg;
 
-/* Helps to access bits of the AVR I/O register:
+/*
+ * It provides a way to access bits of the AVR I/O register (or fuse byte)
+ * in MCU-agnostic way:
  *
  *         (DM(reg) >> bit) & mask
  */
-struct MSIM_AVR_IOBit {
+typedef struct MSIM_AVR_IOBit {
 	uint32_t reg;		/* Register address (offset in data space) */
 	uint32_t mask;		/* Bit mask */
 	uint8_t bit;		/* Index of a bit in the register */
 	uint8_t mbits;		/* Number of mask bits */
-};
+} MSIM_AVR_IOBit, MSIM_AVR_IOFuse;
 
 #ifdef __cplusplus
 }

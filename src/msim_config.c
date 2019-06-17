@@ -30,16 +30,26 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
+
 #include "mcusim/mcusim.h"
+#include "mcusim/avr/sim/private/macro.h"
 
-static int read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,
-                      FILE *file, const char *filename);
-static int read_line(struct MSIM_CFG *cfg, char *parm, char *val,
-                     uint32_t plen, uint32_t vlen);
+/* Compare string with a string literal */
+#define CMPL(s, l, len) (strncmp((s), (l),				\
+                         ARR_LEN(l) < (len) ? ARR_LEN(l) : (len)))
 
-static void parse_bool(char *buf, uint32_t len, uint8_t *val);
+static int
+read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,
+           FILE *file, const char *filename);
+static int
+read_line(struct MSIM_CFG *cfg, char *parm, char *val,
+          uint32_t plen, uint32_t vlen);
 
-int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename)
+static void
+parse_bool(char *buf, uint32_t len, uint8_t *val);
+
+int
+MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename)
 {
 	char buf[4096];
 	uint32_t buflen = sizeof buf/sizeof buf[0];
@@ -72,7 +82,8 @@ int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename)
 	return rc;
 }
 
-int MSIM_CFG_PrintVersion(void)
+int
+MSIM_CFG_PrintVersion(void)
 {
 #ifndef DEBUG
 	printf("MCU Simulator %s\nBuild Date: %s %s (UTC)\n",
@@ -91,8 +102,9 @@ int MSIM_CFG_PrintVersion(void)
 	return 0;
 }
 
-static int read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,
-                      FILE *file, const char *filename)
+static int
+read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,
+           FILE *file, const char *filename)
 {
 	const uint32_t len = 4096;
 	uint32_t line = 1U;
@@ -127,7 +139,6 @@ static int read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,
 			snprintf(buf, buflen, "incorrect format of line #%"
 			         PRIu32 " from %s", line, filename);
 			MSIM_LOG_DEBUG(buf);
-			rc = 0;
 			continue;
 		} else { /* Line is correct. */
 			rc = read_line(cfg, parm, val, len, len);
@@ -143,74 +154,75 @@ static int read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,
 	return rc;
 }
 
-static int read_line(struct MSIM_CFG *cfg, char *parm, char *val,
-                     uint32_t plen, uint32_t vlen)
+static int
+read_line(struct MSIM_CFG *cfg, char *parm, char *val,
+          uint32_t plen, uint32_t vlen)
 {
 	const uint32_t buflen = 4096;
 	char buf[buflen];
 	int rc = 0;
-	int cmp_rc = 0;
+	int cmp_rc;
 
-	if (strncmp(parm, "mcu", plen) == 0) {
+	if (CMPL(parm, "mcu", plen) == 0) {
 		cmp_rc = sscanf(val, "%64s", &cfg->mcu[0]);
 		if (cmp_rc != 1) {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "mcu_freq", plen) == 0) {
+	} else if (CMPL(parm, "mcu_freq", plen) == 0) {
 		cmp_rc = sscanf(val, "%" SCNu64, &cfg->mcu_freq);
 		if (cmp_rc != 1) {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "mcu_lockbits", plen) == 0) {
+	} else if (CMPL(parm, "mcu_lockbits", plen) == 0) {
 		cmp_rc = sscanf(val, "0x%" SCNx8, &cfg->mcu_lockbits);
 		if (cmp_rc == 1) {
 			cfg->has_lockbits = 1;
 		} else {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "mcu_efuse", plen) == 0) {
+	} else if (CMPL(parm, "mcu_efuse", plen) == 0) {
 		cmp_rc = sscanf(val, "0x%" SCNx8, &cfg->mcu_efuse);
 		if (cmp_rc == 1) {
 			cfg->has_efuse = 1;
 		} else {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "mcu_hfuse", plen) == 0) {
+	} else if (CMPL(parm, "mcu_hfuse", plen) == 0) {
 		cmp_rc = sscanf(val, "0x%" SCNx8, &cfg->mcu_hfuse);
 		if (cmp_rc == 1) {
 			cfg->has_hfuse = 1;
 		} else {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "mcu_lfuse", plen) == 0) {
+	} else if (CMPL(parm, "mcu_lfuse", plen) == 0) {
 		cmp_rc = sscanf(val, "0x%" SCNx8, &cfg->mcu_lfuse);
 		if (cmp_rc == 1) {
 			cfg->has_lfuse = 1;
 		} else {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "firmware_file", plen) == 0) {
+	} else if (CMPL(parm, "firmware_file", plen) == 0) {
 		cmp_rc = sscanf(val, "%4096s", &cfg->firmware_file[0]);
 		if (cmp_rc == 1) {
 			cfg->has_firmware_file = 1;
 		} else {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "firmware_test", plen) == 0) {
+	} else if (CMPL(parm, "firmware_test", plen) == 0) {
 		cmp_rc = sscanf(val, "%4096s", buf);
 		if (cmp_rc == 1) {
 			parse_bool(buf, buflen, &cfg->firmware_test);
 		} else {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "reset_flash", plen) == 0) {
+	} else if (CMPL(parm, "reset_flash", plen) == 0) {
 		cmp_rc = sscanf(val, "%4096s", buf);
 		if (cmp_rc == 1) {
 			parse_bool(buf, buflen, &cfg->reset_flash);
 		} else {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "lua_model", plen) == 0) {
+	} else if (CMPL(parm, "lua_model", plen) == 0) {
 		cmp_rc = sscanf(val, "%4096s",
 		                &cfg->lua_models[cfg->lua_models_num][0]);
 		if (cmp_rc == 1) {
@@ -218,12 +230,12 @@ static int read_line(struct MSIM_CFG *cfg, char *parm, char *val,
 		} else {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "vcd_file", plen) == 0) {
+	} else if (CMPL(parm, "vcd_file", plen) == 0) {
 		cmp_rc = sscanf(val, "%4096s", &cfg->vcd_file[0]);
 		if (cmp_rc != 1) {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "dump_reg", plen) == 0) {
+	} else if (CMPL(parm, "dump_reg", plen) == 0) {
 		cmp_rc = sscanf(val, "%16s",
 		                &cfg->dump_regs[cfg->dump_regs_num][0]);
 		if (cmp_rc == 1) {
@@ -231,7 +243,7 @@ static int read_line(struct MSIM_CFG *cfg, char *parm, char *val,
 		} else {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "rsp_port", plen) == 0) {
+	} else if (CMPL(parm, "rsp_port", plen) == 0) {
 		uint32_t port;
 		cmp_rc = sscanf(val, "%" SCNu32, &port);
 		if (cmp_rc == 1) {
@@ -244,7 +256,7 @@ static int read_line(struct MSIM_CFG *cfg, char *parm, char *val,
 		} else {
 			rc = 2;
 		}
-	} else if (strncmp(parm, "trap_at_isr", plen) == 0) {
+	} else if (CMPL(parm, "trap_at_isr", plen) == 0) {
 		cmp_rc = sscanf(val, "%4096s", buf);
 		if (cmp_rc == 1) {
 			parse_bool(buf, buflen, &cfg->trap_at_isr);
@@ -260,12 +272,13 @@ static int read_line(struct MSIM_CFG *cfg, char *parm, char *val,
 	return rc;
 }
 
-static void parse_bool(char *buf, uint32_t len, uint8_t *val)
+static void
+parse_bool(char *buf, uint32_t len, uint8_t *val)
 {
-	if (strncmp(buf, "no", len) == 0) {
+	if (CMPL(buf, "no", len) == 0) {
 		*val = 0;
 	}
-	if (strncmp(buf, "yes", len) == 0) {
+	if (CMPL(buf, "yes", len) == 0) {
 		*val = 1;
 	}
 }

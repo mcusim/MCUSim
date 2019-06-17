@@ -41,9 +41,12 @@
 #include "mcusim/avr/sim/simcore.h"
 #include "mcusim/avr/sim/private/io_macro.h"
 
-int MSIM_M328PSetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
-int MSIM_M328PSetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
-int MSIM_M328PUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
+int
+MSIM_M328PSetFuse(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
+int
+MSIM_M328PSetLock(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
+int
+MSIM_M328PUpdate(struct MSIM_AVR *mcu, struct MSIM_AVRConf *cnf);
 
 /* ATMega328P Fuse Low Byte */
 enum MSIM_AVRFuseLowByte {
@@ -834,20 +837,22 @@ const static struct MSIM_AVR ORIG_M328P = {
 		},
 	},
 	.wdt = {
+		.wdton = FBIT(1, WDTON),
+		.wde = IOBIT(WDTCSR, WDE),
+		.wdie = IOBIT(WDTCSR, WDIE),
+		.ce = IOBIT(WDTCSR, WDCE),
 		.oscf = 128000,
 		.wdp = {
 			IOBIT(WDTCSR, WDP0), IOBIT(WDTCSR, WDP1),
 			IOBIT(WDTCSR, WDP2), IOBIT(WDTCSR, WDP3)
 		},
 		.wdp_op = { 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024 },
-		.ce = IOBIT(WDTCSR, WDCE),
-		.en = IOBIT(WDTCSR, WDE),
-		.iv_to = {
+		.iv_tout = {
 			.enable = IOBIT(WDTCSR, WDIE),
 			.raised = IOBIT(WDTCSR, WDIF),
 			.vector = WDT_vect_num
 		},
-		.iv_sr = {
+		.iv_sysr = {
 			.enable = IONOBIT(),
 			.raised = IONOBIT(),
 			.vector = 0 /* Reset vector */

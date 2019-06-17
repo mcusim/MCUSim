@@ -88,7 +88,7 @@ enum {
 };
 
 /* Waveform generator module */
-struct MSIM_AVR_TMR_WGM {
+typedef struct MSIM_AVR_TMR_WGM {
 	uint8_t kind;				/* WGM type */
 	uint8_t size;				/* Size, in bits */
 	uint32_t top;				/* Fixed TOP value */
@@ -98,10 +98,10 @@ struct MSIM_AVR_TMR_WGM {
 
 	struct MSIM_AVR_IOBit rtop[4];		/* Register as TOP value */
 	uint32_t rtop_buf;
-};
+} MSIM_AVR_TMR_WGM;
 
 /* Comparator module */
-struct MSIM_AVR_TMR_COMP {
+typedef struct MSIM_AVR_TMR_COMP {
 	struct MSIM_AVR_IOBit ocr[4];		/* Comparator register */
 	struct MSIM_AVR_IOBit pin;		/* Pin to output waveform */
 	struct MSIM_AVR_IOBit ddp;		/* Data direction for pin */
@@ -111,10 +111,10 @@ struct MSIM_AVR_TMR_COMP {
 	uint8_t com_op[16][16];			/* mode: [WGM][COM] */
 
 	struct MSIM_AVR_INTVec iv;		/* Interrupt vector */
-};
+} MSIM_AVR_TMR_COMP;
 
 /* AVR timer/counter */
-struct MSIM_AVR_TMR {
+typedef struct MSIM_AVR_TMR {
 	struct MSIM_AVR_IOBit tcnt[4];		/* Timer counter */
 	struct MSIM_AVR_IOBit disabled;		/* "disabled" bit */
 	uint32_t scnt;				/* System clock counter */
@@ -143,7 +143,7 @@ struct MSIM_AVR_TMR {
 	struct MSIM_AVR_INTVec iv_ic;		/* Input capture */
 
 	struct MSIM_AVR_TMR_COMP comp[16];	/* Output compare channels */
-};
+} MSIM_AVR_TMR;
 
 int MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu);
 

@@ -52,28 +52,39 @@
 	.settov_at = UPD_ATBOTTOM,					\
 };
 
-static int update_timer(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static void mode_nonpwm_pwm(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static void update_ocr_buffers(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static int update_ocr_buffer(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
-                             uint32_t);
-static void int_reset_pending(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static void int_raise_pending(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static void trigger_oc_pin(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
-                           struct MSIM_AVR_TMR_COMP *,
-                           uint32_t, uint32_t, uint8_t);
-static void update_wgm_buffers(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static int update_wgm_buffer(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
-                             uint32_t);
-static void update_icp_value(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
+static int
+update_timer(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
+static void
+mode_nonpwm_pwm(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
+static void
+update_ocr_buffers(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
+static int
+update_ocr_buffer(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
+                  uint32_t);
+static void
+int_reset_pending(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
+static void
+int_raise_pending(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
+static void
+trigger_oc_pin(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
+               struct MSIM_AVR_TMR_COMP *,
+               uint32_t, uint32_t, uint8_t);
+static void
+update_wgm_buffers(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
+static int
+update_wgm_buffer(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
+                  uint32_t);
+static void
+update_icp_value(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
 
-int MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu)
+int
+MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu)
 {
-	struct MSIM_AVR_TMR *tmr;
 	int rc = 0;
 
 	for (uint32_t i = 0; i < MSIM_AVR_MAXTMRS; i++) {
-		tmr = &mcu->timers[i];
+		MSIM_AVR_TMR *tmr = &mcu->timers[i];
+
 		if (IS_IONOBITA(tmr->tcnt)) {
 			break;
 		}
@@ -87,11 +98,12 @@ int MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu)
 	return rc;
 }
 
-static int update_timer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
+static int
+update_timer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
 	struct MSIM_AVR_TMR_WGM wgm8 = FAKE_WGM8;
 	struct MSIM_AVR_TMR_WGM wgm16 = FAKE_WGM16;
-	uint32_t cs, wgm, dis;
+	uint32_t wgm, dis;
 	int rc = 0;
 
 	do {
@@ -115,7 +127,7 @@ static int update_timer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 		}
 
 		/* Obtain timer's Clock Source */
-		cs = IOBIT_RDA(mcu, tmr->cs, ARR_LEN(tmr->cs));
+		uint32_t cs = IOBIT_RDA(mcu, tmr->cs, ARR_LEN(tmr->cs));
 		if (cs >= ARR_LEN(tmr->cs_div)) {
 			tmr->scnt = 0;
 			break;
@@ -165,7 +177,8 @@ static int update_timer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 	return rc;
 }
 
-static void mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
+static void
+mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
 	struct MSIM_AVR_TMR_WGM *wgm = tmr->wgmval;
 	struct MSIM_AVR_TMR_COMP *comp;
@@ -226,6 +239,8 @@ static void mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 			                (wgm->settov_at == UPD_ATMAX)) {
 				IOBIT_WR(mcu, &tmr->iv_ovf.raised, 1);
 			}
+		} else {
+			; /* Nothing to be done */
 		}
 
 		/* Output Compare and Compare Match units.
@@ -277,6 +292,8 @@ static void mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 				trigger_oc_pin(mcu, tmr, comp, tcnt, top,
 				               UPD_ATBOTTOM);
 			}
+		} else {
+			; /* Nothing to be done */
 		}
 
 		/* Counter Unit. */
@@ -302,9 +319,9 @@ static void mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 	}
 }
 
-static void trigger_oc_pin(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
-                           struct MSIM_AVR_TMR_COMP *comp,
-                           uint32_t tcnt, uint32_t top, uint8_t at)
+static void
+trigger_oc_pin(struct MSIM_AVR *mcu, MSIM_AVR_TMR *tmr, MSIM_AVR_TMR_COMP *comp,
+               uint32_t tcnt, uint32_t top, uint8_t at)
 {
 	int32_t wgmi = tmr->wgmi;
 	uint32_t com = IOBIT_RD(mcu, &comp->com);
@@ -379,20 +396,19 @@ static void trigger_oc_pin(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
 	} while (0);
 }
 
-static void update_ocr_buffers(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
+static void
+update_ocr_buffers(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
-	int rc;
-
 	for (uint32_t i = 0; i < ARR_LEN(tmr->comp); i++) {
-		rc = update_ocr_buffer(mcu, tmr, i);
+		int rc = update_ocr_buffer(mcu, tmr, i);
 		if (rc != 0) {
 			break;
 		}
 	}
 }
 
-static int update_ocr_buffer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
-                             uint32_t i)
+static int
+update_ocr_buffer(struct MSIM_AVR *mcu, MSIM_AVR_TMR *tmr, uint32_t i)
 {
 	struct MSIM_AVR_TMR_COMP *comp = &tmr->comp[i];
 	int rc = 0;
@@ -406,20 +422,19 @@ static int update_ocr_buffer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
 	return rc;
 }
 
-static void update_wgm_buffers(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
+static void
+update_wgm_buffers(struct MSIM_AVR *mcu, MSIM_AVR_TMR *tmr)
 {
-	int rc;
-
 	for (uint32_t i = 0; i < ARR_LEN(tmr->wgm_op); i++) {
-		rc = update_wgm_buffer(mcu, tmr, i);
+		int rc = update_wgm_buffer(mcu, tmr, i);
 		if (rc != 0) {
 			break;
 		}
 	}
 }
 
-static int update_wgm_buffer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
-                             uint32_t i)
+static int
+update_wgm_buffer(struct MSIM_AVR *mcu, MSIM_AVR_TMR *tmr, uint32_t i)
 {
 	struct MSIM_AVR_TMR_WGM *wgm = &tmr->wgm_op[i];
 	int rc = 0;
@@ -433,7 +448,8 @@ static int update_wgm_buffer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr,
 	return rc;
 }
 
-static void update_icp_value(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
+static void
+update_icp_value(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
 	if (!IS_IONOBIT(tmr->icp)) {
 		tmr->icpval = (uint8_t)IOBIT_RD(mcu, &tmr->icp);
@@ -441,7 +457,8 @@ static void update_icp_value(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 }
 
 /* Reset pedning interrupts */
-static void int_reset_pending(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
+static void
+int_reset_pending(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
 	struct MSIM_AVR_TMR_COMP *comp;
 
@@ -456,7 +473,8 @@ static void int_reset_pending(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 }
 
 /* Raise pending interrupts */
-static void int_raise_pending(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
+static void
+int_raise_pending(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
 	struct MSIM_AVR_TMR_COMP *comp;
 

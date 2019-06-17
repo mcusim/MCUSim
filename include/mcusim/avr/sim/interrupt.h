@@ -47,7 +47,7 @@ struct MSIM_AVR;
 
 /* Main structure to describe AVR interrupts within the simulated AVR
  * instance (reset address, IRQs, etc.) */
-struct MSIM_AVR_INT {
+typedef struct MSIM_AVR_INT {
 	uint32_t reset_pc;		/* Reset address */
 	uint32_t ivt;			/* Interrupt vectors table address */
 	uint8_t irq[MSIM_AVR_IRQNUM];	/* Flags for interrupt requests */
@@ -55,15 +55,15 @@ struct MSIM_AVR_INT {
 					   program after an exit from ISR */
 	uint8_t trap_at_isr;		/* Flag to enter stopped mode when
 					   interrupt occured */
-};
+} MSIM_AVR_INT;
 
 /* Interrupt vector */
-struct MSIM_AVR_INTVec {
-	struct MSIM_AVR_IOBit enable;	/* Interrupt "enabled" flag */
-	struct MSIM_AVR_IOBit raised;	/* Interrupt flag */
+typedef struct MSIM_AVR_INTVec {
+	MSIM_AVR_IOBit enable;		/* Interrupt "enabled" flag */
+	MSIM_AVR_IOBit raised;		/* Interrupt flag */
 	uint8_t vector;			/* Interrupt address (in IVT) */
 	uint8_t pending;		/* Pending interrupt flag */
-};
+} MSIM_AVR_INTVec;
 
 #ifdef __cplusplus
 }

@@ -36,6 +36,7 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/private/macro.h"
 
+/* for I/O registers */
 #define IOBIT(io, b)		{ .reg=(io), .bit=(b), .mask=1, .mbits=1 }
 #define IOBITS(io, b, m, mb)	{ .reg=(io), .bit=(b), .mask=(m), .mbits=(mb) }
 #define IOBYTE(io)		{ .reg=(io), .bit=0, .mask=0xFF, .mbits=8 }
@@ -44,12 +45,23 @@
 #define NB			IONOBIT()
 #define IONOBITA()		{ NB }
 #define IONOBYTEA()		{ NB }
+
+/* for fuse bytes */
+#define FBIT(io, b)		IOBIT(io, b)
+#define FBITS(io, b, m, mb)	IOBITS(io, b, m, mb)
+#define FBYTE(io)		IOBYTE(io)
+#define FNOBIT()		IONOBIT()
+#define FNOBYTE()		IONOBYTE()
+#define FNOBITA()		IONOBITA()
+#define FNOBYTEA()		IONOBYTEA()
+
 #define NOWGM()			{ .top=0, .bottom=0, .size=0, .kind=0 }
 #define NOWGMA()		{ NOWGM() }
 #define NOINTV()		{ .enable=NB, .raised=NB, .vector=0 }
 #define NOINTVA()		{ NOINTV() }
 #define NOCOMP()		{ .com=NB, .pin=NB, .iv=NOINTV(), .ocr={ NB } }
 #define NOCOMPA()		{ NOCOMP() }
+
 /* When to update buffered values */
 #define UPD_ATNONE		MSIM_AVR_TMR_UPD_ATNONE
 #define UPD_ATMAX		MSIM_AVR_TMR_UPD_ATMAX
@@ -57,9 +69,11 @@
 #define UPD_ATBOTTOM		MSIM_AVR_TMR_UPD_ATBOTTOM
 #define UPD_ATIMMEDIATE		MSIM_AVR_TMR_UPD_ATIMMEDIATE
 #define UPD_ATCM		MSIM_AVR_TMR_UPD_ATCM
+
 /* Timer count direction */
 #define CNT_UP			MSIM_AVR_TMR_CNTUP
 #define CNT_DOWN		MSIM_AVR_TMR_CNTDOWN
+
 /* Waveform generation mode */
 #define WGM_NONE		MSIM_AVR_TMR_WGM_None
 #define WGM_NORMAL		MSIM_AVR_TMR_WGM_Normal
@@ -68,6 +82,7 @@
 #define WGM_FASTPWM		MSIM_AVR_TMR_WGM_FastPWM
 #define WGM_PCPWM		MSIM_AVR_TMR_WGM_PCPWM
 #define WGM_PFCPWM		MSIM_AVR_TMR_WGM_PFCPWM
+
 /* Output compare pin action. */
 #define COM_DISC		MSIM_AVR_TMR_COM_DISC
 #define COM_TGONCM		MSIM_AVR_TMR_COM_TGONCM
@@ -93,14 +108,15 @@
 				 ((v)->size==0U) && ((v)->kind==0U))
 
 /* Read bits of the AVR I/O register. */
-static inline uint32_t IOBIT_RD(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *b)
+static inline uint32_t
+IOBIT_RD(struct MSIM_AVR *mcu, MSIM_AVR_IOBit *b)
 {
 	return (DM(b->reg) >> b->bit) & b->mask;
 }
 
 /* Read an array of bits of the AVR I/O registers. */
-static inline uint32_t IOBIT_RDA(struct MSIM_AVR *mcu,
-                                 struct MSIM_AVR_IOBit *bit, uint32_t len)
+static inline uint32_t
+IOBIT_RDA(struct MSIM_AVR *mcu, MSIM_AVR_IOBit *bit, uint32_t len)
 {
 	uint32_t r = 0;		/* Result */
 	uint8_t mb = 0;		/* Mask bits */
@@ -118,8 +134,8 @@ static inline uint32_t IOBIT_RDA(struct MSIM_AVR *mcu,
 }
 
 /* Write bits of the AVR I/O register. */
-static inline void IOBIT_WR(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *b,
-                            uint32_t v)
+static inline void
+IOBIT_WR(struct MSIM_AVR *mcu, MSIM_AVR_IOBit *b, uint32_t v)
 {
 	uint32_t m = b->mask << b->bit;
 	uint8_t val = ((uint8_t)(v << b->bit)) & m;
@@ -128,8 +144,8 @@ static inline void IOBIT_WR(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *b,
 }
 
 /* Write an array of bits of the AVR I/O registers. */
-static inline void IOBIT_WRA(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *bit,
-                             uint32_t len, uint32_t v)
+static inline void
+IOBIT_WRA(struct MSIM_AVR *mcu, MSIM_AVR_IOBit *bit, uint32_t len, uint32_t v)
 {
 	uint32_t mb = 0;	/* Mask bits */
 
@@ -143,17 +159,18 @@ static inline void IOBIT_WRA(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *bit,
 }
 
 /* Compare two definitions of the AVR I/O bits (but not their values!) */
-static inline uint8_t IOBIT_CMP(struct MSIM_AVR_IOBit *b0,
-                                struct MSIM_AVR_IOBit *b1)
+static inline uint8_t
+IOBIT_CMP(MSIM_AVR_IOBit *b0, MSIM_AVR_IOBit *b1)
 {
-	return (uint8_t)((b0->reg==b1->reg) &&
+	return (uint8_t)((b0 != NULL) && (b1 != NULL) &&
+	                 (b0->reg==b1->reg) &&
 	                 (b0->bit==b1->bit) &&
 	                 (b0->mask==b1->mask) &&
 	                 (b0->mbits==b1->mbits)) ? 0U : 1U;
 }
 
-static inline uint8_t IOBIT_CMPA(struct MSIM_AVR_IOBit *b0,
-                                 struct MSIM_AVR_IOBit *b1, uint32_t count)
+static inline uint8_t
+IOBIT_CMPA(MSIM_AVR_IOBit *b0, MSIM_AVR_IOBit *b1, uint32_t count)
 {
 	uint8_t rc = 1; /* Not equal by default */
 
@@ -173,7 +190,8 @@ static inline uint8_t IOBIT_CMPA(struct MSIM_AVR_IOBit *b0,
 	return rc;
 }
 
-static inline void IOBIT_TG(struct MSIM_AVR *mcu, struct MSIM_AVR_IOBit *b)
+static inline void
+IOBIT_TG(struct MSIM_AVR *mcu, MSIM_AVR_IOBit *b)
 {
 	IOBIT_WR(mcu, b, ~(IOBIT_RD(mcu, b))&1);
 }
