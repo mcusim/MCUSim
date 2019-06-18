@@ -69,9 +69,10 @@ enum MSIM_AVR_State {
 	AVR_RUNNING,
 	AVR_STOPPED,
 	AVR_SLEEPING,
-	AVR_MSIM_STEP,			/* Execute next instruction */
-	AVR_MSIM_STOP,			/* Terminate sim (correctly) */
-	AVR_MSIM_TESTFAIL		/* Terminate sim (test failure) */
+	AVR_MSIM_STEP,			/* Step (with calling subroutine) */
+	AVR_MSIM_STOP,			/* Terminate (correctly) */
+	AVR_MSIM_TESTFAIL,		/* Terminate (test failure) */
+	AVR_MSIM_STEPOVER,		/* Step (without calling subroutine) */
 };
 
 enum MSIM_AVR_ClkSource {
@@ -95,7 +96,7 @@ struct MSIM_AVRConf {
 };
 
 /* Instance of the AVR microcontroller. */
-struct MSIM_AVR {
+typedef struct MSIM_AVR {
 	char name[20]; /* Name of the MCU. */
 	char log[MSIM_AVR_LOGSZ]; /* Buffer to print a log message. */
 	uint8_t signature[3]; /* Signature of the MCU. */
@@ -175,7 +176,7 @@ struct MSIM_AVR {
 	struct MSIM_PTY pty; /* Details to work with POSIX pseudo-terminals. */
 
 	MSIM_AVR_TMR timers[MSIM_AVR_MAXTMRS];	/* Timers/counters */
-};
+} MSIM_AVR;
 
 #ifdef __cplusplus
 }

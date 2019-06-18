@@ -166,7 +166,7 @@ main(int argc, char *argv[])
 		MSIM_PTY_Close(&mcu->pty);
 		MSIM_AVR_LUACleanModels();
 		if (conf.firmware_test == 0) {
-			MSIM_AVR_RSPClose();
+			MSIM_AVR_RSPClose(mcu);
 		}
 
 		if (MSIM_AVR_DumpFlash(mcu, FLASH_FILE) != 0) {

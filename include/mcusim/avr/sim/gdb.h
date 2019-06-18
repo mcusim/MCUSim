@@ -29,28 +29,20 @@
 #define MSIM_AVR_GDB_H_ 1
 
 #ifndef MSIM_MAIN_HEADER_H_
-#error "Please, include mcusim/mcusim.h instead of this header."
+	#error "Please, include mcusim/mcusim.h instead of this header."
 #endif
 
 #include <stdint.h>
+
+#include "mcusim/mcusim.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifdef WITH_POSIX
-
 void MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn);
-int MSIM_AVR_RSPHandle(void);
-void MSIM_AVR_RSPClose(void);
-
-#else /* WITH_POSIX not defined */
-
-#define MSIM_AVR_RSPInit(mcu, portn)
-#define MSIM_AVR_RSPHandle() 0
-#define MSIM_AVR_RSPClose()
-
-#endif /* WITH_POSIX */
+void MSIM_AVR_RSPClose(struct MSIM_AVR *mcu);
+int MSIM_AVR_RSPHandle(struct MSIM_AVR *mcu);
 
 #ifdef __cplusplus
 }

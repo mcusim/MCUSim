@@ -1076,6 +1076,11 @@
 	#define PCMSK3_RES		0x00
 	#define PCMSK3_MASK	0x00
 #endif
+#ifndef PCMSK3
+	#define PCMSK3		NO_REG
+	#define PCMSK3_RES		0x00
+	#define PCMSK3_MASK	0x00
+#endif
 
 /* Macro to initialize array of AVR I/O registers. */
 #define AVR_INIT_IOREGS { \

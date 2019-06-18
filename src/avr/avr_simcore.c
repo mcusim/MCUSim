@@ -142,14 +142,14 @@ MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 		/*
 		 * The main simulation loop can be terminated by setting
 		 * the MCU state to AVR_MSIM_STOP. It's likely to be done by
-		 * a command from a remove GDB.
+		 * a command from a remote GDB client.
 		 */
 		if ((mcu->ic_left == 0) && (mcu->state == AVR_MSIM_STOP)) {
 			if (MSIM_LOG_ISDEBUG) {
-				snprintf(mcu->log, sizeof mcu->log,
-				         "simulation terminated (stopped mcu),"
-				         " pc=0x%06" PRIX32, mcu->pc);
-				MSIM_LOG_DEBUG(mcu->log);
+				snprintf(LOG, LOGSZ, "simulation terminated "
+				         "(stopped mcu), pc=0x%06"
+				         PRIX32, mcu->pc);
+				MSIM_LOG_DEBUG(LOG);
 			}
 			rc = 2;
 			break;
@@ -163,7 +163,7 @@ MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 		/* Wait for request from GDB in MCU stopped mode */
 		if (!frm_test && !mcu->ic_left &&
 		                (mcu->state == AVR_STOPPED) &&
-		                MSIM_AVR_RSPHandle()) {
+		                MSIM_AVR_RSPHandle(mcu)) {
 			snprintf(mcu->log, sizeof mcu->log, "handling message "
 			         "from GDB RSP client failed: pc=0x%06" PRIX32,
 			         mcu->pc);

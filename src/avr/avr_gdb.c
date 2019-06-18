@@ -27,8 +27,6 @@
  */
 #include <stdio.h>
 #include <stdint.h>
-
-#ifdef WITH_POSIX
 #include <inttypes.h>
 #include <string.h>
 #include <netdb.h>
@@ -39,6 +37,7 @@
 #include <errno.h>
 #include <poll.h>
 #include <netinet/in.h>
+
 #include "mcusim/mcusim.h"
 #include "mcusim/log.h"
 #include "mcusim/avr/sim/private/macro.h"
@@ -54,12 +53,13 @@
 #define GDB_BUF_MAX			(16*1024)
 #define REG_BUF_MAX			32
 
+/* Match point type */
 enum mp_type {
-	BP_SOFTWARE	= 0,
-	BP_HARDWARE	= 1,
-	WP_WRITE	= 2,
-	WP_READ		= 3,
-	WP_ACCESS	= 4
+	BP_SOFTWARE	= 0,		/* Software break point */
+	BP_HARDWARE	= 1,		/* Hardware break point */
+	WP_WRITE	= 2,		/* Watch point (to write memory) */
+	WP_READ		= 3,		/* Watch point (to read read) */
+	WP_ACCESS	= 4		/* Watch point (to access memory) */
 };
 
 struct rsp_state {
@@ -72,74 +72,45 @@ struct rsp_state {
 	unsigned long start_addr;	/* Start of last run */
 };
 
-struct rsp_buf {
+typedef struct rsp_buf {
 	char data[GDB_BUF_MAX];
 	unsigned long len;
-};
+} rsp_buf;
 
 static struct rsp_state rsp;
 static const char hexchars[] = "0123456789ABCDEF";
 
-static void
-rsp_close_server(void);
-static void
-rsp_close_client(void);
-static void
-rsp_server_request(void);
-static void
-rsp_client_request(void);
+static void		rsp_close_server(void);
+static void		rsp_close_client(void);
+static void		rsp_server_request(MSIM_AVR *mcu);
+static void		rsp_client_request(MSIM_AVR *mcu);
+static rsp_buf 	*get_packet(void);
+static int		get_rsp_char(void);
+static void		put_packet(MSIM_AVR *mcu, rsp_buf *buf);
+static void		put_rsp_char(char c);
+static void		put_str_packet(MSIM_AVR *mcu, const char *str);
+static void		rsp_report_exception(MSIM_AVR *mcu);
+static void		rsp_continue(rsp_buf *buf);
+static void		rsp_query(MSIM_AVR *mcu, rsp_buf *buf);
+static void		rsp_vpkt(MSIM_AVR *mcu, rsp_buf *buf);
+static void		rsp_restart(void);
+static void		rsp_read_all_regs(MSIM_AVR *mcu);
+static void		rsp_write_all_regs(MSIM_AVR *mcu, rsp_buf *buf);
+static void		rsp_read_mem(MSIM_AVR *mcu, rsp_buf *buf);
+static void		rsp_write_mem(MSIM_AVR *mcu, rsp_buf *buf);
+static void		rsp_write_mem_bin(MSIM_AVR *mcu, rsp_buf *buf);
+static void		rsp_step(rsp_buf *buf);
+static void		rsp_insert_matchpoint(MSIM_AVR *mcu, rsp_buf *buf);
+static void		rsp_remove_matchpoint(MSIM_AVR *mcu, rsp_buf *buf);
+static unsigned long	rsp_unescape(char *data, unsigned long len);
+static void		rsp_read_reg(MSIM_AVR *mcu, rsp_buf *buf);
+static void		rsp_write_reg(MSIM_AVR *mcu, rsp_buf *buf);
 
-static struct rsp_buf *
-get_packet(void);
-static void
-put_packet(struct rsp_buf *buf);
-static int
-get_rsp_char(void);
-static void
-put_rsp_char(char c);
-static int
-hex(int c);
-static unsigned long
-hex2reg(char *buf, const unsigned long dign);
-static void
-put_str_packet(const char *str);
-static void
-rsp_report_exception(void);
-static void
-rsp_continue(struct rsp_buf *buf);
-static void
-rsp_query(struct rsp_buf *buf);
-static void
-rsp_vpkt(struct rsp_buf *buf);
-static void
-rsp_restart(void);
-static void
-rsp_read_all_regs(void);
-static void
-rsp_write_all_regs(struct rsp_buf *buf);
-static void
-rsp_read_mem(struct rsp_buf *buf);
-static void
-rsp_write_mem(struct rsp_buf *buf);
-static void
-rsp_write_mem_bin(struct rsp_buf *buf);
-static void
-rsp_step(struct rsp_buf *buf);
-static void
-rsp_insert_matchpoint(struct rsp_buf *buf);
-static void
-rsp_remove_matchpoint(struct rsp_buf *buf);
-static unsigned long
-rsp_unescape(char *data, unsigned long len);
-static void
-rsp_read_reg(struct rsp_buf *buf);
-static void
-rsp_write_reg(struct rsp_buf *buf);
+static int		hex(int c);
+static unsigned long	hex2reg(char *buf, const unsigned long dign);
 
-static size_t
-read_reg(int n, char *buf);
-static void
-write_reg(int n, char *buf);
+static size_t		read_reg(int n, char *buf);
+static void		write_reg(int n, char *buf);
 
 void
 MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn)
@@ -161,24 +132,30 @@ MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn)
 
 	protocol = getprotobyname(AVRSIM_RSP_PROTOCOL);
 	if (protocol == NULL) {
-		fprintf(stderr, "RSP unable to load protocol \"%s\": %s\n",
-		        AVRSIM_RSP_PROTOCOL, strerror(errno));
+		snprintf(LOG, LOGSZ, "Unable to load protocol \"%s\": %s",
+		         AVRSIM_RSP_PROTOCOL, strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		return;
 	}
 
 	rsp.proto_num = protocol->p_proto;
 
 	if (portn <= IPPORT_RESERVED) {
-		fprintf(stderr, "RSP could not use a reserved port: %d, "
-		        "should be > %d\n", portn, IPPORT_RESERVED);
+		snprintf(LOG, LOGSZ, "Could not use a reserved port: %d, "
+		         "should be > %d", portn, IPPORT_RESERVED);
+		MSIM_LOG_ERROR(LOG);
+
 		return;
 	}
 
 	/* Create a socket using AVRSim RSP protocol */
 	rsp.fserv = socket(PF_INET, SOCK_STREAM, protocol->p_proto);
 	if (rsp.fserv < 0) {
-		fprintf(stderr, "RSP could not create server socket: %s\n",
-		        strerror(errno));
+		snprintf(LOG, LOGSZ, "RSP could not create server socket: %s",
+		         strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		return;
 	}
 
@@ -186,8 +163,10 @@ MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn)
 	optval = 1;
 	if (setsockopt(rsp.fserv, SOL_SOCKET, SO_REUSEADDR, &optval,
 	                sizeof optval) < 0) {
-		fprintf(stderr, "RSP could not set SO_REUSEADDR option on a "
-		        "server socket %d: %s\n", rsp.fserv, strerror(errno));
+		snprintf(LOG, LOGSZ, "Could not setup socket to reuse its "
+		         "address %d: %s", rsp.fserv, strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		rsp_close_server();
 		return;
 	}
@@ -195,16 +174,20 @@ MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn)
 	/* Server should be non-blocking */
 	flags = fcntl(rsp.fserv, F_GETFL);
 	if (flags < 0) {
-		fprintf(stderr, "Unable to get flags for RSP server "
-		        "socket %d: %s\n", rsp.fserv, strerror(errno));
+		snprintf(LOG, LOGSZ, "Unable to get flags for RSP server "
+		         "socket %d: %s", rsp.fserv, strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		rsp_close_server();
 		return;
 	}
 	flags |= O_NONBLOCK;
 	if (fcntl(rsp.fserv, F_SETFL, flags) < 0) {
-		fprintf(stderr, "Unable to set flags for RSP server socket "
-		        "%d to 0x%08X: %s\n",
-		        rsp.fserv, flags, strerror(errno));
+		snprintf(LOG, LOGSZ, "Unable to set flags for RSP server "
+		         "socket %d to 0x%08X: %s",
+		         rsp.fserv, flags, strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		rsp_close_server();
 		return;
 	}
@@ -212,8 +195,10 @@ MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn)
 	/* Find our host entry */
 	host = gethostbyname("localhost");
 	if (host == NULL) {
-		fprintf(stderr, "Unable to get host entry for RSP server "
-		        "by 'localhost' name: %s\n", strerror(errno));
+		snprintf(LOG, LOGSZ, "Unable to get host entry for RSP server "
+		         "by localhost name: %s", strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		rsp_close_server();
 		return;
 	}
@@ -222,10 +207,13 @@ MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn)
 	memset(&sock_addr, 0, sizeof sock_addr);
 	sock_addr.sin_family = (unsigned char)host->h_addrtype;
 	sock_addr.sin_port = htons(portn);
+
 	if (bind(rsp.fserv, (struct sockaddr *)&sock_addr,
 	                sizeof sock_addr) < 0) {
-		fprintf(stderr, "Unable to bind RSP server socket %d to "
-		        "port %d: %s\n", rsp.fserv, portn, strerror(errno));
+		snprintf(LOG, LOGSZ, "Unable to bind RSP server socket %d to "
+		         "port %d: %s", rsp.fserv, portn, strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		rsp_close_server();
 		return;
 	}
@@ -235,28 +223,31 @@ MSIM_AVR_RSPInit(struct MSIM_AVR *mcu, uint16_t portn)
 	 * more than 1 client to be connected simultaneously!)
 	 */
 	if (listen(rsp.fserv, 1) < 0) {
-		fprintf(stderr, "Unable to backlog on RSP server socket %d to"
-		        "%d: %s\n", rsp.fserv, 1, strerror(errno));
+		snprintf(LOG, LOGSZ, "Unable to backlog on RSP server socket "
+		         "%d to %d: %s", rsp.fserv, 1, strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		rsp_close_server();
 		return;
 	}
 }
 
 void
-MSIM_AVR_RSPClose(void)
+MSIM_AVR_RSPClose(struct MSIM_AVR *mcu)
 {
 	rsp_close_client();
 	rsp_close_server();
 }
 
 int
-MSIM_AVR_RSPHandle(void)
+MSIM_AVR_RSPHandle(struct MSIM_AVR *mcu)
 {
 	struct pollfd fds[2];
 
 	/* Give up if no RSP server port (this should not happen) */
 	if (rsp.fserv == -1) {
-		fprintf(stderr, "No RSP server port open\n");
+		MSIM_LOG_ERROR("No open RSP server port");
+
 		return -1;
 	}
 
@@ -275,25 +266,30 @@ MSIM_AVR_RSPHandle(void)
 				/* Ignore received signal while polling */
 				break;
 			}
-			fprintf(stderr, "Poll for RSP server failed: "
-			        "closing server connection: %s\n",
-			        strerror(errno));
+
+			snprintf(LOG, LOGSZ, "Poll for RSP server failed: "
+			         "closing server connection: %s",
+			         strerror(errno));
+			MSIM_LOG_ERROR(LOG);
+
 			rsp_close_client();
 			rsp_close_server();
 			return -1;
 		case 0:
 			/* Timeout. This should not happen. */
-			fprintf(stderr, "Unexpected RSP server poll "
-			        "timeout\n");
+			MSIM_LOG_WARN("Unexpected RSP server poll timeout");
+
 			break;
 		default:
 			if (POLLIN == (fds[0].revents & POLLIN)) {
-				rsp_server_request();
+				rsp_server_request(mcu);
 				rsp.client_waiting = 0;
 			} else {
-				fprintf(stderr, "RSP server received flags "
-				        "0x%08X: closing server connection\n",
-				        fds[0].revents);
+				snprintf(LOG, LOGSZ, "RSP server received "
+				         "flags 0x%08X: closing server "
+				         "connection", fds[0].revents);
+				MSIM_LOG_ERROR(LOG);
+
 				rsp_close_client();
 				rsp_close_server();
 				return -1;
@@ -304,7 +300,7 @@ MSIM_AVR_RSPHandle(void)
 
 	/* Response with signal 5 (TRAP exception) any time */
 	if (rsp.client_waiting) {
-		put_str_packet("S05");
+		put_str_packet(mcu, "S05");
 		rsp.client_waiting = 0;
 	}
 
@@ -318,27 +314,33 @@ MSIM_AVR_RSPHandle(void)
 		if (errno == EINTR) {
 			break;
 		}
-		fprintf(stderr, "Poll for RSP client failed: closing server "
-		        "connection: %s\n", strerror(errno));
+
+		snprintf(LOG, LOGSZ, "Poll for RSP client failed: closing "
+		         "server connection: %s", strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		rsp_close_client();
 		rsp_close_server();
 		return -1;
 	case 0:
 		/* Timeout. This should not happen. */
-		fprintf(stderr, "Unexpected RSP client poll timeout\n");
+		MSIM_LOG_ERROR("Unexpected RSP client poll timeout");
+
 		return -1;
 	default:
 		/* Is there client activity due to input available? */
 		if (POLLIN == (fds[0].revents & POLLIN)) {
-			rsp_client_request();
+			rsp_client_request(mcu);
 		} else {
 			/*
 			 * Error leads to closing the client, but not
 			 * the server.
 			 */
-			fprintf(stderr, "RSP client received flags "
-			        "0x%08X: closing client connection\n",
-			        fds[0].revents);
+			snprintf(LOG, LOGSZ, "RSP client received flags "
+			         "0x%08X: closing client connection",
+			         fds[0].revents);
+			MSIM_LOG_WARN(LOG);
+
 			rsp_close_client();
 		}
 		break;
@@ -365,7 +367,7 @@ rsp_close_client(void)
 }
 
 static void
-rsp_server_request(void)
+rsp_server_request(struct MSIM_AVR *mcu)
 {
 	struct sockaddr_in sock_addr;	/* The socket address */
 	socklen_t len;			/* Size of the socket address */
@@ -379,8 +381,10 @@ rsp_server_request(void)
 			return;
 		}
 
-		fprintf(stderr, "RSP server error creating client: "
-		        "closing connection: %s\n", strerror(errno));
+		snprintf(LOG, LOGSZ, "error while creating client: "
+		         "closing connection: %s", strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		rsp_close_client();
 		rsp_close_server();
 		return;
@@ -388,23 +392,30 @@ rsp_server_request(void)
 
 	/* Close a new incoming client connection if there is one already */
 	if (rsp.fcli != -1) {
-		fprintf(stderr, "Additional RSP client request refused\n");
+		snprintf(LOG, LOGSZ, "additional RSP client request refused");
+		MSIM_LOG_ERROR(LOG);
+
 		close(fd);
 		return;
 	}
 
-	/* New client should be non-blocking */
+	/* New client should be a non-blocking one */
 	flags = fcntl(fd, F_GETFL);
 	if (flags < 0) {
-		fprintf(stderr, "Unable to get flags for RSP client socket "
-		        "%d: %s\n", fd, strerror(errno));
+		snprintf(LOG, LOGSZ, "unable to get flags for RSP client "
+		         "socket %d: %s", fd, strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		close(fd);
 		return;
 	}
+
 	flags |= O_NONBLOCK;
 	if (fcntl(fd, F_SETFL, flags) < 0) {
-		fprintf(stderr, "Unable to set flags for RSP client socket "
-		        "%d to 0x%08X: %s\n", fd, flags, strerror(errno));
+		snprintf(LOG, LOGSZ, "unable to set flags for RSP client "
+		         "socket %d to 0x%08X: %s", fd, flags, strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		close(fd);
 		return;
 	}
@@ -416,8 +427,10 @@ rsp_server_request(void)
 	optval = 0;
 	len = sizeof optval;
 	if (setsockopt(fd, rsp.proto_num, TCP_NODELAY, &optval, len) < 0) {
-		fprintf(stderr, "Unable to switch off Nagel's algorithm for "
-		        "RSP client socket %d: %s\n", fd, strerror(errno));
+		snprintf(LOG, LOGSZ, "unable to switch off Nagel's algorithm "
+		         "for RSP client socket %d: %s\n", fd, strerror(errno));
+		MSIM_LOG_ERROR(LOG);
+
 		close(fd);
 		return;
 	}
@@ -427,7 +440,7 @@ rsp_server_request(void)
 }
 
 static void
-rsp_client_request(void)
+rsp_client_request(struct MSIM_AVR *mcu)
 {
 	struct rsp_buf *buf;
 
@@ -444,26 +457,32 @@ rsp_client_request(void)
 		if (buf->data[0] == 0x03) {
 			rsp.mcu->state = AVR_STOPPED;
 		} else {
-			put_str_packet(
-			        "O6154677274656e20746f73206f74707064650a0d");
-			fprintf(stderr, "Received GDB command 0x%X (%c) "
-			        "while MCU running!\n",
-			        buf->data[0], buf->data[0]);
+			put_str_packet(mcu, "O6154677274656e20746f73206f7470"
+			               "7064650a0d");
+
+			snprintf(LOG, LOGSZ, "received GDB command: %c "
+			         "(MCU running)", buf->data[0]);
+			MSIM_LOG_WARN(LOG);
 		}
 		return;
 	}
 
+#ifdef DEBUG
+	snprintf(LOG, LOGSZ, "<- %s", &buf->data[0]);
+	MSIM_LOG_DEBUG(LOG);
+#endif
+
 	switch (buf->data[0]) {
 	case 0x03:
-		fprintf(stderr, "Break command received while MCU stopped\n");
+		MSIM_LOG_WARN("break command received (MCU stopped)");
 		return;
 	case '!':
 		/* Extended mode request */
-		put_str_packet("OK");
+		put_str_packet(mcu, "OK");
 		return;
 	case '?':
 		/* Report why MCU halted */
-		rsp_report_exception();
+		rsp_report_exception(mcu);
 		return;
 	case 'c':
 		/* Continue */
@@ -478,20 +497,21 @@ rsp_client_request(void)
 		return;
 	case 'D':
 		/* Detach GDB */
-		put_str_packet("OK");
+		put_str_packet(mcu, "OK");
+
 		rsp_close_client();
 		return;
 	case 'g':
-		rsp_read_all_regs();
+		rsp_read_all_regs(mcu);
 		return;
 	case 'G':
-		rsp_write_all_regs(buf);
+		rsp_write_all_regs(mcu, buf);
 		return;
 	case 'H':
 		/*
 		 * Set a thread number for subsequent operations.
 		 * Send OK to ignore silently. */
-		put_str_packet("OK");
+		put_str_packet(mcu, "OK");
 		return;
 	case 'k':
 		/* Kill request. Terminate simulation. */
@@ -499,21 +519,21 @@ rsp_client_request(void)
 		return;
 	case 'm':
 		/* Read memory (symbolic) */
-		rsp_read_mem(buf);
+		rsp_read_mem(mcu, buf);
 		return;
 	case 'M':
 		/* Write memory (symbolic) */
-		rsp_write_mem(buf);
+		rsp_write_mem(mcu, buf);
 		return;
 	case 'p':
-		rsp_read_reg(buf);
+		rsp_read_reg(mcu, buf);
 		return;
 	case 'P':
-		rsp_write_reg(buf);
+		rsp_write_reg(mcu, buf);
 		return;
 	case 'q':
 		/* One of query packets */
-		rsp_query(buf);
+		rsp_query(mcu, buf);
 		return;
 	case 'R':
 		/* Restart the MCU program */
@@ -528,92 +548,101 @@ rsp_client_request(void)
 		return;
 	case 'v':
 		/* One of execution control packets */
-		rsp_vpkt(buf);
+		rsp_vpkt(mcu, buf);
 		return;
 	case 'X':
 		/* Write memory (binary) */
-		rsp_write_mem_bin(buf);
+		rsp_write_mem_bin(mcu, buf);
 		return;
 	case 'z':
 		/* Remove a breakpoint/watchpoint */
-		rsp_remove_matchpoint(buf);
+		rsp_remove_matchpoint(mcu, buf);
 		return;
 	case 'Z':
 		/* Insert a breakpoint/watchpoint */
-		rsp_insert_matchpoint(buf);
+		rsp_insert_matchpoint(mcu, buf);
 		return;
 	default:
 		/* Unknown commands are ignored */
-		fprintf(stderr, "Unknown RSP request: %s\n", buf->data);
+		snprintf(LOG, LOGSZ, "unknown RSP request: %s", buf->data);
+		MSIM_LOG_WARN(LOG);
+
 		return;
 	}
 }
 
 static void
-rsp_read_reg(struct rsp_buf *buf)
+rsp_read_reg(MSIM_AVR *mcu, rsp_buf *buf)
 {
 	uint32_t regn;
 	char val[REG_BUF_MAX];
 	int vals;
-	struct MSIM_AVR *mcu = rsp.mcu;
 
 	vals = sscanf(buf->data, "p%" SCNx32, &regn);
 	if (vals != 1) {
 		snprintf(LOG, LOGSZ, "Failed to recognize RSP read register "
-		         "command: %s\n", buf->data);
+		         "command: %s", buf->data);
 		MSIM_LOG_ERROR(LOG);
-		put_str_packet("E01");
+
+		put_str_packet(mcu, "E01");
 	} else {
 		val[0] = 0;
 		if (!read_reg((int)regn, val)) {
 			snprintf(LOG, LOGSZ, "Unknown register %" PRIu32
-			         ", empty response will be returned\n", regn);
+			         ", empty response will be returned", regn);
 			MSIM_LOG_ERROR(LOG);
 		}
-		put_str_packet(val);
+
+		put_str_packet(mcu, val);
 	}
 }
 
 static void
-rsp_write_reg(struct rsp_buf *buf)
+rsp_write_reg(MSIM_AVR *mcu, rsp_buf *buf)
 {
 	uint32_t regn;
 	char val[REG_BUF_MAX];
 	int vals;
 
 	vals = sscanf(buf->data, "P%" SCNx32 "=%8s", &regn, val);
+
 	if (vals != 2) {
-		fprintf(stderr, "Failed to recognize RSP write register "
-		        "command: %s\n", buf->data);
-		put_str_packet("E01");
+		snprintf(LOG, LOGSZ, "failed to recognize RSP write register "
+		         "command: %s", buf->data);
+		MSIM_LOG_ERROR(LOG);
+
+		put_str_packet(mcu, "E01");
 	} else {
 		write_reg((int)regn, val);
-		put_str_packet("OK");
+
+		put_str_packet(mcu, "OK");
 	}
 }
 
 static void
-rsp_insert_matchpoint(struct rsp_buf *buf)
+rsp_insert_matchpoint(struct MSIM_AVR *mcu, struct rsp_buf *buf)
 {
 	enum mp_type type;
 	unsigned long addr;
 	int len, vals;
 	unsigned char llsb, lmsb, hlsb, hmsb;
 	unsigned short inst;
-	struct MSIM_AVR *mcu = rsp.mcu;
 
 	vals = sscanf(buf->data, "Z%1d,%lx,%1d", (int *)&type, &addr, &len);
 	if (vals != 3) {
 		snprintf(LOG, LOGSZ, "RSP matchpoint insertion request not "
-		         "recognized: %s\n", buf->data);
+		         "recognized: %s", buf->data);
 		MSIM_LOG_ERROR(LOG);
-		put_str_packet("E01");
+
+		put_str_packet(mcu, "E01");
 		return;
 	}
 
 	if (len != 2) {
-		fprintf(stderr, "RSP matchpoint length %d is not valid: "
-		        "2 assumed\n", len);
+		snprintf(LOG, LOGSZ, "RSP matchpoint length %d is not valid: "
+		         "2 assumed", len);
+		MSIM_LOG_WARN(LOG);
+
 		len = 2;
 	}
 
@@ -627,10 +656,13 @@ rsp_insert_matchpoint(struct rsp_buf *buf)
 		llsb = (unsigned char) mcu->pm[addr];
 		lmsb = (unsigned char) mcu->pm[addr+1];
 		inst = (unsigned short) (llsb | (lmsb << 8));
+
 		if (inst == BREAK) {
-			fprintf(stderr, "BREAK is already at 0x%8lX, "
-			        "ignoring\n", addr);
-			put_str_packet("OK");
+			snprintf(LOG, LOGSZ, "BREAK is already at 0x%8lX, "
+			         "ignoring", addr);
+			MSIM_LOG_WARN(LOG);
+
+			put_str_packet(mcu, "OK");
 			return;
 		}
 
@@ -646,39 +678,43 @@ rsp_insert_matchpoint(struct rsp_buf *buf)
 			mcu->mpm[addr+2] = hlsb;
 			mcu->mpm[addr+3] = hmsb;
 		}
-		put_str_packet("OK");
+
+		put_str_packet(mcu, "OK");
 		break;
 	default:
-		fprintf(stderr, "RSP matchpoint type %d is not "
-		        "supported\n", type);
-		put_str_packet("");
+		snprintf(LOG, LOGSZ, "RSP matchpoint type %d is not "
+		         "supported", type);
+		MSIM_LOG_WARN(LOG);
+
+		put_str_packet(mcu, "");
 		break;
 	}
 }
 
 static void
-rsp_remove_matchpoint(struct rsp_buf *buf)
+rsp_remove_matchpoint(MSIM_AVR *mcu, rsp_buf *buf)
 {
 	enum mp_type type;
 	unsigned long addr;
 	int len, vals;
 	unsigned char llsb, lmsb, hlsb, hmsb;
 	unsigned short inst;
-	struct MSIM_AVR *mcu;
 
-	mcu = rsp.mcu;
 	vals = sscanf(buf->data, "z%1d,%lx,%1d", (int *)&type, &addr, &len);
 	if (vals != 3) {
 		snprintf(LOG, LOGSZ, "RSP matchpoint insertion request not "
-		         "recognized: %s\n", buf->data);
+		         "recognized: %s", buf->data);
 		MSIM_LOG_ERROR(LOG);
-		put_str_packet("E01");
+
+		put_str_packet(mcu, "E01");
 		return;
 	}
 
 	if (len != 2) {
-		fprintf(stderr, "RSP matchpoint length %d is not valid: "
-		        "2 assumed\n", len);
+		snprintf(LOG, LOGSZ, "RSP matchpoint length %d is not valid: "
+		         "2 assumed", len);
+		MSIM_LOG_WARN(LOG);
+
 		len = 2;
 	}
 
@@ -693,9 +729,11 @@ rsp_remove_matchpoint(struct rsp_buf *buf)
 		lmsb = (unsigned char) mcu->pm[addr+1];
 		inst = (unsigned short) (llsb | (lmsb << 8));
 		if (inst != BREAK) {
-			fprintf(stderr, "There is no BREAK at 0x%8lX "
-			        "address, ignoring\n", addr);
-			put_str_packet("E01");
+			snprintf(LOG, LOGSZ, "there is no BREAK at 0x%8lX "
+			         "address, ignoring", addr);
+			MSIM_LOG_ERROR(LOG);
+
+			put_str_packet(mcu, "E01");
 			return;
 		}
 
@@ -711,12 +749,15 @@ rsp_remove_matchpoint(struct rsp_buf *buf)
 			mcu->pm[addr+2] = hlsb;
 			mcu->pm[addr+3] = hmsb;
 		}
-		put_str_packet("OK");
+
+		put_str_packet(mcu, "OK");
 		break;
 	default:
-		fprintf(stderr, "RSP matchpoint type %d is not "
-		        "supported\n", type);
-		put_str_packet("");
+		snprintf(LOG, LOGSZ, "RSP matchpoint type %d is not "
+		         "supported", type);
+		MSIM_LOG_WARN(LOG);
+
+		put_str_packet(mcu, "");
 		break;
 	}
 }
@@ -939,7 +980,7 @@ hex2reg(char *buf, const unsigned long dign)
 }
 
 static void
-put_str_packet(const char *str)
+put_str_packet(MSIM_AVR *mcu, const char *str)
 {
 	struct rsp_buf buf;
 	unsigned long len = strlen(str);
@@ -957,18 +998,25 @@ put_str_packet(const char *str)
 	buf.data[len] = 0;
 	buf.len = len;
 
-	put_packet(&buf);
+	put_packet(mcu, &buf);
 }
 
 static void
-put_packet(struct rsp_buf *buf)
+put_packet(MSIM_AVR *mcu, rsp_buf *buf)
 {
 	int32_t ch;
 	uint32_t count;
 	int8_t c;
 
-	/* Construct $<packet info>#<checksum>. Repeat until the GDB client
-	 * acknowledges satisfactory receipt. */
+#ifdef DEBUG
+	snprintf(LOG, LOGSZ, "%s ->", &buf->data[0]);
+	MSIM_LOG_DEBUG(LOG);
+#endif
+
+	/*
+	 * Construct $<packet info>#<checksum>.
+	 * Repeat until the GDB client acknowledges satisfactory receipt.
+	 */
 	do {
 		uint8_t checksum = 0;
 
@@ -1002,7 +1050,7 @@ put_packet(struct rsp_buf *buf)
 }
 
 static void
-rsp_report_exception(void)
+rsp_report_exception(MSIM_AVR *mcu)
 {
 	struct rsp_buf buf;
 
@@ -1013,7 +1061,7 @@ rsp_report_exception(void)
 	buf.data[3] = 0;
 	buf.len = strlen(buf.data);
 
-	put_packet (&buf);
+	put_packet(mcu, &buf);
 }
 
 static void
@@ -1029,7 +1077,7 @@ rsp_continue(struct rsp_buf *buf)
 }
 
 static void
-rsp_query(struct rsp_buf *buf)
+rsp_query(MSIM_AVR *mcu, rsp_buf *buf)
 {
 	if (!strcmp("qC", buf->data)) {
 		/*
@@ -1038,10 +1086,10 @@ rsp_query(struct rsp_buf *buf)
 		 * Since we do not support a thread concept, this is the
 		 * appropriate response.
 		 */
-		put_str_packet("");
+		put_str_packet(mcu, "");
 	} else if (!strcmp("qOffsets", buf->data)) {
 		/* Report any relocation */
-		put_str_packet("Text=0;Data=0;Bss=0");
+		put_str_packet(mcu, "Text=0;Data=0;Bss=0");
 	} else if (!strncmp("qSupported", buf->data, strlen ("qSupported"))) {
 		/*
 		 * Report a list of the features we support. For now we just
@@ -1054,34 +1102,34 @@ rsp_query(struct rsp_buf *buf)
 		char reply[GDB_BUF_MAX];
 
 		sprintf(reply, "PacketSize=%X", GDB_BUF_MAX);
-		put_str_packet(reply);
+		put_str_packet(mcu, reply);
 	} else if (!strncmp("qSymbol:", buf->data, strlen("qSymbol:"))) {
 		/*
 		 * Offer to look up symbols. Nothing we want (for now).
 		 * TODO. This just ignores any replies to symbols we
 		 * looked up, but we didn't want to do that anyway!
 		 */
-		put_str_packet("OK");
+		put_str_packet(mcu, "OK");
 	} else if (!strncmp("qTStatus", buf->data, strlen("qTStatus"))) {
 		/* Trace feature is not supported */
-		put_str_packet("");
+		put_str_packet(mcu, "");
 	} else if (!strncmp("qfThreadInfo", buf->data,
 	                    strlen("qfThreadInfo"))) {
 		/* Return info about active threads. */
-		put_str_packet("m-1");
+		put_str_packet(mcu, "m-1");
 	} else if (!strncmp("qAttached", buf->data, strlen("qAttached"))) {
-		put_str_packet("");
+		put_str_packet(mcu, "");
 	} else if (!strncmp("qsThreadInfo", buf->data,
 	                    strlen("qsThreadInfo"))) {
 		/* Return info about more active threads */
-		put_str_packet("l");
+		put_str_packet(mcu, "l");
 	} else {
-		fprintf(stderr, "Unrecognized RSP query\n");
+		MSIM_LOG_WARN("unrecognized RSP query");
 	}
 }
 
 static void
-rsp_vpkt(struct rsp_buf *buf)
+rsp_vpkt(MSIM_AVR *mcu, rsp_buf *buf)
 {
 	if (!strncmp("vAttach;", buf->data, strlen("vAttach;"))) {
 		/*
@@ -1089,23 +1137,24 @@ rsp_vpkt(struct rsp_buf *buf)
 		 * process. We just return a stop packet (using TRAP)
 		 * to indicate we are stopped.
 		 */
-		put_str_packet("S05");
+		put_str_packet(mcu, "S05");
 		return;
 	} else if (!strcmp("vCont?", buf->data)) {
-		/* For now we don't support this. */
-		put_str_packet("");
+		/* There're no vCont actions supported at the moment. */
+		put_str_packet(mcu, "");
 		return;
 	} else if (!strncmp("vCont", buf->data, strlen("vCont"))) {
 		/*
 		 * This shouldn't happen, because we've reported non-support
 		 * via vCont? above */
-		fprintf(stderr, "RSP vCont is not supported: ignored\n");
+		MSIM_LOG_WARN("RSP vCont is not supported: ignored");
+
 		return;
 	} else if (!strncmp("vRun;", buf->data, strlen("vRun;"))) {
 		/* We shouldn't be given any args, but check for this */
 		if (buf->len > strlen("vRun;")) {
-			fprintf(stderr, "Unexpected arguments to RSP vRun "
-			        "command: ignored\n");
+			MSIM_LOG_WARN("Unexpected arguments to RSP vRun "
+			              "command: ignored");
 		}
 
 		/*
@@ -1114,15 +1163,15 @@ rsp_vpkt(struct rsp_buf *buf)
 		 * We use signal 5 (TRAP).
 		 */
 		rsp_restart();
-		put_str_packet("S05");
+		put_str_packet(mcu, "S05");
 	} else if (!strncmp("vKill;", buf->data, strlen("vKill;"))) {
 		/* Restart MCU in stopped state on kill request */
 		rsp_restart();
-		put_str_packet("OK");
+		put_str_packet(mcu, "OK");
 	} else {
 		fprintf(stderr, "Unknown RSP 'v' packet type %s: ignored\n",
 		        buf->data);
-		put_str_packet("E01");
+		put_str_packet(mcu, "E01");
 		return;
 	}
 }
@@ -1190,7 +1239,7 @@ write_reg(int n, char *buf)
 }
 
 static void
-rsp_read_all_regs(void)
+rsp_read_all_regs(MSIM_AVR *mcu)
 {
 	char reply[GDB_BUF_MAX];
 	char *rep;
@@ -1201,11 +1250,12 @@ rsp_read_all_regs(void)
 		rep += read_reg(i, rep);
 	}
 	*rep = 0;
-	put_str_packet(reply);
+
+	put_str_packet(mcu, reply);
 }
 
 static void
-rsp_write_all_regs(struct rsp_buf *buf)
+rsp_write_all_regs(MSIM_AVR *mcu, rsp_buf *buf)
 {
 	unsigned int n, off;
 	unsigned long v;
@@ -1237,28 +1287,33 @@ rsp_write_all_regs(struct rsp_buf *buf)
 			break;
 		}
 	}
-	put_str_packet("OK");
+
+	put_str_packet(mcu, "OK");
 }
 
 static void
-rsp_read_mem(struct rsp_buf *buf)
+rsp_read_mem(MSIM_AVR *mcu, rsp_buf *buf)
 {
 	unsigned int addr, len, i;
 	unsigned char c;
 	unsigned char *src;
 
 	if (sscanf(buf->data, "m%x,%x:", &addr, &len) != 2) {
-		fprintf(stderr, "Failed to recognize RSP read memory "
-		        "command: %s\n", buf->data);
-		put_str_packet("E01");
+		snprintf(LOG, LOGSZ, "Failed to recognize RSP read memory "
+		         "command: %s", buf->data);
+		MSIM_LOG_ERROR(LOG);
+
+		put_str_packet(mcu, "E01");
 		return;
 	}
 	addr &= 0xFFFFFF;
 
 	/* Make sure we won't overflow the buffer (2 chars per byte) */
 	if ((len*2) >= GDB_BUF_MAX) {
-		fprintf(stderr, "Memory read %s too large for RSP packet: "
-		        "requested chunk will be truncated\n", buf->data);
+		snprintf(LOG, LOGSZ, "Memory read %s too large for RSP packet: "
+		         "requested chunk will be truncated", buf->data);
+		MSIM_LOG_WARN(LOG);
+
 		len = (GDB_BUF_MAX-1)/2;
 	}
 
@@ -1269,17 +1324,19 @@ rsp_read_mem(struct rsp_buf *buf)
 	                ((addr-0x800000) <= rsp.mcu->ramend)) {
 		src = rsp.mcu->dm + addr - 0x800000;
 	} else if (addr == (0x800000 + rsp.mcu->ramend+1) && len == 2) {
-		put_str_packet("0000");
+		put_str_packet(mcu, "0000");
 		return;
 	} else if (addr >= 0x810000 && (addr-0x810000) <= rsp.mcu->e2end) {
 		/* There should be a pointer to EEPROM */
-		/*src = rsp.mcu->ee + addr - 0x810000;*/
-		put_str_packet("E01");
+		//src = rsp.mcu->ee + addr - 0x810000;
+		put_str_packet(mcu, "E01");
 		return;
 	} else {
-		fprintf(stderr, "Unable to read memory %08X, %08X\n",
-		        addr, len);
-		put_str_packet("E01");
+		snprintf(LOG, LOGSZ, "Unable to read memory %08X, %08X",
+		         addr, len);
+		MSIM_LOG_ERROR(LOG);
+
+		put_str_packet(mcu, "E01");
 		return;
 	}
 
@@ -1291,11 +1348,12 @@ rsp_read_mem(struct rsp_buf *buf)
 	}
 	buf->data[i*2] = 0;
 	buf->len = strlen(buf->data);
-	put_packet(buf);
+
+	put_packet(mcu, buf);
 }
 
 static void
-rsp_write_mem(struct rsp_buf *buf)
+rsp_write_mem(MSIM_AVR *mcu, rsp_buf *buf)
 {
 	static uint8_t tmpbuf[GDB_BUF_MAX];
 	uint64_t addr, datlen;
@@ -1306,9 +1364,11 @@ rsp_write_mem(struct rsp_buf *buf)
 	uint8_t *dest;
 
 	if (sscanf(buf->data, "M%lx,%x:", &addr, &len) != 2) {
-		fprintf(stderr, "Failed to recognize RSP write memory "
-		        "command: %s\n", buf->data);
-		put_str_packet("E01");
+		snprintf(LOG, LOGSZ, "Failed to recognize RSP write memory "
+		         "command: %s", buf->data);
+		MSIM_LOG_ERROR(LOG);
+
+		put_str_packet(mcu, "E01");
 		return;
 	}
 
@@ -1322,9 +1382,11 @@ rsp_write_mem(struct rsp_buf *buf)
 
 	/* Sanity check */
 	if (datlen != len*2) {
-		fprintf(stderr, "Write of %d digits requested, but %lu "
-		        "digits supplied: request ignored\n", len*2, datlen);
-		put_str_packet("E01");
+		snprintf(LOG, LOGSZ, "Write of %d digits requested, but %lu "
+		         "digits supplied: request ignored", len*2, datlen);
+		MSIM_LOG_WARN(LOG);
+
+		put_str_packet(mcu, "E01");
 		return;
 	}
 
@@ -1343,20 +1405,23 @@ rsp_write_mem(struct rsp_buf *buf)
 	} else if (addr >= 0x810000 && (addr-0x810000) <= rsp.mcu->e2end) {
 		/* There should be a pointer to EEPROM */
 		/*dest = rsp.mcu->ee + addr - 0x810000;*/
-		put_str_packet("E01");
+		put_str_packet(mcu, "E01");
 		return;
 	} else {
-		fprintf(stderr, "Unable to write memory %08lX, %08X\n",
-		        addr, len);
-		put_str_packet("E01");
+		snprintf(LOG, LOGSZ, "Unable to write memory %08lX, %08X",
+		         addr, len);
+		MSIM_LOG_ERROR(LOG);
+
+		put_str_packet(mcu, "E01");
 		return;
 	}
+
 	memcpy(dest, tmpbuf, len);
-	put_str_packet("OK");
+	put_str_packet(mcu, "OK");
 }
 
 static void
-rsp_write_mem_bin(struct rsp_buf *buf)
+rsp_write_mem_bin(MSIM_AVR *mcu, rsp_buf *buf)
 {
 	unsigned long addr, datlen, len;
 	char *bindat;
@@ -1364,9 +1429,11 @@ rsp_write_mem_bin(struct rsp_buf *buf)
 	unsigned char *dest;
 
 	if (sscanf(buf->data, "X%lx,%lx:", &addr, &len) != 2) {
-		fprintf(stderr, "Failed to recognize RSP write memory "
-		        "command: %s\n", buf->data);
-		put_str_packet("E01");
+		snprintf(LOG, LOGSZ, "Failed to recognize RSP write memory "
+		         "command: %s", buf->data);
+		MSIM_LOG_ERROR(LOG);
+
+		put_str_packet(mcu, "E01");
 		return;
 	}
 
@@ -1380,9 +1447,11 @@ rsp_write_mem_bin(struct rsp_buf *buf)
 	if (datlen != len) {
 		unsigned long minlen = len < datlen ? len : datlen;
 
-		fprintf(stderr, "Write of %lu bytes requested, but %lu bytes "
-		        "supplied. %lu will be written\n",
-		        len, datlen, minlen);
+		snprintf(LOG, LOGSZ, "Write of %lu bytes requested, but %lu "
+		         "bytes supplied. %lu will be written",
+		         len, datlen, minlen);
+		MSIM_LOG_WARN(LOG);
+
 		len = minlen;
 	}
 	/* Find a memory to write to */
@@ -1394,16 +1463,19 @@ rsp_write_mem_bin(struct rsp_buf *buf)
 	} else if (addr >= 0x810000 && (addr-0x810000) <= rsp.mcu->e2end) {
 		/* There should be a pointer to EEPROM */
 		/*dest = rsp.mcu->ee + addr - 0x810000;*/
-		put_str_packet("E01");
+		put_str_packet(mcu, "E01");
 		return;
 	} else {
-		fprintf(stderr, "Unable to write memory %08lX, %08lX\n",
-		        addr, len);
-		put_str_packet("E01");
+		snprintf(LOG, LOGSZ, "Unable to write memory %08lX, %08lX",
+		         addr, len);
+		MSIM_LOG_ERROR(LOG);
+
+		put_str_packet(mcu, "E01");
 		return;
 	}
+
 	memcpy(dest, bindat, len);
-	put_str_packet("OK");
+	put_str_packet(mcu, "OK");
 }
 
 /*
@@ -1441,5 +1513,3 @@ rsp_step(struct rsp_buf *buf)
 	rsp.mcu->state = AVR_MSIM_STEP;
 	rsp.client_waiting = 1;
 }
-
-#endif /* WITH_POSIX */
