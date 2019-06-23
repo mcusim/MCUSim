@@ -89,6 +89,7 @@ extern "C" {
 #define MSIM_LOG_ISDEBUG ((uint8_t)(MSIM_LOG_GetLevel()>=MSIM_LOG_LVLDEBUG))
 
 enum MSIM_LOG_Level {
+	MSIM_LOG_LVLNONE = 74,		/* No logging */
 	MSIM_LOG_LVLFATAL = 75,		/* Less informative logging level */
 	MSIM_LOG_LVLERROR = 76,
 	MSIM_LOG_LVLWARNING = 77,

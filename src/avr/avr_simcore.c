@@ -58,22 +58,17 @@
 typedef int (*init_func)(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);
 
 /* Function to process interrupt request according to the order */
-static int
-pass_irqs(struct MSIM_AVR *mcu);
-static int
-handle_irq(struct MSIM_AVR *mcu);
+static int	pass_irqs(struct MSIM_AVR *);
+static int	handle_irq(struct MSIM_AVR *);
+
 /* Function to setup AVR instance. */
-static int
-setup_avr(struct MSIM_AVR *mcu, const char *mcu_name,
-          uint8_t *pm, uint32_t pm_size,
-          uint8_t *dm, uint32_t dm_size,
-          uint8_t *mpm, FILE *fp);
-static int
-set_fuse(struct MSIM_AVR *m, uint32_t fuse, uint8_t val);
-static int
-set_lock(struct MSIM_AVR *m, uint8_t val);
-static void
-print_config(struct MSIM_AVR *m);
+static int	setup_avr(MSIM_AVR *, const char *,
+                          uint8_t *, uint32_t, uint8_t *, uint32_t,
+                          uint8_t *, FILE *);
+static int	set_fuse(MSIM_AVR *, uint32_t, uint8_t);
+static int	set_lock(MSIM_AVR *, uint8_t);
+static void	print_config(MSIM_AVR *);
+static int	load_progmem(MSIM_AVR *, FILE *);
 
 struct init_func_info {
 	char partno[20];
@@ -89,9 +84,6 @@ static struct init_func_info init_funcs[] = {
 	{ "m328p",	"ATmega328P",	MSIM_M328PInit },
 //	{ "m2560",	"ATmega2560",	MSIM_M2560Init }
 };
-
-static int
-load_progmem(struct MSIM_AVR *mcu, FILE *fp);
 
 int
 MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint8_t frm_test)
@@ -148,9 +140,10 @@ MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 			if (MSIM_LOG_ISDEBUG) {
 				snprintf(LOG, LOGSZ, "simulation terminated "
 				         "(stopped mcu), pc=0x%06"
-				         PRIX32, mcu->pc);
+				         PRIx32, mcu->pc);
 				MSIM_LOG_DEBUG(LOG);
 			}
+
 			rc = 2;
 			break;
 		}
@@ -164,10 +157,11 @@ MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 		if (!frm_test && !mcu->ic_left &&
 		                (mcu->state == AVR_STOPPED) &&
 		                MSIM_AVR_RSPHandle(mcu)) {
-			snprintf(mcu->log, sizeof mcu->log, "handling message "
-			         "from GDB RSP client failed: pc=0x%06" PRIX32,
-			         mcu->pc);
-			MSIM_LOG_FATAL(mcu->log);
+			snprintf(LOG, LOGSZ, "handling message from GDB RSP "
+			         "client failed: pc=0x%06" PRIx32 ", "
+			         "prev_pc=0x%06" PRIx32, mcu->pc, mcu->old_pc);
+			MSIM_LOG_FATAL(LOG);
+
 			rc = 1;
 			break;
 		}
@@ -175,12 +169,14 @@ MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 		/* Update timers */
 		MSIM_AVR_TMRUpdate(mcu);
 
-		/* Tick MCU periferals.
+		/*
+		 * Tick MCU periferals.
 		 *
 		 * NOTE: It is important to tick MCU peripherals before
 		 * updating Lua models. One of the reasons is an accessing
 		 * mechanism of the registers which share the same I/O
-		 * location (UBRRH/UCSRC of ATmega8A for example). */
+		 * location (UBRRH/UCSRC of ATmega8A for example).
+		 */
 		if (mcu->tick_perf != NULL) {
 			mcu->tick_perf(mcu, &cnf);
 		}
@@ -193,30 +189,33 @@ MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 			MSIM_AVR_VCDDumpFrame(mcu, *tick);
 		}
 
-		/* Test scope of a program counter within flash size */
+		/* Test scope of a program counter */
 		if ((mcu->pc>>1) > (mcu->flashend>>1)) {
-			snprintf(mcu->log, sizeof mcu->log, "program counter "
-			         "is out of flash memory: pc=0x%06" PRIX32
-			         ", flashend=0x%06" PRIX32,
-			         mcu->pc>>1, mcu->flashend>>1);
-			MSIM_LOG_FATAL(mcu->log);
+			snprintf(LOG, LOGSZ, "program counter is out of flash "
+			         "memory: pc=0x%06" PRIx32 ", flashend=0x%06"
+			         PRIx32 ", prev_pc=0x%06" PRIx32, mcu->pc >> 1,
+			         mcu->flashend >> 1, mcu->old_pc >> 1);
+			MSIM_LOG_FATAL(LOG);
+
 			rc = 1;
 			break;
 		}
-		/* Test scope of a program counter */
-		if ((mcu->pc+2) >= mcu->pm_size) {
-			snprintf(mcu->log, sizeof mcu->log, "program counter "
-			         "is out of scope: pc=0x%06" PRIX32 ", pm_size"
-			         "=0x%06" PRIX32, mcu->pc, mcu->pm_size);
-			MSIM_LOG_FATAL(mcu->log);
+		if ((mcu->pc + 2) >= mcu->pm_size) {
+			snprintf(LOG, LOGSZ, "program counter is out of scope: "
+			         "pc=0x%06" PRIx32 ", pm_size=0x%06" PRIx32,
+			         mcu->pc, mcu->pm_size);
+			MSIM_LOG_FATAL(LOG);
+
 			rc = 1;
 			break;
 		}
 
-		/* Decode next instruction. It's usually hard to say in
-		 * which state the MCU registers will be between neighbor
-		 * cycles of a multi-cycle instruction. This talk may be
-		 * taken into account:
+		/*
+		 * Decode next instruction.
+		 *
+		 * It's usually hard to say in which state the MCU registers
+		 * will be between neighbor cycles of a multi-cycle instruction.
+		 * This discussion may be taken into account:
 		 *
 		 * https://electronics.stackexchange.com/questions/132171/
 		 * 	what-happens-to-avr-registers-during-multi-
@@ -232,19 +231,22 @@ MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 		 * Simulator doesn't guarantee anything special here either.
 		 * The only thing you may rely on is the instruction which
 		 * will be completed _after all_ of these cycles required to
-		 * finish it. */
+		 * finish it.
+		 */
 		if ((mcu->ic_left || mcu->state == AVR_RUNNING ||
 		                mcu->state == AVR_MSIM_STEP) &&
 		                MSIM_AVR_Step(mcu)) {
 			snprintf(mcu->log, sizeof mcu->log, "decoding "
-			         "instruction failed: pc=0x%06" PRIX32,
-			         mcu->pc);
+			         "instruction failed: pc=0x%06" PRIx32 ", "
+			         "prev_pc=0x%06" PRIx32, mcu->pc, mcu->old_pc);
 			MSIM_LOG_FATAL(mcu->log);
+
 			rc = 1;
 			break;
 		}
 
-		/* Provide and handle IRQs.
+		/*
+		 * Provide and handle IRQs.
 		 *
 		 * It's important to understand an interrupt may occur during
 		 * execution of a multi-cycle instruction. This instruction
@@ -252,7 +254,8 @@ MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 		 * the multiple AVR datasheets).
 		 *
 		 * It means that we may provide IRQs, but will have to wait
-		 * required number of cycles to serve them. */
+		 * required number of cycles to serve them.
+		 */
 		pass_irqs(mcu);
 		if (READ_SREG(mcu, SR_GLOBINT) &&
 		                (!mcu->ic_left) && (!mcu->intr.exec_main) &&
@@ -266,15 +269,19 @@ MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
 			mcu->state = AVR_STOPPED;
 		}
 
-		/* All cycles of a single instruction from a main program
-		 * have to be performed. */
+		/*
+		 * All cycles of a single instruction from a main program
+		 * have to be performed.
+		 */
 		if (mcu->ic_left == 0) {
 			mcu->intr.exec_main = 0;
 		}
 
-		/* Increment ticks or print a warning message in case of
+		/*
+		 * Increment ticks or print a warning message in case of
 		 * maximum amount of ticks reached (extremely unlikely
-		 * if compiler supports "unsigned long long" type). */
+		 * if compiler supports "unsigned long long" type).
+		 */
 		if ((*tick) == TICKS_MAX) {
 			*tick_ovf = 1;
 			MSIM_LOG_WARN("maximum amount of ticks reached");
@@ -862,7 +869,7 @@ MSIM_AVR_DumpFlash(struct MSIM_AVR *mcu, const char *dump)
 	IHexRecord rec;
 	const uint32_t data_t = IHEX_TYPE_00;
 	const uint32_t eof_t = IHEX_TYPE_01;
-	uint8_t eof_byte;
+	uint8_t eof_byte = 0;
 	uint32_t pmsz, off;
 	int rc = 0;
 

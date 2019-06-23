@@ -25,33 +25,63 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Configuration file for MCUSim simulation tests.
+# Configuration file for unit tests based on 'cmocka' library.
 #
 cmake_minimum_required(VERSION 3.2)
-project(MCUSim-tests C)
+project(MCUSim-unit-tests C)
 
 # Version
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
+if (WITH_UNIT_TESTS)
 # -----------------------------------------------------------------------------
-# Additional tests
+# Look for libraries, packages, etc.
 # -----------------------------------------------------------------------------
-add_subdirectory(ut)		# Unit tests
+	set(TARGET_LIBS ${MCUSIM_LIB})
+
+	# Check pkg-config installed
+	find_package(PkgConfig REQUIRED)
+
+	# Check cmocka library
+	pkg_search_module(CMOCKA REQUIRED cmocka)
+	if (CMOCKA_FOUND)
+		message(STATUS "cmocka ldflags: ${CMOCKA_LDFLAGS}")
+		set(TARGET_LIBS ${TARGET_LIBS} ${CMOCKA_LDFLAGS})
+	endif()
+
+# -----------------------------------------------------------------------------
+# Define include files and directories here
+# -----------------------------------------------------------------------------
+	include_directories("${CMAKE_BINARY_DIR}/include/")
+	if (CMOCKA_FOUND)
+		message(STATUS "cmocka cflags: ${CMOCKA_CFLAGS}")
+		add_definitions(${CMOCKA_CFLAGS})
+	endif()
+
+# -----------------------------------------------------------------------------
+# Compile unit tests
+# -----------------------------------------------------------------------------
+	add_executable(avris.ut avris.ut.c)
+
+# -----------------------------------------------------------------------------
+# Link unit tests
+# -----------------------------------------------------------------------------
+	target_link_libraries(avris.ut ${TARGET_LIBS})
 
 # -----------------------------------------------------------------------------
 # Prepare files in the current binary directory
 # -----------------------------------------------------------------------------
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tests.cmake.in
-               ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake @ONLY)
+	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tests.cmake.in
+	               ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake @ONLY)
 
-subdirlist(TEST_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
-foreach(TEST_DIR ${TEST_DIRS})
-	file(COPY ${TEST_DIR} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-endforeach()
+	file(COPY mcusim.ut.conf DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+	file(COPY firmware.hex DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
 
 # -----------------------------------------------------------------------------
-# Run tests by 'make tests'
+# Run unit tests by 'make check'
 # -----------------------------------------------------------------------------
-add_custom_command(OUTPUT SIMULATION-TESTS
-	COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake)
-add_custom_target(tests DEPENDS SIMULATION-TESTS)
+	add_custom_command(OUTPUT UNIT-TESTS
+		COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake)
+	add_custom_target(check DEPENDS UNIT-TESTS)
+
+endif() # WITH_UNIT_TESTS

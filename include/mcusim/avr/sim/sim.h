@@ -122,8 +122,11 @@ typedef struct MSIM_AVR {
 
 	uint32_t freq; /* Current MCU clock frequency (in Hz). */
 	pthread_mutex_t freq_mutex; /* Lock before accessing frequency. */
+
 	uint32_t pc; /* Current program counter (in bytes). */
+	uint32_t old_pc; /* Previous PC value (in bytes). */
 	uint8_t pc_bits; /* Number of PC bits (16-bit, 22-bit, etc.) */
+
 	uint8_t ic_left; /* Clock cycles left to finish current instruction. */
 	uint8_t in_mcinst; /* Multi-cycle instruction flag. */
 

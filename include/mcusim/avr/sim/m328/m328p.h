@@ -79,6 +79,7 @@ const static struct MSIM_AVR ORIG_M328P = {
 	.name = "ATmega328P",
 	.signature = { SIGNATURE_0, SIGNATURE_1, SIGNATURE_2 },
 	.pc = 0x0000,
+	.old_pc = 0x0000,
 	.pc_bits = 14,
 	.freq = 1000000,
 	.clk_source = AVR_INT_CAL_RC_CLK,

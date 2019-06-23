@@ -50,6 +50,8 @@ add_definitions(-DMSIM_BUILD_TIME="${build_time}")
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Filename.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Subdirlist.cmake)
+include(CheckFunctionExists)
+include(CheckIncludeFiles)
 
 # -----------------------------------------------------------------------------
 # Paths to install MCUSim to
@@ -76,14 +78,18 @@ if (NOT DEFINED MSIM_EXAMPLE_DIR)
 	set(MSIM_EXAMPLE_DIR "share/mcusim/examples")
 endif()
 
-message(STATUS "Install to: ${CMAKE_INSTALL_PREFIX}")
-message(STATUS "    binaries: ${CMAKE_INSTALL_PREFIX}/${MSIM_BIN_DIR}")
-message(STATUS "    shared libraries: ${CMAKE_INSTALL_PREFIX}/${MSIM_LIB_DIR}")
-message(STATUS "    static libraries: ${CMAKE_INSTALL_PREFIX}/${MSIM_SLIB_DIR}")
-message(STATUS "    headers: ${CMAKE_INSTALL_PREFIX}/${MSIM_H_DIR}")
-message(STATUS "    config: ${CMAKE_INSTALL_PREFIX}/${MSIM_CONF_DIR}")
-message(STATUS "    scripts: ${CMAKE_INSTALL_PREFIX}/${MSIM_SCRIPT_DIR}")
-message(STATUS "    examples: ${CMAKE_INSTALL_PREFIX}/${MSIM_EXAMPLE_DIR}")
+string(ASCII 27 Esc)
+set(CRst "${Esc}[0m")		# Reset color
+set(CBld "${Esc}[1m")		# Bold color
+
+message(STATUS "Install to: \t\t${CMAKE_INSTALL_PREFIX}")
+message(STATUS "    binaries: \t${CMAKE_INSTALL_PREFIX}/${MSIM_BIN_DIR}")
+message(STATUS "    libs (shared): \t${CMAKE_INSTALL_PREFIX}/${MSIM_LIB_DIR}")
+message(STATUS "    libs (static): \t${CMAKE_INSTALL_PREFIX}/${MSIM_SLIB_DIR}")
+message(STATUS "    headers: \t${CMAKE_INSTALL_PREFIX}/${MSIM_H_DIR}")
+message(STATUS "    config: \t\t${CMAKE_INSTALL_PREFIX}/${MSIM_CONF_DIR}")
+message(STATUS "    scripts: \t${CMAKE_INSTALL_PREFIX}/${MSIM_SCRIPT_DIR}")
+message(STATUS "    examples: \t${CMAKE_INSTALL_PREFIX}/${MSIM_EXAMPLE_DIR}")
 
 # -----------------------------------------------------------------------------
 # Parts of the project
@@ -94,14 +100,12 @@ add_subdirectory(tests)		# Simulation tests
 add_subdirectory(misra)		# Configuration to check MISRA C rules
 add_subdirectory(xspice)	# Compile MCUSim as XSPICE library
 
-include(CheckFunctionExists)
-include(CheckIncludeFiles)
-
 # -----------------------------------------------------------------------------
 # Set flags here
 # -----------------------------------------------------------------------------
 if (CMAKE_BUILD_TYPE MATCHES Debug)
-	message(STATUS "Building DEBUG version of MCUSim ${MSIM_VERSION}")
+	message(STATUS "Building ${CBld}DEBUG${CRst} version: ${CBld}${MSIM_VERSION}${CRst}")
+
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DDEBUG")
 	if (CMAKE_COMPILER_IS_GNUCC OR
 			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
@@ -142,7 +146,8 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
 		add_definitions("-Werror=pointer-to-int-cast")
 	endif()
 else()
-	message(STATUS "Building RELEASE version of MCUSim ${MSIM_VERSION}")
+	message(STATUS "Building ${CBld}RELEASE${CRst} version: ${CBld}${MSIM_VERSION}${CRst}")
+
 	if (CMAKE_COMPILER_IS_GNUCC OR
 			${CMAKE_C_COMPILER_ID} MATCHES "Clang")
 		add_definitions("-O3")
@@ -333,7 +338,7 @@ define_filename_for_sources(${MCUSIM})
 # -----------------------------------------------------------------------------
 target_link_libraries(${MCUSIM_LIB} ${TARGET_LIBS})
 target_link_libraries("${MCUSIM_LIB}-static" ${TARGET_LIBS})
-target_link_libraries(${MCUSIM} "${MCUSIM_LIB}-static")
+target_link_libraries(${MCUSIM} ${MCUSIM_LIB})
 if (APPLE AND CMAKE_SIZEOF_VOID_P EQUAL 8 AND LUA_TYPE MATCHES "LuaJIT")
 	# Add LuaJIT-specific flags for 64-bit build on macOS
 	message(STATUS "Linking MCUSim with LuaJIT-specific flags on macOS with 64-bit build")

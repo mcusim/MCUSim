@@ -467,11 +467,6 @@ rsp_client_request(struct MSIM_AVR *mcu)
 		return;
 	}
 
-#ifdef DEBUG
-	snprintf(LOG, LOGSZ, "<- %s", &buf->data[0]);
-	MSIM_LOG_DEBUG(LOG);
-#endif
-
 	switch (buf->data[0]) {
 	case 0x03:
 		MSIM_LOG_WARN("break command received (MCU stopped)");
@@ -1007,11 +1002,6 @@ put_packet(MSIM_AVR *mcu, rsp_buf *buf)
 	int32_t ch;
 	uint32_t count;
 	int8_t c;
-
-#ifdef DEBUG
-	snprintf(LOG, LOGSZ, "%s ->", &buf->data[0]);
-	MSIM_LOG_DEBUG(LOG);
-#endif
 
 	/*
 	 * Construct $<packet info>#<checksum>.

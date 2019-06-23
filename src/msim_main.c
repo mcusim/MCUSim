@@ -49,6 +49,7 @@
 
 #define FLASH_FILE		".mcusim.flash"
 #define GDB_RSP_PORT		12750
+
 /* Command line options */
 #define CLI_OPTIONS		":c:"
 #define VERSION_OPT		7576
@@ -62,21 +63,13 @@ static struct MSIM_OPT_Option longopts[] = {
 	{ "conf", MSIM_OPT_REQUIRED_ARGUMENT, NULL, CONF_FILE_OPT },
 };
 
-/* AVR MCU descriptor */
 static struct MSIM_AVR avr_mcu;
 static struct MSIM_AVR *mcu = &avr_mcu;
 static struct MSIM_CFG conf;
 
-/* Prototypes of the local functions */
-static void
-print_usage(void);
-static void
-print_short_usage(void);
-#ifdef WITH_POSIX
-	static void
-	dump_flash_handler(int s);
-#endif
-/* END Prototypes of the local functions */
+static void	print_usage(void);
+static void	print_short_usage(void);
+static void	dump_flash_handler(int s);
 
 int
 main(int argc, char *argv[])
@@ -89,11 +82,10 @@ main(int argc, char *argv[])
 	conf.firmware_test = 0;
 	conf.rsp_port = GDB_RSP_PORT;
 
-	/* Adjust logging level in the debug version. */
 #ifdef DEBUG
 	MSIM_LOG_SetLevel(MSIM_LOG_LVLDEBUG);
 #endif
-#ifdef WITH_POSIX
+
 	/* Set up signals handlers. */
 	int signals[] = { SIGABRT, SIGKILL, SIGQUIT, SIGSEGV, SIGTERM };
 	struct sigaction dmpflash_act;
@@ -105,7 +97,6 @@ main(int argc, char *argv[])
 	for (uint32_t i = 0; i < ARR_LEN(signals); i++) {
 		sigaction(signals[i], &dmpflash_act, NULL);
 	}
-#endif
 
 	MSIM_CFG_PrintVersion();
 

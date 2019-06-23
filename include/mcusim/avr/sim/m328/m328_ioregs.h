@@ -35,12 +35,11 @@
 #define SREG_MASK	0xFF
 #define SPH		_SFR_IO8(0x3E)
 #define SPH_RES		0x00
-#define SPH_MASK	0x07 /* 0000 0111 */
+#define SPH_MASK	0xFF
 #define SPL		_SFR_IO8(0x3D)
 #define SPL_RES		0x00
 #define SPL_MASK	0xFF
-/* NOTE: The following values should be assigned according to the
- * datasheet. */
+
 #define PORTB_RES	0x00
 #define PORTB_MASK	0xFF
 #define DDRB_RES	0x00

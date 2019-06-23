@@ -9,6 +9,15 @@ Readme for MCUSim
  moment. Feel free to start a discussion about any other family or
  architecture of the microcontrollers.
 
+Quick start
+-----------
+    $ git clone https://github.com/mcusim/MCUSim.git
+    $ cd MCUSim
+    $ mkdir build && cd build
+    $ cmake -DWITH_UNIT_TESTS=True -DWITH_XSPICE=True ..
+    $ make && make check && make tests
+    $ make install
+
 Screenshots
 -----------
 ![](https://raw.githubusercontent.com/mcusim/MCUSim/master/examples/ATMEGA8A-pwm-to-sine/ngspice-simulation.png)

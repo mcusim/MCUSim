@@ -11,17 +11,27 @@ Prerequisites
  for the various operating systems including GNU/Linux and Windows.
 
  libluajit (2.0 or above) should be installed in order to support Lua-based
- models. liblua (5.1 or above) can also be used, but is not generally
- recommended because it may decrease a simulation peformance significantly.
+ models. liblua (5.1 or above) can be used instead, but it may decrease
+ a simulation peformance significantly.
 
- If you want to compile MCUSim as an XSPICE library (mcusim.cm), the following
- software should also be installed: GNU make, readline, bison, flex,
- X11 (and Xaw, Xmu, Xext) headers and libs.
+ If you want to compile XSPICE library (mcusim.cm), the following software
+ should also be installed:
+
+	- GNU make
+	- readline
+	- bison and flex
+	- X11 (Xaw, Xmu, Xext) headers and libs
 
  If you want to contribute to the project you will need the following
- software installed: astyle, python (2.7 or above), cppcheck (1.83 or above),
- avr-libc (optional, to compile AVR tests firmware), srecord (optional,
- to compile AVR tests firmware).
+ software installed:
+
+	- astyle (to check code formatting)
+	- avr-libc (to compile AVR tests firmware)
+	- srecord (to compile AVR tests firmware)
+	- pkg-config (to find libraries)
+	- cmocka (to run unit tests)
+	- python (2.7 or above)
+	- cppcheck (1.83 or above)
 
 Install from tarball
 --------------------
@@ -108,24 +118,31 @@ Advanced install
         simulation performance, but can be the only option available on some
         platforms).
 
-        True value means that MCUSim will be using LuaJIT as a main
+        False value means that MCUSim will be using LuaJIT as a main Lua
         implementation. It is a default behavior.
 
  -DNGSPICE_MAKE=/usr/bin/make
 
         Build NGSpice using specified make utility. It should be GNU make.
 
- -DNGSPICE_TARBALL=/home/dsl/ngspice-28.tar.gz
+ -DNGSPICE_TARBALL=/path/to/ngspice-XX.tar.gz
 
-        Full path to the NGSpice tarball. This option is useful if you are
+        A full path to the NGSpice tarball. This option is useful if you are
         going to use a custom tarball with NGSpice sources.
 
  -DNGSPICE_TARBALL_MD5=a11c1f99753934be7d60c0ab43821bbc
 
         MD5 hash of the NGSpice tarball provided via -DNGSPICE_TARBALL option.
 
-Install directory
------------------
+ -DWITH_UNIT_TESTS=False|True
+
+        Build MCUSim with unit tests (run by "make check").
+
+	False value means that MCUSim will be built without unit tests.
+	This is a default behavior.
+
+Install directories
+-------------------
 
  -DCMAKE_INSTALL_PREFIX=/usr/local
 

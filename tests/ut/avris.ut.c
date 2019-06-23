@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 The MCUSim Project.
+ * Copyright 2017-2019 The MCUSim Project.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,58 +25,67 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  *
- * Functions to parse and save MCUSim configuration.
+ * Unit tests for AVR Instruction Set.
  */
-#ifndef MSIM_CFG_H_
-#define MSIM_CFG_H_ 1
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
 
-#include <stdint.h>
-#include "mcusim/avr/sim/vcd.h"
-#include "mcusim/avr/sim/lua.h"
+#include "mcusim/mcusim.h"
+#include "mcusim/config.h"
+#include "mcusim/avr/sim/private/macro.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define GDB_RSP_PORT		12750
+#define CONF_FILE		"mcusim.ut.conf"
 
-/* Full path to the default configuration file of MCUSim. */
-#define MSIM_CFG_FILE		"@CMAKE_INSTALL_PREFIX@/@MSIM_CONF_DIR@/mcusim.conf"
+static MSIM_AVR orig_mcu;
+static MSIM_AVR avr_mcu;
+static MSIM_AVR *mcu = &avr_mcu;
 
-/* This is a basic structure to describe an MCUSim configuration.
- * See mcusim.conf or mcusim.conf.in for detailed description of the fields. */
-typedef struct MSIM_CFG {
-	char mcu[64];
-	uint64_t mcu_freq;
+static MSIM_CFG conf = {
+	.firmware_test = 1,
+	.rsp_port = GDB_RSP_PORT,
+};
 
-	uint8_t mcu_lockbits;
-	uint8_t has_lockbits;
-	uint8_t mcu_efuse;
-	uint8_t has_efuse;
-	uint8_t mcu_hfuse;
-	uint8_t has_hfuse;
-	uint8_t mcu_lfuse;
-	uint8_t has_lfuse;
+/* SUB - Subtract Without Carry */
+static void
+check_sub(void **state)
+{
+	/* 0x1b28 - sub r18, r24 */
+	mcu->pm[0] = 0x28;
+	mcu->pm[1] = 0x1b;
+	DM(18) = 3;
+	DM(24) = 1;
 
-	char firmware_file[4096];
-	uint8_t has_firmware_file;
+	assert_int_equal(mcu->pc, 0x000000);
+	assert_int_equal(DM(18), 3);
+	assert_int_equal(DM(24), 1);
 
-	uint8_t reset_flash;
-	uint8_t firmware_test;
-	uint8_t trap_at_isr;
-	uint32_t rsp_port;
+	MSIM_AVR_Step(mcu);
 
-	char lua_models[MSIM_AVR_LUAMODELS][4096];
-	uint32_t lua_models_num;
+	assert_int_equal(mcu->pc, 0x000002);
+	assert_int_equal(DM(18), 2);
+	assert_int_equal(DM(24), 1);
 
-	char vcd_file[4096];
-	char dump_regs[MSIM_AVR_VCD_REGS][16];
-	uint32_t dump_regs_num;
-} MSIM_CFG;
-
-int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename);
-int MSIM_CFG_PrintVersion(void);
-
-#ifdef __cplusplus
+	*mcu = orig_mcu;
 }
-#endif
 
-#endif /* MSIM_CFG_H_ */
+/* An entry point of the AVR Instruction Set test suite. */
+int
+main(void)
+{
+	const struct CMUnitTest tests[] = {
+		cmocka_unit_test(check_sub),
+	};
+	int rc = 0;
+
+	/* No output from MCUSim */
+	MSIM_LOG_SetLevel(MSIM_LOG_LVLNONE);
+
+	/* Initialize AVR MCU */
+	rc = MSIM_AVR_Init(mcu, &conf, CONF_FILE);
+	orig_mcu = *mcu;
+
+	return rc != 0 ? rc : cmocka_run_group_tests(tests, NULL, NULL);
+}

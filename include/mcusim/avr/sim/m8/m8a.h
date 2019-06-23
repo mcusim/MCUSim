@@ -56,6 +56,7 @@ const static struct MSIM_AVR ORIG_M8A = {
 	.name = "ATmega8A",
 	.signature = { SIGNATURE_0, SIGNATURE_1, SIGNATURE_2 },
 	.pc = 0x0000,
+	.old_pc = 0x0000,
 	.pc_bits = 12,
 	.freq = 1000000,
 	.clk_source = AVR_INT_CAL_RC_CLK,
