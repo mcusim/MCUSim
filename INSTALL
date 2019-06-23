@@ -10,9 +10,11 @@ Prerequisites
  POSIX.1-2001 in mind. CMake build system is required to generate build files
  for the various operating systems including GNU/Linux and Windows.
 
- libluajit (2.0 or above) should be installed in order to support Lua-based
- models. liblua (5.1 or above) can be used instead, but it may decrease
- a simulation peformance significantly.
+ If you want to compile a minimally usable MCUSim version, you'll have to
+ install:
+
+	- libluajit (2.0 or above) OR liblua (5.1 or above, not recommended)
+	- pkg-config
 
  If you want to compile XSPICE library (mcusim.cm), the following software
  should also be installed:

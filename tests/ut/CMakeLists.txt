@@ -39,9 +39,6 @@ if (WITH_UNIT_TESTS)
 # -----------------------------------------------------------------------------
 	set(TARGET_LIBS ${MCUSIM_LIB})
 
-	# Check pkg-config installed
-	find_package(PkgConfig REQUIRED)
-
 	# Check cmocka library
 	pkg_search_module(CMOCKA REQUIRED cmocka)
 	if (CMOCKA_FOUND)

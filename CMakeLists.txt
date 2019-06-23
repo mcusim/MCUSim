@@ -92,15 +92,6 @@ message(STATUS "    scripts: \t${CMAKE_INSTALL_PREFIX}/${MSIM_SCRIPT_DIR}")
 message(STATUS "    examples: \t${CMAKE_INSTALL_PREFIX}/${MSIM_EXAMPLE_DIR}")
 
 # -----------------------------------------------------------------------------
-# Parts of the project
-# -----------------------------------------------------------------------------
-add_subdirectory(scripts)	# Scripts and lua models
-add_subdirectory(examples)	# Example circuits
-add_subdirectory(tests)		# Simulation tests
-add_subdirectory(misra)		# Configuration to check MISRA C rules
-add_subdirectory(xspice)	# Compile MCUSim as XSPICE library
-
-# -----------------------------------------------------------------------------
 # Set flags here
 # -----------------------------------------------------------------------------
 if (CMAKE_BUILD_TYPE MATCHES Debug)
@@ -216,19 +207,26 @@ set(MCUSIM_LIB_SOURCES
 # -----------------------------------------------------------------------------
 set(TARGET_LIBS "")
 
+# Check pkg-config installed
+find_package(PkgConfig REQUIRED)
+
 # Check LuaJIT or Lua installed
 unset(LUA_FOUND CACHE)
 unset(LUA_INCLUDE_DIR CACHE)
 unset(LUA_LIBRARY CACHE)
+
 if (WITH_LUA)
 	set(LUA_TYPE "Lua")
 	find_package(Lua REQUIRED)
 else()
 	set(LUA_TYPE "LuaJIT")
-	find_package(LuaJIT REQUIRED)
+	pkg_search_module(LUA REQUIRED luajit)
 endif()
+
 if (LUA_FOUND)
-	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LIBRARIES})
+	message(STATUS "lua cflags: ${LUA_CFLAGS}")
+	message(STATUS "lua ldflags: ${LUA_LDFLAGS}")
+	set(TARGET_LIBS ${TARGET_LIBS} ${LUA_LDFLAGS})
 endif()
 
 # Check POSIX threads
@@ -300,6 +298,15 @@ else()
 endif()
 
 # -----------------------------------------------------------------------------
+# Parts of the project
+# -----------------------------------------------------------------------------
+add_subdirectory(scripts)	# Scripts and lua models
+add_subdirectory(examples)	# Example circuits
+add_subdirectory(tests)		# Simulation tests
+add_subdirectory(misra)		# Configuration to check MISRA C rules
+add_subdirectory(xspice)	# Compile MCUSim as XSPICE library
+
+# -----------------------------------------------------------------------------
 # Prepare headers
 # -----------------------------------------------------------------------------
 file(GLOB_RECURSE RAW_HEADERS RELATIVE ${CMAKE_SOURCE_DIR}
@@ -314,7 +321,7 @@ endforeach()
 # -----------------------------------------------------------------------------
 include_directories("${CMAKE_BINARY_DIR}/include/")
 if (LUA_FOUND)
-	include_directories(${LUA_INCLUDE_DIR})
+	add_definitions(${LUA_CFLAGS})
 endif()
 
 # -----------------------------------------------------------------------------
