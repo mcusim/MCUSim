@@ -27,64 +27,64 @@ matrix:
       env:
         - MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
 # macOS with Clang ------------------------------------------------------------
-    - os: osx
-      osx_image: xcode10.1
-      env:
-        - MATRIX_EVAL="brew install luajit"
+#    - os: osx
+#      osx_image: xcode10.1
+#      env:
+#        - MATRIX_EVAL="brew install luajit"
 # GNU/Linux with XSPICE code model  -------------------------------------------
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-7
-            - libluajit-5.1-2
-            - libluajit-5.1-dev
-            - libreadline6
-            - libreadline6-dev
-            - bison
-            - flex
-            - libx11-6
-            - libx11-dev
-            - libxau6
-            - libxau-dev
-            - libxext6
-            - libxext-dev
-            - libxinerama1
-            - libxinerama-dev
-            - libxaw7
-            - libxaw7-dbg
-      env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
-        - CMAKE_PARAMS="-DWITH_XSPICE=True"
+#    - os: linux
+#      addons:
+#        apt:
+#          sources:
+#            - ubuntu-toolchain-r-test
+#          packages:
+#            - g++-7
+#            - libluajit-5.1-2
+#            - libluajit-5.1-dev
+#            - libreadline6
+#            - libreadline6-dev
+#            - bison
+#            - flex
+#            - libx11-6
+#            - libx11-dev
+#            - libxau6
+#            - libxau-dev
+#            - libxext6
+#            - libxext-dev
+#            - libxinerama1
+#            - libxinerama-dev
+#            - libxaw7
+#            - libxaw7-dbg
+#      env:
+#        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+#        - CMAKE_PARAMS="-DWITH_XSPICE=True"
 # GNU/Linux with liblua and XSPICE code model  --------------------------------
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-7
-            - liblua5.2-0
-            - liblua5.2-dev
-            - libreadline6
-            - libreadline6-dev
-            - bison
-            - flex
-            - libx11-6
-            - libx11-dev
-            - libxau6
-            - libxau-dev
-            - libxext6
-            - libxext-dev
-            - libxinerama1
-            - libxinerama-dev
-            - libxaw7
-            - libxaw7-dbg
-      env:
-        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
-        - CMAKE_PARAMS="-DWITH_LUA=True -DWITH_XSPICE=True"
+#    - os: linux
+#      addons:
+#        apt:
+#          sources:
+#            - ubuntu-toolchain-r-test
+#          packages:
+#            - g++-7
+#            - liblua5.2-0
+#            - liblua5.2-dev
+#            - libreadline6
+#            - libreadline6-dev
+#            - bison
+#            - flex
+#            - libx11-6
+#            - libx11-dev
+#            - libxau6
+#            - libxau-dev
+#            - libxext6
+#            - libxext-dev
+#            - libxinerama1
+#            - libxinerama-dev
+#            - libxaw7
+#            - libxaw7-dbg
+#      env:
+#        - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+#        - CMAKE_PARAMS="-DWITH_LUA=True -DWITH_XSPICE=True"
 # -----------------------------------------------------------------------------
 
 # Build phases are defined according to their order in Travis CI.
