@@ -34,33 +34,74 @@
 #include "mcusim/mcusim.h"
 #include "mcusim/avr/sim/private/macro.h"
 
+/* Configuration file from the current working directory */
+#define CFG_FILE		"mcusim.conf"
+
 /* Compare string with a string literal */
-#define CMPL(s, l, len) (strncmp((s), (l),				\
-                         ARR_LEN(l) < (len) ? ARR_LEN(l) : (len)))
+#define CMPL(s, l, len) (strncmp((s), (l), ARRSZ(l) < (len) ? ARRSZ(l) : (len)))
 
-static int
-read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,
-           FILE *file, const char *filename);
-static int
-read_line(struct MSIM_CFG *cfg, char *parm, char *val,
-          uint32_t plen, uint32_t vlen);
+static int	read_file(MSIM_CFG *cfg, const char *cf);
+static int	read_lines(MSIM_CFG *cfg, char *buf, uint32_t len, FILE *file,
+                           const char *cf);
+static int	read_line(MSIM_CFG *cfg, char *parm, char *val, uint32_t plen,
+                          uint32_t vlen);
+static void	parse_bool(char *buf, uint32_t len, uint8_t *val);
 
-static void
-parse_bool(char *buf, uint32_t len, uint8_t *val);
-
+/*
+ * Read a configuration file.
+ *
+ * If it's not possible to obtain configuration from the given one,
+ * there will be attempts to load it from the current working directory or
+ * where it's supposed to be installed during compilation.
+ */
 int
-MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename)
+MSIM_CFG_Read(MSIM_CFG *cfg, const char *cf)
 {
-	char buf[4096];
-	uint32_t buflen = sizeof buf/sizeof buf[0];
+	const uint32_t len = 64*1024;
+	char log[len];
 	int rc = 0;
 
-#ifdef DEBUG
-	/* Adjust logging level in the debug version. */
-	MSIM_LOG_SetLevel(MSIM_LOG_LVLDEBUG);
-#endif
+	/* Try to load a configuration file */
+	rc = read_file(cfg, cf);
 
-	FILE *f = fopen(filename, "r");
+	if (rc != 0) {
+		if (cf != NULL) {
+			snprintf(log, len, "failed to open config: %s", cf);
+			MSIM_LOG_ERROR(log);
+		}
+
+		/* Try to load from the current working directory */
+		rc = read_file(cfg, CFG_FILE);
+
+		if (rc != 0) {
+			/* Try to load a system-wide file at least */
+			rc = read_file(cfg, MSIM_CFG_FILE);
+
+			if (rc != 0) {
+				MSIM_LOG_ERROR("can't load any config file");
+				rc = 1;
+			} else {
+				MSIM_LOG_INFO("using config: " MSIM_CFG_FILE);
+			}
+		} else {
+			MSIM_LOG_INFO("using config: " CFG_FILE);
+		}
+	} else {
+		snprintf(log, len, "using config: %s", cf);
+		MSIM_LOG_INFO(log);
+	}
+
+	return rc;
+}
+
+static int
+read_file(MSIM_CFG *cfg, const char *cf)
+{
+	FILE *f = fopen(cf, "r");
+	const uint32_t buflen = 4096;
+	char buf[buflen];
+	int rc = 0;
+
 	if (f == NULL) {
 		rc = 1;
 	} else {
@@ -73,12 +114,14 @@ MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename)
 		cfg->has_firmware_file = 0;
 		cfg->firmware_test = 0;
 		cfg->reset_flash = 1;
-		rc = read_lines(cfg, buf, buflen, f, filename);
+
+		rc = read_lines(cfg, buf, buflen, f, cf);
 	}
 
 	if (f != NULL) {
 		fclose(f);
 	}
+
 	return rc;
 }
 

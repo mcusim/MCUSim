@@ -94,13 +94,13 @@ main(int argc, char *argv[])
 	sigemptyset(&dmpflash_act.sa_mask);
 	dmpflash_act.sa_handler = dump_flash_handler;
 
-	for (uint32_t i = 0; i < ARR_LEN(signals); i++) {
+	for (uint32_t i = 0; i < ARRSZ(signals); i++) {
 		sigaction(signals[i], &dmpflash_act, NULL);
 	}
 
 	MSIM_CFG_PrintVersion();
 
-	/* Interpret command ling arguments */
+	/* Raad command line arguments */
 	c = MSIM_OPT_Getopt_long(argc, argv, CLI_OPTIONS, longopts, NULL);
 	while (c != -1) {
 		switch (c) {
@@ -137,8 +137,14 @@ main(int argc, char *argv[])
 	}
 
 	do {
+		/* Read config file */
+		rc = MSIM_CFG_Read(&conf, conf_file);
+		if (rc != 0) {
+			break;
+		}
+
 		/* Initialize AVR */
-		rc = MSIM_AVR_Init(mcu, &conf, conf_file);
+		rc = MSIM_AVR_Init(mcu, &conf);
 		if (rc != 0) {
 			break;
 		}

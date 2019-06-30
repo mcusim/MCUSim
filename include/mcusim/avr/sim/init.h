@@ -36,12 +36,12 @@ extern "C" {
 
 #include <stdint.h>
 
-struct MSIM_InitArgs {
-	unsigned char *pm;
-	unsigned char *dm;
+typedef struct MSIM_InitArgs {
+	uint8_t *pm;
+	uint8_t *dm;
 	uint32_t pmsz;
 	uint32_t dmsz;
-};
+} MSIM_InitArgs;
 
 /* Initialize MCU as ATmega8A */
 int MSIM_M8AInit(struct MSIM_AVR *mcu, struct MSIM_InitArgs *args);

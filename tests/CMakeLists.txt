@@ -36,7 +36,7 @@ add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 # -----------------------------------------------------------------------------
 # Additional tests
 # -----------------------------------------------------------------------------
-add_subdirectory(ut)		# Unit tests
+add_subdirectory(ft)		# Real-world firmware tests
 
 # -----------------------------------------------------------------------------
 # Prepare files in the current binary directory

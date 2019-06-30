@@ -1954,9 +1954,9 @@ exec_call(MSIM_AVR *mcu, const uint32_t inst_msb)
 	uint32_t inst_lsb;
 	uint64_t pc, c;
 
-	if (!mcu->in_mcinst) {
+	if (!mcu->mci) {
 		/* It is the first cycle of multi-cycle instruction */
-		mcu->in_mcinst = 1;
+		mcu->mci = 1;
 		if (!mcu->xmega) {
 			mcu->ic_left = mcu->pc_bits > 16 ? 4 : 3;
 		} else {
@@ -1970,7 +1970,7 @@ exec_call(MSIM_AVR *mcu, const uint32_t inst_msb)
 			return;
 		}
 	}
-	mcu->in_mcinst = 0;
+	mcu->mci = 0;
 
 	/* prepare the whole 32-bit instruction */
 	lsb = mcu->pm[mcu->pc+2];

@@ -127,8 +127,8 @@ update_timer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 		}
 
 		/* Obtain timer's Clock Source */
-		uint32_t cs = IOBIT_RDA(mcu, tmr->cs, ARR_LEN(tmr->cs));
-		if (cs >= ARR_LEN(tmr->cs_div)) {
+		uint32_t cs = IOBIT_RDA(mcu, tmr->cs, ARRSZ(tmr->cs));
+		if (cs >= ARRSZ(tmr->cs_div)) {
 			tmr->scnt = 0;
 			break;
 		}
@@ -148,7 +148,7 @@ update_timer(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 			tmr->wgmval = (tmr->size == 16) ? &wgm16 : &wgm8;
 			tmr->wgmi = -1;
 		} else {
-			wgm = IOBIT_RDA(mcu, tmr->wgm, ARR_LEN(tmr->wgm));
+			wgm = IOBIT_RDA(mcu, tmr->wgm, ARRSZ(tmr->wgm));
 			tmr->wgmval = &tmr->wgm_op[wgm];
 			tmr->wgmi = (int32_t)wgm;
 		}
@@ -182,7 +182,7 @@ mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
 	struct MSIM_AVR_TMR_WGM *wgm = tmr->wgmval;
 	struct MSIM_AVR_TMR_COMP *comp;
-	uint32_t tcnt = IOBIT_RDA(mcu, tmr->tcnt, ARR_LEN(tmr->tcnt));
+	uint32_t tcnt = IOBIT_RDA(mcu, tmr->tcnt, ARRSZ(tmr->tcnt));
 	uint32_t ocr, top = wgm->top;
 	uint32_t icp, ices;
 	uint8_t dual_slope = 0;
@@ -199,7 +199,7 @@ mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 	/* Obtain TOP value from a register */
 	if (!IS_IONOBITA(wgm->rtop)) {
 		top = (wgm->updocr_at == UPD_ATIMMEDIATE)
-		      ? IOBIT_RDA(mcu, wgm->rtop, ARR_LEN(wgm->rtop))
+		      ? IOBIT_RDA(mcu, wgm->rtop, ARRSZ(wgm->rtop))
 		      : wgm->rtop_buf;
 	}
 
@@ -207,7 +207,7 @@ mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 	 * (analog comparator output). */
 	if (!IS_IONOBIT(tmr->icp)) {
 		icp = (uint8_t)IOBIT_RD(mcu, &tmr->icp);
-		ices = IOBIT_RDA(mcu, tmr->ices, ARR_LEN(tmr->ices));
+		ices = IOBIT_RDA(mcu, tmr->ices, ARRSZ(tmr->ices));
 
 		if (((ices == 0U) && IS_FALL(tmr->icpval, icp, 0)) ||
 		                ((ices == 1U) && IS_RISE(tmr->icpval, icp, 0))) {
@@ -216,8 +216,8 @@ mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 
 			/* Copy counter value to ICR */
 			if ((IOBIT_CMPA(wgm->rtop, tmr->icr,
-			                ARR_LEN(wgm->rtop)))) {
-				IOBIT_WRA(mcu, tmr->icr, ARR_LEN(tmr->icr),
+			                ARRSZ(wgm->rtop)))) {
+				IOBIT_WRA(mcu, tmr->icr, ARRSZ(tmr->icr),
 				          tcnt);
 			}
 		}
@@ -245,14 +245,14 @@ mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 
 		/* Output Compare and Compare Match units.
 		 * Compares current timer value with OC registers. */
-		for (uint32_t i = 0; i < ARR_LEN(tmr->comp); i++) {
+		for (uint32_t i = 0; i < ARRSZ(tmr->comp); i++) {
 			comp = &tmr->comp[i];
 			if (IS_NOCOMP(comp)) {
 				break;
 			}
 
 			ocr = (wgm->updocr_at == UPD_ATIMMEDIATE)
-			      ? IOBIT_RDA(mcu, comp->ocr, ARR_LEN(comp->ocr))
+			      ? IOBIT_RDA(mcu, comp->ocr, ARRSZ(comp->ocr))
 			      : comp->ocr_buf;
 
 			if (((cd == CNT_UP) && (tcnt == (ocr-1))) ||
@@ -284,7 +284,7 @@ mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 			}
 
 			/* Trigger OC pin at BOTTOM */
-			for (uint32_t i = 0; i < ARR_LEN(tmr->comp); i++) {
+			for (uint32_t i = 0; i < ARRSZ(tmr->comp); i++) {
 				comp = &tmr->comp[i];
 				if (IS_NOCOMP(comp)) {
 					break;
@@ -315,7 +315,7 @@ mode_nonpwm_pwm(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 
 		/* Reset system clock counter and update timer's register. */
 		tmr->scnt = 0;
-		IOBIT_WRA(mcu, tmr->tcnt, ARR_LEN(tmr->tcnt), tcnt);
+		IOBIT_WRA(mcu, tmr->tcnt, ARRSZ(tmr->tcnt), tcnt);
 	}
 }
 
@@ -399,7 +399,7 @@ trigger_oc_pin(struct MSIM_AVR *mcu, MSIM_AVR_TMR *tmr, MSIM_AVR_TMR_COMP *comp,
 static void
 update_ocr_buffers(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
-	for (uint32_t i = 0; i < ARR_LEN(tmr->comp); i++) {
+	for (uint32_t i = 0; i < ARRSZ(tmr->comp); i++) {
 		int rc = update_ocr_buffer(mcu, tmr, i);
 		if (rc != 0) {
 			break;
@@ -416,7 +416,7 @@ update_ocr_buffer(struct MSIM_AVR *mcu, MSIM_AVR_TMR *tmr, uint32_t i)
 	if (IS_NOCOMP(comp)) {
 		rc = 1;
 	} else {
-		comp->ocr_buf = IOBIT_RDA(mcu, comp->ocr, ARR_LEN(comp->ocr));
+		comp->ocr_buf = IOBIT_RDA(mcu, comp->ocr, ARRSZ(comp->ocr));
 	}
 
 	return rc;
@@ -425,7 +425,7 @@ update_ocr_buffer(struct MSIM_AVR *mcu, MSIM_AVR_TMR *tmr, uint32_t i)
 static void
 update_wgm_buffers(struct MSIM_AVR *mcu, MSIM_AVR_TMR *tmr)
 {
-	for (uint32_t i = 0; i < ARR_LEN(tmr->wgm_op); i++) {
+	for (uint32_t i = 0; i < ARRSZ(tmr->wgm_op); i++) {
 		int rc = update_wgm_buffer(mcu, tmr, i);
 		if (rc != 0) {
 			break;
@@ -442,7 +442,7 @@ update_wgm_buffer(struct MSIM_AVR *mcu, MSIM_AVR_TMR *tmr, uint32_t i)
 	if (IS_NOWGM(wgm)) {
 		rc = 1;
 	} else {
-		wgm->rtop_buf = IOBIT_RDA(mcu, wgm->rtop, ARR_LEN(wgm->rtop));
+		wgm->rtop_buf = IOBIT_RDA(mcu, wgm->rtop, ARRSZ(wgm->rtop));
 	}
 
 	return rc;
@@ -462,7 +462,7 @@ int_reset_pending(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 {
 	struct MSIM_AVR_TMR_COMP *comp;
 
-	for (uint32_t i = 0; i < ARR_LEN(tmr->comp); i++) {
+	for (uint32_t i = 0; i < ARRSZ(tmr->comp); i++) {
 		comp = &tmr->comp[i];
 		if (IS_NOCOMP(comp)) {
 			break;
@@ -479,7 +479,7 @@ int_raise_pending(struct MSIM_AVR *mcu, struct MSIM_AVR_TMR *tmr)
 	struct MSIM_AVR_TMR_COMP *comp;
 
 	if (tmr->scnt == (tmr->presc-2U)) {
-		for (uint32_t i = 0; i < ARR_LEN(tmr->comp); i++) {
+		for (uint32_t i = 0; i < ARRSZ(tmr->comp); i++) {
 			comp = &tmr->comp[i];
 			if (IS_NOCOMP(comp)) {
 				break;

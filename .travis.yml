@@ -106,17 +106,6 @@ matrix:
             - libluajit-5.1-dev
       env:
         - MATRIX_EVAL="CC=clang-4.0 && CXX=clang++-4.0"
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - llvm-toolchain-trusty-5.0
-          packages:
-            - clang-5.0
-            - libluajit-5.1-2
-            - libluajit-5.1-dev
-      env:
-        - MATRIX_EVAL="CC=clang-5.0 && CXX=clang++-5.0"
 # macOS with Clang ------------------------------------------------------------
     - os: osx
       osx_image: xcode9.4
@@ -148,6 +137,8 @@ matrix:
             - libxext-dev
             - libxinerama1
             - libxinerama-dev
+            - libxaw7
+            - libxaw7-dbg
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
         - CMAKE_PARAMS="-DWITH_XSPICE=True"
@@ -173,6 +164,8 @@ matrix:
             - libxext-dev
             - libxinerama1
             - libxinerama-dev
+            - libxaw7
+            - libxaw7-dbg
       env:
         - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
         - CMAKE_PARAMS="-DWITH_LUA=True -DWITH_XSPICE=True"

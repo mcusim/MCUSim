@@ -136,11 +136,11 @@ Advanced install
 
         MD5 hash of the NGSpice tarball provided via -DNGSPICE_TARBALL option.
 
- -DWITH_UNIT_TESTS=False|True
+ -DWITH_FIRMWARE_TESTS=False|True
 
-        Build MCUSim with unit tests (run by "make check").
+        Build MCUSim with real-world firmware tests (run by "make check").
 
-	False value means that MCUSim will be built without unit tests.
+	False value means that MCUSim will be built without these tests.
 	This is a default behavior.
 
 Install directories

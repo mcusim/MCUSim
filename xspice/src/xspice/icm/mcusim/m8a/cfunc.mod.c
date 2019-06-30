@@ -69,21 +69,17 @@
 
 static struct MSIM_AVR _mcu;
 static struct MSIM_CFG _cfg;
-static uint64_t _tick;
-static uint8_t _tick_ovf;
 
 static void setup_ports_load(ARGS);
 static void ports_not_changed(ARGS);
 
-void MSIM_CM_M8A(ARGS)
+void
+MSIM_CM_M8A(ARGS)
 {
 	Digital_State_t *clk;		/* Storage for clock value */
 	Digital_State_t *clk_old;	/* Previous clock value */
 	struct MSIM_AVR *mcu;		/* AVR MCU descriptor */
 	struct MSIM_CFG *cfg;		/* Configuration of the simulator */
-	uint64_t *tick;
-	uint8_t *tick_ovf;
-	int rc;
 
 	if (INIT) {
 		MSIM_CFG_PrintVersion();
@@ -97,11 +93,6 @@ void MSIM_CM_M8A(ARGS)
 
 		mcu = &_mcu;
 		cfg = &_cfg;
-		tick = &_tick;
-		tick_ovf = &_tick_ovf;
-
-		*tick = 0;
-		*tick_ovf = 0;
 
 		/* Set up capacitive load values. */
 		setup_ports_load(mif_private);
@@ -110,13 +101,17 @@ void MSIM_CM_M8A(ARGS)
 			LOAD(reset) = PARAM(reset_load);
 		}
 
-		/* Set up an instance of ATmega8A. */
-		MSIM_AVR_Init(mcu, cfg, PARAM(config_file));
+		/* Read config file */
+		MSIM_CFG_Read(cfg, PARAM(config_file));
+
+		/* Force 'm8a' model */
+		snprintf(cfg->mcu, ARRSZ(cfg->mcu), "m8a");
+
+		/* Set up an instance of the ATmega8A */
+		MSIM_AVR_Init(mcu, cfg);
 	} else {
 		mcu = &_mcu;
 		cfg = &_cfg;
-		tick = &_tick;
-		tick_ovf = &_tick_ovf;
 
 		clk = (Digital_State_t *) cm_event_get_ptr(0, 0);
 		clk_old = (Digital_State_t *) cm_event_get_ptr(0, 1);
@@ -162,8 +157,7 @@ void MSIM_CM_M8A(ARGS)
 			DM(PIND) = pval & (~DM(DDRD));
 
 			/* Update the microcontroller */
-			MSIM_AVR_SimStep(mcu, tick, tick_ovf,
-			                 cfg->firmware_test);
+			MSIM_AVR_SimStep(mcu, cfg->firmware_test);
 
 			/* Provide the updated values of the ports. */
 			for (uint32_t i = 0; i < PORT_SIZE(Bout); i++) {
@@ -222,7 +216,8 @@ void MSIM_CM_M8A(ARGS)
 	}
 }
 
-static void setup_ports_load(ARGS)
+static void
+setup_ports_load(ARGS)
 {
 	for (uint32_t i = 0; i < PORT_SIZE(Bin); i++) {
 		LOAD(Bin[i]) = PARAM(input_load);
@@ -235,7 +230,8 @@ static void setup_ports_load(ARGS)
 	}
 }
 
-static void ports_not_changed(ARGS)
+static void
+ports_not_changed(ARGS)
 {
 	for (uint32_t i = 0; i < PORT_SIZE(Bout); i++) {
 		OUTPUT_CHANGED(Bout[i]) = FALSE;

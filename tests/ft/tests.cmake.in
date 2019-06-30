@@ -25,19 +25,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# CMake script to run unit tests by "make check" command
+# CMake script to run real-world firmware tests by "make check" command
 #
-file(GLOB_RECURSE UNIT_TESTS "@CMAKE_CURRENT_BINARY_DIR@/*.ut")
+file(GLOB_RECURSE FM_TESTS "@CMAKE_CURRENT_BINARY_DIR@/*.ft")
 
-foreach(UNIT_TEST ${UNIT_TESTS})
-	get_filename_component(TEST_WORKING_DIR ${UNIT_TEST} DIRECTORY)
+foreach(FM_TEST ${FM_TESTS})
+	message(STATUS "[FIRMWARE TEST]: ${FM_TEST}")
+
+	get_filename_component(TEST_WORKING_DIR ${FM_TEST} DIRECTORY)
 	execute_process(
-		COMMAND ${UNIT_TEST}
+		COMMAND ${FM_TEST}
 		RESULT_VARIABLE test_res
 		WORKING_DIRECTORY ${TEST_WORKING_DIR}
 	)
 
 	if (NOT "${test_res}" STREQUAL "0")
-		message(FATAL_ERROR "failed: ${UNIT_TEST}")
+		message(FATAL_ERROR "failed: ${FM_TEST}")
 	endif()
 endforeach()

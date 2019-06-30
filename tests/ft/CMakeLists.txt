@@ -25,7 +25,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 #
-# Configuration file for unit tests based on 'cmocka' library.
+# Configuration file for real-world firmware tests based on 'cmocka' library.
 #
 cmake_minimum_required(VERSION 3.2)
 project(MCUSim-unit-tests C)
@@ -33,7 +33,7 @@ project(MCUSim-unit-tests C)
 # Version
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
-if (WITH_UNIT_TESTS)
+if (WITH_FIRMWARE_TESTS)
 # -----------------------------------------------------------------------------
 # Look for libraries, packages, etc.
 # -----------------------------------------------------------------------------
@@ -58,12 +58,12 @@ if (WITH_UNIT_TESTS)
 # -----------------------------------------------------------------------------
 # Compile unit tests
 # -----------------------------------------------------------------------------
-	add_executable(avris.ut avris.ut.c)
+	add_executable(XlingFirmware.ft XlingFirmware.ft.c)
 
 # -----------------------------------------------------------------------------
 # Link unit tests
 # -----------------------------------------------------------------------------
-	target_link_libraries(avris.ut ${TARGET_LIBS})
+	target_link_libraries(XlingFirmware.ft ${TARGET_LIBS})
 
 # -----------------------------------------------------------------------------
 # Prepare files in the current binary directory
@@ -71,8 +71,10 @@ if (WITH_UNIT_TESTS)
 	configure_file(${CMAKE_CURRENT_SOURCE_DIR}/tests.cmake.in
 	               ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake @ONLY)
 
-	file(COPY mcusim.ut.conf DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
-	file(COPY firmware.hex DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+	file(GLOB_RECURSE FLS "@CMAKE_CURRENT_SOURCE_DIR@/files/*")
+	foreach(F ${FLS})
+		file(COPY ${F} DESTINATION ${CMAKE_CURRENT_BINARY_DIR})
+	endforeach()
 
 # -----------------------------------------------------------------------------
 # Run unit tests by 'make check'

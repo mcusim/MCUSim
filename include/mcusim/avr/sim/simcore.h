@@ -29,7 +29,7 @@
 #define MSIM_AVR_SIMCORE_H_ 1
 
 #ifndef MSIM_MAIN_HEADER_H_
-#error "Please, include mcusim/mcusim.h instead of this header."
+	#error "Please, include mcusim/mcusim.h instead of this header."
 #endif
 
 #include <stdio.h>
@@ -42,33 +42,17 @@
 extern "C" {
 #endif
 
-/* Starts the main simualtion loop for an AVR microcontroller.
- *
- * Simulator can be started in firmware test mode, i.e. no debuggers or
- * any external events are necessary to perform a simulation. */
-int MSIM_AVR_Simulate(struct MSIM_AVR *mcu, uint8_t frm_test);
+int	MSIM_AVR_Init(MSIM_AVR *mcu, MSIM_CFG *conf);
+int	MSIM_AVR_Simulate(MSIM_AVR *mcu, uint8_t ft);
+int	MSIM_AVR_SimStep(MSIM_AVR *mcu, uint8_t ft);
+int	MSIM_AVR_LoadProgMem(MSIM_AVR *mcu, const char *f);
+int	MSIM_AVR_LoadDataMem(MSIM_AVR *mcu, const char *f);
 
-/* Performs a single simulation cycle. */
-int MSIM_AVR_SimStep(struct MSIM_AVR *mcu, uint64_t *tick, uint8_t *tick_ovf,
-                     uint8_t frm_test);
+void	MSIM_AVR_StackPush(MSIM_AVR *mcu, uint8_t val);
+uint8_t	MSIM_AVR_StackPop(MSIM_AVR *mcu);
 
-/* Initializes an AVR MCU into a specific model according to the
- * configuration file. */
-int MSIM_AVR_Init(struct MSIM_AVR *mcu, struct MSIM_CFG *conf,
-                  const char *conf_file);
-
-/* Functions to work with a stack inside MCU. */
-void MSIM_AVR_StackPush(struct MSIM_AVR *mcu, unsigned char val);
-uint8_t MSIM_AVR_StackPop(struct MSIM_AVR *mcu);
-
-/* Prints supported AVR parts. */
-void MSIM_AVR_PrintParts(void);
-
-/* This function dumps a content of AVR flash memory to the 'dump' file.
- *
- * It can be loaded back instead of the regular AVR firmware specified by the
- * configuration file. */
-int MSIM_AVR_DumpFlash(struct MSIM_AVR *mcu, const char *dump);
+void	MSIM_AVR_PrintParts(void);
+int	MSIM_AVR_DumpFlash(MSIM_AVR *mcu, const char *dump);
 
 #ifdef __cplusplus
 }

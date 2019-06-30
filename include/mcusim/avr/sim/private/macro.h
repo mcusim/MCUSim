@@ -55,14 +55,15 @@
 /* Offset to AVR I/O (special function) registers. */
 #define SFR			(mcu->sfr_off)
 
-/* Helps to access data memory (general purpose registers, I/O registers or
- * SRAM) of the AVR MCU. */
-#define DM(v)			(mcu->dm[v])
+/* Helps to access AVR memories and registers. */
+#define PM(v)			(mcu->pm[(v)])
+#define DM(v)			(mcu->dm[(v)])
+#define IOR(v)			(DM(SFR + (v)))
 
 #define LOG			(mcu->log)
 #define LOGSZ			(MSIM_AVR_LOGSZ)
 #define TICKS_MAX		(UINT64_MAX)
-#define ARR_LEN(a)		(sizeof(a)/sizeof(a[0]))
+#define ARRSZ(a)		(sizeof(a)/sizeof((a)[0]))
 
 /* Macro to provide a result of writing value to I/O register with its
  * access mask applied.
@@ -89,7 +90,7 @@
 				 (loc < (mcu->regs_num+mcu->ioregs_num)))
 
 /* Read an AVR status register (SREG). */
-#define SR(mcu, flag) ((uint8_t)((*mcu->sreg>>(flag))&1))
+#define SR(mcu, flag)		((uint8_t)((*mcu->sreg >> (flag))&1))
 
 /* Update an AVR status register (SREG). */
 #define UPDSR(mcu, flag, set_f) do {					\
@@ -113,19 +114,19 @@
  * 		instruction minus one)
  */
 #define SKIP_CYCLES(mcu, cond, cycl) do {				\
-	if (!mcu->in_mcinst && (cond)) {				\
+	if (!mcu->mci && (cond)) {				\
 		/* It is the first cycle of a multi-cycle instruction */\
-		mcu->in_mcinst = 1;					\
+		mcu->mci = 1;					\
 		mcu->ic_left = cycl;					\
 		return;							\
 	}								\
-	if (mcu->in_mcinst && mcu->ic_left) {				\
+	if (mcu->mci && mcu->ic_left) {				\
 		/* Skip intermediate cycles */				\
 		if (--mcu->ic_left) {					\
 			return;						\
 		}							\
 	}								\
-	mcu->in_mcinst = 0;						\
+	mcu->mci = 0;						\
 } while (0)
 
 /* Write value to the data space. Location will be checked against space of

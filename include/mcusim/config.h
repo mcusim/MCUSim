@@ -38,11 +38,13 @@
 extern "C" {
 #endif
 
-/* Full path to the default configuration file of MCUSim. */
-#define MSIM_CFG_FILE		"@CMAKE_INSTALL_PREFIX@/@MSIM_CONF_DIR@/mcusim.conf"
+/* Full path to the installed configuration file of MCUSim */
+#define MSIM_CFG_FILE	"@CMAKE_INSTALL_PREFIX@/@MSIM_CONF_DIR@/mcusim.conf"
 
-/* This is a basic structure to describe an MCUSim configuration.
- * See mcusim.conf or mcusim.conf.in for detailed description of the fields. */
+/*
+ * This is a basic structure to describe an MCUSim configuration.
+ * See mcusim.conf or mcusim.conf.in for detailed description of the fields.
+ */
 typedef struct MSIM_CFG {
 	char mcu[64];
 	uint64_t mcu_freq;
@@ -72,8 +74,8 @@ typedef struct MSIM_CFG {
 	uint32_t dump_regs_num;
 } MSIM_CFG;
 
-int MSIM_CFG_Read(struct MSIM_CFG *cfg, const char *filename);
-int MSIM_CFG_PrintVersion(void);
+int	MSIM_CFG_Read(MSIM_CFG *cfg, const char *f);
+int	MSIM_CFG_PrintVersion(void);
 
 #ifdef __cplusplus
 }
