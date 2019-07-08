@@ -136,7 +136,7 @@ Advanced install
 
         MD5 hash of the NGSpice tarball provided via -DNGSPICE_TARBALL option.
 
- -DWITH_FIRMWARE_TESTS=False|True
+ -DWITH_CHECKS=False|True
 
         Build MCUSim with real-world firmware tests (run by "make check").
 

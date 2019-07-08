@@ -30,7 +30,7 @@
 file(GLOB_RECURSE FM_TESTS "@CMAKE_CURRENT_BINARY_DIR@/*.ft")
 
 foreach(FM_TEST ${FM_TESTS})
-	message(STATUS "[FIRMWARE TEST]: ${FM_TEST}")
+	message(STATUS "[CHECK]: ${FM_TEST}")
 
 	get_filename_component(TEST_WORKING_DIR ${FM_TEST} DIRECTORY)
 	execute_process(

@@ -59,6 +59,7 @@
 #define PM(v)			(mcu->pm[(v)])
 #define DM(v)			(mcu->dm[(v)])
 #define IOR(v)			(DM(SFR + (v)))
+#define MPM(v)			(mcu->mpm[(v)])
 
 #define LOG			(mcu->log)
 #define LOGSZ			(MSIM_AVR_LOGSZ)

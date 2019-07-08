@@ -29,8 +29,8 @@
 #define MSIM_AVR_SIM_H_ 1
 
 #define MSIM_AVR_PMSZ		(256*1024)	/* Program Memory size */
-#define MSIM_AVR_DMSZ		(64*1024)	/* Data Memory size */
 #define MSIM_AVR_PM_PAGESZ	(1024)		/* PM page size */
+#define MSIM_AVR_DMSZ		(64*1024)	/* Data Memory size */
 #define MSIM_AVR_LOGSZ		(64*1024)	/* Log buffer size */
 #define MSIM_AVR_MAXTMRS	(32)		/* Maximum # of timers */
 
@@ -123,7 +123,6 @@ typedef struct MSIM_AVR {
 	pthread_mutex_t freq_mutex;	/* Lock before accessing frequency */
 
 	uint32_t pc;			/* Program counter, in bytes */
-	uint32_t old_pc;		/* Previous PC */
 	uint8_t pc_bits;		/* PC bits (16-bit, 22-bit, etc.) */
 
 	uint8_t ic_left;		/* Cycles to finish cur. instruction */
@@ -138,9 +137,9 @@ typedef struct MSIM_AVR {
 	uint8_t *rampx;			/* Ext. X-pointer register pointer */
 	uint8_t *rampd;			/* Ext. direct register pointer */
 
-	uint8_t pm[MSIM_AVR_PMSZ];	/* Program memory (PM) */
-	uint8_t pmp[MSIM_AVR_PMSZ];	/* Page buffer for program memory */
-	uint8_t mpm[MSIM_AVR_PMSZ];	/* Match points memory (MPM) */
+	uint16_t pm[MSIM_AVR_PMSZ];	/* Program memory (PM) */
+	uint16_t pmp[MSIM_AVR_PMSZ];	/* Page buffer for program memory */
+	uint16_t mpm[MSIM_AVR_PMSZ];	/* Match points memory (MPM) */
 	uint32_t pm_size;		/* Actual PM size */
 	uint8_t read_from_mpm;		/* Read instruction from MPM flag */
 
@@ -164,15 +163,14 @@ typedef struct MSIM_AVR {
 	pthread_mutex_t state_mutex;	/* Lock before accessing MCU state */
 	enum MSIM_AVR_ClkSource clk_source; /* Current MCU clock source */
 
-	MSIM_AVR_IOReg ioregs[MSIM_AVR_DMSZ]; /* Descriptors of the I/O regs */
-
-	struct MSIM_AVR_BLD bls;	/* Bootloader section details */
+	MSIM_AVR_BLD bls;		/* Bootloader section details */
 	MSIM_AVR_INT intr;		/* Details to work with IRQs */
-	struct MSIM_AVR_WDT wdt;	/* Watchdog timer of the MCU */
-	struct MSIM_AVR_VCD vcd;	/* Details to work with VCD file */
-	struct MSIM_AVR_USART usart;	/* Details to work with USART */
-	struct MSIM_PTY pty;		/* Details to work with POSIX PTY */
+	MSIM_AVR_WDT wdt;		/* Watchdog timer of the MCU */
+	MSIM_AVR_VCD vcd;		/* Details to work with VCD file */
+	MSIM_AVR_USART usart;		/* Details to work with USART */
+	MSIM_PTY pty;			/* Details to work with POSIX PTY */
 
+	MSIM_AVR_IOReg ioregs[MSIM_AVR_DMSZ]; /* Descriptors of the I/O regs */
 	MSIM_AVR_TMR timers[MSIM_AVR_MAXTMRS];	/* Timers/counters */
 } MSIM_AVR;
 

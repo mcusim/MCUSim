@@ -1060,7 +1060,7 @@ rsp_continue(struct rsp_buf *buf)
 	uint32_t addr;
 
 	if (sscanf(buf->data, "c%" SCNx32, &addr) == 1) {
-		rsp.mcu->pc = addr;
+		rsp.mcu->pc = (addr >> 1);
 	}
 	rsp.mcu->state = AVR_RUNNING;
 	rsp.client_waiting = 1;
@@ -1194,9 +1194,9 @@ read_reg(int n, char *buf)
 		break;
 	case 34:			/* PC */
 		sprintf(buf, "%02X%02X%02X00",
-		        (unsigned char)(rsp.mcu->pc&0xFF),
-		        (unsigned char)((rsp.mcu->pc>>8)&0xFF),
-		        (unsigned char)((rsp.mcu->pc>>16)&0xFF));
+		        (unsigned char)((rsp.mcu->pc << 1) & 0xFF),
+		        (unsigned char)(((rsp.mcu->pc << 1) >> 8) & 0xFF),
+		        (unsigned char)(((rsp.mcu->pc << 1) >> 16) & 0xFF));
 		break;
 	}
 	return strlen(buf);
@@ -1222,7 +1222,7 @@ write_reg(int n, char *buf)
 		*rsp.mcu->spl = (unsigned char)((v>>8)&0xFF);
 		break;
 	case 34:			/* PC */
-		rsp.mcu->pc = (uint32_t)hex2reg(buf, 8);
+		rsp.mcu->pc = (uint32_t) (hex2reg(buf, 8) >> 1);
 		break;
 	}
 	return;
@@ -1272,7 +1272,7 @@ rsp_write_all_regs(MSIM_AVR *mcu, rsp_buf *buf)
 			*rsp.mcu->spl = (unsigned char)((v>>8)&0xFF);
 			break;
 		case 34: /* PC */
-			rsp.mcu->pc = (uint32_t)hex2reg(buf->data+off, 8);
+			rsp.mcu->pc = (uint32_t)(hex2reg(buf->data+off, 8) >> 1);
 			off += 8;
 			break;
 		}
@@ -1286,21 +1286,23 @@ rsp_read_mem(MSIM_AVR *mcu, rsp_buf *buf)
 {
 	unsigned int addr, len, i;
 	unsigned char c;
-	unsigned char *src;
+	unsigned char *src = NULL;
+	uint16_t *pm = NULL;
+	unsigned char tmp_buf[(GDB_BUF_MAX - 1) / 2];
 
 	if (sscanf(buf->data, "m%x,%x:", &addr, &len) != 2) {
-		snprintf(LOG, LOGSZ, "Failed to recognize RSP read memory "
+		snprintf(LOG, LOGSZ, "failed to recognize RSP read memory "
 		         "command: %s", buf->data);
 		MSIM_LOG_ERROR(LOG);
 
 		put_str_packet(mcu, "E01");
 		return;
 	}
-	addr &= 0xFFFFFF;
+	addr &= 0x00FFFFFF;
 
 	/* Make sure we won't overflow the buffer (2 chars per byte) */
 	if ((len*2) >= GDB_BUF_MAX) {
-		snprintf(LOG, LOGSZ, "Memory read %s too large for RSP packet: "
+		snprintf(LOG, LOGSZ, "memory read %s too large for RSP packet: "
 		         "requested chunk will be truncated", buf->data);
 		MSIM_LOG_WARN(LOG);
 
@@ -1309,7 +1311,16 @@ rsp_read_mem(MSIM_AVR *mcu, rsp_buf *buf)
 
 	/* Find a memory to read from */
 	if (addr < rsp.mcu->flashend) {
-		src = rsp.mcu->pm + addr;
+		pm = rsp.mcu->pm + (addr >> 1);
+
+		/* Prepare bytes of the progmem */
+		for (i = 0; i < len; i += 2) {
+			tmp_buf[i] =
+			        (unsigned char)((pm[i >> 1] & 0xFF));
+			tmp_buf[i + 1] =
+			        (unsigned char)((pm[i >> 1] >> 8) & 0xFF);
+		}
+		src = &tmp_buf[0];
 	} else if ((addr >= 0x800000) &&
 	                ((addr-0x800000) <= rsp.mcu->ramend)) {
 		src = rsp.mcu->dm + addr - 0x800000;
@@ -1331,13 +1342,15 @@ rsp_read_mem(MSIM_AVR *mcu, rsp_buf *buf)
 	}
 
 	/* Do the memory read into a temporary buffer */
-	for (i = 0; i < len; i++) {
-		c = src[i];
-		buf->data[i*2] = hexchars[c>>4];
-		buf->data[i*2+1] = hexchars[c&0xF];
+	if (src != NULL) {
+		for (i = 0; i < len; i++) {
+			c = src[i];
+			buf->data[i*2] = hexchars[c>>4];
+			buf->data[i*2+1] = hexchars[c&0xF];
+		}
+		buf->data[i*2] = 0;
+		buf->len = strlen(buf->data);
 	}
-	buf->data[i*2] = 0;
-	buf->len = strlen(buf->data);
 
 	put_packet(mcu, buf);
 }
@@ -1351,10 +1364,11 @@ rsp_write_mem(MSIM_AVR *mcu, rsp_buf *buf)
 	char *symdat;
 	uint32_t off;
 	uint8_t mnyb, lnyb;
-	uint8_t *dest;
+	uint8_t *dest = NULL;
+	uint16_t *pm = NULL;
 
 	if (sscanf(buf->data, "M%lx,%x:", &addr, &len) != 2) {
-		snprintf(LOG, LOGSZ, "Failed to recognize RSP write memory "
+		snprintf(LOG, LOGSZ, "failed to recognize RSP write memory "
 		         "command: %s", buf->data);
 		MSIM_LOG_ERROR(LOG);
 
@@ -1372,7 +1386,7 @@ rsp_write_mem(MSIM_AVR *mcu, rsp_buf *buf)
 
 	/* Sanity check */
 	if (datlen != len*2) {
-		snprintf(LOG, LOGSZ, "Write of %d digits requested, but %lu "
+		snprintf(LOG, LOGSZ, "write of %d digits requested, but %lu "
 		         "digits supplied: request ignored", len*2, datlen);
 		MSIM_LOG_WARN(LOG);
 
@@ -1386,9 +1400,16 @@ rsp_write_mem(MSIM_AVR *mcu, rsp_buf *buf)
 		lnyb = (uint8_t) hex(symdat[off*2+1]);
 		tmpbuf[off] = (uint8_t)(((mnyb<<4)&0xF0)|(lnyb&0x0F));
 	}
+
 	/* Find a memory to write to */
 	if (addr < rsp.mcu->flashend) {
-		dest = rsp.mcu->pm + addr;
+		pm = rsp.mcu->pm + (addr >> 1);
+
+		for (uint32_t i = 0; i < (len >> 1); i++) {
+			pm[i] = (uint16_t)(
+			                ((tmpbuf[(i << 1) + 1] << 8) & 0xFF00) |
+			                (tmpbuf[(i << 1)] &0xFF));
+		}
 	} else if ((addr >= 0x800000) &&
 	                ((addr-0x800000) <= rsp.mcu->ramend)) {
 		dest = rsp.mcu->dm + addr - 0x800000;
@@ -1398,7 +1419,7 @@ rsp_write_mem(MSIM_AVR *mcu, rsp_buf *buf)
 		put_str_packet(mcu, "E01");
 		return;
 	} else {
-		snprintf(LOG, LOGSZ, "Unable to write memory %08lX, %08X",
+		snprintf(LOG, LOGSZ, "unable to write memory %08lX, %08X",
 		         addr, len);
 		MSIM_LOG_ERROR(LOG);
 
@@ -1406,7 +1427,10 @@ rsp_write_mem(MSIM_AVR *mcu, rsp_buf *buf)
 		return;
 	}
 
-	memcpy(dest, tmpbuf, len);
+	if (dest != NULL) {
+		memcpy(dest, tmpbuf, len);
+	}
+
 	put_str_packet(mcu, "OK");
 }
 
@@ -1416,10 +1440,11 @@ rsp_write_mem_bin(MSIM_AVR *mcu, rsp_buf *buf)
 	unsigned long addr, datlen, len;
 	char *bindat;
 	unsigned int off;
-	unsigned char *dest;
+	unsigned char *dest = NULL;
+	uint16_t *pm = NULL;
 
 	if (sscanf(buf->data, "X%lx,%lx:", &addr, &len) != 2) {
-		snprintf(LOG, LOGSZ, "Failed to recognize RSP write memory "
+		snprintf(LOG, LOGSZ, "failed to recognize RSP write memory "
 		         "command: %s", buf->data);
 		MSIM_LOG_ERROR(LOG);
 
@@ -1437,16 +1462,23 @@ rsp_write_mem_bin(MSIM_AVR *mcu, rsp_buf *buf)
 	if (datlen != len) {
 		unsigned long minlen = len < datlen ? len : datlen;
 
-		snprintf(LOG, LOGSZ, "Write of %lu bytes requested, but %lu "
+		snprintf(LOG, LOGSZ, "write of %lu bytes requested, but %lu "
 		         "bytes supplied. %lu will be written",
 		         len, datlen, minlen);
 		MSIM_LOG_WARN(LOG);
 
 		len = minlen;
 	}
+
 	/* Find a memory to write to */
 	if (addr < rsp.mcu->flashend) {
-		dest = rsp.mcu->pm + addr;
+		pm = rsp.mcu->pm + (addr >> 1);
+
+		for (uint32_t i = 0; i < (len >> 1); i++) {
+			pm[i] = (uint16_t)(
+			                ((bindat[(i << 1) + 1] << 8) & 0xFF00) |
+			                (bindat[(i << 1)] &0xFF));
+		}
 	} else if ((addr >= 0x800000) &&
 	                ((addr-0x800000) <= rsp.mcu->ramend)) {
 		dest = rsp.mcu->dm + addr - 0x800000;
@@ -1456,7 +1488,7 @@ rsp_write_mem_bin(MSIM_AVR *mcu, rsp_buf *buf)
 		put_str_packet(mcu, "E01");
 		return;
 	} else {
-		snprintf(LOG, LOGSZ, "Unable to write memory %08lX, %08lX",
+		snprintf(LOG, LOGSZ, "unable to write memory %08lX, %08lX",
 		         addr, len);
 		MSIM_LOG_ERROR(LOG);
 
@@ -1464,7 +1496,10 @@ rsp_write_mem_bin(MSIM_AVR *mcu, rsp_buf *buf)
 		return;
 	}
 
-	memcpy(dest, bindat, len);
+	if (dest != NULL) {
+		memcpy(dest, bindat, len);
+	}
+
 	put_str_packet(mcu, "OK");
 }
 

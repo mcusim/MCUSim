@@ -166,7 +166,7 @@ main(int argc, char *argv[])
 			MSIM_AVR_RSPClose(mcu);
 		}
 
-		if (MSIM_AVR_DumpFlash(mcu, FLASH_FILE) != 0) {
+		if (MSIM_AVR_SaveProgMem(mcu, FLASH_FILE) != 0) {
 			MSIM_LOG_ERROR("failed to dump to: " FLASH_FILE);
 		}
 		break;
@@ -193,15 +193,13 @@ print_usage(void)
 	       "  --version            Print version.\n");
 }
 
-#ifdef WITH_POSIX
 static void
 dump_flash_handler(int s)
 {
 	int rc;
 
-	rc = MSIM_AVR_DumpFlash(mcu, FLASH_FILE);
+	rc = MSIM_AVR_SaveProgMem(mcu, FLASH_FILE);
 	if (rc != 0) {
 		MSIM_LOG_ERROR("failed to dump memory to: " FLASH_FILE);
 	}
 }
-#endif

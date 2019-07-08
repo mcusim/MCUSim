@@ -48,11 +48,11 @@ struct MSIM_AVR;
  * AVR program memory is little endian, so "start" is an address of the LSB
  * of the first instruction in bootloader, "end" - address of the MSB of
  * the last bootloader instruction. */
-struct MSIM_AVR_BLD {
+typedef struct MSIM_AVR_BLD {
 	uint32_t start;		/* First Bootloader byte in PM, in bytes */
 	uint32_t end;		/* Last Bootloader byte in PM, in bytes */
 	uint32_t size;		/* Bootloader size, in bytes */
-};
+} MSIM_AVR_BLD;
 
 #ifdef __cplusplus
 }

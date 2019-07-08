@@ -41,7 +41,6 @@
 
 #define TEST_PREF		"files/XlingFirmware"
 #define CONF_FILE		TEST_PREF ".ft.conf"
-
 #define GDB_RSP_PORT		12750
 #define FRM_TEST		1
 #define SREGR			(*mcu->sreg)
@@ -70,61 +69,101 @@ static MSIM_CFG conf = {
 
 /* Check points to stop and check data memory. */
 static struct dm_checkpoint dm_checkpoints[] = {
-	{ 0x0000, TEST_PREF ".dm_0000.hex" },
-	{ 0x04d2, TEST_PREF ".dm_04d2.hex" },
-	{ 0x04de, TEST_PREF ".dm_04de.hex" },
-	{ 0x04ee, TEST_PREF ".dm_04ee.hex" },
-	{ 0x051e, TEST_PREF ".dm_051e.hex" },
-	{ 0x0568, TEST_PREF ".dm_0568.hex" },
-	{ 0x0626, TEST_PREF ".dm_0626.hex" },
-	{ 0x067a, TEST_PREF ".dm_067a.hex" },
+	{ 0x0240, TEST_PREF ".dm_0_0240.hex" },
+	{ 0x0242, TEST_PREF ".dm_1_0242.hex" },
+	{ 0x0244, TEST_PREF ".dm_2_0244.hex" },
+	{ 0x0245, TEST_PREF ".dm_3_0245.hex" },
+	{ 0x0247, TEST_PREF ".dm_4_0247.hex" },
+	{ 0x024B, TEST_PREF ".dm_5_024B.hex" },
+	{ 0x024E, TEST_PREF ".dm_6_024E.hex" },
+	{ 0x024F, TEST_PREF ".dm_7_024F.hex" },
+	{ 0x0250, TEST_PREF ".dm_8_0250.hex" },
+	{ 0x024C, TEST_PREF ".dm_9_024C.hex" },
+	{ 0x024D, TEST_PREF ".dm_10_024D.hex" },
+	{ 0x024E, TEST_PREF ".dm_11_024E.hex" },
+	{ 0x024F, TEST_PREF ".dm_12_024F.hex" },
+	{ 0x0250, TEST_PREF ".dm_13_0250.hex" },
+	{ 0x0259, TEST_PREF ".dm_14_0259.hex" },
+	{ 0x025F, TEST_PREF ".dm_15_025F.hex" },
+	{ 0x0262, TEST_PREF ".dm_16_0262.hex" },
+	{ 0x0269, TEST_PREF ".dm_17_0269.hex" },
+	{ 0x026F, TEST_PREF ".dm_18_026F.hex" },
+	{ 0x0277, TEST_PREF ".dm_19_0277.hex" },
+	{ 0x028F, TEST_PREF ".dm_20_028F.hex" },
+	{ 0x02B4, TEST_PREF ".dm_21_02B4.hex" },
+	{ 0x0313, TEST_PREF ".dm_22_0313.hex" },
+	{ 0x033D, TEST_PREF ".dm_23_033D.hex" },
 };
-/* Index of the current DM check point. */
-static uint32_t i_dmcp = 0;
+/* Index of the datamem check point */
+static uint32_t dmcp = 0;
 
 /*
  * Perform AVR simulation with occasional stops to compare actual
- * data memory with Intel HEX dumps.
+ * data memory with HEX dumps (obtained from the Atmel Studio 7 with
+ * MemoryLogger plugin).
  */
 static void
-check_simulation(void **state)
+check_datamem(void **state)
 {
-	/* Only general purpose and I/O registers to compare */
-	const size_t memsz = mcu->ramstart;
+	/* Compare the whole datamem (0x900 for m328p) */
+	const size_t memsz = mcu->ramend + 1;
 
 	/* Initialize data memory */
-	MSIM_AVR_LoadDataMem(mcu, dm_checkpoints[i_dmcp].dump);
-	i_dmcp++;
+	if (dm_checkpoints[dmcp].pc == 0U) {
+		snprintf(LOG, LOGSZ, "init datamem: step=%" PRIu32 ", pc=0x%"
+		         PRIx32 ", size=0x%" PRIx64 " (%" PRIu64 ")",
+		         dmcp, mcu->pc, memsz, memsz);
+		MSIM_LOG_INFO(LOG);
+
+		MSIM_AVR_LoadDataMem(mcu, dm_checkpoints[dmcp].dump);
+		dmcp++;
+	}
 
 	do {
-		/* No output from MCUSim */
-		MSIM_LOG_SetLevel(MSIM_LOG_LVLNONE);
-
 		int rc = MSIM_AVR_SimStep(mcu, FRM_TEST);
 
-		/* Let test messages be logged properly */
-		MSIM_LOG_SetLevel(MSIM_LOG_LVLINFO);
-
 		/* Stop if there was an error during simulation step. */
-		assert_int_equal(rc, 0);
+		if (rc != 0) {
+			MSIM_LOG_ERROR("simulation step error!");
+			assert_int_equal(rc, 0);
+		}
 
 		/* Check data memory against a dump */
-		if (mcu->pc == dm_checkpoints[i_dmcp].pc) {
-			snprintf(LOG, LOGSZ, "checking datamem: pc=0x%" PRIx32
-			         " (0x%" PRIx32 "), size=0x%" PRIx64
-			         " (%" PRIu64 ")",
-			         mcu->pc, mcu->pc >> 1, memsz, memsz);
+		if (mcu->pc == dm_checkpoints[dmcp].pc) {
+			/*
+			 * Data memory can be uninitialized if we didn't have
+			 * a dump file for PC == 0x0000.
+			 */
+			if (dmcp == 0U) {
+				snprintf(LOG, LOGSZ, "init datamem: step=%"
+				         PRIu32 ", pc=0x%" PRIx32 ", size=0x%"
+				         PRIx64 " (%" PRIu64 ")",
+				         dmcp, mcu->pc, memsz, memsz);
+				MSIM_LOG_INFO(LOG);
+
+				MSIM_AVR_LoadDataMem(
+				        mcu, dm_checkpoints[dmcp].dump);
+				dmcp++;
+				continue;
+			}
+
+			snprintf(LOG, LOGSZ, "checking datamem: step=%" PRIu32
+			         ", pc=0x%" PRIx32 ", size=0x%" PRIx64 " (%"
+			         PRIu64 ")", dmcp, mcu->pc, memsz, memsz);
 			MSIM_LOG_INFO(LOG);
 
-			/* Load DM from a file to the control MCU */
-			MSIM_AVR_LoadDataMem(ctl, dm_checkpoints[i_dmcp].dump);
+			/* Load DM from a file to the 'control MCU */
+			MSIM_AVR_LoadDataMem(ctl, dm_checkpoints[dmcp].dump);
 
-			/* Compare data memories */
+			/*
+			 * Compare data memories of the 'current' and
+			 * 'control' MCUs.
+			 */
 			assert_memory_equal(mcu->dm, ctl->dm, memsz);
 
-			i_dmcp++;
+			dmcp++;
 		}
-	} while (i_dmcp < ARRSZ(dm_checkpoints));
+	} while (dmcp < ARRSZ(dm_checkpoints));
 }
 
 static int
@@ -140,18 +179,21 @@ main(void)
 	int rc = 0;
 
 	const struct CMUnitTest tests[] = {
-		cmocka_unit_test_setup(check_simulation, restore_mcu),
+		cmocka_unit_test_setup(check_datamem, restore_mcu),
 	};
 
 	do {
 		/* No output from MCUSim */
-		MSIM_LOG_SetLevel(MSIM_LOG_LVLNONE);
+		MSIM_LOG_SetLevel(MSIM_LOG_LVLDEBUG);
 
 		/* Read config file */
 		rc = MSIM_CFG_Read(&conf, CONF_FILE);
 		if (rc != 0) {
 			break;
 		}
+
+		/* Force firmware test option */
+		conf.firmware_test = 1;
 
 		/* Initialize AVR MCU */
 		rc = MSIM_AVR_Init(mcu, &conf);
@@ -163,7 +205,6 @@ main(void)
 
 		/* Force running state */
 		mcu->state = AVR_RUNNING;
-
 	} while (0);
 
 	return rc != 0 ? rc : cmocka_run_group_tests(tests, NULL, NULL);

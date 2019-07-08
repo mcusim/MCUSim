@@ -66,7 +66,8 @@ static int	handle_irq(struct MSIM_AVR *);
 static int	set_fuse(MSIM_AVR *, uint32_t, uint8_t);
 static int	set_lock(MSIM_AVR *, uint8_t);
 static void	print_config(MSIM_AVR *);
-static int	load_mem(MSIM_AVR *, const char *, uint8_t *, const char *);
+static int	load_mem8(MSIM_AVR *, const char *, uint8_t *, const char *);
+static int	load_mem16(MSIM_AVR *, const char *, uint16_t *, const char *);
 static int	setup_avr(MSIM_AVR *, const char *,
                           uint8_t *, uint32_t, uint8_t *, uint32_t,
                           uint8_t *, const char *);
@@ -166,8 +167,7 @@ MSIM_AVR_SimStep(MSIM_AVR *mcu, uint8_t ft)
 		                (mcu->state == AVR_STOPPED) &&
 		                MSIM_AVR_RSPHandle(mcu)) {
 			snprintf(LOG, LOGSZ, "handling message from GDB RSP "
-			         "client failed: pc=0x%06" PRIx32 ", "
-			         "prev_pc=0x%06" PRIx32, mcu->pc, mcu->old_pc);
+			         "client failed: pc=0x%06" PRIx32, mcu->pc);
 			MSIM_LOG_FATAL(LOG);
 
 			rc = 1;
@@ -202,11 +202,10 @@ MSIM_AVR_SimStep(MSIM_AVR *mcu, uint8_t ft)
 		}
 
 		/* Test scope of a program counter */
-		if ((mcu->pc>>1) > (mcu->flashend>>1)) {
+		if (mcu->pc > (mcu->flashend>>1)) {
 			snprintf(LOG, LOGSZ, "program counter is out of flash "
 			         "memory: pc=0x%06" PRIx32 ", flashend=0x%06"
-			         PRIx32 ", prev_pc=0x%06" PRIx32, mcu->pc >> 1,
-			         mcu->flashend >> 1, mcu->old_pc >> 1);
+			         PRIx32, mcu->pc, mcu->flashend >> 1);
 			MSIM_LOG_FATAL(LOG);
 
 			rc = 1;
@@ -247,8 +246,8 @@ MSIM_AVR_SimStep(MSIM_AVR *mcu, uint8_t ft)
 		 */
 		if ((mcu->ic_left || IS_MCU_ACTIVE(mcu)) && MSIM_AVR_Step(mcu)) {
 			snprintf(mcu->log, sizeof mcu->log, "decoding "
-			         "instruction failed: pc=0x%06" PRIx32 ", "
-			         "prev_pc=0x%06" PRIx32, mcu->pc, mcu->old_pc);
+			         "instruction failed: pc=0x%06" PRIx32,
+			         mcu->pc);
 			MSIM_LOG_FATAL(mcu->log);
 
 			rc = 1;
@@ -794,18 +793,18 @@ MSIM_AVR_PrintParts(void)
 int
 MSIM_AVR_LoadProgMem(MSIM_AVR *mcu, const char *f)
 {
-	return load_mem(mcu, f, mcu->pm, "progmem");
+	return load_mem16(mcu, f, mcu->pm, "progmem");
 }
 
 /* Populates AVR data memory from the Intel HEX file. */
 int
 MSIM_AVR_LoadDataMem(MSIM_AVR *mcu, const char *f)
 {
-	return load_mem(mcu, f, mcu->dm, "datamem");
+	return load_mem8(mcu, f, mcu->dm, "datamem");
 }
 
 static int
-load_mem(MSIM_AVR *mcu, const char *f, uint8_t *mem, const char *memtype)
+load_mem8(MSIM_AVR *mcu, const char *f, uint8_t *mem, const char *memtype)
 {
 	FILE *fp = NULL;
 	IHexRecord r, mr;
@@ -819,7 +818,7 @@ load_mem(MSIM_AVR *mcu, const char *f, uint8_t *mem, const char *memtype)
 		return 1;
 	}
 
-	/* Copy hex data to the MCU program memory */
+	/* Copy hex data to the memory */
 	while (MSIM_IHEX_ReadRec(&r, fp) == IHEX_OK) {
 		switch (r.type) {
 		case IHEX_TYPE_00:
@@ -877,6 +876,88 @@ load_mem(MSIM_AVR *mcu, const char *f, uint8_t *mem, const char *memtype)
 	return 0;
 }
 
+static int
+load_mem16(MSIM_AVR *mcu, const char *f, uint16_t *mem, const char *memtype)
+{
+	FILE *fp = NULL;
+	IHexRecord r, mr;
+	uint16_t *addr = 0;
+
+	fp = fopen(f, "r");
+	if (fp == NULL) {
+		snprintf(LOG, LOGSZ, "can't load %s from: '%s'", memtype, f);
+		MSIM_LOG_ERROR(LOG);
+
+		return 1;
+	}
+
+	/* Copy hex data to the memory */
+	while (MSIM_IHEX_ReadRec(&r, fp) == IHEX_OK) {
+		switch (r.type) {
+		case IHEX_TYPE_00:
+			/* Data record */
+			addr = mem + (r.address >> 1);
+			for (uint32_t j = 0; j < r.dataLen; j += 2) {
+				addr[j >> 1] = (uint16_t) (
+				                       ((r.data[j+1] << 8) &0xFF00) |
+				                       (r.data[j] &0x00FF));
+			}
+
+			break;
+		case IHEX_TYPE_01:
+			/* End of File record */
+			break;
+		default:		/* Other types, unlikely occured */
+			continue;
+		}
+	}
+
+	rewind(fp);
+	addr = 0;
+
+	/* Verify checksum of the loaded data */
+	while (MSIM_IHEX_ReadRec(&r, fp) == IHEX_OK) {
+		/* Stop reading if end-of-file reached */
+		if (r.type == IHEX_TYPE_01) {
+			break;
+		}
+
+		/* Skip all other record types */
+		if (r.type != IHEX_TYPE_00) {
+			continue;
+		}
+
+		addr = mem + (r.address >> 1);
+		for (uint32_t j = 0; j < r.dataLen; j += 2) {
+			mr.data[j] = addr[j >> 1] &0xFF;
+			mr.data[j + 1] = (addr[j >> 1] >> 8) &0xFF;
+		}
+
+		mr.address = r.address;
+		mr.dataLen = r.dataLen;
+		mr.type = r.type;
+		mr.checksum = 0;
+
+		mr.checksum = MSIM_IHEX_CalcChecksum(&mr);
+		if (mr.checksum != r.checksum) {
+			snprintf(LOG, LOGSZ, "incorrect IHEX checksum: "
+			         "0x%X (mem) != 0x%X (file)",
+			         mr.checksum, r.checksum);
+			MSIM_LOG_FATAL(LOG);
+
+			MSIM_LOG_FATAL("file record:");
+			MSIM_IHEX_PrintRec(&r);
+			MSIM_LOG_FATAL("memory record:");
+			MSIM_IHEX_PrintRec(&mr);
+
+			return -1;
+		}
+	}
+
+	fclose(fp);
+	return 0;
+}
+
 /*
  * This function dumps a content of AVR flash memory to the 'dump' file.
  *
@@ -884,47 +965,53 @@ load_mem(MSIM_AVR *mcu, const char *f, uint8_t *mem, const char *memtype)
  * configuration file.
  */
 int
-MSIM_AVR_DumpFlash(struct MSIM_AVR *mcu, const char *dump)
+MSIM_AVR_SaveProgMem(MSIM_AVR *mcu, const char *f)
 {
-	FILE *out;
-	IHexRecord rec;
 	const uint32_t data_t = IHEX_TYPE_00;
 	const uint32_t eof_t = IHEX_TYPE_01;
+	const uint32_t pmsz = (mcu->flashend - mcu->flashstart + 1) >> 1;
+	FILE *out = NULL;
+	IHexRecord rec;
+	uint8_t chunk[16];
 	uint8_t eof_byte = 0;
-	uint32_t pmsz, off;
+	uint32_t off = 0;
 	int rc = 0;
 
-	out = fopen(dump, "w");
-	if (out == NULL) {
-		snprintf(LOG, LOGSZ, "failed to open %s to dump flash "
-		         "memory to", dump);
-		MSIM_LOG_ERROR(LOG);
-		rc = 1;
-	}
+	/* Open dump file to write to */
+	out = fopen(f, "w");
 
-	if (rc == 0) {
-		/* Calculate actual size of the flash memory. */
-		pmsz = mcu->flashend - mcu->flashstart + 1;
+	do {
+		if (out == NULL) {
+			snprintf(LOG, LOGSZ, "failed to open %s to dump flash "
+			         "memory to", f);
+			MSIM_LOG_ERROR(LOG);
 
-		/* Write program memory to the file in 16 bytes records. */
-		off = 0;
-		for (uint32_t i = 0; i < pmsz; i += 0x10) {
-			/* The physical address of the data is computed by
-			 * adding this offset to a previously established
-			 * base address, thus allowing memory addressing beyond
-			 * the 64 kilobyte limit of 16-bit addresses. */
-			if (off > 0xFFF0) {
-				off = 0x10;
-			}
-			MSIM_IHEX_NewRec(data_t, off, &mcu->pm[i], 0x10, &rec);
-			MSIM_IHEX_WriteRec(&rec, out);
-			off += 0x10;
+			rc = 1;
+			break;
 		}
+
+		/* Write program memory to the file in 16 bytes chuncks */
+		for (uint32_t i = 0; i < pmsz; i += 8) {
+			/* Populate 16 bytes chunk */
+			for (uint32_t j = 0; j < 8; j++) {
+				chunk[(j << 1)] =
+				        (uint8_t)(PM(i + j) & 0xFF);
+				chunk[(j << 1) + 1] =
+				        (uint8_t)((PM(i + j) >> 8) & 0xFF);
+			}
+
+			MSIM_IHEX_NewRec(data_t, off, chunk, 16, &rec);
+			MSIM_IHEX_WriteRec(&rec, out);
+			off += 16;
+		}
+
+		/* Write 'end-of-file' record */
 		MSIM_IHEX_NewRec(eof_t, 0, &eof_byte, 0, &rec);
 		MSIM_IHEX_WriteRec(&rec, out);
-	}
-	if (out != NULL) {
+
+		/* Close dump file */
 		fclose(out);
-	}
+	} while (0);
+
 	return rc;
 }

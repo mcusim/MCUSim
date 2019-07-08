@@ -45,6 +45,7 @@ extern "C" {
 int	MSIM_AVR_Init(MSIM_AVR *mcu, MSIM_CFG *conf);
 int	MSIM_AVR_Simulate(MSIM_AVR *mcu, uint8_t ft);
 int	MSIM_AVR_SimStep(MSIM_AVR *mcu, uint8_t ft);
+int	MSIM_AVR_SaveProgMem(MSIM_AVR *mcu, const char *f);
 int	MSIM_AVR_LoadProgMem(MSIM_AVR *mcu, const char *f);
 int	MSIM_AVR_LoadDataMem(MSIM_AVR *mcu, const char *f);
 
@@ -52,7 +53,6 @@ void	MSIM_AVR_StackPush(MSIM_AVR *mcu, uint8_t val);
 uint8_t	MSIM_AVR_StackPop(MSIM_AVR *mcu);
 
 void	MSIM_AVR_PrintParts(void);
-int	MSIM_AVR_DumpFlash(MSIM_AVR *mcu, const char *dump);
 
 #ifdef __cplusplus
 }

@@ -60,20 +60,20 @@ struct MSIM_AVR;
  *
  * name		Name of a register requested by user (TCNT1 instead of TCNT1H,
  * 		for example). */
-struct MSIM_AVR_VCDReg {
+typedef struct MSIM_AVR_VCDReg {
 	int32_t i;
 	int32_t reg_lowi;
 	int8_t n;
 	uint32_t old_val;
 	char name[16];
-};
+} MSIM_AVR_VCDReg;
 
 /* The main structure to describe a VCD dump. */
-struct MSIM_AVR_VCD {
+typedef struct MSIM_AVR_VCD {
 	FILE *dump;
 	struct MSIM_AVR_VCDReg regs[MSIM_AVR_VCD_REGS];
 	char dump_file[4096];
-};
+} MSIM_AVR_VCD;
 
 int MSIM_AVR_VCDOpen(struct MSIM_AVR *mcu);
 

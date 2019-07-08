@@ -33,7 +33,7 @@ project(MCUSim-unit-tests C)
 # Version
 add_definitions(-DMSIM_VERSION="${MSIM_VERSION}")
 
-if (WITH_FIRMWARE_TESTS)
+if (WITH_CHECKS)
 # -----------------------------------------------------------------------------
 # Look for libraries, packages, etc.
 # -----------------------------------------------------------------------------

@@ -41,38 +41,27 @@ extern "C" {
 #define MSIM_PTY_BUFSIZE	16384
 
 /* Thread with buffer to read/write data from/to pty. */
-struct MSIM_PTY_Thread {
+typedef struct MSIM_PTY_Thread {
 	pthread_mutex_t mutex;		/* Lock before accessing any fields */
 	pthread_t thread;		/* Current thread handle */
 	uint8_t stop_thr;		/* Flag to exit the thread */
 	uint8_t buf[MSIM_PTY_BUFSIZE];	/* Buffer to read/write pty data */
 	uint32_t len;			/* Length of the data in buffer */
-};
+} MSIM_PTY_Thread;
 
 /* A single pseudo-terminal (with master and slave parts) and additional data
  * to handle a separate thread to read from the master part of pty. */
-struct MSIM_PTY {
+typedef struct MSIM_PTY {
 	char slave_name[128];
 	int32_t master_fd;
 	int32_t slave_fd;
 	struct MSIM_PTY_Thread read_thr;
-};
-
-#if defined(WITH_POSIX) && defined(WITH_POSIX_PTY)
+} MSIM_PTY;
 
 int MSIM_PTY_Open(struct MSIM_PTY *pty);
 int MSIM_PTY_Close(struct MSIM_PTY *pty);
 int MSIM_PTY_Write(struct MSIM_PTY *pty, uint8_t *buf, uint32_t len);
 int MSIM_PTY_Read(struct MSIM_PTY *pty, uint8_t *buf, uint32_t len);
-
-#else
-
-#define MSIM_PTY_Open(pty) 1 /* Can't open PTY by default. */
-#define MSIM_PTY_Close(pty) 0 /* No problem with closing. */
-#define MSIM_PTY_Write(pty, buf, len) 0 /* Can't write anything. */
-#define MSIM_PTY_Read(pty, buf, len) 0 /* Can't read anything. */
-
-#endif /* defined(WITH_POSIX) && defined(WITH_POSIX_PTY) */
 
 #ifdef __cplusplus
 }
