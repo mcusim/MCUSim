@@ -1,30 +1,23 @@
 /*
- * Copyright 2017-2019 The MCUSim Project.
+ * This file is part of MCUSim, an XSPICE library with microcontrollers.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ * Copyright (C) 2017-2019 MCUSim Developers, see AUTHORS.txt for contributors.
  *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the MCUSim or its parts nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
+ * MCUSim is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * MCUSim is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+/* A model-independent AVR timer. */
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -52,30 +45,19 @@
 	.settov_at = UPD_ATBOTTOM,					\
 };
 
-static int
-update_timer(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static void
-mode_nonpwm_pwm(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static void
-update_ocr_buffers(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static int
-update_ocr_buffer(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
-                  uint32_t);
-static void
-int_reset_pending(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static void
-int_raise_pending(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static void
-trigger_oc_pin(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
-               struct MSIM_AVR_TMR_COMP *,
-               uint32_t, uint32_t, uint8_t);
-static void
-update_wgm_buffers(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
-static int
-update_wgm_buffer(struct MSIM_AVR *, struct MSIM_AVR_TMR *,
-                  uint32_t);
-static void
-update_icp_value(struct MSIM_AVR *, struct MSIM_AVR_TMR *);
+static int	update_timer(MSIM_AVR *, MSIM_AVR_TMR *);
+static void	mode_nonpwm_pwm(MSIM_AVR *, MSIM_AVR_TMR *);
+static void	update_ocr_buffers(MSIM_AVR *, MSIM_AVR_TMR *);
+static int	update_ocr_buffer(MSIM_AVR *, MSIM_AVR_TMR *, uint32_t);
+
+static void	int_reset_pending(MSIM_AVR *, MSIM_AVR_TMR *);
+static void	int_raise_pending(MSIM_AVR *, MSIM_AVR_TMR *);
+static void	trigger_oc_pin(MSIM_AVR *, MSIM_AVR_TMR *, MSIM_AVR_TMR_COMP *,
+                               uint32_t, uint32_t, uint8_t);
+
+static void	update_wgm_buffers(MSIM_AVR *, MSIM_AVR_TMR *);
+static int	update_wgm_buffer(MSIM_AVR *, MSIM_AVR_TMR *, uint32_t);
+static void	update_icp_value(MSIM_AVR *, MSIM_AVR_TMR *);
 
 int
 MSIM_AVR_TMRUpdate(struct MSIM_AVR *mcu)

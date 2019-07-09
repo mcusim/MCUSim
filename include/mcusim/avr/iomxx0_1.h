@@ -1,32 +1,22 @@
 /*
- * Copyright (c) 2017, 2018,
- * Dmitry Salychev <darkness.bsd@gmail.com>,
- * Alexander Salychev <ppsalex@rambler.ru> et al.
- * All rights reserved.
+ * This file is part of MCUSim, an XSPICE library with microcontrollers.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <organization> nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
+ * Copyright (C) 2017-2019 MCUSim Developers, see AUTHORS.txt for contributors.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * MCUSim is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * MCUSim is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 /* Copyright (c) 2005 Anatoly Sokolov
    All rights reserved.
 
@@ -68,19 +58,19 @@
 /* This file should only be included from <avr/io.h>, never directly. */
 
 #ifndef _AVR_IO_H_
-#  error "Include <avr/io.h> instead of this file."
+	#  error "Include <avr/io.h> instead of this file."
 #endif
 
 #ifndef _AVR_IOXXX_H_
-#  define _AVR_IOXXX_H_ "iomxx0_1.h"
+	#define _AVR_IOXXX_H_ "iomxx0_1.h"
 #else
-#  error "Attempt to include more than one <avr/ioXXX.h> file."
+	#  error "Attempt to include more than one <avr/ioXXX.h> file."
 #endif
 
 #if defined(__AVR_ATmega640__) || defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
-# define __ATmegaxx0__
+	#define __ATmegaxx0__
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__)
-# define __ATmegaxx1__
+	#define __ATmegaxx1__
 #endif
 
 /* Registers and associated bit numbers */
@@ -329,7 +319,7 @@
 
 #define PCIFR   _SFR_IO8(0x1B)
 #if defined(__ATmegaxx0__)
-# define PCIF2  2
+	#define PCIF2  2
 #endif /* __ATmegaxx0__ */
 #define PCIF1   1
 #define PCIF0   0
@@ -557,7 +547,7 @@
 
 #define PCICR   _SFR_MEM8(0x68)
 #if defined(__ATmegaxx0__)
-# define PCIE2  2
+	#define PCIE2  2
 #endif /* __ATmegaxx0__ */
 #define PCIE1   1
 #define PCIE0   0
@@ -603,15 +593,15 @@
 #define PCINT8  0
 
 #if defined(__ATmegaxx0__)
-# define PCMSK2 _SFR_MEM8(0x6D)
-# define PCINT23 7
-# define PCINT22 6
-# define PCINT21 5
-# define PCINT20 4
-# define PCINT19 3
-# define PCINT18 2
-# define PCINT17 1
-# define PCINT16 0
+	#define PCMSK2 _SFR_MEM8(0x6D)
+	#define PCINT23 7
+	#define PCINT22 6
+	#define PCINT21 5
+	#define PCINT20 4
+	#define PCINT19 3
+	#define PCINT18 2
+	#define PCINT17 1
+	#define PCINT16 0
 #endif /* __ATmegaxx0__ */
 
 #define TIMSK0  _SFR_MEM8(0x6E)
@@ -672,7 +662,7 @@
 
 /* Combine ADCL and ADCH */
 #ifndef __ASSEMBLER__
-#define ADC     _SFR_MEM16(0x78)
+	#define ADC     _SFR_MEM16(0x78)
 #endif
 #define ADCW    _SFR_MEM16(0x78)
 #define ADCL    _SFR_MEM8(0x78)
@@ -691,7 +681,7 @@
 #define ADCSRB  _SFR_MEM8(0x7B)
 #define ACME    6
 #if defined(__ATmegaxx0__)
-# define MUX5    3
+	#define MUX5    3
 #endif /* __ATmegaxx0__ */
 #define ADTS2   2
 #define ADTS1   1
@@ -1069,45 +1059,45 @@
 
 #if defined(__ATmegaxx0__)
 
-# define UCSR2A _SFR_MEM8(0xD0)
-# define RXC2   7
-# define TXC2   6
-# define UDRE2  5
-# define FE2    4
-# define DOR2   3
-# define UPE2   2
-# define U2X2   1
-# define MPCM2  0
+	#define UCSR2A _SFR_MEM8(0xD0)
+	#define RXC2   7
+	#define TXC2   6
+	#define UDRE2  5
+	#define FE2    4
+	#define DOR2   3
+	#define UPE2   2
+	#define U2X2   1
+	#define MPCM2  0
 
-# define UCSR2B _SFR_MEM8(0XD1)
-# define RXCIE2 7
-# define TXCIE2 6
-# define UDRIE2 5
-# define RXEN2  4
-# define TXEN2  3
-# define UCSZ22 2
-# define RXB82  1
-# define TXB82  0
+	#define UCSR2B _SFR_MEM8(0XD1)
+	#define RXCIE2 7
+	#define TXCIE2 6
+	#define UDRIE2 5
+	#define RXEN2  4
+	#define TXEN2  3
+	#define UCSZ22 2
+	#define RXB82  1
+	#define TXB82  0
 
-# define UCSR2C _SFR_MEM8(0xD2)
-# define UMSEL21 7
-# define UMSEL20 6
-# define UPM21  5
-# define UPM20  4
-# define USBS2  3
-# define UCSZ21 2
-# define UCSZ20 1
-# define UCPOL2 0
+	#define UCSR2C _SFR_MEM8(0xD2)
+	#define UMSEL21 7
+	#define UMSEL20 6
+	#define UPM21  5
+	#define UPM20  4
+	#define USBS2  3
+	#define UCSZ21 2
+	#define UCSZ20 1
+	#define UCPOL2 0
 
-/* Reserved [0xD3] */
+	/* Reserved [0xD3] */
 
-/* Combine UBRR2L and UBRR2H */
-# define UBRR2  _SFR_MEM16(0xD4)
+	/* Combine UBRR2L and UBRR2H */
+	#define UBRR2  _SFR_MEM16(0xD4)
 
-# define UBRR2L _SFR_MEM8(0xD4)
-# define UBRR2H _SFR_MEM8(0xD5)
+	#define UBRR2L _SFR_MEM8(0xD4)
+	#define UBRR2H _SFR_MEM8(0xD5)
 
-# define UDR2   _SFR_MEM8(0XD6)
+	#define UDR2   _SFR_MEM8(0XD6)
 
 #endif /* __ATmegaxx0__ */
 
@@ -1115,125 +1105,125 @@
 
 #if defined(__ATmegaxx0__)
 
-# define PINH   _SFR_MEM8(0x100)
-# define PINH7  7
-# define PINH6  6
-# define PINH5  5
-# define PINH4  4
-# define PINH3  3
-# define PINH2  2
-# define PINH1  1
-# define PINH0  0
+	#define PINH   _SFR_MEM8(0x100)
+	#define PINH7  7
+	#define PINH6  6
+	#define PINH5  5
+	#define PINH4  4
+	#define PINH3  3
+	#define PINH2  2
+	#define PINH1  1
+	#define PINH0  0
 
-# define DDRH   _SFR_MEM8(0x101)
-# define DDH7   7
-# define DDH6   6
-# define DDH5   5
-# define DDH4   4
-# define DDH3   3
-# define DDH2   2
-# define DDH1   1
-# define DDH0   0
+	#define DDRH   _SFR_MEM8(0x101)
+	#define DDH7   7
+	#define DDH6   6
+	#define DDH5   5
+	#define DDH4   4
+	#define DDH3   3
+	#define DDH2   2
+	#define DDH1   1
+	#define DDH0   0
 
-# define PORTH  _SFR_MEM8(0x102)
-# define PH7    7
-# define PH6    6
-# define PH5    5
-# define PH4    4
-# define PH3    3
-# define PH2    2
-# define PH1    1
-# define PH0    0
+	#define PORTH  _SFR_MEM8(0x102)
+	#define PH7    7
+	#define PH6    6
+	#define PH5    5
+	#define PH4    4
+	#define PH3    3
+	#define PH2    2
+	#define PH1    1
+	#define PH0    0
 
-# define PINJ   _SFR_MEM8(0x103)
-# define PINJ7  7
-# define PINJ6  6
-# define PINJ5  5
-# define PINJ4  4
-# define PINJ3  3
-# define PINJ2  2
-# define PINJ1  1
-# define PINJ0  0
+	#define PINJ   _SFR_MEM8(0x103)
+	#define PINJ7  7
+	#define PINJ6  6
+	#define PINJ5  5
+	#define PINJ4  4
+	#define PINJ3  3
+	#define PINJ2  2
+	#define PINJ1  1
+	#define PINJ0  0
 
-# define DDRJ   _SFR_MEM8(0x104)
-# define DDJ7   7
-# define DDJ6   6
-# define DDJ5   5
-# define DDJ4   4
-# define DDJ3   3
-# define DDJ2   2
-# define DDJ1   1
-# define DDJ0   0
+	#define DDRJ   _SFR_MEM8(0x104)
+	#define DDJ7   7
+	#define DDJ6   6
+	#define DDJ5   5
+	#define DDJ4   4
+	#define DDJ3   3
+	#define DDJ2   2
+	#define DDJ1   1
+	#define DDJ0   0
 
-# define PORTJ  _SFR_MEM8(0x105)
-# define PJ7 7
-# define PJ6 6
-# define PJ5 5
-# define PJ4 4
-# define PJ3 3
-# define PJ2 2
-# define PJ1 1
-# define PJ0 0
+	#define PORTJ  _SFR_MEM8(0x105)
+	#define PJ7 7
+	#define PJ6 6
+	#define PJ5 5
+	#define PJ4 4
+	#define PJ3 3
+	#define PJ2 2
+	#define PJ1 1
+	#define PJ0 0
 
-# define PINK   _SFR_MEM8(0x106)
-# define PINK7  7
-# define PINK6  6
-# define PINK5  5
-# define PINK4  4
-# define PINK3  3
-# define PINK2  2
-# define PINK1  1
-# define PINK0  0
+	#define PINK   _SFR_MEM8(0x106)
+	#define PINK7  7
+	#define PINK6  6
+	#define PINK5  5
+	#define PINK4  4
+	#define PINK3  3
+	#define PINK2  2
+	#define PINK1  1
+	#define PINK0  0
 
-# define DDRK   _SFR_MEM8(0x107)
-# define DDK7   7
-# define DDK6   6
-# define DDK5   5
-# define DDK4   4
-# define DDK3   3
-# define DDK2   2
-# define DDK1   1
-# define DDK0   0
+	#define DDRK   _SFR_MEM8(0x107)
+	#define DDK7   7
+	#define DDK6   6
+	#define DDK5   5
+	#define DDK4   4
+	#define DDK3   3
+	#define DDK2   2
+	#define DDK1   1
+	#define DDK0   0
 
-# define PORTK  _SFR_MEM8(0x108)
-# define PK7 7
-# define PK6 6
-# define PK5 5
-# define PK4 4
-# define PK3 3
-# define PK2 2
-# define PK1 1
-# define PK0 0
+	#define PORTK  _SFR_MEM8(0x108)
+	#define PK7 7
+	#define PK6 6
+	#define PK5 5
+	#define PK4 4
+	#define PK3 3
+	#define PK2 2
+	#define PK1 1
+	#define PK0 0
 
-# define PINL   _SFR_MEM8(0x109)
-# define PINL7  7
-# define PINL6  6
-# define PINL5  5
-# define PINL4  4
-# define PINL3  3
-# define PINL2  2
-# define PINL1  1
-# define PINL0  0
+	#define PINL   _SFR_MEM8(0x109)
+	#define PINL7  7
+	#define PINL6  6
+	#define PINL5  5
+	#define PINL4  4
+	#define PINL3  3
+	#define PINL2  2
+	#define PINL1  1
+	#define PINL0  0
 
-# define DDRL   _SFR_MEM8(0x10A)
-# define DDL7   7
-# define DDL6   6
-# define DDL5   5
-# define DDL4   4
-# define DDL3   3
-# define DDL2   2
-# define DDL1   1
-# define DDL0   0
+	#define DDRL   _SFR_MEM8(0x10A)
+	#define DDL7   7
+	#define DDL6   6
+	#define DDL5   5
+	#define DDL4   4
+	#define DDL3   3
+	#define DDL2   2
+	#define DDL1   1
+	#define DDL0   0
 
-# define PORTL  _SFR_MEM8(0x10B)
-# define PL7 7
-# define PL6 6
-# define PL5 5
-# define PL4 4
-# define PL3 3
-# define PL2 2
-# define PL1 1
-# define PL0 0
+	#define PORTL  _SFR_MEM8(0x10B)
+	#define PL7 7
+	#define PL6 6
+	#define PL5 5
+	#define PL4 4
+	#define PL3 3
+	#define PL2 2
+	#define PL1 1
+	#define PL0 0
 
 #endif /* __ATmegaxx0__ */
 
@@ -1299,45 +1289,45 @@
 
 #if defined(__ATmegaxx0__)
 
-# define UCSR3A _SFR_MEM8(0x130)
-# define RXC3   7
-# define TXC3   6
-# define UDRE3  5
-# define FE3    4
-# define DOR3   3
-# define UPE3   2
-# define U2X3   1
-# define MPCM3  0
+	#define UCSR3A _SFR_MEM8(0x130)
+	#define RXC3   7
+	#define TXC3   6
+	#define UDRE3  5
+	#define FE3    4
+	#define DOR3   3
+	#define UPE3   2
+	#define U2X3   1
+	#define MPCM3  0
 
-# define UCSR3B _SFR_MEM8(0X131)
-# define RXCIE3 7
-# define TXCIE3 6
-# define UDRIE3 5
-# define RXEN3  4
-# define TXEN3  3
-# define UCSZ32 2
-# define RXB83  1
-# define TXB83  0
+	#define UCSR3B _SFR_MEM8(0X131)
+	#define RXCIE3 7
+	#define TXCIE3 6
+	#define UDRIE3 5
+	#define RXEN3  4
+	#define TXEN3  3
+	#define UCSZ32 2
+	#define RXB83  1
+	#define TXB83  0
 
-# define UCSR3C _SFR_MEM8(0x132)
-# define UMSEL31 7
-# define UMSEL30 6
-# define UPM31  5
-# define UPM30  4
-# define USBS3  3
-# define UCSZ31 2
-# define UCSZ30 1
-# define UCPOL3 0
+	#define UCSR3C _SFR_MEM8(0x132)
+	#define UMSEL31 7
+	#define UMSEL30 6
+	#define UPM31  5
+	#define UPM30  4
+	#define USBS3  3
+	#define UCSZ31 2
+	#define UCSZ30 1
+	#define UCPOL3 0
 
-/* Reserved [0x133] */
+	/* Reserved [0x133] */
 
-/* Combine UBRR3L and UBRR3H */
-# define UBRR3  _SFR_MEM16(0x134)
+	/* Combine UBRR3L and UBRR3H */
+	#define UBRR3  _SFR_MEM16(0x134)
 
-# define UBRR3L _SFR_MEM8(0x134)
-# define UBRR3H _SFR_MEM8(0x135)
+	#define UBRR3L _SFR_MEM8(0x134)
+	#define UBRR3H _SFR_MEM8(0x135)
 
-# define UDR3   _SFR_MEM8(0X136)
+	#define UDR3   _SFR_MEM8(0X136)
 
 #endif /* __ATmegaxx0__ */
 
@@ -1396,10 +1386,10 @@
 #define SIG_PIN_CHANGE1			_VECTOR(10)
 
 #if defined(__ATmegaxx0__)
-/* Pin Change Interrupt Request 2 */
-#define PCINT2_vect_num		11
-#define PCINT2_vect			_VECTOR(11)
-#define SIG_PIN_CHANGE2			_VECTOR(11)
+	/* Pin Change Interrupt Request 2 */
+	#define PCINT2_vect_num		11
+	#define PCINT2_vect			_VECTOR(11)
+	#define SIG_PIN_CHANGE2			_VECTOR(11)
 
 #endif /* __ATmegaxx0__ */
 
@@ -1549,10 +1539,10 @@
 #define SIG_SPM_READY			_VECTOR(40)
 
 #if defined(__ATmegaxx0__)
-/* Timer/Counter4 Capture Event */
-#define TIMER4_CAPT_vect_num	41
-#define TIMER4_CAPT_vect		_VECTOR(41)
-#define SIG_INPUT_CAPTURE4		_VECTOR(41)
+	/* Timer/Counter4 Capture Event */
+	#define TIMER4_CAPT_vect_num	41
+	#define TIMER4_CAPT_vect		_VECTOR(41)
+	#define SIG_INPUT_CAPTURE4		_VECTOR(41)
 
 #endif /* __ATmegaxx0__ */
 
@@ -1577,10 +1567,10 @@
 #define SIG_OVERFLOW4			_VECTOR(45)
 
 #if defined(__ATmegaxx0__)
-/* Timer/Counter5 Capture Event */
-#define TIMER5_CAPT_vect_num	46
-#define TIMER5_CAPT_vect		_VECTOR(46)
-#define SIG_INPUT_CAPTURE5		_VECTOR(46)
+	/* Timer/Counter5 Capture Event */
+	#define TIMER5_CAPT_vect_num	46
+	#define TIMER5_CAPT_vect		_VECTOR(46)
+	#define SIG_INPUT_CAPTURE5		_VECTOR(46)
 
 #endif /* __ATmegaxx0__ */
 
@@ -1606,114 +1596,114 @@
 
 #if defined(__ATmegaxx1__)
 
-# define _VECTORS_SIZE 204
+	#define _VECTORS_SIZE 204
 
 #else
 
-/* USART2, Rx Complete */
-#define USART2_RX_vect_num		51
-#define USART2_RX_vect			_VECTOR(51)
-#define SIG_USART2_RECV			_VECTOR(51)
+	/* USART2, Rx Complete */
+	#define USART2_RX_vect_num		51
+	#define USART2_RX_vect			_VECTOR(51)
+	#define SIG_USART2_RECV			_VECTOR(51)
 
-/* USART2 Data register Empty */
-#define USART2_UDRE_vect_num		52
-#define USART2_UDRE_vect		_VECTOR(52)
-#define SIG_USART2_DATA			_VECTOR(52)
+	/* USART2 Data register Empty */
+	#define USART2_UDRE_vect_num		52
+	#define USART2_UDRE_vect		_VECTOR(52)
+	#define SIG_USART2_DATA			_VECTOR(52)
 
-/* USART2, Tx Complete */
-#define USART2_TX_vect_num		53
-#define USART2_TX_vect			_VECTOR(53)
-#define SIG_USART2_TRANS		_VECTOR(53)
+	/* USART2, Tx Complete */
+	#define USART2_TX_vect_num		53
+	#define USART2_TX_vect			_VECTOR(53)
+	#define SIG_USART2_TRANS		_VECTOR(53)
 
-/* USART3, Rx Complete */
-#define USART3_RX_vect_num		54
-#define USART3_RX_vect			_VECTOR(54)
-#define SIG_USART3_RECV			_VECTOR(54)
+	/* USART3, Rx Complete */
+	#define USART3_RX_vect_num		54
+	#define USART3_RX_vect			_VECTOR(54)
+	#define SIG_USART3_RECV			_VECTOR(54)
 
-/* USART3 Data register Empty */
-#define USART3_UDRE_vect_num		55
-#define USART3_UDRE_vect		_VECTOR(55)
-#define SIG_USART3_DATA			_VECTOR(55)
+	/* USART3 Data register Empty */
+	#define USART3_UDRE_vect_num		55
+	#define USART3_UDRE_vect		_VECTOR(55)
+	#define SIG_USART3_DATA			_VECTOR(55)
 
-/* USART3, Tx Complete */
-#define USART3_TX_vect_num		56
-#define USART3_TX_vect			_VECTOR(56)
-#define SIG_USART3_TRANS		_VECTOR(56)
+	/* USART3, Tx Complete */
+	#define USART3_TX_vect_num		56
+	#define USART3_TX_vect			_VECTOR(56)
+	#define SIG_USART3_TRANS		_VECTOR(56)
 
-# define _VECTORS_SIZE 228
+	#define _VECTORS_SIZE 228
 
 #endif /* __ATmegaxx1__ */
 
 #if defined(__ATmegaxx0__)
-# undef __ATmegaxx0__
+	#undef __ATmegaxx0__
 #endif
 
 #if defined(__ATmegaxx1__)
-# undef __ATmegaxx1__
+	#undef __ATmegaxx1__
 #endif
 
 
 /* Deprecated items */
 #if !defined(__AVR_LIBC_DEPRECATED_ENABLE__)
 
-#pragma GCC system_header
+	#pragma GCC system_header
 
-#pragma GCC poison SIG_INTERRUPT0
-#pragma GCC poison SIG_INTERRUPT1
-#pragma GCC poison SIG_INTERRUPT2
-#pragma GCC poison SIG_INTERRUPT3
-#pragma GCC poison SIG_INTERRUPT4
-#pragma GCC poison SIG_INTERRUPT5
-#pragma GCC poison SIG_INTERRUPT6
-#pragma GCC poison SIG_INTERRUPT7
-#pragma GCC poison SIG_PIN_CHANGE0
-#pragma GCC poison SIG_PIN_CHANGE1
-#pragma GCC poison SIG_PIN_CHANGE2
-#pragma GCC poison SIG_WATCHDOG_TIMEOUT
-#pragma GCC poison SIG_OUTPUT_COMPARE2A
-#pragma GCC poison SIG_OUTPUT_COMPARE2B
-#pragma GCC poison SIG_OVERFLOW2
-#pragma GCC poison SIG_INPUT_CAPTURE1
-#pragma GCC poison SIG_OUTPUT_COMPARE1A
-#pragma GCC poison SIG_OUTPUT_COMPARE1B
-#pragma GCC poison SIG_OUTPUT_COMPARE1C
-#pragma GCC poison SIG_OVERFLOW1
-#pragma GCC poison SIG_OUTPUT_COMPARE0A
-#pragma GCC poison SIG_OUTPUT_COMPARE0B
-#pragma GCC poison SIG_OVERFLOW0
-#pragma GCC poison SIG_SPI
-#pragma GCC poison SIG_USART0_RECV
-#pragma GCC poison SIG_USART0_DATA
-#pragma GCC poison SIG_USART0_TRANS
-#pragma GCC poison SIG_COMPARATOR
-#pragma GCC poison SIG_ADC
-#pragma GCC poison SIG_EEPROM_READY
-#pragma GCC poison SIG_INPUT_CAPTURE3
-#pragma GCC poison SIG_OUTPUT_COMPARE3A
-#pragma GCC poison SIG_OUTPUT_COMPARE3B
-#pragma GCC poison SIG_OUTPUT_COMPARE3C
-#pragma GCC poison SIG_OVERFLOW3
-#pragma GCC poison SIG_USART1_RECV
-#pragma GCC poison SIG_USART1_DATA
-#pragma GCC poison SIG_USART1_TRANS
-#pragma GCC poison SIG_2WIRE_SERIAL
-#pragma GCC poison SIG_SPM_READY
-#pragma GCC poison SIG_INPUT_CAPTURE4
-#pragma GCC poison SIG_OUTPUT_COMPARE4A
-#pragma GCC poison SIG_OUTPUT_COMPARE4B
-#pragma GCC poison SIG_OUTPUT_COMPARE4C
-#pragma GCC poison SIG_OVERFLOW4
-#pragma GCC poison SIG_INPUT_CAPTURE5
-#pragma GCC poison SIG_OUTPUT_COMPARE5A
-#pragma GCC poison SIG_OUTPUT_COMPARE5B
-#pragma GCC poison SIG_OUTPUT_COMPARE5C
-#pragma GCC poison SIG_OVERFLOW5
-#pragma GCC poison SIG_USART2_RECV
-#pragma GCC poison SIG_USART2_DATA
-#pragma GCC poison SIG_USART2_TRANS
-#pragma GCC poison SIG_USART3_RECV
-#pragma GCC poison SIG_USART3_DATA
-#pragma GCC poison SIG_USART3_TRANS
+	#pragma GCC poison SIG_INTERRUPT0
+	#pragma GCC poison SIG_INTERRUPT1
+	#pragma GCC poison SIG_INTERRUPT2
+	#pragma GCC poison SIG_INTERRUPT3
+	#pragma GCC poison SIG_INTERRUPT4
+	#pragma GCC poison SIG_INTERRUPT5
+	#pragma GCC poison SIG_INTERRUPT6
+	#pragma GCC poison SIG_INTERRUPT7
+	#pragma GCC poison SIG_PIN_CHANGE0
+	#pragma GCC poison SIG_PIN_CHANGE1
+	#pragma GCC poison SIG_PIN_CHANGE2
+	#pragma GCC poison SIG_WATCHDOG_TIMEOUT
+	#pragma GCC poison SIG_OUTPUT_COMPARE2A
+	#pragma GCC poison SIG_OUTPUT_COMPARE2B
+	#pragma GCC poison SIG_OVERFLOW2
+	#pragma GCC poison SIG_INPUT_CAPTURE1
+	#pragma GCC poison SIG_OUTPUT_COMPARE1A
+	#pragma GCC poison SIG_OUTPUT_COMPARE1B
+	#pragma GCC poison SIG_OUTPUT_COMPARE1C
+	#pragma GCC poison SIG_OVERFLOW1
+	#pragma GCC poison SIG_OUTPUT_COMPARE0A
+	#pragma GCC poison SIG_OUTPUT_COMPARE0B
+	#pragma GCC poison SIG_OVERFLOW0
+	#pragma GCC poison SIG_SPI
+	#pragma GCC poison SIG_USART0_RECV
+	#pragma GCC poison SIG_USART0_DATA
+	#pragma GCC poison SIG_USART0_TRANS
+	#pragma GCC poison SIG_COMPARATOR
+	#pragma GCC poison SIG_ADC
+	#pragma GCC poison SIG_EEPROM_READY
+	#pragma GCC poison SIG_INPUT_CAPTURE3
+	#pragma GCC poison SIG_OUTPUT_COMPARE3A
+	#pragma GCC poison SIG_OUTPUT_COMPARE3B
+	#pragma GCC poison SIG_OUTPUT_COMPARE3C
+	#pragma GCC poison SIG_OVERFLOW3
+	#pragma GCC poison SIG_USART1_RECV
+	#pragma GCC poison SIG_USART1_DATA
+	#pragma GCC poison SIG_USART1_TRANS
+	#pragma GCC poison SIG_2WIRE_SERIAL
+	#pragma GCC poison SIG_SPM_READY
+	#pragma GCC poison SIG_INPUT_CAPTURE4
+	#pragma GCC poison SIG_OUTPUT_COMPARE4A
+	#pragma GCC poison SIG_OUTPUT_COMPARE4B
+	#pragma GCC poison SIG_OUTPUT_COMPARE4C
+	#pragma GCC poison SIG_OVERFLOW4
+	#pragma GCC poison SIG_INPUT_CAPTURE5
+	#pragma GCC poison SIG_OUTPUT_COMPARE5A
+	#pragma GCC poison SIG_OUTPUT_COMPARE5B
+	#pragma GCC poison SIG_OUTPUT_COMPARE5C
+	#pragma GCC poison SIG_OVERFLOW5
+	#pragma GCC poison SIG_USART2_RECV
+	#pragma GCC poison SIG_USART2_DATA
+	#pragma GCC poison SIG_USART2_TRANS
+	#pragma GCC poison SIG_USART3_RECV
+	#pragma GCC poison SIG_USART3_DATA
+	#pragma GCC poison SIG_USART3_TRANS
 
 #endif  /* !defined(__AVR_LIBC_DEPRECATED_ENABLE__) */
 

@@ -1,32 +1,23 @@
 /*
- * Copyright 2017-2018 The MCUSim Project.
+ * This file is part of MCUSim, an XSPICE library with microcontrollers.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
+ * Copyright (C) 2017-2019 MCUSim Developers, see AUTHORS.txt for contributors.
  *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the MCUSim or its parts nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
+ * MCUSim is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDER OR CONTRIBUTORS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
+ * MCUSim is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- * Functions to parse and save MCUSim configuration.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+/* Functions to parse and save MCUSim configuration. */
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
@@ -128,18 +119,26 @@ read_file(MSIM_CFG *cfg, const char *cf)
 int
 MSIM_CFG_PrintVersion(void)
 {
-#ifndef DEBUG
-	printf("MCU Simulator %s\nBuild Date: %s %s (UTC)\n",
-	       MSIM_VERSION, MSIM_BUILD_DATE, MSIM_BUILD_TIME);
-#else
-	/* Adjust logging level in the debug version. */
-	MSIM_LOG_SetLevel(MSIM_LOG_LVLDEBUG);
-	printf("MCU Simulator %s (dbg)\nBuild Date: %s %s (UTC)\n",
-	       MSIM_VERSION, MSIM_BUILD_DATE, MSIM_BUILD_TIME);
-#endif
-	MSIM_LOG_INFO("Copyright 2017-2019 The MCUSim Project");
+	char buf[1024];
+
+	snprintf(buf, 1024, "MCUSim %s, an XSPICE library with "
+	         "microcontrollers.", MSIM_VERSION);
+	MSIM_LOG_INFO(buf);
+	MSIM_LOG_INFO("Copyright (c) 2017-2019 MCUSim Developers.");
+	MSIM_LOG_INFO("");
+	MSIM_LOG_INFO("MCUSim comes with ABSOLUTELY NO WARRANTY.");
+	MSIM_LOG_INFO("This is free software, and you are welcome to redistribute it");
+	MSIM_LOG_INFO("under under the terms of the GNU General Public License as");
+	MSIM_LOG_INFO("published by the Free Software Foundation, either version 3");
+	MSIM_LOG_INFO("of the License, or (at your option) any later version.");
+	MSIM_LOG_INFO("");
+	snprintf(buf, 1024, "Build Date: %s %s (UTC)",
+	         MSIM_BUILD_DATE, MSIM_BUILD_TIME);
+	MSIM_LOG_INFO(buf);
 	MSIM_LOG_INFO("Documentation: https://trac.mcusim.org");
 	MSIM_LOG_INFO("Bugs: https://trac.mcusim.org/newticket");
+	MSIM_LOG_INFO("");
+
 	MSIM_LOG_PrintMarkers();
 
 	return 0;

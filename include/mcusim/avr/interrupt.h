@@ -1,32 +1,22 @@
 /*
- * Copyright (c) 2017, 2018,
- * Dmitry Salychev <darkness.bsd@gmail.com>,
- * Alexander Salychev <ppsalex@rambler.ru> et al.
- * All rights reserved.
+ * This file is part of MCUSim, an XSPICE library with microcontrollers.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <organization> nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
+ * Copyright (C) 2017-2019 MCUSim Developers, see AUTHORS.txt for contributors.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * MCUSim is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * MCUSim is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 /* Copyright (c) 2002,2005,2007 Marek Michalkiewicz
    Copyright (c) 2007, Dean Camera
 
@@ -67,8 +57,8 @@
 #include <avr/io.h>
 
 #if !defined(__DOXYGEN__) && !defined(__STRINGIFY)
-/* Auxiliary macro for ISR_ALIAS(). */
-#define __STRINGIFY(x) #x
+	/* Auxiliary macro for ISR_ALIAS(). */
+	#define __STRINGIFY(x) #x
 #endif /* !defined(__DOXYGEN__) */
 
 /**
@@ -93,39 +83,39 @@
 */
 
 #if defined(__DOXYGEN__)
-/** \def sei()
-    \ingroup avr_interrupts
+	/** \def sei()
+	\ingroup avr_interrupts
 
-    Enables interrupts by setting the global interrupt mask. This function
-    actually compiles into a single line of assembly, so there is no function
-    call overhead.  However, the macro also implies a <i>memory barrier</i>
-    which can cause additional loss of optimization.
+	Enables interrupts by setting the global interrupt mask. This function
+	actually compiles into a single line of assembly, so there is no function
+	call overhead.  However, the macro also implies a <i>memory barrier</i>
+	which can cause additional loss of optimization.
 
-    In order to implement atomic access to multi-byte objects,
-    consider using the macros from <util/atomic.h>, rather than
-    implementing them manually with cli() and sei().
-*/
-#define sei()
+	In order to implement atomic access to multi-byte objects,
+	consider using the macros from <util/atomic.h>, rather than
+	implementing them manually with cli() and sei().
+	*/
+	#define sei()
 #else  /* !DOXYGEN */
-# define sei()  __asm__ __volatile__ ("sei" ::: "memory")
+	#define sei()  __asm__ __volatile__ ("sei" ::: "memory")
 #endif /* DOXYGEN */
 
 #if defined(__DOXYGEN__)
-/** \def cli()
-    \ingroup avr_interrupts
+	/** \def cli()
+	\ingroup avr_interrupts
 
-    Disables all interrupts by clearing the global interrupt mask. This function
-    actually compiles into a single line of assembly, so there is no function
-    call overhead.  However, the macro also implies a <i>memory barrier</i>
-    which can cause additional loss of optimization.
+	Disables all interrupts by clearing the global interrupt mask. This function
+	actually compiles into a single line of assembly, so there is no function
+	call overhead.  However, the macro also implies a <i>memory barrier</i>
+	which can cause additional loss of optimization.
 
-    In order to implement atomic access to multi-byte objects,
-    consider using the macros from <util/atomic.h>, rather than
-    implementing them manually with cli() and sei().
-*/
-#define cli()
+	In order to implement atomic access to multi-byte objects,
+	consider using the macros from <util/atomic.h>, rather than
+	implementing them manually with cli() and sei().
+	*/
+	#define cli()
 #else  /* !DOXYGEN */
-# define cli()  __asm__ __volatile__ ("cli" ::: "memory")
+	#define cli()  __asm__ __volatile__ ("cli" ::: "memory")
 #endif /* DOXYGEN */
 
 
@@ -155,9 +145,9 @@
 #else  /* real code */
 
 #if (__GNUC__ == 4 && __GNUC_MINOR__ >= 1) || (__GNUC__ > 4)
-#  define __INTR_ATTRS used, externally_visible
+	#define __INTR_ATTRS used, externally_visible
 #else /* GCC < 4.1 */
-#  define __INTR_ATTRS used
+	#define __INTR_ATTRS used
 #endif
 
 #ifdef __cplusplus
@@ -278,94 +268,94 @@
 #endif /* DOXYGEN */
 
 #if defined(__DOXYGEN__)
-/** \def reti()
-    \ingroup avr_interrupts
+	/** \def reti()
+	\ingroup avr_interrupts
 
-    Returns from an interrupt routine, enabling global interrupts. This should
-    be the last command executed before leaving an ISR defined with the ISR_NAKED
-    attribute.
+	Returns from an interrupt routine, enabling global interrupts. This should
+	be the last command executed before leaving an ISR defined with the ISR_NAKED
+	attribute.
 
-    This macro actually compiles into a single line of assembly, so there is
-    no function call overhead.
-*/
-#  define reti()
+	This macro actually compiles into a single line of assembly, so there is
+	no function call overhead.
+	*/
+	#define reti()
 #else  /* !DOXYGEN */
-#  define reti()  __asm__ __volatile__ ("reti" ::)
+	#define reti()  __asm__ __volatile__ ("reti" ::)
 #endif /* DOXYGEN */
 
 #if defined(__DOXYGEN__)
-/** \def BADISR_vect
-    \ingroup avr_interrupts
+	/** \def BADISR_vect
+	\ingroup avr_interrupts
 
-    \code #include <avr/interrupt.h> \endcode
+	\code #include <avr/interrupt.h> \endcode
 
-    This is a vector which is aliased to __vector_default, the vector
-    executed when an ISR fires with no accompanying ISR handler. This
-    may be used along with the ISR() macro to create a catch-all for
-    undefined but used ISRs for debugging purposes.
-*/
-#  define BADISR_vect
+	This is a vector which is aliased to __vector_default, the vector
+	executed when an ISR fires with no accompanying ISR handler. This
+	may be used along with the ISR() macro to create a catch-all for
+	undefined but used ISRs for debugging purposes.
+	*/
+	#define BADISR_vect
 #else  /* !DOXYGEN */
-#  define BADISR_vect __vector_default
+	#define BADISR_vect __vector_default
 #endif /* DOXYGEN */
 
 /** \name ISR attributes */
 
 #if defined(__DOXYGEN__)
-/** \def ISR_BLOCK
-    \ingroup avr_interrupts
+	/** \def ISR_BLOCK
+	\ingroup avr_interrupts
 
-    Identical to an ISR with no attributes specified. Global
-    interrupts are initially disabled by the AVR hardware when
-    entering the ISR, without the compiler modifying this state.
+	Identical to an ISR with no attributes specified. Global
+	interrupts are initially disabled by the AVR hardware when
+	entering the ISR, without the compiler modifying this state.
 
-    Use this attribute in the attributes parameter of the ISR macro.
-*/
-#  define ISR_BLOCK
+	Use this attribute in the attributes parameter of the ISR macro.
+	*/
+	#define ISR_BLOCK
 
-/** \def ISR_NOBLOCK
-    \ingroup avr_interrupts
+	/** \def ISR_NOBLOCK
+	\ingroup avr_interrupts
 
-    ISR runs with global interrupts initially enabled.  The interrupt
-    enable flag is activated by the compiler as early as possible
-    within the ISR to ensure minimal processing delay for nested
-    interrupts.
+	ISR runs with global interrupts initially enabled.  The interrupt
+	enable flag is activated by the compiler as early as possible
+	within the ISR to ensure minimal processing delay for nested
+	interrupts.
 
-    This may be used to create nested ISRs, however care should be
-    taken to avoid stack overflows, or to avoid infinitely entering
-    the ISR for those cases where the AVR hardware does not clear the
-    respective interrupt flag before entering the ISR.
+	This may be used to create nested ISRs, however care should be
+	taken to avoid stack overflows, or to avoid infinitely entering
+	the ISR for those cases where the AVR hardware does not clear the
+	respective interrupt flag before entering the ISR.
 
-    Use this attribute in the attributes parameter of the ISR macro.
-*/
-#  define ISR_NOBLOCK
+	Use this attribute in the attributes parameter of the ISR macro.
+	*/
+	#define ISR_NOBLOCK
 
-/** \def ISR_NAKED
-    \ingroup avr_interrupts
+	/** \def ISR_NAKED
+	\ingroup avr_interrupts
 
-    ISR is created with no prologue or epilogue code. The user code is
-    responsible for preservation of the machine state including the
-    SREG register, as well as placing a reti() at the end of the
-    interrupt routine.
+	ISR is created with no prologue or epilogue code. The user code is
+	responsible for preservation of the machine state including the
+	SREG register, as well as placing a reti() at the end of the
+	interrupt routine.
 
-    Use this attribute in the attributes parameter of the ISR macro.
-*/
-#  define ISR_NAKED
+	Use this attribute in the attributes parameter of the ISR macro.
+	*/
+	#define ISR_NAKED
 
-/** \def ISR_ALIASOF(target_vector)
-    \ingroup avr_interrupts
+	/** \def ISR_ALIASOF(target_vector)
+	\ingroup avr_interrupts
 
-    The ISR is linked to another ISR, specified by the vect parameter.
-    This is compatible with GCC 4.2 and greater only.
+	The ISR is linked to another ISR, specified by the vect parameter.
+	This is compatible with GCC 4.2 and greater only.
 
-    Use this attribute in the attributes parameter of the ISR macro.
-*/
-#  define ISR_ALIASOF(target_vector)
+	Use this attribute in the attributes parameter of the ISR macro.
+	*/
+	#define ISR_ALIASOF(target_vector)
 #else  /* !DOXYGEN */
-#  define ISR_BLOCK
-#  define ISR_NOBLOCK    __attribute__((interrupt))
-#  define ISR_NAKED      __attribute__((naked))
-#  define ISR_ALIASOF(v) __attribute__((alias(__STRINGIFY(v))))
+	#define ISR_BLOCK
+	#define ISR_NOBLOCK    __attribute__((interrupt))
+	#define ISR_NAKED      __attribute__((naked))
+	#define ISR_ALIASOF(v) __attribute__((alias(__STRINGIFY(v))))
 #endif /* DOXYGEN */
 
 /* \@} */

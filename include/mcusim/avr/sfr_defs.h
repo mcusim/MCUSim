@@ -1,32 +1,22 @@
 /*
- * Copyright (c) 2017, 2018,
- * Dmitry Salychev <darkness.bsd@gmail.com>,
- * Alexander Salychev <ppsalex@rambler.ru> et al.
- * All rights reserved.
+ * This file is part of MCUSim, an XSPICE library with microcontrollers.
  *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the <organization> nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
+ * Copyright (C) 2017-2019 MCUSim Developers, see AUTHORS.txt for contributors.
  *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- * PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL <COPYRIGHT HOLDER> BE LIABLE FOR
- * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
- * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
+ * MCUSim is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * MCUSim is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 /* Copyright (c) 2002, Marek Michalkiewicz <marekm@amelek.gda.pl>
    All rights reserved.
 
@@ -145,74 +135,74 @@
    device). */
 
 #ifdef __ASSEMBLER__
-#define _SFR_ASM_COMPAT 1
+	#define _SFR_ASM_COMPAT 1
 #elif !defined(_SFR_ASM_COMPAT)
-#define _SFR_ASM_COMPAT 0
+	#define _SFR_ASM_COMPAT 0
 #endif
 
 #ifndef __ASSEMBLER__
-/* These only work in C programs.  */
-#include <inttypes.h>
+	/* These only work in C programs.  */
+	#include <inttypes.h>
 
-#define _MMIO_BYTE(mem_addr) (*(volatile uint8_t *)(mem_addr))
-#define _MMIO_WORD(mem_addr) (*(volatile uint16_t *)(mem_addr))
-#define _MMIO_DWORD(mem_addr) (*(volatile uint32_t *)(mem_addr))
+	#define _MMIO_BYTE(mem_addr) (*(volatile uint8_t *)(mem_addr))
+	#define _MMIO_WORD(mem_addr) (*(volatile uint16_t *)(mem_addr))
+	#define _MMIO_DWORD(mem_addr) (*(volatile uint32_t *)(mem_addr))
 #endif
 
 #if _SFR_ASM_COMPAT
 
-#ifndef __SFR_OFFSET
-/* Define as 0 before including this file for compatibility with old asm
-   sources that don't subtract __SFR_OFFSET from symbolic I/O addresses.  */
-#  if __AVR_ARCH__ >= 100
-#    define __SFR_OFFSET 0x00
-#  else
-#    define __SFR_OFFSET 0x20
-#  endif
-#endif
+	#ifndef __SFR_OFFSET
+		/* Define as 0 before including this file for compatibility with old asm
+		sources that don't subtract __SFR_OFFSET from symbolic I/O addresses.  */
+		#if __AVR_ARCH__ >= 100
+			#define __SFR_OFFSET 0x00
+		#else
+			#define __SFR_OFFSET 0x20
+		#endif
+	#endif
 
-#if (__SFR_OFFSET != 0) && (__SFR_OFFSET != 0x20)
-#error "__SFR_OFFSET must be 0 or 0x20"
-#endif
+	#if (__SFR_OFFSET != 0) && (__SFR_OFFSET != 0x20)
+		#error "__SFR_OFFSET must be 0 or 0x20"
+	#endif
 
-#define _SFR_MEM8(mem_addr) (mem_addr)
-#define _SFR_MEM16(mem_addr) (mem_addr)
-#define _SFR_MEM32(mem_addr) (mem_addr)
-#define _SFR_IO8(io_addr) ((io_addr) + __SFR_OFFSET)
-#define _SFR_IO16(io_addr) ((io_addr) + __SFR_OFFSET)
+	#define _SFR_MEM8(mem_addr) (mem_addr)
+	#define _SFR_MEM16(mem_addr) (mem_addr)
+	#define _SFR_MEM32(mem_addr) (mem_addr)
+	#define _SFR_IO8(io_addr) ((io_addr) + __SFR_OFFSET)
+	#define _SFR_IO16(io_addr) ((io_addr) + __SFR_OFFSET)
 
-#define _SFR_IO_ADDR(sfr) ((sfr) - __SFR_OFFSET)
-#define _SFR_MEM_ADDR(sfr) (sfr)
-#define _SFR_IO_REG_P(sfr) ((sfr) < 0x40 + __SFR_OFFSET)
+	#define _SFR_IO_ADDR(sfr) ((sfr) - __SFR_OFFSET)
+	#define _SFR_MEM_ADDR(sfr) (sfr)
+	#define _SFR_IO_REG_P(sfr) ((sfr) < 0x40 + __SFR_OFFSET)
 
-#if (__SFR_OFFSET == 0x20)
-/* No need to use ?: operator, so works in assembler too.  */
-#define _SFR_ADDR(sfr) _SFR_MEM_ADDR(sfr)
-#elif !defined(__ASSEMBLER__)
-#define _SFR_ADDR(sfr) (_SFR_IO_REG_P(sfr) ? (_SFR_IO_ADDR(sfr) + 0x20) : _SFR_MEM_ADDR(sfr))
-#endif
+	#if (__SFR_OFFSET == 0x20)
+		/* No need to use ?: operator, so works in assembler too.  */
+		#define _SFR_ADDR(sfr) _SFR_MEM_ADDR(sfr)
+	#elif !defined(__ASSEMBLER__)
+		#define _SFR_ADDR(sfr) (_SFR_IO_REG_P(sfr) ? (_SFR_IO_ADDR(sfr) + 0x20) : _SFR_MEM_ADDR(sfr))
+	#endif
 
 #else  /* !_SFR_ASM_COMPAT */
 
-#ifndef __SFR_OFFSET
-#  if __AVR_ARCH__ >= 100
-#    define __SFR_OFFSET 0x00
-#  else
-#    define __SFR_OFFSET 0x20
-#  endif
-#endif
+	#ifndef __SFR_OFFSET
+		#if __AVR_ARCH__ >= 100
+			#define __SFR_OFFSET 0x00
+		#else
+			#define __SFR_OFFSET 0x20
+		#endif
+	#endif
 
-#define _SFR_MEM8(mem_addr) _MMIO_BYTE(mem_addr)
-#define _SFR_MEM16(mem_addr) _MMIO_WORD(mem_addr)
-#define _SFR_MEM32(mem_addr) _MMIO_DWORD(mem_addr)
-#define _SFR_IO8(io_addr) _MMIO_BYTE((io_addr) + __SFR_OFFSET)
-#define _SFR_IO16(io_addr) _MMIO_WORD((io_addr) + __SFR_OFFSET)
+	#define _SFR_MEM8(mem_addr) _MMIO_BYTE(mem_addr)
+	#define _SFR_MEM16(mem_addr) _MMIO_WORD(mem_addr)
+	#define _SFR_MEM32(mem_addr) _MMIO_DWORD(mem_addr)
+	#define _SFR_IO8(io_addr) _MMIO_BYTE((io_addr) + __SFR_OFFSET)
+	#define _SFR_IO16(io_addr) _MMIO_WORD((io_addr) + __SFR_OFFSET)
 
-#define _SFR_MEM_ADDR(sfr) ((uint16_t) &(sfr))
-#define _SFR_IO_ADDR(sfr) (_SFR_MEM_ADDR(sfr) - __SFR_OFFSET)
-#define _SFR_IO_REG_P(sfr) (_SFR_MEM_ADDR(sfr) < 0x40 + __SFR_OFFSET)
+	#define _SFR_MEM_ADDR(sfr) ((uint16_t) &(sfr))
+	#define _SFR_IO_ADDR(sfr) (_SFR_MEM_ADDR(sfr) - __SFR_OFFSET)
+	#define _SFR_IO_REG_P(sfr) (_SFR_MEM_ADDR(sfr) < 0x40 + __SFR_OFFSET)
 
-#define _SFR_ADDR(sfr) _SFR_MEM_ADDR(sfr)
+	#define _SFR_ADDR(sfr) _SFR_MEM_ADDR(sfr)
 
 #endif /* !_SFR_ASM_COMPAT */
 
@@ -239,59 +229,59 @@
 /*@}*/
 
 #ifndef _VECTOR
-#define _VECTOR(N) __vector_ ## N
+	#define _VECTOR(N) __vector_ ## N
 #endif
 
 #ifndef __ASSEMBLER__
 
 
-/** \name IO register bit manipulation */
+	/** \name IO register bit manipulation */
 
-/*@{*/
+	/*@{*/
 
 
 
-/** \def bit_is_set
-    \ingroup avr_sfr
+	/** \def bit_is_set
+	\ingroup avr_sfr
 
-    \code #include <avr/io.h>\endcode
+	\code #include <avr/io.h>\endcode
 
-    Test whether bit \c bit in IO register \c sfr is set.
-    This will return a 0 if the bit is clear, and non-zero
-    if the bit is set. */
+	Test whether bit \c bit in IO register \c sfr is set.
+	This will return a 0 if the bit is clear, and non-zero
+	if the bit is set. */
 
-#define bit_is_set(sfr, bit) (_SFR_BYTE(sfr) & _BV(bit))
+	#define bit_is_set(sfr, bit) (_SFR_BYTE(sfr) & _BV(bit))
 
-/** \def bit_is_clear
-    \ingroup avr_sfr
+	/** \def bit_is_clear
+	\ingroup avr_sfr
 
-    \code #include <avr/io.h>\endcode
+	\code #include <avr/io.h>\endcode
 
-    Test whether bit \c bit in IO register \c sfr is clear.
-    This will return non-zero if the bit is clear, and a 0
-    if the bit is set. */
+	Test whether bit \c bit in IO register \c sfr is clear.
+	This will return non-zero if the bit is clear, and a 0
+	if the bit is set. */
 
-#define bit_is_clear(sfr, bit) (!(_SFR_BYTE(sfr) & _BV(bit)))
+	#define bit_is_clear(sfr, bit) (!(_SFR_BYTE(sfr) & _BV(bit)))
 
-/** \def loop_until_bit_is_set
-    \ingroup avr_sfr
+	/** \def loop_until_bit_is_set
+	\ingroup avr_sfr
 
-    \code #include <avr/io.h>\endcode
+	\code #include <avr/io.h>\endcode
 
-    Wait until bit \c bit in IO register \c sfr is set. */
+	Wait until bit \c bit in IO register \c sfr is set. */
 
-#define loop_until_bit_is_set(sfr, bit) do { } while (bit_is_clear(sfr, bit))
+	#define loop_until_bit_is_set(sfr, bit) do { } while (bit_is_clear(sfr, bit))
 
-/** \def loop_until_bit_is_clear
-    \ingroup avr_sfr
+	/** \def loop_until_bit_is_clear
+	\ingroup avr_sfr
 
-    \code #include <avr/io.h>\endcode
+	\code #include <avr/io.h>\endcode
 
-    Wait until bit \c bit in IO register \c sfr is clear. */
+	Wait until bit \c bit in IO register \c sfr is clear. */
 
-#define loop_until_bit_is_clear(sfr, bit) do { } while (bit_is_set(sfr, bit))
+	#define loop_until_bit_is_clear(sfr, bit) do { } while (bit_is_set(sfr, bit))
 
-/*@}*/
+	/*@}*/
 
 #endif /* !__ASSEMBLER__ */
 

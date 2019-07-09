@@ -30,7 +30,6 @@ Prerequisites
 	- astyle (to check code formatting)
 	- avr-libc (to compile AVR tests firmware)
 	- srecord (to compile AVR tests firmware)
-	- pkg-config (to find libraries)
 	- cmocka (to run unit tests)
 	- python (2.7 or above)
 	- cppcheck (1.83 or above)
@@ -57,6 +56,7 @@ Install from tarball
  (libmsim), headers, default configuration file (mcusim.conf) and executable
  binary (mcusim):
 
+	$ make checks		(if configured with -DWITH_CHECKS=True only)
 	$ make tests
         $ sudo make install
 
@@ -98,6 +98,15 @@ Advanced install
 
  These options can be provided to CMake during 'cmake ..' configuration step:
 
+ -DWITH_CHECKS=False|True
+
+        Build MCUSim with firmware checks (run by "make check").
+	They are usually built using real firmware with data memory dumps to
+	be checked against the data memory of a simulated MCU in MCUSim.
+
+	False value means that MCUSim will be built without these tests.
+	This is a default behavior.
+
  -DCMAKE_BUILD_TYPE=Release|Debug
 
         Build a debug version of MCUSim. Debug symbols will be included into
@@ -135,13 +144,6 @@ Advanced install
  -DNGSPICE_TARBALL_MD5=a11c1f99753934be7d60c0ab43821bbc
 
         MD5 hash of the NGSpice tarball provided via -DNGSPICE_TARBALL option.
-
- -DWITH_CHECKS=False|True
-
-        Build MCUSim with real-world firmware tests (run by "make check").
-
-	False value means that MCUSim will be built without these tests.
-	This is a default behavior.
 
 Install directories
 -------------------
