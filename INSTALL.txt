@@ -27,10 +27,10 @@ Prerequisites
  If you want to contribute to the project you will need the following
  software installed:
 
+	- cmocka (to run unit tests)
 	- astyle (to check code formatting)
 	- avr-libc (to compile AVR tests firmware)
 	- srecord (to compile AVR tests firmware)
-	- cmocka (to run unit tests)
 	- python (2.7 or above)
 	- cppcheck (1.83 or above)
 
@@ -131,6 +131,10 @@ Advanced install
 
         False value means that MCUSim will be using LuaJIT as a main Lua
         implementation. It is a default behavior.
+
+ -DWITH_ASAN=False|True
+
+        Build MCUSim with address sanitizer. Clang 3.1+ or GCC 4.8+ is required.
 
  -DNGSPICE_MAKE=/usr/bin/make
 

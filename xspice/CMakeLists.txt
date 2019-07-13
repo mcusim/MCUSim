@@ -103,7 +103,7 @@ if (WITH_XSPICE)
 # -----------------------------------------------------------------------------
 # Print configuration
 # -----------------------------------------------------------------------------
-	message(STATUS "Building ${CBld}with${CRst} XSPICE library: ${CBld}mcusim.cm${CRst}")
+	message(STATUS "Building ${CBld}XSPICE${CRst} library: ${CBld}mcusim.cm${CRst}")
 	message(STATUS "Building with NGSpice tarball: ${_NGSPICE_TARBALL}")
 	message(STATUS "Building with NGSpice tarball MD5: ${_NGSPICE_TARBALL_MD5}")
 	message(STATUS "Building with NGSpice make: ${_NGSPICE_MAKE}")
@@ -172,6 +172,4 @@ if (WITH_XSPICE)
 # Install XSPICE library
 # -----------------------------------------------------------------------------
 	install(FILES ${CMAKE_BINARY_DIR}/mcusim.cm DESTINATION ${MSIM_SLIB_DIR})
-else()
-	message(STATUS "Building ${CBld}without${CRst} XSPICE library")
 endif()

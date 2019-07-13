@@ -19,19 +19,8 @@
 #ifndef MSIM_AVR_SIM_H_
 #define MSIM_AVR_SIM_H_ 1
 
-#define MSIM_AVR_PMSZ		(256*1024)	/* Program Memory size */
-#define MSIM_AVR_PM_PAGESZ	(1024)		/* PM page size */
-#define MSIM_AVR_DMSZ		(64*1024)	/* Data Memory size */
-#define MSIM_AVR_LOGSZ		(64*1024)	/* Log buffer size */
-#define MSIM_AVR_MAXTMRS	(32)		/* Maximum # of timers */
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <stdint.h>
 #include <pthread.h>
-
 #include "mcusim/pty.h"
 #include "mcusim/tsq.h"
 #include "mcusim/avr/sim/vcd.h"
@@ -41,6 +30,17 @@ extern "C" {
 #include "mcusim/avr/sim/interrupt.h"
 #include "mcusim/avr/sim/bootloader.h"
 #include "mcusim/avr/sim/timer.h"
+
+#define MSIM_AVR_PMSZ		(256*1024)	/* Program Memory size */
+#define MSIM_AVR_PM_PAGESZ	(1024)		/* PM page size */
+#define MSIM_AVR_DMSZ		(64*1024)	/* Data Memory size */
+#define MSIM_AVR_LOGSZ		(64*1024)	/* Log buffer size */
+#define MSIM_AVR_MAXTMRS	(32)		/* Maximum # of timers */
+#define MSIM_AVR_MAXIOPORTS	(32)		/* Maximum # of I/O ports */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 struct MSIM_AVR;
 struct MSIM_AVRConf;
@@ -161,8 +161,9 @@ typedef struct MSIM_AVR {
 	MSIM_AVR_USART usart;		/* Details to work with USART */
 	MSIM_PTY pty;			/* Details to work with POSIX PTY */
 
-	MSIM_AVR_IOReg ioregs[MSIM_AVR_DMSZ]; /* Descriptors of the I/O regs */
-	MSIM_AVR_TMR timers[MSIM_AVR_MAXTMRS];	/* Timers/counters */
+	MSIM_AVR_IOReg ioregs[MSIM_AVR_DMSZ];		/* I/O registers */
+	MSIM_AVR_IOPort ioports[MSIM_AVR_MAXIOPORTS];	/* I/O ports */
+	MSIM_AVR_TMR timers[MSIM_AVR_MAXTMRS];		/* Timers/counters */
 } MSIM_AVR;
 
 #ifdef __cplusplus

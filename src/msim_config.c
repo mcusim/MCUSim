@@ -175,14 +175,16 @@ read_lines(struct MSIM_CFG *cfg, char *buf, uint32_t buflen,
 		if ((buf[0] == '#') || (buf[0] == '\n') || (buf[0] == '\r')) {
 			continue;
 		}
+
 		/* Try to parse a configuration line. */
-		rc = sscanf(buf, "%4096s %4096s", parm, val);
+		rc = sscanf(buf, "%4095s %4095s", parm, val);
 		if (rc != 2) {
 			snprintf(buf, buflen, "incorrect format of line #%"
 			         PRIu32 " from %s", line, filename);
 			MSIM_LOG_DEBUG(buf);
 			continue;
-		} else { /* Line is correct. */
+		} else {
+			/* Line is correct */
 			rc = read_line(cfg, parm, val, len, len);
 			if (rc != 0) {
 				snprintf(buf, buflen, "cannot read option at "
@@ -251,14 +253,14 @@ read_line(struct MSIM_CFG *cfg, char *parm, char *val,
 			rc = 2;
 		}
 	} else if (CMPL(parm, "firmware_test", plen) == 0) {
-		cmp_rc = sscanf(val, "%4096s", buf);
+		cmp_rc = sscanf(val, "%4095s", buf);
 		if (cmp_rc == 1) {
 			parse_bool(buf, buflen, &cfg->firmware_test);
 		} else {
 			rc = 2;
 		}
 	} else if (CMPL(parm, "reset_flash", plen) == 0) {
-		cmp_rc = sscanf(val, "%4096s", buf);
+		cmp_rc = sscanf(val, "%4095s", buf);
 		if (cmp_rc == 1) {
 			parse_bool(buf, buflen, &cfg->reset_flash);
 		} else {
@@ -299,7 +301,7 @@ read_line(struct MSIM_CFG *cfg, char *parm, char *val,
 			rc = 2;
 		}
 	} else if (CMPL(parm, "trap_at_isr", plen) == 0) {
-		cmp_rc = sscanf(val, "%4096s", buf);
+		cmp_rc = sscanf(val, "%4095s", buf);
 		if (cmp_rc == 1) {
 			parse_bool(buf, buflen, &cfg->trap_at_isr);
 		} else {

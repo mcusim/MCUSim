@@ -17,30 +17,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/* A model-independent function to initialize AVR models. */
 #ifndef MSIM_AVR_MCUINIT_H_
 #define MSIM_AVR_MCUINIT_H_ 1
 
+/* A model-independent function to initialize an AVR MCU */
 static inline int
-mcu_init(const struct MSIM_AVR *orig, struct MSIM_AVR *mcu,
-         struct MSIM_InitArgs *args)
+mcu_init(const MSIM_AVR *orig, MSIM_AVR *mcu, MSIM_InitArgs *args)
 {
-	uint32_t i;
-	uint32_t pmsz, pm_size;
-	uint32_t dmsz, dm_size;
-#ifdef AVR_INIT_IOREGS
-	struct MSIM_AVR_IOReg ioregs[] = AVR_INIT_IOREGS;
-	uint32_t ioregs_num = sizeof ioregs/sizeof ioregs[0];
-#endif
+	uint32_t i, pmsz, dmsz;
+	uint32_t pm_size = args->pmsz;
+	uint32_t dm_size = args->dmsz;
 
 	if (mcu == NULL) {
 		MSIM_LOG_FATAL("MCU instance should not be null");
 		return 255;
 	}
 
+	/* Copy MCU from the original one declared in a header file. */
 	(*mcu) = (*orig);
-	pm_size = args->pmsz;
-	dm_size = args->dmsz;
 
 	if (SPMCSR > 0) {
 		mcu->spmcsr = &mcu->dm[SPMCSR];
@@ -112,12 +106,16 @@ mcu_init(const struct MSIM_AVR *orig, struct MSIM_AVR *mcu,
 	}
 
 #ifdef AVR_INIT_IOREGS
+	struct MSIM_AVR_IOReg ioregs[] = AVR_INIT_IOREGS;
+	uint32_t ioregs_num = sizeof ioregs/sizeof ioregs[0];
+
 	/* Fill descriptors of the available I/O registers */
 	for (i = 0; i < ioregs_num; i++) {
 		if ((ioregs[i].off > 0) && (ioregs[i].off < MSIM_AVR_DMSZ)) {
 			mcu->ioregs[ioregs[i].off] = ioregs[i];
 			mcu->ioregs[ioregs[i].off].addr =
 			        &mcu->dm[ioregs[i].off];
+
 			/* Write reset/default value of the register */
 			mcu->dm[ioregs[i].off] = ioregs[i].reset;
 		}

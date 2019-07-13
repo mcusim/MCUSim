@@ -74,4 +74,4 @@ if (WITH_CHECKS)
 		COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/tests.cmake)
 	add_custom_target(check DEPENDS UNIT-TESTS)
 
-endif() # WITH_UNIT_TESTS
+endif() # WITH_CHECKS

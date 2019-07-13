@@ -100,6 +100,26 @@ const static struct MSIM_AVR ORIG_M328P = {
 		.reset_pc = 0x0000,
 		.ivt = 0x0004,
 	},
+	.ioports = {
+		/* ----------------------- Port B -------------------------- */
+		[0] = {
+			.port = IOBYTE(PORTB),
+			.ddr = IOBYTE(DDRB),
+			.pin = IOBYTE(PINB)
+		},
+		/* ----------------------- Port C -------------------------- */
+		[1] = {
+			.port = IOBYTE(PORTC),
+			.ddr = IOBYTE(DDRC),
+			.pin = IOBYTE(PINC)
+		},
+		/* ----------------------- Port D -------------------------- */
+		[2] = {
+			.port = IOBYTE(PORTD),
+			.ddr = IOBYTE(DDRD),
+			.pin = IOBYTE(PIND)
+		},
+	},
 	.timers = {
 		[0] = {
 			/* ---------------- Basic config ------------------- */

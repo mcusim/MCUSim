@@ -63,6 +63,7 @@ static int	setup_avr(MSIM_AVR *, const char *,
                           uint8_t *, uint32_t, uint8_t *, uint32_t,
                           uint8_t *, const char *);
 
+/* Init function per AVR chip */
 struct init_func_info {
 	char partno[20];
 	char name[20];
@@ -243,6 +244,10 @@ MSIM_AVR_SimStep(MSIM_AVR *mcu, uint8_t ft)
 
 			rc = 1;
 			break;
+		}
+
+		if (mcu->ic_left || IS_MCU_ACTIVE(mcu)) {
+			MSIM_AVR_IOUpdatePinx(mcu);
 		}
 
 		/*

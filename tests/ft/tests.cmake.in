@@ -24,6 +24,22 @@ foreach(FM_TEST ${FM_TESTS})
 	message(STATUS "[CHECK]: ${FM_TEST}")
 
 	get_filename_component(TEST_WORKING_DIR ${FM_TEST} DIRECTORY)
+
+# -----------------------------------------------------------------------------
+# Configure address sanitizer
+# -----------------------------------------------------------------------------
+	set(WITH_ASAN @WITH_ASAN@)
+	if (WITH_ASAN)
+		find_program(SYMB llvm-symbolizer)
+		message(STATUS "using LLVM symbolizer: ${SYMB}")
+
+		set(ENV{ASAN_OPTIONS} "symbolize=1")
+		set(ENV{ASAN_SYMBOLIZER_PATH} ${SYMB})
+	endif()
+
+# -----------------------------------------------------------------------------
+# Run test
+# -----------------------------------------------------------------------------
 	execute_process(
 		COMMAND ${FM_TEST}
 		RESULT_VARIABLE test_res

@@ -24,6 +24,22 @@ foreach(MSIM_TEST ${MSIM_TESTS})
 	message(STATUS "[SIMULATION]: ${MSIM_TEST}")
 
 	get_filename_component(TEST_WORKING_DIR ${MSIM_TEST} DIRECTORY)
+
+# -----------------------------------------------------------------------------
+# Configure address sanitizer
+# -----------------------------------------------------------------------------
+	set(WITH_ASAN @WITH_ASAN@)
+	if (WITH_ASAN)
+		find_program(SYMB llvm-symbolizer)
+		message(STATUS "using LLVM symbolizer: ${SYMB}")
+
+		set(ENV{ASAN_OPTIONS} "symbolize=1")
+		set(ENV{ASAN_SYMBOLIZER_PATH} ${SYMB})
+	endif()
+
+# -----------------------------------------------------------------------------
+# Run test
+# -----------------------------------------------------------------------------
 	execute_process(
 		COMMAND @CMAKE_CURRENT_BINARY_DIR@/../mcusim
 		RESULT_VARIABLE test_res

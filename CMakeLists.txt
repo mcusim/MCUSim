@@ -170,6 +170,17 @@ else()
 	endif()
 endif()
 
+# Compile with address sanitizer
+if (WITH_ASAN)
+	add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fsanitize=address")
+
+	if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lasan")
+	endif()
+endif()
+
 # -----------------------------------------------------------------------------
 # Set sources here
 # -----------------------------------------------------------------------------
@@ -185,6 +196,7 @@ set(MCUSIM_LIB_SOURCES
 	src/avr/avr_vcd.c
 	src/avr/avr_timer.c
 	src/avr/avr_wdt.c
+	src/avr/avr_io.c
 	src/msim_config.c
 	src/msim_getopt.c
 	src/msim_ihex.c

@@ -24,6 +24,11 @@
 #ifndef MSIM_AVR_TIMER_H_
 #define MSIM_AVR_TIMER_H_ 1
 
+#include <stdlib.h>
+#include "mcusim/mcusim.h"
+#include "mcusim/avr/sim/io.h"
+#include "mcusim/avr/sim/interrupt.h"
+
 #define MSIM_AVR_TMR_STOPMODE		(-75)
 #define MSIM_AVR_TMR_EXTCLK_RISE	(-76)
 #define MSIM_AVR_TMR_EXTCLK_FALL	(-77)
@@ -35,12 +40,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include <stdlib.h>
-
-#include "mcusim/mcusim.h"
-#include "mcusim/avr/sim/io.h"
-#include "mcusim/avr/sim/interrupt.h"
 
 /* Waveform generation modes */
 enum {
