@@ -178,6 +178,7 @@ MSIM_AVR_Step(MSIM_AVR *mcu)
 	return rc;
 }
 
+/* Checks whether instruction occupies 32 bits (two 16-bit words) or not.*/
 int
 MSIM_AVR_Is32(uint32_t inst)
 {

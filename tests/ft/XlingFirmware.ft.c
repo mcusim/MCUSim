@@ -80,6 +80,10 @@ static struct dm_checkpoint dm_checkpoints[] = {
 	{ 0x0269, TEST_PREF ".dm_17_0269.hex" },
 	{ 0x026F, TEST_PREF ".dm_18_026F.hex" },
 	{ 0x0277, TEST_PREF ".dm_19_0277.hex" },
+	{ 0x027C, TEST_PREF ".dm_19_1_027C.hex" },
+	{ 0x0283, TEST_PREF ".dm_19_2_0283.hex" },
+	{ 0x0286, TEST_PREF ".dm_19_3_0286.hex" },
+	{ 0x028D, TEST_PREF ".dm_19_4_028D.hex" },
 	{ 0x028F, TEST_PREF ".dm_20_028F.hex" },
 	{ 0x02B4, TEST_PREF ".dm_21_02B4.hex" },
 	{ 0x0313, TEST_PREF ".dm_22_0313.hex" },
@@ -119,41 +123,41 @@ check_datamem(void **state)
 			assert_int_equal(rc, 0);
 		}
 
-		/* Check data memory against a dump */
-		if (mcu->pc == dm_checkpoints[dmcp].pc) {
-			/*
-			 * Data memory can be uninitialized if we didn't have
-			 * a dump file for PC == 0x0000.
-			 */
-			if (dmcp == 0U) {
-				snprintf(LOG, LOGSZ, "init datamem: step=%"
-				         PRIu32 ", pc=0x%" PRIx32 ", size=0x%"
-				         PRIx64 " (%" PRIu64 ")",
-				         dmcp, mcu->pc, memsz, memsz);
-				MSIM_LOG_INFO(LOG);
+		/* Skip checking if it's not a checkpoint */
+		if (mcu->pc != dm_checkpoints[dmcp].pc) {
+			continue;
+		}
 
-				MSIM_AVR_LoadDataMem(
-				        mcu, dm_checkpoints[dmcp].dump);
-				dmcp++;
-				continue;
-			}
-
-			snprintf(LOG, LOGSZ, "checking datamem: step=%" PRIu32
+		/*
+		 * Data memory can be uninitialized if we didn't have
+		 * a dump file for PC == 0x0000.
+		 */
+		if (dmcp == 0U) {
+			snprintf(LOG, LOGSZ, "init datamem: step=%" PRIu32
 			         ", pc=0x%" PRIx32 ", size=0x%" PRIx64 " (%"
 			         PRIu64 ")", dmcp, mcu->pc, memsz, memsz);
 			MSIM_LOG_INFO(LOG);
 
-			/* Load DM from a file to the 'control MCU */
-			MSIM_AVR_LoadDataMem(ctl, dm_checkpoints[dmcp].dump);
-
-			/*
-			 * Compare data memories of the 'current' and
-			 * 'control' MCUs.
-			 */
-			assert_memory_equal(mcu->dm, ctl->dm, memsz);
-
+			MSIM_AVR_LoadDataMem(mcu, dm_checkpoints[dmcp].dump);
 			dmcp++;
+			continue;
 		}
+
+		snprintf(LOG, LOGSZ, "comparing datamem: step=%" PRIu32
+		         ", pc=0x%" PRIx32 ", size=0x%" PRIx64 " (%"
+		         PRIu64 ")", dmcp, mcu->pc, memsz, memsz);
+		MSIM_LOG_INFO(LOG);
+
+		/* Load DM from a file to the 'control' MCU */
+		MSIM_AVR_LoadDataMem(ctl, dm_checkpoints[dmcp].dump);
+
+		/*
+		 * Compare data memories of the 'current' and
+		 * 'control' MCUs.
+		 */
+		assert_memory_equal(mcu->dm, ctl->dm, memsz);
+
+		dmcp++;
 	} while (dmcp < ARRSZ(dm_checkpoints));
 }
 

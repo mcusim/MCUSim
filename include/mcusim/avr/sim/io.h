@@ -45,14 +45,18 @@ typedef struct MSIM_AVR_IOBit {
 	uint8_t mbits;		/* Number of mask bits */
 } MSIM_AVR_IOBit, MSIM_AVR_IOFuse;
 
-/* An MCU-agnostic way to access an I/O port. */
+/*
+ * An MCU-agnostic way to access and synchronize an I/O port.
+ */
 typedef struct MSIM_AVR_IOPort {
 	MSIM_AVR_IOBit port;	/* PORTx (in data space) */
 	MSIM_AVR_IOBit ddr;	/* DDRx (in data space) */
 	MSIM_AVR_IOBit pin;	/* PINx (in data space) */
+	uint8_t pending;	/* Pending flag */
+	uint8_t ppin;		/* Pending PINx value */
 } MSIM_AVR_IOPort;
 
-int MSIM_AVR_IOUpdatePinx(struct MSIM_AVR *mcu);
+int MSIM_AVR_IOSyncPinx(struct MSIM_AVR *mcu);
 
 #ifdef __cplusplus
 }

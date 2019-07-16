@@ -247,7 +247,7 @@ MSIM_AVR_SimStep(MSIM_AVR *mcu, uint8_t ft)
 		}
 
 		if (mcu->ic_left || IS_MCU_ACTIVE(mcu)) {
-			MSIM_AVR_IOUpdatePinx(mcu);
+			MSIM_AVR_IOSyncPinx(mcu);
 		}
 
 		/*

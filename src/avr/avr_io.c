@@ -27,33 +27,45 @@
 #include "mcusim/avr/sim/private/io_macro.h"
 
 /*
- * Updates separate bits of the PINx register according to a value in
- * the PORTx register. The only bits which are configured to output will be
- * updated.
+ * Synchronizes bits of the PINx register according to a value in the PORTx
+ * register. The only bits which are configured to output will be updated.
+ *
+ * It's necessary to wait one clock cycle to be able to read back a software
+ * assigned pin values from PINx.
+ *
+ * See figure 14-4, Synchronization when Reading a Software Assigned Pin Value,
+ * ATmega328P Datasheet Rev. 8271J – 11/2015.
  */
 int
-MSIM_AVR_IOUpdatePinx(struct MSIM_AVR *mcu)
+MSIM_AVR_IOSyncPinx(struct MSIM_AVR *mcu)
 {
 	MSIM_AVR_IOPort *p;
-	uint32_t v, ddr_mask, pinv;
+	uint32_t portx, ddrx, pinx;
 
 	for (uint32_t i = 0; i < ARRSZ(mcu->ioports); i++) {
 		/* I/O port to work with */
 		p = &mcu->ioports[i];
 
-		/* Skip uninitialized I/O port */
+		/* Work with the first N initialized ports */
 		if (IS_IONOBYTE(p->port) || IS_IONOBYTE(p->ddr) ||
 		                IS_IONOBYTE(p->pin)) {
-			continue;
+			break;
 		}
 
-		/* Read port registers */
-		v = IOBIT_RD(mcu, &p->port);
-		ddr_mask = IOBIT_RD(mcu, &p->ddr);
-		pinv = IOBIT_RD(mcu, &p->pin);
+		/* Update PINx from a pending value */
+		if (p->pending == 1U) {
+			IOBIT_WR(mcu, &p->pin, p->ppin);
+			p->pending = 0;
+		}
 
-		/* Update PINx */
-		IOBIT_WR(mcu, &p->pin, pinv | (v & ddr_mask));
+		/* Read PORTx, DDRx and PINx values */
+		portx = IOBIT_RD(mcu, &p->port);
+		ddrx = IOBIT_RD(mcu, &p->ddr);
+		pinx = IOBIT_RD(mcu, &p->pin);
+
+		/* Calculate a pending PINx value */
+		p->ppin = (uint8_t)((pinx & ~ddrx) | (portx & ddrx));
+		p->pending = 1;
 	}
 
 	return 0;
