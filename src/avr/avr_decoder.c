@@ -775,7 +775,7 @@ exec_cpc(MSIM_AVR *mcu, const uint32_t inst)
 	UPDSR(mcu, SR_NEG, (r >> 7) & 1);
 	UPDSR(mcu, SR_TCOF, (((rd & ~rr & ~r) | (~rd & rr & r)) >> 7) & 1);
 	UPDSR(mcu, SR_SIGN, SR(mcu, SR_NEG) ^ SR(mcu, SR_TCOF));
-	if (r) {
+	if (r != 0) {
 		UPDSR(mcu, SR_ZERO, 0);
 	}
 }
@@ -1302,8 +1302,7 @@ exec_sbci(MSIM_AVR *mcu, const uint32_t inst)
 	c = (uint8_t)(((inst & 0xF00) >> 4) | (inst & 0x0F));
 
 	rd = mcu->dm[rd_addr];
-	r = (uint8_t)(mcu->dm[rd_addr] - c -
-	              SR(mcu, SR_CARRY));
+	r = (uint8_t)(mcu->dm[rd_addr] - c - SR(mcu, SR_CARRY));
 	mcu->dm[rd_addr] = r;
 	mcu->pc++;
 
@@ -1313,7 +1312,9 @@ exec_sbci(MSIM_AVR *mcu, const uint32_t inst)
 	UPDSR(mcu, SR_NEG, (r >> 7) & 1);
 	UPDSR(mcu, SR_TCOF, (((rd & ~c & ~r) | (~rd & c & r)) >> 7) & 1);
 	UPDSR(mcu, SR_SIGN, SR(mcu, SR_NEG) ^ SR(mcu, SR_TCOF));
-	UPDSR(mcu, SR_ZERO, !r ? 1 : 0);
+	if (r != 0U) {
+		UPDSR(mcu, SR_ZERO, 0);
+	}
 }
 
 static void
@@ -1516,7 +1517,7 @@ exec_sbc(MSIM_AVR *mcu, const uint32_t inst)
 	buf = (~rd & rr) | (rr & r) | (r & ~rd);
 
 	UPDSR(mcu, SR_CARRY, (buf>>7)&1);
-	if (r) {
+	if (r != 0) {
 		UPDSR(mcu, SR_ZERO, 0);
 	}
 	UPDSR(mcu, SR_NEG, (r>>7)&1);

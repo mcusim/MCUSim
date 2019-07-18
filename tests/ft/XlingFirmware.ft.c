@@ -83,6 +83,12 @@ static struct dm_checkpoint dm_checkpoints[] = {
 	{ 0x027C, TEST_PREF ".dm_19_1_027C.hex" },
 	{ 0x0283, TEST_PREF ".dm_19_2_0283.hex" },
 	{ 0x0286, TEST_PREF ".dm_19_3_0286.hex" },
+	{ 0x0287, TEST_PREF ".dm_19_3_1_0287.hex" },
+	{ 0x0288, TEST_PREF ".dm_19_3_2_0288.hex" },
+	{ 0x0289, TEST_PREF ".dm_19_3_3_0289.hex" },
+	{ 0x028A, TEST_PREF ".dm_19_3_4_028A.hex" },
+	{ 0x028B, TEST_PREF ".dm_19_3_5_028B.hex" },
+	{ 0x028C, TEST_PREF ".dm_19_3_6_028C.hex" },
 	{ 0x028D, TEST_PREF ".dm_19_4_028D.hex" },
 	{ 0x028F, TEST_PREF ".dm_20_028F.hex" },
 	{ 0x02B4, TEST_PREF ".dm_21_02B4.hex" },
@@ -145,7 +151,7 @@ check_datamem(void **state)
 
 		snprintf(LOG, LOGSZ, "comparing datamem: step=%" PRIu32
 		         ", pc=0x%" PRIx32 ", size=0x%" PRIx64 " (%"
-		         PRIu64 ")", dmcp, mcu->pc, memsz, memsz);
+		         PRIu64 ")...", dmcp, mcu->pc, memsz, memsz);
 		MSIM_LOG_INFO(LOG);
 
 		/* Load DM from a file to the 'control' MCU */
@@ -156,6 +162,7 @@ check_datamem(void **state)
 		 * 'control' MCUs.
 		 */
 		assert_memory_equal(mcu->dm, ctl->dm, memsz);
+		MSIM_LOG_INFO("Done");
 
 		dmcp++;
 	} while (dmcp < ARRSZ(dm_checkpoints));
