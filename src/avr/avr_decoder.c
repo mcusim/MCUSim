@@ -44,6 +44,7 @@ static void	exec_brge(MSIM_AVR *, const uint32_t);
 static void	exec_brcs_brlo(MSIM_AVR *, const uint32_t);
 static void	exec_rcall(MSIM_AVR *, const uint32_t);
 static void	exec_sts(MSIM_AVR *, const uint32_t);
+static void	exec_sts16(MSIM_AVR *mcu, const uint32_t inst);
 static void	exec_ret(MSIM_AVR *);
 static void	exec_ori_sbr(MSIM_AVR *, const uint32_t);
 static void	exec_sbi_cbi(MSIM_AVR *, const uint32_t, uint8_t);
@@ -55,8 +56,8 @@ static void	exec_sbci(MSIM_AVR *, const uint32_t);
 static void	exec_sbiw(MSIM_AVR *, const uint32_t);
 static void	exec_andi_cbr(MSIM_AVR *, const uint32_t);
 static void	exec_and(MSIM_AVR *, const uint32_t);
-static void 	exec_sub(MSIM_AVR *, const uint32_t);
-static void 	exec_subi(MSIM_AVR *, const uint32_t);
+static void	exec_sub(MSIM_AVR *, const uint32_t);
+static void	exec_subi(MSIM_AVR *, const uint32_t);
 static void	exec_sbc(MSIM_AVR *, const uint32_t);
 static void	exec_cli(MSIM_AVR *);
 static void	exec_adiw(MSIM_AVR *, const uint32_t);
@@ -171,6 +172,14 @@ MSIM_AVR_Step(MSIM_AVR *mcu)
 		snprintf(LOG, LOGSZ, "unknown instruction: 0x%04"
 		         PRIx16 ", pc=0x%06" PRIx32, i, mcu->pc);
 		MSIM_LOG_FATAL(LOG);
+
+#ifdef DEBUG
+		for (uint32_t j = 0; j < ARRSZ(mcu->last_pc); j++) {
+			snprintf(LOG, LOGSZ, "previous pc=0x%06" PRIx32,
+			         mcu->last_pc[j]);
+			MSIM_LOG_FATAL(LOG);
+		}
+#endif
 
 		rc = -1;
 	}
@@ -595,6 +604,10 @@ decode_inst(MSIM_AVR *mcu, const uint32_t inst)
 			exec_lds16(mcu, inst);
 			break;
 		}
+		if ((inst & 0xF800) == 0xA800) {
+			exec_sts16(mcu, inst);
+			break;
+		}
 		break;
 	case 0xB000:
 		exec_in_out(mcu, inst,
@@ -998,6 +1011,24 @@ exec_sts(MSIM_AVR *mcu, const uint32_t inst)
 	/* STS – Store Direct to Data Space */
 	const uint32_t addr = (uint32_t) PM(mcu->pc + 1);
 	const uint8_t rr = (uint8_t)((inst & 0x01F0) >> 4);
+
+	WRITE_DS(addr, DM(rr));
+
+	mcu->pc += 2;
+}
+
+static void
+exec_sts16(MSIM_AVR *mcu, const uint32_t inst)
+{
+	/* STS -Store Direct to Data Space (16-bit) */
+	const uint16_t addr_l = (uint8_t)(inst & 0x000F);
+	const uint16_t addr_h = ((inst >> 5) & 0x0010) | // 9th bit
+	                        ((inst >> 5) & 0x0020) | // 10th bit
+	                        ((inst >> 2) & 0x0040) | // 8th bit
+	                        ((~inst >> 1) & 0x0080); // ~8th bit
+	/* Memory access is limited to 0x40...0xBF */
+	const uint32_t addr = (uint16_t)((addr_h << 8) | (addr_l)) + 0x40U;
+	const uint8_t rr = ((inst >> 4) & 0x0F) + 16;
 
 	WRITE_DS(addr, DM(rr));
 
@@ -2381,9 +2412,9 @@ exec_lpm(MSIM_AVR *mcu, const uint32_t inst)
 	/*
 	 * LPM - Load Program Memory
 	 *
-	 * 	type I,		R0 <- (Z)
-	 * 	type II,	Rd <- (Z)
-	 * 	type III,	Rd <- (Z), Z++
+	 *	type I,		R0 <- (Z)
+	 *	type II,	Rd <- (Z)
+	 *	type III,	Rd <- (Z), Z++
 	 */
 	const uint32_t z = ((DM(REG_ZH) << 8) &0xFF00) | (DM(REG_ZL) &0xFF);
 	const uint8_t bs = (z & 1) ? 8 : 0; /* byte selector (MSB or LSB) */

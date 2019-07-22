@@ -50,11 +50,13 @@ if (WITH_CHECKS)
 # Compile unit tests
 # -----------------------------------------------------------------------------
 	add_executable(XlingFirmware.ft XlingFirmware.ft.c)
+	add_executable(XlingFirmware_1.ft XlingFirmware_1.ft.c)
 
 # -----------------------------------------------------------------------------
 # Link unit tests
 # -----------------------------------------------------------------------------
 	target_link_libraries(XlingFirmware.ft ${TARGET_LIBS})
+	target_link_libraries(XlingFirmware_1.ft ${TARGET_LIBS})
 
 # -----------------------------------------------------------------------------
 # Prepare files in the current binary directory

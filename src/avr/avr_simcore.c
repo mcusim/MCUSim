@@ -213,6 +213,17 @@ MSIM_AVR_SimStep(MSIM_AVR *mcu, uint8_t ft)
 			break;
 		}
 
+#ifdef DEBUG
+		/* Save previous PC value */
+		if (IS_MCU_ACTIVE(mcu)) {
+			for (uint32_t i = ARRSZ(mcu->last_pc) - 1; i > 0; i--) {
+				mcu->last_pc[i] = mcu->last_pc[i-1];
+				/* what about indentation at this line? */
+			}
+			mcu->last_pc[0] = mcu->pc;
+		}
+#endif
+
 		/*
 		 * Decode next instruction.
 		 *
