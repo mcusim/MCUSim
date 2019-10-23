@@ -100,7 +100,7 @@ static void		rsp_write_reg(MSIM_AVR *mcu, rsp_buf *buf);
 static int		hex(int c);
 static unsigned long	hex2reg(char *buf, const unsigned long dign);
 
-static size_t		read_reg(int n, char *buf);
+static size_t		read_reg(int n, char *buf, size_t buf_len);
 static void		write_reg(int n, char *buf);
 
 void
@@ -573,7 +573,7 @@ rsp_read_reg(MSIM_AVR *mcu, rsp_buf *buf)
 		put_str_packet(mcu, "E01");
 	} else {
 		val[0] = 0;
-		if (!read_reg((int)regn, val)) {
+		if (!read_reg((int)regn, val, REG_BUF_MAX)) {
 			snprintf(LOG, LOGSZ, "Unknown register %" PRIu32
 			         ", empty response will be returned", regn);
 			MSIM_LOG_ERROR(LOG);
@@ -1082,7 +1082,7 @@ rsp_query(MSIM_AVR *mcu, rsp_buf *buf)
 		 */
 		char reply[GDB_BUF_MAX];
 
-		sprintf(reply, "PacketSize=%X", GDB_BUF_MAX);
+		snprintf(reply, GDB_BUF_MAX, "PacketSize=%X", GDB_BUF_MAX);
 		put_str_packet(mcu, reply);
 	} else if (!strncmp("qSymbol:", buf->data, strlen("qSymbol:"))) {
 		/*
@@ -1165,31 +1165,33 @@ rsp_restart(void)
 }
 
 static size_t
-read_reg(int n, char *buf)
+read_reg(int n, char *buf, size_t blen)
 {
 	/*
 	 * This function reads registers in order required to reply to
 	 * GDB client. Remember that N is not an index in this case!
 	 */
 	if (n >= 0 && n <= 31) {	/* GPR0..31 */
-		sprintf(buf, "%02X", rsp.mcu->dm[n]);
+		snprintf(buf, blen, "%02X", rsp.mcu->dm[n]);
+
 		return strlen(buf);
 	}
 
 	switch (n) {
 	case 32:			/* SREG */
-		sprintf(buf, "%02X", *rsp.mcu->sreg);
+		snprintf(buf, blen, "%02X", *rsp.mcu->sreg);
 		break;
 	case 33:			/* SPH and SPL */
-		sprintf(buf, "%02X%02X", *rsp.mcu->spl, *rsp.mcu->sph);
+		snprintf(buf, blen, "%02X%02X", *rsp.mcu->spl, *rsp.mcu->sph);
 		break;
 	case 34:			/* PC */
-		sprintf(buf, "%02X%02X%02X00",
-		        (unsigned char)((rsp.mcu->pc << 1) & 0xFF),
-		        (unsigned char)(((rsp.mcu->pc << 1) >> 8) & 0xFF),
-		        (unsigned char)(((rsp.mcu->pc << 1) >> 16) & 0xFF));
+		snprintf(buf, blen, "%02X%02X%02X00",
+		         (unsigned char)((rsp.mcu->pc << 1) & 0xFF),
+		         (unsigned char)(((rsp.mcu->pc << 1) >> 8) & 0xFF),
+		         (unsigned char)(((rsp.mcu->pc << 1) >> 16) & 0xFF));
 		break;
 	}
+
 	return strlen(buf);
 }
 
@@ -1228,7 +1230,7 @@ rsp_read_all_regs(MSIM_AVR *mcu)
 
 	rep = reply;
 	for (i = 0; i < 35; i++) {
-		rep += read_reg(i, rep);
+		rep += read_reg(i, rep, GDB_BUF_MAX);
 	}
 	*rep = 0;
 
