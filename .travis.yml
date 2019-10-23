@@ -32,13 +32,12 @@ matrix:
       before_install:
         - eval "${MATRIX_EVAL}"
       before_script:
-        - mkdir build && cd build
-        - cmake ${CMAKE_PARAMS} ..
+        - cmake ${CMAKE_PARAMS} .
       script:
         - make clean
         # Wraps the compilation with the Build Wrapper to generate configuration
         # (used later by the SonarQube Scanner) into the "bw-output" folder.
-        - build-wrapper-linux-x86-64 --out-dir bw-output make VERBOSE=1
+        - build-wrapper-linux-x86-64 --out-dir bw-output make
         # And finally run the SonarQube analysis - read the
         # "sonar-project.properties" file to see the specific configuration
         - sonar-scanner
@@ -65,7 +64,7 @@ matrix:
         - cmake ${CMAKE_PARAMS} ..
       script:
         - make clean
-        - make VERBOSE=1
+        - make
         - make tests
 
 # ----------------
