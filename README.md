@@ -1,3 +1,11 @@
+# Archived repository note
+
+Everything has its end. This project does as well.    
+MCUSim will be archived from now on as I don't have enough time to develop it further.    
+Feel free to fork it. If you'll be interested in plans and development ideas - drop me a note via email. I'll share them gladly. Good luck!
+    
+-----------------
+
 Readme for MCUSim
 -----------------
 
